@@ -376,7 +376,7 @@ game.libretro.vbam game.libretro.yabause game.libretro.genplus"
 	ADDONS_PVR="pvr.sledovanitv.cz pvr.argustv pvr.mythtv pvr.hts pvr.pctv pvr.stalker pvr.filmon pvr.octonet pvr.zattoo pvr.vbox pvr.wmc pvr.nextpvr pvr.njoy pvr.teleboy pvr.vdr.vnsi pvr.vuplus pvr.dvbviewer pvr.dvblink pvr.hdhomerun pvr.iptvsimple pvr.demo pvr.mediaportal.tvserver vfs.libarchive vfs.rar vfs.sftp"  
 	ADDONS_SCREENSAVERS="screensaver.asteroids screensaver.biogenesis screensaver.greynetic screensaver.matrixtrails screensaver.pingpong screensaver.pyro screensavers.rsxs screensaver.stars screensaver.shadertoy"
 	#ADDONS_VISUALIZATIONS="visualization.projectm visualization.shadertoy visualization.spectrum visualization.waveform"
-	#ADDONS_GLES_EXCL="screensaver.shadertoy visualization.shadertoy"
+	ADDONS_GLES_EXCL="screensaver.shadertoy"
 	if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ]
 	then
 	   ADDONS_TO_BUILD="${ADDONS_VISUALIZATIONS} ${ADDONS_GAME} ${ADDONS_ADSP} ${ADDONS_AUDIO_DECODERS} ${ADDONS_AUDIO_ENCODERS} ${ADDONS_INPUTSTREAM} ${ADDONS_PERIPHERAL} ${ADDONS_PVR} ${ADDONS_GLES_EXCL}"
