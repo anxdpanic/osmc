@@ -6,12 +6,6 @@
 . ../common.sh
 
 
-#Workaround
-#Delete folder otherwise thumbnails crash and builds fail with crypto errors
-rm -rf /opt/osmc-tc/armv7-toolchain-osmc/usr/local/lib/*
-rm -rf /opt/osmc-tc/armv6l-toolchain-osmc/usr/local/lib/*
-
-
 #Use newclock5 for rbp1/2 builds
 if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ]    
 then
@@ -35,6 +29,9 @@ build_in_env "${1}" $(pwd) "mediacenter-next-osmc" "$BUILD_OPTS"
 build_return=$?
 if [ $build_return == 99 ]
 then
+	# Fix Kodi CMake issues where local dependencies are introduced in the toolchain
+	rm -rf /usr/local/include/* >/dev/null 2>&1
+	rm -rf /usr/local/lib/* >/dev/null 2>&1
 	echo -e "Building package Kodi"
 	out=$(pwd)/files
 	make clean
@@ -270,6 +267,12 @@ then
 	    -DENABLE_APP_AUTONAME=OFF \
             -DENABLE_INTERNAL_FMT=ON \
             -DENABLE_INTERNAL_FLATBUFFERS=ON \
+            -DENABLE_MDNS=OFF \
+            -DENABLE_BLUETOOTH=OFF \
+            -DENABLE_PULSEAUDIO=OFF \
+            -DENABLE_LCMS2=OFF \
+            -DENABLE_SNDIO=OFF \
+            -DENABLE_MARIADBCLIENT=OFF \
 	.
 	fi
 	if [ "$1" == "vero2" ]; then
@@ -288,18 +291,25 @@ then
             -DENABLE_AML=ON \
             -DASS_INCLUDE_DIR=/usr/osmc/lib \
             -DAML_INCLUDE_DIR=/opt/vero2/include \
+            -DSHAIRPLAY_INCLUDE_DIR=/usr/osmc/include/shairplay/ \
             -DRapidJSON_INCLUDE_DIR=/opt/vero2/include \
             -DENABLE_OPENGLES=ON \
             -DENABLE_OPENGL=OFF \
             -DENABLE_OPTICAL=1 \
             -DENABLE_DVDCSS=1 \
             -DWITH_ARCH=arm \
-            -DWITH_CPU=${CPU} \
+            -DWITH_CPU="cortex-a5" \
             -DCORE_PLATFORM_NAME=aml \
             -DCORE_SYSTEM_NAME=linux \
 	    -DENABLE_APP_AUTONAME=OFF \
             -DENABLE_INTERNAL_FMT=ON \
             -DENABLE_INTERNAL_FLATBUFFERS=ON \
+             -DENABLE_MDNS=OFF \
+            -DENABLE_BLUETOOTH=OFF \
+            -DENABLE_PULSEAUDIO=OFF \
+            -DENABLE_LCMS2=OFF \
+            -DENABLE_SNDIO=OFF \
+            -DENABLE_MARIADBCLIENT=OFF \
 	. 
 	fi
          if [ "$1" == "vero3" ]; then
@@ -324,12 +334,18 @@ then
             -DENABLE_OPTICAL=1 \
             -DENABLE_DVDCSS=1 \
             -DWITH_ARCH=arm \
-            -DWITH_CPU=${CPU} \
+            -DWITH_CPU="cortex-a53" \
 	    -DCORE_PLATFORM_NAME=aml \
             -DCORE_SYSTEM_NAME=linux \
             -DENABLE_APP_AUTONAME=OFF \
             -DENABLE_INTERNAL_FMT=ON \
             -DENABLE_INTERNAL_FLATBUFFERS=ON \
+	    -DENABLE_MDNS=OFF \
+	    -DENABLE_BLUETOOTH=OFF \
+	    -DENABLE_PULSEAUDIO=OFF \
+	    -DENABLE_LCMS2=OFF \
+	    -DENABLE_SNDIO=OFF \
+	    -DENABLE_MARIADBCLIENT=OFF \
 	.
 	fi
 	if [ $? != 0 ]; then echo -e "Configure failed!" && umount /proc/ > /dev/null 2>&1 && exit 1; fi
