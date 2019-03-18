@@ -38,7 +38,7 @@ pull_source "https://github.com/kodi-community-addons/script.skin.helper.skinbac
 cp -ar src/script.skin.helper.skinbackup-${REV_skinbackup} files/usr/share/kodi/addons/script.skin.helper.skinbackup
 
 #pull_source "https://github.com/kodi-community-addons/script.skin.helper.widgets/archive/${REV_widgets}.tar.gz" "$(pwd)/src"
-pull_source "https://kodi.gjmccarthy.co.uk/script.skin.helper.widgets-1.0.38.zip" files/usr/share/kodi/addons/script.skin.helper.widgets
+pull_source "https://kodi.gjmccarthy.co.uk/script.skin.helper.widgets-1.0.38.zip" files/usr/share/kodi/addons/
 
 pull_source "https://github.com/marcelveldt/script.skinshortcuts/archive/${REV_skinshortcuts}.tar.gz" "$(pwd)/src"
 cp -ar src/script.skinshortcuts-${REV_skinshortcuts} files/usr/share/kodi/addons/script.skinshortcuts
