@@ -1,0 +1,23 @@
+From 3d5fd4be02d534ff04825fa8bb5dd9e35f9edefb Mon Sep 17 00:00:00 2001
+From: Maven85 <janis.semper@googlemail.com>
+Date: Mon, 18 Mar 2019 07:45:07 +0100
+Subject: [PATCH] [estuary] fix title for non episodes
+
+---
+ addons/skin.estuary/xml/Variables.xml | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/addons/skin.estuary/xml/Variables.xml b/addons/skin.estuary/xml/Variables.xml
+index 2da53aab5f75..ccefc41add0c 100644
+--- a/addons/skin.estuary/xml/Variables.xml
++++ b/addons/skin.estuary/xml/Variables.xml
+@@ -271,7 +271,8 @@
+ 	<variable name="NowPlayingBreadcrumbsVar">
+ 		<value condition="VideoPlayer.Content(livetv)">$INFO[VideoPlayer.Title]</value>
+ 		<value condition="VideoPlayer.Content(episodes) + !String.IsEmpty(Player.Art(tvshow.clearlogo))">$INFO[VideoPlayer.Season,[COLOR button_focus]S,[/COLOR]]$INFO[VideoPlayer.Episode,[COLOR button_focus]E,: [/COLOR]]$INFO[VideoPlayer.Title]</value>
+-		<value condition="Window.IsActive(fullscreenvideo)">$INFO[VideoPlayer.TVShowTitle]$INFO[VideoPlayer.Year, ([COLOR button_focus],[/COLOR])]</value>
++		<value condition="VideoPlayer.Content(episodes) + Window.IsActive(fullscreenvideo)">$INFO[VideoPlayer.TVShowTitle]$INFO[VideoPlayer.Year, ([COLOR button_focus],[/COLOR])]</value>
++		<value condition="!VideoPlayer.Content(episodes) + Window.IsActive(fullscreenvideo)">$INFO[VideoPlayer.Title]$INFO[VideoPlayer.Year, ([COLOR button_focus],[/COLOR])]</value>
+ 		<value condition="MusicPartyMode.Enabled">$LOCALIZE[589]</value>
+ 		<value>$LOCALIZE[31000]...</value>
+ 	</variable>
