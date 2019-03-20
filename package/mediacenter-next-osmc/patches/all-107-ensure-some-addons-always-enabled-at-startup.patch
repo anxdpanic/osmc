@@ -17,9 +17,6 @@ index f56fbc2..915515c 100644
      }
  
 +    m_pDS->exec(PrepareSQL("UPDATE installed SET enabled=1 WHERE addonID LIKE 'script.module.osmcsetting.%%'"));
-+    m_pDS->exec(PrepareSQL("UPDATE installed SET enabled=1 WHERE addonID='script.skin.helper.service'"));
-+    m_pDS->exec(PrepareSQL("UPDATE installed SET enabled=1 WHERE addonID='script.skin.helper.skinbackup'"));
-+    m_pDS->exec(PrepareSQL("UPDATE installed SET enabled=1 WHERE addonID='script.skin.helper.widgets'"));
 +    m_pDS->exec(PrepareSQL("UPDATE installed SET enabled=1 WHERE addonID='script.skinshortcuts'"));
 +    m_pDS->exec(PrepareSQL("UPDATE installed SET enabled=1 WHERE addonID='script.module.osmccommon'"));
 +    m_pDS->exec(PrepareSQL("UPDATE installed SET enabled=1 WHERE addonID='script.module.xmltodict'"));
