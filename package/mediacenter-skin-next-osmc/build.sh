@@ -7,7 +7,7 @@
 
 make clean
 
-REV_skinosmc="541794126e426f7cc65c3f3bf8f929104d0b4b3d"
+REV_skinosmc="d53fc8faddcb94da29ce757abe0da5e187a570eb"
 REV_service="6b8a82e3ba97bbcba8c44eece0a4ca93bf4c571b"
 REV_skinbackup="b9121fbedb4db29b0d4aa16a97a0fa1de5cc589b"
 REV_widgets="612999dc3021e1fcd57a01ef14ce473f47bfc48f"
