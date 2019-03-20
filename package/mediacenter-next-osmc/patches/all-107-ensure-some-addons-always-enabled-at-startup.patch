@@ -12,7 +12,7 @@ diff --git a/xbmc/addons/AddonDatabase.cpp b/xbmc/addons/AddonDatabase.cpp
 index f56fbc2..915515c 100644
 --- a/xbmc/addons/AddonDatabase.cpp
 +++ b/xbmc/addons/AddonDatabase.cpp
-@@ -365,6 +365,21 @@ void CAddonDatabase::SyncInstalled(const std::set<std::string>& ids,
+@@ -365,6 +365,18 @@ void CAddonDatabase::SyncInstalled(const std::set<std::string>& ids,
            ORIGIN_SYSTEM, id.c_str()));
      }
  
