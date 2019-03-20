@@ -29,9 +29,9 @@ index e3a7330..5fe1284 100644
 +++ b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp
 @@ -57,6 +57,7 @@
  extern "C" {
- #include "libavutil/dict.h"
- #include "libavutil/opt.h"
-+#include "libavutil/pixdesc.h"
+ #include <libavutil/dict.h>
+ #include <libavutil/opt.h>
++#include <libavutil/pixdesc.h>
  }
  
 
