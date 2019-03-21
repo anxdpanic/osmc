@@ -1,0 +1,32 @@
+From 7db4a56601c027d2316c7c2d56116a8bc3286fa6 Mon Sep 17 00:00:00 2001
+From: Olaf Hering <olaf@aepfle.de>
+Date: Thu, 21 Mar 2019 14:51:51 +0100
+Subject: [PATCH] [wayland] fix compilation with C++17
+
+Compilation for Wayland/gles fails with --std=c++17 because it has
+stricter checks:
+
+error: static assertion failed: comparison object must be invocable as const
+
+Fix this error by declaring the result as const.
+
+Fixes #15788
+
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+---
+ xbmc/windowing/wayland/Util.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/windowing/wayland/Util.h b/xbmc/windowing/wayland/Util.h
+index 43c1642c54da..8e1d313703a9 100644
+--- a/xbmc/windowing/wayland/Util.h
++++ b/xbmc/windowing/wayland/Util.h
+@@ -22,7 +22,7 @@ namespace WAYLAND
+ 
+ struct WaylandCPtrCompare
+ {
+-  bool operator()(wayland::proxy_t const& p1, wayland::proxy_t const& p2)
++  bool operator()(wayland::proxy_t const& p1, wayland::proxy_t const& p2) const
+   {
+     return p1.c_ptr() < p2.c_ptr();
+   }

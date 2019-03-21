@@ -1,0 +1,73 @@
+From 55271abf5c84373fe66532d774d639c3f2f95e7a Mon Sep 17 00:00:00 2001
+From: DaveTBlake <oak99sky@yahoo.co.uk>
+Date: Tue, 19 Mar 2019 12:50:12 +0000
+Subject: [PATCH] Show artist disambiguation text to help user select which
+ artist they are scraping by when no mbid and scraper has found more than one
+ artist with that name. Add disambiguation, gender and type to Python scraper
+ artist processing.
+
+---
+ xbmc/addons/Scraper.cpp                     | 11 +++++++++++
+ xbmc/music/infoscanner/MusicInfoScanner.cpp |  4 +++-
+ 2 files changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/addons/Scraper.cpp b/xbmc/addons/Scraper.cpp
+index 8b7041387b60..effb20d56764 100644
+--- a/xbmc/addons/Scraper.cpp
++++ b/xbmc/addons/Scraper.cpp
+@@ -646,6 +646,12 @@ CMusicArtistInfo FromFileItem<CMusicArtistInfo>(const CFileItem &item)
+   if (item.HasProperty("artist.genre"))
+     info.GetArtist().genre = StringUtils::Split(item.GetProperty("artist.genre").asString(),
+                                                 CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_musicItemSeparator);
++  if (item.HasProperty("artist.disambiguation"))
++    info.GetArtist().strDisambiguation = item.GetProperty("artist.disambiguation").asString();
++  if (item.HasProperty("artist.type"))
++    info.GetArtist().strType = item.GetProperty("artist.type").asString();
++  if (item.HasProperty("artist.gender"))
++    info.GetArtist().strGender = item.GetProperty("artist.gender").asString();
+   if (item.HasProperty("artist.born"))
+     info.GetArtist().strBorn = item.GetProperty("artist.born").asString();
+ 
+@@ -768,6 +774,9 @@ void DetailsFromFileItem<CArtist>(const CFileItem &item, CArtist &artist)
+ {
+   artist.strArtist = item.GetLabel();
+   artist.strMusicBrainzArtistID = FromString(item, "artist.musicbrainzid");
++  artist.strDisambiguation = FromString(item, "artist.disambiguation");
++  artist.strType = FromString(item, "artist.type");
++  artist.strGender = FromString(item, "artist.gender");
+   artist.genre = FromArray(item, "artist.genre", 0);
+   artist.styles = FromArray(item, "artist.styles", 0);
+   artist.moods = FromArray(item, "artist.moods", 0);
+@@ -1112,6 +1121,7 @@ std::vector<CMusicArtistInfo> CScraper::FindArtist(CCurlFile &fcurl, const std::
+   //   <title>...</title>
+   //   <year>...</year>
+   //   <genre>...</genre>
++  //   <disambiguation>...</disambiguation>
+   //   <url>...</url> (with the usual CScraperUrl decorations like post or spoof)
+   //  </entity>
+   //  ...
+@@ -1152,6 +1162,7 @@ std::vector<CMusicArtistInfo> CScraper::FindArtist(CCurlFile &fcurl, const std::
+         if (!genre.empty())
+           ari.GetArtist().genre =
+               StringUtils::Split(genre, CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_musicItemSeparator);
++        XMLUtils::GetString(pxeArtist, "disambiguation", ari.GetArtist().strDisambiguation);
+         XMLUtils::GetString(pxeArtist, "year", ari.GetArtist().strBorn);
+ 
+         vcari.push_back(ari);
+diff --git a/xbmc/music/infoscanner/MusicInfoScanner.cpp b/xbmc/music/infoscanner/MusicInfoScanner.cpp
+index 0082f0dc9139..c62247d069cc 100644
+--- a/xbmc/music/infoscanner/MusicInfoScanner.cpp
++++ b/xbmc/music/infoscanner/MusicInfoScanner.cpp
+@@ -1794,9 +1794,11 @@ CMusicInfoScanner::DownloadArtistInfo(const CArtist& artist,
+           {
+             // set the label to artist
+             CFileItem item(scraper.GetArtist(i).GetArtist());
+-            std::string strTemp=scraper.GetArtist(i).GetArtist().strArtist;
++            std::string strTemp = scraper.GetArtist(i).GetArtist().strArtist;
+             if (!scraper.GetArtist(i).GetArtist().strBorn.empty())
+               strTemp += " ("+scraper.GetArtist(i).GetArtist().strBorn+")";
++            if (!scraper.GetArtist(i).GetArtist().strDisambiguation.empty())
++              strTemp += " - " + scraper.GetArtist(i).GetArtist().strDisambiguation;
+             if (!scraper.GetArtist(i).GetArtist().genre.empty())
+             {
+               std::string genres = StringUtils::Join(scraper.GetArtist(i).GetArtist().genre, CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_musicItemSeparator);
