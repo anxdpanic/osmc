@@ -1,0 +1,82 @@
+From 6101bb0ff4df0416582cf040d3de8133f1e0ef3f Mon Sep 17 00:00:00 2001
+From: Philipp Kerling <pkerling@casix.org>
+Date: Tue, 19 Mar 2019 19:31:12 +0100
+Subject: [PATCH] [posix] Quit instead of shutdown on signals
+
+TMSG_QUIT was indavertently changed to TMSG_SHUTDOWN when the signal
+handling was modified. Change back to TMSG_QUIT - the application should
+not cause the machine to power down upon receipt of SIGINT or SIGTERM
+after all.
+---
+ xbmc/Application.cpp                  | 6 +++---
+ xbmc/platform/posix/PlatformPosix.cpp | 4 ++--
+ xbmc/platform/posix/PlatformPosix.h   | 4 ++--
+ xbmc/platform/posix/main.cpp          | 2 +-
+ 4 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/xbmc/Application.cpp b/xbmc/Application.cpp
+index 3bd24ef87b68..bfa6083209b6 100644
+--- a/xbmc/Application.cpp
++++ b/xbmc/Application.cpp
+@@ -4108,10 +4108,10 @@ void CApplication::ProcessSlow()
+   }
+ 
+ #if defined(TARGET_POSIX)
+-  if (CPlatformPosix::TestShutdownFlag())
++  if (CPlatformPosix::TestQuitFlag())
+   {
+-    CLog::Log(LOGNOTICE, "Shutting down due to POSIX signal");
+-    CApplicationMessenger::GetInstance().PostMsg(TMSG_SHUTDOWN);
++    CLog::Log(LOGNOTICE, "Quitting due to POSIX signal");
++    CApplicationMessenger::GetInstance().PostMsg(TMSG_QUIT);
+   }
+ #endif
+ 
+diff --git a/xbmc/platform/posix/PlatformPosix.cpp b/xbmc/platform/posix/PlatformPosix.cpp
+index f5272008fae9..9ad74c906e9a 100644
+--- a/xbmc/platform/posix/PlatformPosix.cpp
++++ b/xbmc/platform/posix/PlatformPosix.cpp
+@@ -16,13 +16,13 @@ void CPlatformPosix::Init()
+   ms_signalFlag.test_and_set();
+ }
+ 
+-bool CPlatformPosix::TestShutdownFlag()
++bool CPlatformPosix::TestQuitFlag()
+ {
+   // Keep set, return true when it was cleared before
+   return !ms_signalFlag.test_and_set();
+ }
+ 
+-void CPlatformPosix::RequestShutdown()
++void CPlatformPosix::RequestQuit()
+ {
+   ms_signalFlag.clear();
+ }
+diff --git a/xbmc/platform/posix/PlatformPosix.h b/xbmc/platform/posix/PlatformPosix.h
+index 9b51f06ff8c0..c83e7990404c 100644
+--- a/xbmc/platform/posix/PlatformPosix.h
++++ b/xbmc/platform/posix/PlatformPosix.h
+@@ -17,8 +17,8 @@ class CPlatformPosix : public CPlatform
+ public:
+   void Init() override;
+ 
+-  static bool TestShutdownFlag();
+-  static void RequestShutdown();
++  static bool TestQuitFlag();
++  static void RequestQuit();
+ 
+ private:
+   static std::atomic_flag ms_signalFlag;
+diff --git a/xbmc/platform/posix/main.cpp b/xbmc/platform/posix/main.cpp
+index f0d8d9ba5ef3..84f503c59e8a 100644
+--- a/xbmc/platform/posix/main.cpp
++++ b/xbmc/platform/posix/main.cpp
+@@ -44,7 +44,7 @@ void XBMC_POSIX_HandleSignal(int sig)
+ {
+   // Setting an atomic flag is one of the only useful things that is permitted by POSIX
+   // in signal handlers
+-  CPlatformPosix::RequestShutdown();
++  CPlatformPosix::RequestQuit();
+ }
+ 
+ }
