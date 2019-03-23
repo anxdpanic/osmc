@@ -1,0 +1,32 @@
+From dfa64ee5862bebca72939a306612aca334b362ac Mon Sep 17 00:00:00 2001
+From: Philipp Kerling <pkerling@casix.org>
+Date: Fri, 22 Mar 2019 09:24:27 +0100
+Subject: [PATCH] [wayland] Fix raw pointer comparison
+
+Comparing pointers that do not point into the same array
+is unspecified in C++
+---
+ xbmc/windowing/wayland/Util.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/windowing/wayland/Util.h b/xbmc/windowing/wayland/Util.h
+index 8e1d313703a9..ab13e298bc46 100644
+--- a/xbmc/windowing/wayland/Util.h
++++ b/xbmc/windowing/wayland/Util.h
+@@ -8,6 +8,7 @@
+ 
+ #pragma once
+ 
++#include <cstdint>
+ #include <string>
+ 
+ #include <wayland-client.hpp>
+@@ -24,7 +25,7 @@ struct WaylandCPtrCompare
+ {
+   bool operator()(wayland::proxy_t const& p1, wayland::proxy_t const& p2) const
+   {
+-    return p1.c_ptr() < p2.c_ptr();
++    return reinterpret_cast<std::uintptr_t>(p1.c_ptr()) < reinterpret_cast<std::uintptr_t>(p2.c_ptr());
+   }
+ };
+ 
