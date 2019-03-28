@@ -1,0 +1,33 @@
+From 338497b5597198f012555e770d30af227ee2d6b6 Mon Sep 17 00:00:00 2001
+From: Olaf Hering <olaf@aepfle.de>
+Date: Tue, 26 Mar 2019 21:09:45 +0100
+Subject: [PATCH] restore compatibility with sqlite3 v3.8
+
+Wrap defines from new sqlite3 versions:
+SQLITE_IOERR_VNODE was introduced in v3.9.1
+SQLITE_IOERR_AUTH was introduced in v3.10.0
+
+Fixes commit 2e54c809387fc0ced6d26602f42a14b0797552dc
+
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+---
+ xbmc/dbwrappers/sqlitedataset.cpp | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/xbmc/dbwrappers/sqlitedataset.cpp b/xbmc/dbwrappers/sqlitedataset.cpp
+index 45592f320ab6..4c8f8a088802 100644
+--- a/xbmc/dbwrappers/sqlitedataset.cpp
++++ b/xbmc/dbwrappers/sqlitedataset.cpp
+@@ -94,8 +94,12 @@ const std::map<int, const char*> g_SqliteErrorStrings =
+   X(SQLITE_IOERR_MMAP),
+   X(SQLITE_IOERR_GETTEMPPATH),
+   X(SQLITE_IOERR_CONVPATH),
++#if defined(SQLITE_IOERR_VNODE)
+   X(SQLITE_IOERR_VNODE),
++#endif
++#if defined(SQLITE_IOERR_AUTH)
+   X(SQLITE_IOERR_AUTH),
++#endif
+ #if defined(SQLITE_IOERR_BEGIN_ATOMIC)
+   X(SQLITE_IOERR_BEGIN_ATOMIC),
+ #endif

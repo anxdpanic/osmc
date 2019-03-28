@@ -1,0 +1,29 @@
+From 1754921b4d198a188a04fddc5502aa9a6d1fa1a3 Mon Sep 17 00:00:00 2001
+From: Olaf Hering <olaf@aepfle.de>
+Date: Wed, 27 Mar 2019 08:23:51 +0100
+Subject: [PATCH] [cmake] update minimum version of libdrm
+
+With the usage of DRM_FORMAT_GR1616 via commit
+b73d078a1c754f81a8ec04a5730efd5a790e4a35 ("[vaapi] Make CVaapiTexture
+into an interface, factor out vaapi1") a newer libdrm is required.
+
+Adjust the pkgconfig check accordingly.
+
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+---
+ cmake/modules/FindLibDRM.cmake | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/cmake/modules/FindLibDRM.cmake b/cmake/modules/FindLibDRM.cmake
+index 5c899f69bf60..4b39de31e9b4 100644
+--- a/cmake/modules/FindLibDRM.cmake
++++ b/cmake/modules/FindLibDRM.cmake
+@@ -14,7 +14,7 @@
+ #   LibDRM::LibDRM   - The LibDRM library
+ 
+ if(PKG_CONFIG_FOUND)
+-  pkg_check_modules(PC_LIBDRM libdrm>=2.4.74 QUIET)
++  pkg_check_modules(PC_LIBDRM libdrm>=2.4.82 QUIET)
+ endif()
+ 
+ find_path(LIBDRM_INCLUDE_DIR NAMES drm.h
