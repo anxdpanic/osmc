@@ -16,7 +16,7 @@ index f8009fcd06..fec752be3a 100644
  if(CORE_SYSTEM_NAME STREQUAL linux OR CORE_SYSTEM_NAME STREQUAL freebsd)
    if(CORE_PLATFORM_NAME STREQUAL rbpi)
 -    list(APPEND ffmpeg_conf --cpu=${CPU} --disable-vaapi --disable-vdpau)
-+    list(APPEND ffmpeg_conf --cpu=${CPU} --disable-vaapi --disable-vdpau --disable-neon --disable-libxcb --disable-libxcb-shape --disable-thumb --disable-libxcb-shm --disable-libxcb-xfixes --disable-xlib)
++    list(APPEND ffmpeg_conf --cpu=${CPU} --disable-vaapi --disable-vdpau --disable-libxcb --disable-libxcb-shape --disable-libxcb-shm --disable-libxcb-xfixes --disable-xlib)
    else()
      list(APPEND ffmpeg_conf --enable-vdpau --enable-vaapi --enable-pic)
    endif()
