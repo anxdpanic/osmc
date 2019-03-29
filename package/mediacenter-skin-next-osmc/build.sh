@@ -8,10 +8,6 @@
 make clean
 
 REV_skinosmc="6e5e8ff611aa6997be41e2d5398b78e7b6031e1e"
-REV_service="6b8a82e3ba97bbcba8c44eece0a4ca93bf4c571b"
-REV_skinbackup="b9121fbedb4db29b0d4aa16a97a0fa1de5cc589b"
-REV_widgets="612999dc3021e1fcd57a01ef14ce473f47bfc48f"
-REV_skinshortcuts="03a8905267082466a7b4b7e66c01a28fad46c19b"
 
 echo -e "Building package mediacenter-skin-osmc"
 echo -e "Downloading skin"
@@ -30,19 +26,5 @@ then
     find . ! -name 'Textures.xbt' -delete
     popd
 fi
-
-pull_source "https://github.com/kodi-community-addons/script.skin.helper.service/archive/${REV_service}.tar.gz" "$(pwd)/src"
-cp -ar src/script.skin.helper.service-${REV_service} files/usr/share/kodi/addons/script.skin.helper.service
-
-pull_source "https://github.com/kodi-community-addons/script.skin.helper.skinbackup/archive/${REV_skinbackup}.tar.gz" "$(pwd)/src"
-cp -ar src/script.skin.helper.skinbackup-${REV_skinbackup} files/usr/share/kodi/addons/script.skin.helper.skinbackup
-
-
-pull_source "https://github.com/kodi-community-addons/script.skin.helper.widgets/archive/${REV_widgets}.tar.gz" "$(pwd)/src"
-cp -ar src/script.skin.helper.widgets-${REV_widgets} files/usr/share/kodi/addons/script.skin.helper.widgets
-
-pull_source "https://github.com/marcelveldt/script.skinshortcuts/archive/${REV_skinshortcuts}.tar.gz" "$(pwd)/src"
-cp -ar src/script.skinshortcuts-${REV_skinshortcuts} files/usr/share/kodi/addons/script.skinshortcuts
-
 
 dpkg_build files/ mediacenter-skin-osmc.deb
