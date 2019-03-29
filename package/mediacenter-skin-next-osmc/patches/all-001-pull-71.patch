@@ -1,0 +1,934 @@
+From f6054d1d2443a985b7959536f0dbb91b135d42cd Mon Sep 17 00:00:00 2001
+From: "Ch1llb0/skin.osmc" <36623079+Ch1llb0@users.noreply.github.com>
+Date: Fri, 29 Mar 2019 11:19:25 +0100
+Subject: [PATCH] Pull skin scripts from Kodi repo again
+
+Custom_Customization.xml:
+- change dialog to prompt user to enable skin helper (if it's installed, but disabled)
+
+Custom_Diabled_Add-on.xml:
+- add new dialog prompt when supported skin add-ons are disabled
+
+delete Custom_Skin_Helper_Service.xml, Custom_Skin_Helper_Service_Skin_Backup_Open.xml, Custom_Skin_Helper_Service_Skin_Backup_Settings.xml and Custom_Skin_Helper_Service_Widgets.xml dialogs
+
+SkinSettings.xml:
+- change skinshortcuts and skin helper related buttons to grab scripts from Kodi repo again
+
+Variables.xml:
+- adjust skin setting add-ons variables
+
+strings.po:
+- change localize 31092
+- remove localizes 31120 and 31121
+
+Changelog.md:
+- update changelog
+---
+ 16x9/Custom_Customization.xml                 | 32 ++-----
+ ...ortcuts.xml => Custom_Disabled_Add-on.xml} | 37 ++++----
+ 16x9/Custom_Skin_Helper_Service.xml           | 92 -------------------
+ ...m_Skin_Helper_Service_Skin_Backup_Open.xml | 92 -------------------
+ ...in_Helper_Service_Skin_Backup_Settings.xml | 92 -------------------
+ 16x9/Custom_Skin_Helper_Service_Widgets.xml   | 92 -------------------
+ 16x9/SkinSettings.xml                         | 85 ++++++++---------
+ 16x9/Variables.xml                            | 40 ++++----
+ Changelog.md                                  | 24 +----
+ language/English/strings.po                   | 12 +--
+ 10 files changed, 90 insertions(+), 508 deletions(-)
+ rename 16x9/{Custom_Skin_Shortcuts.xml => Custom_Disabled_Add-on.xml} (55%)
+ delete mode 100644 16x9/Custom_Skin_Helper_Service.xml
+ delete mode 100644 16x9/Custom_Skin_Helper_Service_Skin_Backup_Open.xml
+ delete mode 100644 16x9/Custom_Skin_Helper_Service_Skin_Backup_Settings.xml
+ delete mode 100644 16x9/Custom_Skin_Helper_Service_Widgets.xml
+
+diff --git a/16x9/Custom_Customization.xml b/16x9/Custom_Customization.xml
+index 792f0cf..49ca6f9 100644
+--- a/16x9/Custom_Customization.xml
++++ b/16x9/Custom_Customization.xml
+@@ -1,5 +1,5 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+-<window type="dialog" id="1102">
++<window type="dialog" id="1103">
+ 	<!-- yesnodialog -->
+ 	<include>WindowFadeAnimation</include>
+ 	<defaultcontrol always="true">10</defaultcontrol>
+@@ -9,7 +9,7 @@
+ 		<include>WindowFadeBackgroundImage</include>
+ 
+ 		<include content="Time">
+-			<param name="heading">31030</param>
++			<param name="heading">Enable add-on</param>
+ 		</include>
+ 
+ 		<!-- Heading -->
+@@ -25,7 +25,6 @@
+ 
+ 		<!-- Details -->
+ 		<control type="group">
+-			<visible>[System.HasAddon(script.skin.helper.service) + System.HasAddon(script.skinshortcuts) + [!String.IsEqual(System.AddonVersion(script.skin.helper.service),1.1.24) | !String.IsEqual(System.AddonVersion(script.skinshortcuts),1.0.18) | !String.IsEqual(System.AddonVersion(script.skin.helper.service),1.1.24) + !String.IsEqual(System.AddonVersion(script.skinshortcuts),1.0.18)] | !System.HasAddon(script.skin.helper.service) | !System.HasAddon(script.skinshortcuts)] + !System.HasAddon(service.osmc.settings)</visible>
+ 			<control type="textbox">
+ 				<centerleft>50%</centerleft>
+ 				<centertop>50%</centertop>
+@@ -36,23 +35,7 @@
+ 				<font>Font36</font>
+ 				<autoscroll>False</autoscroll>
+ 				<textcolor>$VAR[TextColor1]</textcolor>
+-				<label>Please make sure that the following add-ons are installed with the correct version and enabled:[CR][CR][LIGHT]Skin Shortcuts 1.0.18[/LIGHT][CR][LIGHT]Skin Helper Service 1.1.24[/LIGHT][CR][CR]To aquire the correct add-on versions, please install Marcelveldt's BETA repository:[CR][LIGHT]https://github.com/kodi-community-addons/repository.marcelveldt[/LIGHT]</label>
+-			</control>
+-		</control>
+-		
+-		<control type="group">
+-			<visible>!System.HasAddon(script.skin.helper.service) + System.HasAddon(service.osmc.settings)</visible>
+-			<control type="textbox">
+-				<centerleft>50%</centerleft>
+-				<centertop>50%</centertop>
+-				<width>1880</width>
+-				<height>600</height>
+-				<align>center</align>
+-				<aligny>center</aligny>
+-				<font>Font36</font>
+-				<autoscroll>False</autoscroll>
+-				<textcolor>$VAR[TextColor1]</textcolor>
+-				<label>Please enable the following add-on under [I]Settings/Add-on browser/My add-ons/Context menus[/I] :[CR][LIGHT]Skin Helper Service[/LIGHT]</label>
++				<label>Please enable the Skin Helper add-on under Settings/Add-on browser/My add-ons to be able to customise the home menu.</label>
+ 			</control>
+ 		</control>
+ 
+@@ -74,17 +57,16 @@
+ 				<width>auto</width>
+ 				<font>Font36</font>
+ 				<align>center</align>
+-				<onclick>Dialog.Close(1102)</onclick>
++				<onclick>Dialog.Close(1103)</onclick>
+ 				<label>OK</label>
+ 			</control>
+ 			<control type="button" id="11">
+-				<visible>[System.HasAddon(script.skin.helper.service) + !String.IsEqual(System.AddonVersion(script.skin.helper.service),1.1.24) + System.HasAddon(script.skinshortcuts) + String.IsEqual(System.AddonVersion(script.skinshortcuts),1.0.18)] | [System.HasAddon(script.skin.helper.service) + String.IsEqual(System.AddonVersion(script.skin.helper.service),1.1.24) + System.HasAddon(script.skinshortcuts) + !String.IsEqual(System.AddonVersion(script.skinshortcuts),1.0.18)] | [System.HasAddon(script.skin.helper.service) + !String.IsEqual(System.AddonVersion(script.skin.helper.service),1.1.24) + System.HasAddon(script.skinshortcuts) + !String.IsEqual(System.AddonVersion(script.skinshortcuts),1.0.18)]</visible>
+ 				<width>auto</width>
+ 				<font>Font36</font>
+ 				<align>center</align>
+-				<onclick>Dialog.Close(1102)</onclick>
+-				<onclick>RunScript(script.skinshortcuts,type=manage&amp;group=mainmenu)</onclick>
+-				<label>Open anyway</label>
++				<onclick>Dialog.Close(1103)</onclick>
++				<onclick>ActivateWindow(addonbrowser)</onclick>
++				<label>Open Add-on browser</label>
+ 			</control>
+ 		</control>
+ 
+diff --git a/16x9/Custom_Skin_Shortcuts.xml b/16x9/Custom_Disabled_Add-on.xml
+similarity index 55%
+rename from 16x9/Custom_Skin_Shortcuts.xml
+rename to 16x9/Custom_Disabled_Add-on.xml
+index b6ff069..3d538ea 100644
+--- a/16x9/Custom_Skin_Shortcuts.xml
++++ b/16x9/Custom_Disabled_Add-on.xml
+@@ -1,5 +1,5 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+-<window type="dialog" id="1103">
++<window type="dialog" id="1102">
+ 	<!-- yesnodialog -->
+ 	<include>WindowFadeAnimation</include>
+ 	<defaultcontrol always="true">10</defaultcontrol>
+@@ -9,7 +9,7 @@
+ 		<include>WindowFadeBackgroundImage</include>
+ 
+ 		<include content="Time">
+-			<param name="heading">31079</param>
++			<param name="heading">Enable add-on</param>
+ 		</include>
+ 
+ 		<!-- Heading -->
+@@ -24,17 +24,19 @@
+ 		</control>
+ 
+ 		<!-- Details -->
+-		<control type="textbox">
+-			<centerleft>50%</centerleft>
+-			<centertop>50%</centertop>
+-			<width>1880</width>
+-			<height>600</height>
+-			<align>center</align>
+-			<aligny>center</aligny>
+-			<font>Font36</font>
+-			<autoscroll>False</autoscroll>
+-			<textcolor>$VAR[TextColor1]</textcolor>
+-			<label>Please make sure that the following add-on is installed with the correct version and enabled:[CR][CR][LIGHT]Skin Shortcuts 1.0.18[/LIGHT][CR][CR]To aquire the correct add-on version, please install Marcelveldt's BETA repository:[CR][LIGHT]https://github.com/kodi-community-addons/repository.marcelveldt[/LIGHT]</label>
++		<control type="group">
++			<control type="textbox">
++				<centerleft>50%</centerleft>
++				<centertop>50%</centertop>
++				<width>1880</width>
++				<height>600</height>
++				<align>center</align>
++				<aligny>center</aligny>
++				<font>Font36</font>
++				<autoscroll>False</autoscroll>
++				<textcolor>$VAR[TextColor1]</textcolor>
++				<label>Please enable the add-on under Settings/Add-on browser/My add-ons to be able to use it.</label>
++			</control>
+ 		</control>
+ 
+ 		<!-- Button grouplist background -->
+@@ -55,17 +57,16 @@
+ 				<width>auto</width>
+ 				<font>Font36</font>
+ 				<align>center</align>
+-				<onclick>Dialog.Close(1103)</onclick>
++				<onclick>Dialog.Close(1102)</onclick>
+ 				<label>OK</label>
+ 			</control>
+ 			<control type="button" id="11">
+-				<visible>System.HasAddon(script.skinshortcuts) + !String.IsEqual(System.AddonVersion(script.skinshortcuts),1.0.18)</visible>
+ 				<width>auto</width>
+ 				<font>Font36</font>
+ 				<align>center</align>
+-				<onclick>Dialog.Close(1103)</onclick>
+-				<onclick>Addon.OpenSettings(script.skinshortcuts)</onclick>
+-				<label>Open anyway</label>
++				<onclick>Dialog.Close(1102)</onclick>
++				<onclick>ActivateWindow(addonbrowser)</onclick>
++				<label>Open Add-on browser</label>
+ 			</control>
+ 		</control>
+ 
+diff --git a/16x9/Custom_Skin_Helper_Service.xml b/16x9/Custom_Skin_Helper_Service.xml
+deleted file mode 100644
+index 7213511..0000000
+--- a/16x9/Custom_Skin_Helper_Service.xml
++++ /dev/null
+@@ -1,92 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<window type="dialog" id="1104">
+-	<!-- yesnodialog -->
+-	<include>WindowFadeAnimation</include>
+-	<defaultcontrol always="true">10</defaultcontrol>
+-	<controls>
+-
+-		<!-- Background -->
+-		<include>WindowFadeBackgroundImage</include>
+-
+-		<include content="Time">
+-			<param name="heading">31081</param>
+-		</include>
+-
+-		<!-- Heading -->
+-		<control type="label" id="1">
+-			<left>-15000</left>
+-			<top>40</top>
+-			<width>600</width>
+-			<height>48</height>
+-			<align>center</align>
+-			<font>Font48</font>
+-			<textcolor>$VAR[TextColor1]</textcolor>
+-		</control>
+-
+-		<!-- Details -->
+-		<control type="group">
+-			<visible>[!System.HasAddon(script.skin.helper.service) | System.HasAddon(script.skin.helper.service) + !String.IsEqual(System.AddonVersion(script.skin.helper.service),1.1.24)] + !System.HasAddon(service.osmc.settings)</visible>
+-			<control type="textbox">
+-				<centerleft>50%</centerleft>
+-				<centertop>50%</centertop>
+-				<width>1880</width>
+-				<height>600</height>
+-				<align>center</align>
+-				<aligny>center</aligny>
+-				<font>Font36</font>
+-				<autoscroll>False</autoscroll>
+-				<textcolor>$VAR[TextColor1]</textcolor>
+-				<label>Please make sure that the following add-on is installed with the correct version and enabled:[CR][CR][LIGHT]Skin Helper Service 1.1.24[/LIGHT][CR][CR]To aquire the correct add-on version, please install Marcelveldt's BETA repository:[CR][LIGHT]https://github.com/kodi-community-addons/repository.marcelveldt[/LIGHT]</label>
+-			</control>
+-		</control>
+-		<control type="group">
+-			<visible>!System.HasAddon(script.skin.helper.service) + System.HasAddon(service.osmc.settings)</visible>
+-			<control type="textbox">
+-				<centerleft>50%</centerleft>
+-				<centertop>50%</centertop>
+-				<width>1880</width>
+-				<height>600</height>
+-				<align>center</align>
+-				<aligny>center</aligny>
+-				<font>Font36</font>
+-				<autoscroll>False</autoscroll>
+-				<textcolor>$VAR[TextColor1]</textcolor>
+-				<label>Please enable the following add-on under [I]Settings/Add-on browser/My add-ons/Context menus[/I] :[CR][LIGHT]Skin Helper Service[/LIGHT]</label>
+-			</control>
+-		</control>
+-
+-		<!-- Button grouplist background -->
+-		<include content="dialogButtonBackground">
+-			<param name="id">9001</param>
+-		</include>
+-
+-		<!-- Buttons -->
+-		<control type="grouplist" id="9001">
+-			<left>120</left>
+-			<bottom>100</bottom>
+-			<width>1680</width>
+-			<height>66</height>
+-			<orientation>horizontal</orientation>
+-			<align>center</align>
+-			<itemgap>30</itemgap>
+-			<control type="button" id="10">
+-				<width>auto</width>
+-				<font>Font36</font>
+-				<align>center</align>
+-				<onclick>Dialog.Close(1104)</onclick>
+-				<label>OK</label>
+-			</control>
+-			<control type="button" id="11">
+-				<visible>System.HasAddon(script.skin.helper.service) + !String.IsEqual(System.AddonVersion(script.skin.helper.service),1.1.24)</visible>
+-				<width>auto</width>
+-				<font>Font36</font>
+-				<align>center</align>
+-				<onclick>Dialog.Close(1104)</onclick>
+-				<onclick>Addon.OpenSettings(script.skin.helper.service)</onclick>
+-				<label>Open anyway</label>
+-			</control>
+-		</control>
+-
+-	</controls>
+-
+-</window>
+diff --git a/16x9/Custom_Skin_Helper_Service_Skin_Backup_Open.xml b/16x9/Custom_Skin_Helper_Service_Skin_Backup_Open.xml
+deleted file mode 100644
+index ddc3285..0000000
+--- a/16x9/Custom_Skin_Helper_Service_Skin_Backup_Open.xml
++++ /dev/null
+@@ -1,92 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<window type="dialog" id="1107">
+-	<!-- yesnodialog -->
+-	<include>WindowFadeAnimation</include>
+-	<defaultcontrol always="true">10</defaultcontrol>
+-	<controls>
+-
+-		<!-- Background -->
+-		<include>WindowFadeBackgroundImage</include>
+-
+-		<include content="Time">
+-			<param name="heading">31097</param>
+-		</include>
+-
+-		<!-- Heading -->
+-		<control type="label" id="1">
+-			<left>-15000</left>
+-			<top>40</top>
+-			<width>600</width>
+-			<height>48</height>
+-			<align>center</align>
+-			<font>Font48</font>
+-			<textcolor>$VAR[TextColor1]</textcolor>
+-		</control>
+-
+-		<!-- Details -->
+-		<control type="group">
+-			<visible>[!System.HasAddon(script.skin.helper.skinbackup) | System.HasAddon(script.skin.helper.skinbackup) + !String.IsEqual(System.AddonVersion(script.skin.helper.skinbackup),1.0.19)] + !System.HasAddon(service.osmc.settings)</visible>
+-			<control type="textbox">
+-				<centerleft>50%</centerleft>
+-				<centertop>50%</centertop>
+-				<width>1880</width>
+-				<height>600</height>
+-				<align>center</align>
+-				<aligny>center</aligny>
+-				<font>Font36</font>
+-				<autoscroll>False</autoscroll>
+-				<textcolor>$VAR[TextColor1]</textcolor>
+-				<label>Please make sure that the following add-ons are installed with the correct version and enabled:[CR][CR][LIGHT]Skin Helper Service Skin Backup 1.0.19[/LIGHT][CR][CR]To aquire the correct add-on version, please install Marcelveldt's BETA repository:[CR][LIGHT]https://github.com/kodi-community-addons/repository.marcelveldt[/LIGHT]</label>
+-			</control>
+-		</control>
+-		<control type="group">
+-			<visible>!System.HasAddon(script.skin.helper.skinbackup) + System.HasAddon(service.osmc.settings)</visible>
+-			<control type="textbox">
+-				<centerleft>50%</centerleft>
+-				<centertop>50%</centertop>
+-				<width>1880</width>
+-				<height>600</height>
+-				<align>center</align>
+-				<aligny>center</aligny>
+-				<font>Font36</font>
+-				<autoscroll>False</autoscroll>
+-				<textcolor>$VAR[TextColor1]</textcolor>
+-				<label>Please enable the following add-on under [I]Settings/Add-on browser/My add-ons/Program add-ons[/I] :[CR][LIGHT]Skin Helper Service Skin Backup[/LIGHT]</label>
+-			</control>
+-		</control>
+-
+-		<!-- Button grouplist background -->
+-		<include content="dialogButtonBackground">
+-			<param name="id">9001</param>
+-		</include>
+-
+-		<!-- Buttons -->
+-		<control type="grouplist" id="9001">
+-			<left>120</left>
+-			<bottom>100</bottom>
+-			<width>1680</width>
+-			<height>66</height>
+-			<orientation>horizontal</orientation>
+-			<align>center</align>
+-			<itemgap>30</itemgap>
+-			<control type="button" id="10">
+-				<width>auto</width>
+-				<font>Font36</font>
+-				<align>center</align>
+-				<onclick>Dialog.Close(1107)</onclick>
+-				<label>OK</label>
+-			</control>
+-			<control type="button" id="11">
+-				<visible>System.HasAddon(script.skin.helper.skinbackup) + !String.IsEqual(System.AddonVersion(script.skin.helper.skinbackup),1.0.19)</visible>
+-				<width>auto</width>
+-				<font>Font36</font>
+-				<align>center</align>
+-				<onclick>Dialog.Close(1107)</onclick>
+-				<onclick>RunScript(script.skin.helper.skinbackup)</onclick>
+-				<label>Open anyway</label>
+-			</control>
+-		</control>
+-
+-	</controls>
+-
+-</window>
+diff --git a/16x9/Custom_Skin_Helper_Service_Skin_Backup_Settings.xml b/16x9/Custom_Skin_Helper_Service_Skin_Backup_Settings.xml
+deleted file mode 100644
+index 2daf60e..0000000
+--- a/16x9/Custom_Skin_Helper_Service_Skin_Backup_Settings.xml
++++ /dev/null
+@@ -1,92 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<window type="dialog" id="1106">
+-	<!-- yesnodialog -->
+-	<include>WindowFadeAnimation</include>
+-	<defaultcontrol always="true">10</defaultcontrol>
+-	<controls>
+-
+-		<!-- Background -->
+-		<include>WindowFadeBackgroundImage</include>
+-
+-		<include content="Time">
+-			<param name="heading">31097</param>
+-		</include>
+-
+-		<!-- Heading -->
+-		<control type="label" id="1">
+-			<left>-15000</left>
+-			<top>40</top>
+-			<width>600</width>
+-			<height>48</height>
+-			<align>center</align>
+-			<font>Font48</font>
+-			<textcolor>$VAR[TextColor1]</textcolor>
+-		</control>
+-
+-		<!-- Details -->
+-		<control type="group">
+-			<visible>[!System.HasAddon(script.skin.helper.skinbackup) | System.HasAddon(script.skin.helper.skinbackup) + !String.IsEqual(System.AddonVersion(script.skin.helper.skinbackup),1.0.19)] + !System.HasAddon(service.osmc.settings)</visible>
+-			<control type="textbox">
+-				<centerleft>50%</centerleft>
+-				<centertop>50%</centertop>
+-				<width>1880</width>
+-				<height>600</height>
+-				<align>center</align>
+-				<aligny>center</aligny>
+-				<font>Font36</font>
+-				<autoscroll>False</autoscroll>
+-				<textcolor>$VAR[TextColor1]</textcolor>
+-				<label>Please make sure that the following add-ons are installed with the correct version and enabled:[CR][CR][LIGHT]Skin Helper Service Skin Backup 1.0.19[/LIGHT][CR][CR]To aquire the correct add-on version, please install Marcelveldt's BETA repository:[CR][LIGHT]https://github.com/kodi-community-addons/repository.marcelveldt[/LIGHT]</label>
+-			</control>
+-		</control>
+-		<control type="group">
+-			<visible>!System.HasAddon(script.skin.helper.skinbackup) + System.HasAddon(service.osmc.settings)</visible>
+-			<control type="textbox">
+-				<centerleft>50%</centerleft>
+-				<centertop>50%</centertop>
+-				<width>1880</width>
+-				<height>600</height>
+-				<align>center</align>
+-				<aligny>center</aligny>
+-				<font>Font36</font>
+-				<autoscroll>False</autoscroll>
+-				<textcolor>$VAR[TextColor1]</textcolor>
+-				<label>Please enable the following add-on under [I]Settings/Add-on browser/My add-ons/Program add-ons[/I] :[CR][LIGHT]Skin Helper Service Skin Backup[/LIGHT]</label>
+-			</control>
+-		</control>
+-
+-		<!-- Button grouplist background -->
+-		<include content="dialogButtonBackground">
+-			<param name="id">9001</param>
+-		</include>
+-
+-		<!-- Buttons -->
+-		<control type="grouplist" id="9001">
+-			<left>120</left>
+-			<bottom>100</bottom>
+-			<width>1680</width>
+-			<height>66</height>
+-			<orientation>horizontal</orientation>
+-			<align>center</align>
+-			<itemgap>30</itemgap>
+-			<control type="button" id="10">
+-				<width>auto</width>
+-				<font>Font36</font>
+-				<align>center</align>
+-				<onclick>Dialog.Close(1106)</onclick>
+-				<label>OK</label>
+-			</control>
+-			<control type="button" id="11">
+-				<visible>System.HasAddon(script.skin.helper.skinbackup) + !String.IsEqual(System.AddonVersion(script.skin.helper.skinbackup),1.0.19)</visible>
+-				<width>auto</width>
+-				<font>Font36</font>
+-				<align>center</align>
+-				<onclick>Dialog.Close(1106)</onclick>
+-				<onclick>Addon.OpenSettings(script.skin.helper.skinbackup)</onclick>
+-				<label>Open anyway</label>
+-			</control>
+-		</control>
+-
+-	</controls>
+-
+-</window>
+diff --git a/16x9/Custom_Skin_Helper_Service_Widgets.xml b/16x9/Custom_Skin_Helper_Service_Widgets.xml
+deleted file mode 100644
+index 0c64c00..0000000
+--- a/16x9/Custom_Skin_Helper_Service_Widgets.xml
++++ /dev/null
+@@ -1,92 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<window type="dialog" id="1105">
+-	<!-- yesnodialog -->
+-	<include>WindowFadeAnimation</include>
+-	<defaultcontrol always="true">10</defaultcontrol>
+-	<controls>
+-
+-		<!-- Background -->
+-		<include>WindowFadeBackgroundImage</include>
+-
+-		<include content="Time">
+-			<param name="heading">31106</param>
+-		</include>
+-
+-		<!-- Heading -->
+-		<control type="label" id="1">
+-			<left>-15000</left>
+-			<top>40</top>
+-			<width>600</width>
+-			<height>48</height>
+-			<align>center</align>
+-			<font>Font48</font>
+-			<textcolor>$VAR[TextColor1]</textcolor>
+-		</control>
+-
+-		<!-- Details -->
+-		<control type="group">
+-			<visible>[!System.HasAddon(script.skin.helper.widgets) | System.HasAddon(script.skin.helper.widgets) + !String.IsEqual(System.AddonVersion(script.skin.helper.widgets),1.0.38)] + !System.HasAddon(service.osmc.settings)</visible>
+-			<control type="textbox">
+-				<centerleft>50%</centerleft>
+-				<centertop>50%</centertop>
+-				<width>1880</width>
+-				<height>600</height>
+-				<align>center</align>
+-				<aligny>center</aligny>
+-				<font>Font36</font>
+-				<autoscroll>False</autoscroll>
+-				<textcolor>$VAR[TextColor1]</textcolor>
+-				<label>Please make sure that the following add-on is installed with the correct version and enabled:[CR][CR][LIGHT]Skin Helper Service Widgets 1.0.38[/LIGHT][CR][CR]To aquire the correct add-on version, please install Marcelveldt's BETA repository:[CR][LIGHT]https://github.com/kodi-community-addons/repository.marcelveldt[/LIGHT]</label>
+-			</control>
+-		</control>
+-		<control type="group">
+-			<visible>!System.HasAddon(script.skin.helper.widgets) + System.HasAddon(service.osmc.settings)</visible>
+-			<control type="textbox">
+-				<centerleft>50%</centerleft>
+-				<centertop>50%</centertop>
+-				<width>1880</width>
+-				<height>600</height>
+-				<align>center</align>
+-				<aligny>center</aligny>
+-				<font>Font36</font>
+-				<autoscroll>False</autoscroll>
+-				<textcolor>$VAR[TextColor1]</textcolor>
+-				<label>Please enable the following add-on under [I]Settings/Add-on browser/My add-ons/Music add-ons[/I] or under [I]Settings/Add-on browser/My add-ons/Video add-ons[/I] :[CR][LIGHT]Skin Helper Service Widgets[/LIGHT]</label>
+-			</control>
+-		</control>
+-
+-		<!-- Button grouplist background -->
+-		<include content="dialogButtonBackground">
+-			<param name="id">9001</param>
+-		</include>
+-
+-		<!-- Buttons -->
+-		<control type="grouplist" id="9001">
+-			<left>120</left>
+-			<bottom>100</bottom>
+-			<width>1680</width>
+-			<height>66</height>
+-			<orientation>horizontal</orientation>
+-			<align>center</align>
+-			<itemgap>30</itemgap>
+-			<control type="button" id="10">
+-				<width>auto</width>
+-				<font>Font36</font>
+-				<align>center</align>
+-				<onclick>Dialog.Close(1105)</onclick>
+-				<label>OK</label>
+-			</control>
+-			<control type="button" id="11">
+-				<visible>System.HasAddon(script.skin.helper.widgets) + !String.IsEqual(System.AddonVersion(script.skin.helper.widgets),1.0.38)</visible>
+-				<width>auto</width>
+-				<font>Font36</font>
+-				<align>center</align>
+-				<onclick>Dialog.Close(1105)</onclick>
+-				<onclick>Addon.OpenSettings(script.skin.helper.widgets)</onclick>
+-				<label>Open anyway</label>
+-			</control>
+-		</control>
+-
+-	</controls>
+-
+-</window>
+diff --git a/16x9/SkinSettings.xml b/16x9/SkinSettings.xml
+index 40c3a84..e3780cd 100755
+--- a/16x9/SkinSettings.xml
++++ b/16x9/SkinSettings.xml
+@@ -193,34 +193,25 @@
+ 					<label>31049</label>
+ 					<font>Font33</font>
+ 					<onclick>RunScript(script.skinshortcuts,type=manage&amp;group=mainmenu)</onclick>
+-					<visible>[System.HasAddon(script.skinshortcuts) + String.IsEqual(System.AddonVersion(script.skinshortcuts),1.0.18) + System.HasAddon(script.skin.helper.service) + String.IsEqual(System.AddonVersion(script.skin.helper.service),1.1.24)] | [[System.HasAddon(script.skinshortcuts) + !String.IsEqual(System.AddonVersion(script.skinshortcuts),1.0.18) | System.HasAddon(script.skin.helper.service) + !String.IsEqual(System.AddonVersion(script.skin.helper.service),1.1.24)] + System.HasAddon(service.osmc.settings)]</visible>
++					<visible>System.HasAddon(script.skinshortcuts) + System.HasAddon(script.skin.helper.service)</visible>
+ 					<focusedcolor>$VAR[TextColor1]</focusedcolor>
+ 					<textcolor>$VAR[TextColor2]</textcolor>
+ 				</control>
+ 				<control type="button" id="702">
+-					<width>1220</width>
+-					<height>66</height>
+-					<textwidth>1120</textwidth>
+-					<label>31049</label>
+-					<font>Font33</font>
+-					<onclick>ActivateWindow(1102)</onclick>
+-					<visible>System.HasAddon(script.skinshortcuts) + System.HasAddon(script.skin.helper.service) + [!String.IsEqual(System.AddonVersion(script.skinshortcuts),1.0.18) | !String.IsEqual(System.AddonVersion(script.skin.helper.service),1.1.24)] + !System.HasAddon(service.osmc.settings)</visible>
+-					<focusedcolor>$VAR[TextColor1]</focusedcolor>
+-					<textcolor>$VAR[TextColor2]</textcolor>
+-				</control>
+-				<control type="button" id="703">
+ 					<width>1220</width>
+ 					<height>66</height>
+ 					<textwidth>1120</textwidth>
+ 					<label>$LOCALIZE[31030]</label>
+ 					<font>Font33</font>
+-					<onclick>ActivateWindow(1102)</onclick>
++					<onclick>InstallAddon(script.skinshortcuts)</onclick>
++					<onclick>InstallAddon(script.skin.helper.service)</onclick>
++					<onclick condition="!String.IsEmpty(System.AddonVersion(script.skin.helper.service)) + !System.HasAddon(script.skin.helper.service)">ActivateWindow(1103)</onclick>
+ 					<visible>!System.HasAddon(script.skinshortcuts) | !System.HasAddon(script.skin.helper.service)</visible>
+ 					<focusedcolor>$VAR[TextColor1]</focusedcolor>
+ 					<textcolor>$VAR[TextColor2]</textcolor>
+ 				</control>
+ 				<!-- Always show settings link -->
+-				<control type="radiobutton" id="704">
++				<control type="radiobutton" id="703">
+ 					<width>1220</width>
+ 					<height>66</height>
+ 					<textwidth>1120</textwidth>
+@@ -231,7 +222,7 @@
+ 					<visible>System.HasAddon(script.skinshortcuts)</visible>
+ 				</control>
+ 				<!-- Show date above system time -->
+-				<control type="radiobutton" id="705">
++				<control type="radiobutton" id="704">
+ 					<width>1220</width>
+ 					<height>66</height>
+ 					<textwidth>1120</textwidth>
+@@ -706,13 +697,13 @@
+ 				<usecontrolcoords>true</usecontrolcoords>
+ 				<scrolltime tween="sine" easing="out">240</scrolltime>
+ 				<visible>Container(9000).HasFocus(6)</visible>
+-				<!-- Needed -->
++				<!-- Recommended -->
+ 				<control type="label" id="201">
+ 					<width>1220</width>
+ 					<height>62</height>
+ 					<font>Font33</font>
+ 					<align>left</align>
+-					<label>[I]$LOCALIZE[31120][/I]</label>
++					<label>[I]$LOCALIZE[31080][/I]</label>
+ 					<textcolor>$VAR[TextColor2]</textcolor>
+ 				</control>
+ 				<control type="button" id="202">
+@@ -721,8 +712,9 @@
+ 					<textwidth>1120</textwidth>
+ 					<label> - $LOCALIZE[31079]</label>
+ 					<label2>$VAR[addon-skinshortcuts]</label2>
+-					<onclick condition="!System.HasAddon(script.skinshortcuts) | System.HasAddon(script.skinshortcuts) + !String.IsEqual(System.AddonVersion(script.skinshortcuts),1.0.18) + !System.HasAddon(service.osmc.settings)">ActivateWindow(1103)</onclick>
+-					<onclick condition="System.HasAddon(script.skinshortcuts) + System.HasAddon(service.osmc.settings) | System.HasAddon(script.skinshortcuts) + String.IsEqual(System.AddonVersion(script.skinshortcuts),1.0.18) + !System.HasAddon(service.osmc.settings)">Addon.OpenSettings(script.skinshortcuts)</onclick>
++					<onclick condition="String.IsEmpty(System.AddonVersion(script.skinshortcuts)) + !System.HasAddon(script.skinshortcuts)">InstallAddon(script.skinshortcuts)</onclick>
++					<onclick condition="!String.IsEmpty(System.AddonVersion(script.skinshortcuts)) + !System.HasAddon(script.skinshortcuts)">ActivateWindow(1102)</onclick>
++					<onclick condition="System.HasAddon(script.skinshortcuts)">Addon.OpenSettings(script.skinshortcuts)</onclick>
+ 				</control>
+ 				<control type="button" id="203">
+ 					<width>1200</width>
+@@ -730,38 +722,32 @@
+ 					<textwidth>1120</textwidth>
+ 					<label> - $LOCALIZE[31081]</label>
+ 					<label2>$VAR[addon-skinhelper]</label2>
+-					<onclick condition="!System.HasAddon(script.skin.helper.service) | System.HasAddon(script.skin.helper.service) + !String.IsEqual(System.AddonVersion(script.skin.helper.service),1.1.24) + !System.HasAddon(service.osmc.settings)">ActivateWindow(1104)</onclick>
+-					<onclick condition="System.HasAddon(script.skin.helper.service) + System.HasAddon(service.osmc.settings) | System.HasAddon(script.skin.helper.service) + String.IsEqual(System.AddonVersion(script.skin.helper.service),1.1.24) + !System.HasAddon(service.osmc.settings)">Addon.OpenSettings(script.skin.helper.service)</onclick>
++					<onclick condition="String.IsEmpty(System.AddonVersion(script.skin.helper.service)) + !System.HasAddon(script.skin.helper.service)">InstallAddon(script.skin.helper.service)</onclick>
++					<onclick condition="!String.IsEmpty(System.AddonVersion(script.skin.helper.service)) + !System.HasAddon(script.skin.helper.service)">ActivateWindow(1102)</onclick>
++					<onclick condition="System.HasAddon(script.skin.helper.service)">Addon.OpenSettings(script.skin.helper.service)</onclick>
+ 				</control>
+-				<!-- Recommended -->
+-				<control type="label" id="204">
+-					<width>1220</width>
+-					<height>62</height>
+-					<font>Font33</font>
+-					<align>left</align>
+-					<label>[I]$LOCALIZE[31080][/I]</label>
+-					<textcolor>$VAR[TextColor2]</textcolor>
+-				</control>
+-				<control type="button" id="205">
++				<control type="button" id="204">
+ 					<width>1200</width>
+ 					<height>66</height>
+ 					<textwidth>1120</textwidth>
+ 					<label> - $LOCALIZE[31106]</label>
+ 					<label2>$VAR[addon-skinhelperwidgets]</label2>
+-					<onclick condition="!System.HasAddon(script.skin.helper.widgets) | System.HasAddon(script.skin.helper.widgets) + !String.IsEqual(System.AddonVersion(script.skin.helper.widgets),1.0.38) + !System.HasAddon(service.osmc.settings)">ActivateWindow(1105)</onclick>
+-					<onclick condition="System.HasAddon(script.skin.helper.widgets) + System.HasAddon(service.osmc.settings) | System.HasAddon(script.skin.helper.widgets) + String.IsEqual(System.AddonVersion(script.skin.helper.widgets),1.0.38) + !System.HasAddon(service.osmc.settings)">Addon.OpenSettings(script.skin.helper.widgets)</onclick>
++					<onclick condition="String.IsEmpty(System.AddonVersion(script.skin.helper.widgets)) + !System.HasAddon(script.skin.helper.widgets)">InstallAddon(script.skin.helper.widgets)</onclick>
++					<onclick condition="!String.IsEmpty(System.AddonVersion(script.skin.helper.widgets)) + !System.HasAddon(script.skin.helper.widgets)">ActivateWindow(1102)</onclick>
++					<onclick condition="System.HasAddon(script.skin.helper.widgets)">Addon.OpenSettings(script.skin.helper.widgets)</onclick>
+ 				</control>
+-				<control type="button" id="206">
++				<control type="button" id="205">
+ 					<width>1200</width>
+ 					<height>66</height>
+ 					<textwidth>1120</textwidth>
+ 					<label> - $LOCALIZE[31097]</label>
+ 					<label2>$VAR[addon-skinhelperbackup]</label2>
+-					<onclick condition="!System.HasAddon(script.skin.helper.skinbackup) | System.HasAddon(script.skin.helper.skinbackup) + !String.IsEqual(System.AddonVersion(script.skin.helper.skinbackup),1.0.19) + !System.HasAddon(service.osmc.settings)">ActivateWindow(1106)</onclick>
+-					<onclick condition="System.HasAddon(script.skin.helper.skinbackup) + System.HasAddon(service.osmc.settings) | System.HasAddon(script.skin.helper.skinbackup) + String.IsEqual(System.AddonVersion(script.skin.helper.skinbackup),1.0.19) + !System.HasAddon(service.osmc.settings)">Addon.OpenSettings(script.skin.helper.skinbackup)</onclick>
++					<onclick condition="String.IsEmpty(System.AddonVersion(script.skin.helper.skinbackup)) + !System.HasAddon(script.skin.helper.skinbackup)">InstallAddon(script.skin.helper.skinbackup)</onclick>
++					<onclick condition="!String.IsEmpty(System.AddonVersion(script.skin.helper.skinbackup)) + !System.HasAddon(script.skin.helper.skinbackup)">ActivateWindow(1102)</onclick>
++					<onclick condition="System.HasAddon(script.skin.helper.skinbackup)">Addon.OpenSettings(script.skin.helper.skinbackup)</onclick>
+ 				</control>
+ 				<!-- Supported -->
+-				<control type="label" id="207">
++				<control type="label" id="206">
+ 					<width>1220</width>
+ 					<height>62</height>
+ 					<font>Font33</font>
+@@ -769,40 +755,44 @@
+ 					<label>[I]$LOCALIZE[31084][/I]</label>
+ 					<textcolor>$VAR[TextColor2]</textcolor>
+ 				</control>
+-				<control type="button" id="208">
++				<control type="button" id="207">
+ 					<width>1200</width>
+ 					<height>66</height>
+ 					<textwidth>1120</textwidth>
+ 					<label> - $LOCALIZE[31082]</label>
+ 					<label2>$VAR[addon-autocompletion]</label2>
+-					<onclick condition="!System.HasAddon(plugin.program.autocompletion)">InstallAddon(plugin.program.autocompletion)</onclick>
++					<onclick condition="String.IsEmpty(System.AddonVersion(plugin.program.autocompletion)) + !System.HasAddon(plugin.program.autocompletion)">InstallAddon(plugin.program.autocompletion)</onclick>
++					<onclick condition="!String.IsEmpty(System.AddonVersion(plugin.program.autocompletion)) + !System.HasAddon(plugin.program.autocompletion)">ActivateWindow(1102)</onclick>
+ 					<onclick condition="System.HasAddon(plugin.program.autocompletion)">Addon.OpenSettings(plugin.program.autocompletion)</onclick>
+ 				</control>
+-				<control type="button" id="209">
++				<control type="button" id="208">
+ 					<width>1200</width>
+ 					<height>66</height>
+ 					<textwidth>1120</textwidth>
+ 					<label> - $LOCALIZE[31083]</label>
+ 					<label2>$VAR[addon-imageselect]</label2>
+-					<onclick condition="!System.HasAddon(script.image.resource.select)">InstallAddon(script.image.resource.select)</onclick>
++					<onclick condition="String.IsEmpty(System.AddonVersion(script.image.resource.select)) + !System.HasAddon(script.image.resource.select)">InstallAddon(script.image.resource.select)</onclick>
++					<onclick condition="!String.IsEmpty(System.AddonVersion(script.image.resource.select)) + !System.HasAddon(script.image.resource.select)">ActivateWindow(1102)</onclick>
+ 					<onclick condition="System.HasAddon(script.image.resource.select)">Addon.OpenSettings(script.image.resource.select)</onclick>
+ 				</control>
+-				<!-- <control type="button" id="210">
++				<!-- <control type="button" id="209">
+ 					<width>1200</width>
+ 					<height>66</height>
+ 					<textwidth>1120</textwidth>
+ 					<label> - $LOCALIZE[31085]</label>
+ 					<label2>$VAR[addon-nextup]</label2>
+-					<onclick condition="!System.HasAddon(service.nextup.notification)">InstallAddon(service.nextup.notification)</onclick>
++					<onclick condition="!String.IsEmpty(System.AddonVersion(service.nextup.notification)) + System.HasAddon(service.nextup.notification)">InstallAddon(service.nextup.notification)</onclick>
++					<onclick condition="String.IsEmpty(System.AddonVersion(service.nextup.notification)) + System.HasAddon(service.nextup.notification)">ActivateWindow(1102)</onclick>
+ 					<onclick condition="System.HasAddon(service.nextup.notification)">Addon.OpenSettings(service.nextup.notification)</onclick>
+ 				</control> -->
+-				<control type="button" id="211">
++				<control type="button" id="210">
+ 					<width>1200</width>
+ 					<height>66</height>
+ 					<textwidth>1120</textwidth>
+ 					<label> - $LOCALIZE[31086]</label>
+ 					<label2>$VAR[addon-artistslideshow]</label2>
+-					<onclick condition="!System.HasAddon(script.artistslideshow)">InstallAddon(script.artistslideshow)</onclick>
++					<onclick condition="String.IsEmpty(System.AddonVersion(script.artistslideshow)) + !System.HasAddon(script.artistslideshow)">InstallAddon(script.artistslideshow)</onclick>
++					<onclick condition="!String.IsEmpty(System.AddonVersion(script.artistslideshow)) + !System.HasAddon(script.artistslideshow)">ActivateWindow(1102)</onclick>
+ 					<onclick condition="System.HasAddon(script.artistslideshow)">Addon.OpenSettings(script.artistslideshow)</onclick>
+ 				</control>
+ 			</control>
+@@ -827,8 +817,9 @@
+ 					<width>1220</width>
+ 					<height>66</height>
+ 					<textwidth>1120</textwidth>
+-					<onclick condition="!System.HasAddon(script.skin.helper.skinbackup) | System.HasAddon(script.skin.helper.skinbackup) + !String.IsEqual(System.AddonVersion(script.skin.helper.skinbackup),1.0.19) + !System.HasAddon(service.osmc.settings)">ActivateWindow(1107)</onclick>
+-					<onclick condition="System.HasAddon(script.skin.helper.skinbackup) + System.HasAddon(service.osmc.settings) | System.HasAddon(script.skin.helper.skinbackup) + String.IsEqual(System.AddonVersion(script.skin.helper.skinbackup),1.0.19) + !System.HasAddon(service.osmc.settings)">RunScript(script.skin.helper.skinbackup)</onclick>
++					<onclick condition="String.IsEmpty(System.AddonVersion(script.skin.helper.skinbackup)) + !System.HasAddon(script.skin.helper.skinbackup)">InstallAddon(script.skin.helper.skinbackup)</onclick>
++					<onclick condition="!String.IsEmpty(System.AddonVersion(script.skin.helper.skinbackup)) + !System.HasAddon(script.skin.helper.skinbackup)">ActivateWindow(1102)</onclick>
++					<onclick condition="System.HasAddon(script.skin.helper.skinbackup)">RunScript(script.skin.helper.skinbackup)</onclick>
+ 					<label>31052</label>
+ 					<focusedcolor>$VAR[TextColor1]</focusedcolor>
+ 					<textcolor>$VAR[TextColor2]</textcolor>
+diff --git a/16x9/Variables.xml b/16x9/Variables.xml
+index 2305c0f..1191d23 100644
+--- a/16x9/Variables.xml
++++ b/16x9/Variables.xml
+@@ -1288,43 +1288,43 @@
+ 
+ 	<!-- Skin Settings - Addons -->
+ 	<variable name="addon-skinshortcuts">
+-		<value condition="System.HasAddon(script.skinshortcuts) + String.IsEqual(System.AddonVersion(script.skinshortcuts),1.0.18) + !System.HasAddon(service.osmc.settings) | System.HasAddon(script.skinshortcuts) + System.HasAddon(service.osmc.settings)">[COLOR lightgreen]v$INFO[System.AddonVersion(script.skinshortcuts)] $LOCALIZE[31093][/COLOR]</value>
+-		<value condition="System.HasAddon(script.skinshortcuts) + !String.IsEqual(System.AddonVersion(script.skinshortcuts),1.0.18) + !System.HasAddon(service.osmc.settings)">[COLOR orange]v$INFO[System.AddonVersion(script.skinshortcuts)] $LOCALIZE[31093] ($LOCALIZE[31119])[/COLOR]</value>
+-		<value condition="!System.HasAddon(script.skinshortcuts) + !System.HasAddon(service.osmc.settings)">[COLOR red]$LOCALIZE[31092][/COLOR]</value>
+-		<value condition="!System.HasAddon(script.skinshortcuts) + System.HasAddon(service.osmc.settings)">[COLOR red]$LOCALIZE[31121][/COLOR]</value>
++		<value condition="!String.IsEmpty(System.AddonVersion(script.skinshortcuts)) + System.HasAddon(script.skinshortcuts)">[COLOR lightgreen]v$INFO[System.AddonVersion(script.skinshortcuts)] $LOCALIZE[31093][/COLOR]</value>
++		<value condition="!String.IsEmpty(System.AddonVersion(script.skinshortcuts)) + !System.HasAddon(script.skinshortcuts)">[COLOR orange]$LOCALIZE[31119][/COLOR]</value>
++		<value>[COLOR red]$LOCALIZE[31092][/COLOR]</value>
+ 	</variable>
+ 	<variable name="addon-skinhelper">
+-		<value condition="System.HasAddon(script.skin.helper.service) + String.IsEqual(System.AddonVersion(script.skin.helper.service),1.1.24) + !System.HasAddon(service.osmc.settings) | System.HasAddon(script.skin.helper.service) + System.HasAddon(service.osmc.settings)">[COLOR lightgreen]v$INFO[System.AddonVersion(script.skin.helper.service)] $LOCALIZE[31093][/COLOR]</value>
+-		<value condition="System.HasAddon(script.skin.helper.service) + !String.IsEqual(System.AddonVersion(script.skin.helper.service),1.1.24) + !System.HasAddon(service.osmc.settings)">[COLOR orange]v$INFO[System.AddonVersion(script.skin.helper.service)] $LOCALIZE[31093] ($LOCALIZE[31119])[/COLOR]</value>
+-		<value condition="!System.HasAddon(script.skin.helper.service) + !System.HasAddon(service.osmc.settings)">[COLOR red]$LOCALIZE[31092][/COLOR]</value>
+-		<value condition="!System.HasAddon(script.skin.helper.service) + System.HasAddon(service.osmc.settings)">[COLOR red]$LOCALIZE[31121][/COLOR]</value>
++		<value condition="!String.IsEmpty(System.AddonVersion(script.skin.helper.service)) + System.HasAddon(script.skin.helper.service)">[COLOR lightgreen]v$INFO[System.AddonVersion(script.skin.helper.service)] $LOCALIZE[31093][/COLOR]</value>
++		<value condition="!String.IsEmpty(System.AddonVersion(script.skin.helper.service)) + !System.HasAddon(script.skin.helper.service)">[COLOR orange]$LOCALIZE[31119][/COLOR]</value>
++		<value>[COLOR red]$LOCALIZE[31092][/COLOR]</value>
+ 	</variable>
+ 	<variable name="addon-skinhelperwidgets">
+-		<value condition="System.HasAddon(script.skin.helper.widgets) + String.IsEqual(System.AddonVersion(script.skin.helper.widgets),1.0.38) + !System.HasAddon(service.osmc.settings) | System.HasAddon(script.skin.helper.widgets) + System.HasAddon(service.osmc.settings)">[COLOR lightgreen]v$INFO[System.AddonVersion(script.skin.helper.widgets)] $LOCALIZE[31093][/COLOR]</value>
+-		<value condition="System.HasAddon(script.skin.helper.widgets) + !String.IsEqual(System.AddonVersion(script.skin.helper.widgets),1.0.38) + !System.HasAddon(service.osmc.settings)">[COLOR orange]v$INFO[System.AddonVersion(script.skinshortcuts)] $LOCALIZE[31093] ($LOCALIZE[31119])[/COLOR]</value>
+-		<value condition="!System.HasAddon(script.skin.helper.widgets) + !System.HasAddon(service.osmc.settings)">[COLOR red]$LOCALIZE[31092][/COLOR]</value>
+-		<value condition="!System.HasAddon(script.skin.helper.widgets) + System.HasAddon(service.osmc.settings)">[COLOR red]$LOCALIZE[31121][/COLOR]</value>
++		<value condition="!String.IsEmpty(System.AddonVersion(script.skin.helper.widgets)) + System.HasAddon(script.skin.helper.widgets)">[COLOR lightgreen]v$INFO[System.AddonVersion(script.skin.helper.widgets)] $LOCALIZE[31093][/COLOR]</value>
++		<value condition="!String.IsEmpty(System.AddonVersion(script.skin.helper.widgets)) + !System.HasAddon(script.skin.helper.widgets)">[COLOR orange]$LOCALIZE[31119][/COLOR]</value>
++		<value>[COLOR red]$LOCALIZE[31092][/COLOR]</value>
+ 	</variable>
+ 	<variable name="addon-skinhelperbackup">
+-		<value condition="System.HasAddon(script.skin.helper.skinbackup) + String.IsEqual(System.AddonVersion(script.skin.helper.skinbackup),1.0.19) + !System.HasAddon(service.osmc.settings) | System.HasAddon(script.skin.helper.skinbackup) + System.HasAddon(service.osmc.settings)">[COLOR lightgreen]v$INFO[System.AddonVersion(script.skin.helper.skinbackup)] $LOCALIZE[31093][/COLOR]</value>
+-		<value condition="System.HasAddon(script.skin.helper.skinbackup) + !String.IsEqual(System.AddonVersion(script.skin.helper.skinbackup),1.0.19) + !System.HasAddon(service.osmc.settings)">[COLOR orange]v$INFO[System.AddonVersion(script.skin.helper.skinbackup)] $LOCALIZE[31093] ($LOCALIZE[31119])[/COLOR]</value>
+-		<value condition="!System.HasAddon(script.skin.helper.skinbackup) + !System.HasAddon(service.osmc.settings)">[COLOR red]$LOCALIZE[31092][/COLOR]</value>
+-		<value condition="!System.HasAddon(script.skin.helper.skinbackup) + System.HasAddon(service.osmc.settings)">[COLOR red]$LOCALIZE[31121][/COLOR]</value>
++		<value condition="!String.IsEmpty(System.AddonVersion(script.skin.helper.skinbackup)) + System.HasAddon(script.skin.helper.skinbackup)">[COLOR lightgreen]v$INFO[System.AddonVersion(script.skin.helper.skinbackup)] $LOCALIZE[31093][/COLOR]</value>
++		<value condition="!String.IsEmpty(System.AddonVersion(script.skin.helper.skinbackup)) + !System.HasAddon(script.skin.helper.skinbackup)">[COLOR orange]$LOCALIZE[31119][/COLOR]</value>
++		<value>[COLOR red]$LOCALIZE[31092][/COLOR]</value>
+ 	</variable>
+ 	<variable name="addon-autocompletion">
+-		<value condition="System.HasAddon(plugin.program.autocompletion)">[COLOR lightgreen]v$INFO[System.AddonVersion(plugin.program.autocompletion)] $LOCALIZE[31093][/COLOR]</value>
++		<value condition="!String.IsEmpty(System.AddonVersion(plugin.program.autocompletion)) + System.HasAddon(plugin.program.autocompletion)">[COLOR lightgreen]v$INFO[System.AddonVersion(plugin.program.autocompletion)] $LOCALIZE[31093][/COLOR]</value>
++		<value condition="!String.IsEmpty(System.AddonVersion(plugin.program.autocompletion)) + !System.HasAddon(plugin.program.autocompletion)">[COLOR orange]$LOCALIZE[31119][/COLOR]</value>
+ 		<value>[COLOR red]$LOCALIZE[31092][/COLOR]</value>
+ 	</variable>
+ 	<variable name="addon-imageselect">
+-		<value condition="System.HasAddon(script.image.resource.select)">[COLOR lightgreen]v$INFO[System.AddonVersion(script.image.resource.select)] $LOCALIZE[31093][/COLOR]</value>
++		<value condition="!String.IsEmpty(System.AddonVersion(script.image.resource.select)) + System.HasAddon(script.image.resource.select)">[COLOR lightgreen]v$INFO[System.AddonVersion(script.image.resource.select)] $LOCALIZE[31093][/COLOR]</value>
++		<value condition="!String.IsEmpty(System.AddonVersion(script.image.resource.select)) + !System.HasAddon(script.image.resource.select)">[COLOR orange]$LOCALIZE[31119][/COLOR]</value>
+ 		<value>[COLOR red]$LOCALIZE[31092][/COLOR]</value>
+ 	</variable>
+ 	<variable name="addon-nextup">
+-		<value condition="System.HasAddon(service.nextup.notification)">[COLOR lightgreen]v$INFO[System.AddonVersion(service.nextup.notification)] $LOCALIZE[31093][/COLOR]</value>
++		<value condition="!String.IsEmpty(System.AddonVersion(service.nextup.notification)) + System.HasAddon(service.nextup.notification)">[COLOR lightgreen]v$INFO[System.AddonVersion(service.nextup.notification)] $LOCALIZE[31093][/COLOR]</value>
++		<value condition="!String.IsEmpty(System.AddonVersion(service.nextup.notification)) + !System.HasAddon(service.nextup.notification)">[COLOR orange]$LOCALIZE[31119][/COLOR]</value>
+ 		<value>[COLOR red]$LOCALIZE[31092][/COLOR]</value>
+ 	</variable>
+ 	<variable name="addon-artistslideshow">
+-		<value condition="System.HasAddon(script.artistslideshow)">[COLOR lightgreen]v$INFO[System.AddonVersion(script.artistslideshow)] $LOCALIZE[31093][/COLOR]</value>
++		<value condition="!String.IsEmpty(System.AddonVersion(script.artistslideshow)) + System.HasAddon(script.artistslideshow)">[COLOR lightgreen]v$INFO[System.AddonVersion(script.artistslideshow)] $LOCALIZE[31093][/COLOR]</value>
++		<value condition="!String.IsEmpty(System.AddonVersion(script.artistslideshow)) + !System.HasAddon(script.artistslideshow)">[COLOR orange]$LOCALIZE[31119][/COLOR]</value>
+ 		<value>[COLOR red]$LOCALIZE[31092][/COLOR]</value>
+ 	</variable>
+ 
+diff --git a/Changelog.md b/Changelog.md
+index 4d661e0..5afe98b 100644
+--- a/Changelog.md
++++ b/Changelog.md
+@@ -83,23 +83,10 @@ Custom_Cache_Progress.xml:
+ - replace colors by new color variables
+ 
+ Custom_Customization.xml:
+-- add new dialog prompt for required script install for home menu customization on non-OSMC devices
++- add new dialog prompt when skin helper script is disabled
+ 
+-Custom_Skin_Helper_Service.xml:
+-- add new dialog prompt for Skin Helper Service script install on non-OSMC devices
+-
+-Custom_Skin_Helper_Skin_Backup_Open.xml:
+-- add new dialog for Backup option under Reset/Debug in skin settings
+-
+-Custom_Skin_Helper_Service_Skin_Backup.xml -> Custom_Skin_Helper_Skin_Backup_Settings.xml:
+-- add new dialog prompt for Skin Helper Service Skin Backup script install on non-OSMC devices
+-- rename dialog
+-
+-Custom_Skin_Helper_Service_Widgets.xml:
+-- add new dialog prompt for Skin Helper Service Widgets script install on non-OSMC devices
+-
+-Custom_Skin_Shortcuts.xml:
+-- add new dialog prompt for Skin Shortcuts script install on non-OSMC devices
++Custom_Disabled_Add-on.xml:
++- add new dialog prompt when supported skin add-ons are disabled
+ 
+ Custom_Welcome.xml
+ - add new Welcome dialog for non-OSMC devices
+@@ -475,10 +462,10 @@ SkinSettings.xml:
+ - add skin settings backup and restore option
+ - fix onup and ondown for addons submenu
+ - add new adjust music OSD album art size option to advanced skin settings
+-- change onclicks of customization and skin helper addon-related options for non-OSMC devices (where the scripts are not pre-installed) to open new dialogs
+ - un-comment skinhelper widgets button
+ - add page indicators to longer add-ons category
+ - rework add-ons category
++- comment out next-up notification add-on (it's broken)
+ 
+ SmartPlaylistEditor.xml:
+ - replace colors by new color variables
+@@ -594,8 +581,7 @@ strings.po:
+ - change localizes for views (31112, 31113, 31114)
+ - add new localizes for new views (31116, 31117)
+ - add new localize for new standard TV shows widget (31118)
+-- add new localize for adjusted skin settings add-ons list (31119 + 31120)
+-- add new localize for disabled, pre-installed skin scripts on OSMC devices (31121)
++- add new localize for adjusted skin settings add-ons list (31119)
+ 
+ Textures.xbt:
+ - update file with new resolution select icon included
+diff --git a/language/English/strings.po b/language/English/strings.po
+index 71fece2..c193bf6 100644
+--- a/language/English/strings.po
++++ b/language/English/strings.po
+@@ -432,7 +432,7 @@ msgstr ""
+ 
+ #: /16x9/Variables.xml
+ msgctxt "#31092"
+-msgid "Disabled or not installed"
++msgid "Not installed"
+ msgstr ""
+ 
+ #: /16x9/Variables.xml
+@@ -562,15 +562,5 @@ msgstr ""
+ 
+ #: /16x9/Variables.xml
+ msgctxt "#31119"
+-msgid "wrong version"
+-msgstr ""
+-
+-#: /16x9/SkinSettings.xml
+-msgctxt "#31120"
+-msgid "Needed Add-ons (for customisation)"
+-msgstr ""
+-
+-#: /16x9/Variables.xml
+-msgctxt "#31121"
+ msgid "Disabled"
+ msgstr ""
+\ No newline at end of file
