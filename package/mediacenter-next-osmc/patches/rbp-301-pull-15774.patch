@@ -1,0 +1,84 @@
+From 6480ee331db98368aaf013a7e1096d8c7017bd19 Mon Sep 17 00:00:00 2001
+From: Matthias Reichl <hias@horus.com>
+Date: Tue, 19 Mar 2019 10:53:16 +0100
+Subject: [PATCH] AESinkALSA: fix enumeration of cards without front devices
+
+ALSA cards don't have necessarily a front device, alsa-lib creates
+a default (plus sysdefault) PCM using plughw for cards without an
+alsa card conf file.
+
+So we shouldn't skip the sysdefault PCM in enumeration, otherwise
+the cards aren't listed.
+
+For cards with front/surround PCMs the sysdefault entry should
+be dropped though, as the surround mangling "@" entry also handles
+sysdefault and the separate entry in the device list would be
+confusing to users.
+---
+ xbmc/cores/AudioEngine/Sinks/AESinkALSA.cpp | 39 ++++++++++++++++++---
+ 1 file changed, 34 insertions(+), 5 deletions(-)
+
+diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkALSA.cpp b/xbmc/cores/AudioEngine/Sinks/AESinkALSA.cpp
+index 44b5d5e326cf..878f7726b363 100644
+--- a/xbmc/cores/AudioEngine/Sinks/AESinkALSA.cpp
++++ b/xbmc/cores/AudioEngine/Sinks/AESinkALSA.cpp
+@@ -1153,10 +1153,14 @@ void CAESinkALSA::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
+ 
+       /* Do not enumerate "default", it is already enumerated above. */
+ 
+-      /* Do not enumerate the sysdefault or surroundXX devices, those are
+-       * always accompanied with a "front" device and it is handled above
+-       * as "@". The below devices will be automatically used if available
+-       * for a "@" device. */
++      /* Do not enumerate the surroundXX devices, those are always accompanied
++       * with a "front" device and it is handled above as "@". The below
++       * devices plus sysdefault will be automatically used if available
++       * for a "@" device.
++       * sysdefault devices are enumerated as not all cards have front/surround
++       * devices. For cards with front/surround devices the sysdefault
++       * entry will be removed in a second pass after enumeration.
++       */
+ 
+       /* Ubuntu has patched their alsa-lib so that "defaults.namehint.extended"
+        * defaults to "on" instead of upstream "off", causing lots of unwanted
+@@ -1165,7 +1169,6 @@ void CAESinkALSA::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
+        * "plughw", "dsnoop"). */
+ 
+       else if (baseName != "default"
+-            && baseName != "sysdefault"
+             && baseName != "surround40"
+             && baseName != "surround41"
+             && baseName != "surround50"
+@@ -1200,6 +1203,32 @@ void CAESinkALSA::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
+       list[0].m_displayName = "Default";
+   }
+ 
++  /* cards with surround entries where sysdefault should be removed */
++  std::set<std::string> cardsWithSurround;
++
++  for (AEDeviceInfoList::iterator it1 = list.begin(); it1 != list.end(); ++it1)
++  {
++    std::string baseName = it1->m_deviceName.substr(0, it1->m_deviceName.find(':'));
++    std::string card = GetParamFromName(it1->m_deviceName, "CARD");
++    if (baseName == "@" && !card.empty())
++      cardsWithSurround.insert(card);
++  }
++
++  if (!cardsWithSurround.empty())
++  {
++    /* remove sysdefault entries where we already have a surround entry */
++    AEDeviceInfoList::iterator iter = list.begin();
++    while (iter != list.end())
++    {
++      std::string baseName = iter->m_deviceName.substr(0, iter->m_deviceName.find(':'));
++      std::string card = GetParamFromName(iter->m_deviceName, "CARD");
++      if (baseName == "sysdefault" && cardsWithSurround.find(card) != cardsWithSurround.end())
++        iter = list.erase(iter);
++      else
++        iter++;
++    }
++  }
++
+   /* lets check uniqueness, we may need to append DEV or CARD to DisplayName */
+   /* If even a single device of card/dev X clashes with Y, add suffixes to
+    * all devices of both them, for clarity. */
