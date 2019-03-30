@@ -14,7 +14,7 @@ API_VERSION="18"
 
 #use xbmc top of tree for vero builds
 else
-pull_source "https://github.com/xbmc/xbmc/archive/52e07cf767e1c2fa22a51a1a133561f6f1b3eb6b.tar.gz" "$(pwd)/src"
+pull_source "https://github.com/xbmc/xbmc/archive/9114f656eac11a6b2e7311a3b46cca44a5277112.tar.gz" "$(pwd)/src"
 API_VERSION="18"
 fi
 if [ $? != 0 ]; then echo -e "Error fetching Kodi source" && exit 1; fi
@@ -292,7 +292,6 @@ then
             -DASS_INCLUDE_DIR=/usr/osmc/lib \
             -DAML_INCLUDE_DIR=/opt/vero2/include \
             -DSHAIRPLAY_INCLUDE_DIR=/usr/osmc/include/shairplay/ \
-            -DRapidJSON_INCLUDE_DIR=/opt/vero2/include \
             -DENABLE_OPENGLES=ON \
             -DENABLE_OPENGL=OFF \
             -DENABLE_OPTICAL=1 \
@@ -304,7 +303,7 @@ then
 	    -DENABLE_APP_AUTONAME=OFF \
             -DENABLE_INTERNAL_FMT=ON \
             -DENABLE_INTERNAL_FLATBUFFERS=ON \
-             -DENABLE_MDNS=OFF \
+            -DENABLE_MDNS=OFF \
             -DENABLE_BLUETOOTH=OFF \
             -DENABLE_PULSEAUDIO=OFF \
             -DENABLE_LCMS2=OFF \
@@ -328,7 +327,6 @@ then
             -DENABLE_AML=ON \
 	    -DASS_INCLUDE_DIR=/usr/osmc/lib \
             -DAML_INCLUDE_DIR=/opt/vero3/include \
-            -DRapidJSON_INCLUDE_DIR=/opt/vero3/include \
 	    -DENABLE_OPENGLES=ON \
             -DENABLE_OPENGL=OFF \
             -DENABLE_OPTICAL=1 \
