@@ -7,18 +7,18 @@
 
 make clean
 
-REV_skinosmc="6e5e8ff611aa6997be41e2d5398b78e7b6031e1e"
+REV="7826df0a0446bd659bd128c41e72dae94b2effe9"
 
 echo -e "Building package mediacenter-skin-osmc"
 echo -e "Downloading skin"
-pull_source "https://github.com/osmc/skin.osmc/archive/${REV_skinosmc}.tar.gz" "$(pwd)/src"
+pull_source "https://github.com/osmc/skin.osmc/archive/${REV}.tar.gz" "$(pwd)/src"
 if [ $? != 0 ]; then echo -e "Error downloading" && exit 1; fi
 pushd src/skin.osmc-*
 install_patch "../../patches" "all"
 popd
 echo -e "Moving files in to place"
 mkdir -p files/usr/share/kodi/addons
-cp -ar src/skin.osmc-${REV_skinosmc}/ files/usr/share/kodi/addons/skin.osmc
+cp -ar src/skin.osmc-${REV}/ files/usr/share/kodi/addons/skin.osmc
 if [ -f files/usr/share/kodi/addons/skin.osmc/media/Textures.xbt ]
 then
     echo "TexturePacked file detected, deleting unneeded artefacts"
