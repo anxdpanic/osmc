@@ -1,0 +1,215 @@
+From 06dbe968344aec5a1dc5530c7f7b9ecf9725752c Mon Sep 17 00:00:00 2001
+From: Olaf Hering <olaf@aepfle.de>
+Date: Mon, 1 Apr 2019 23:22:22 +0200
+Subject: [PATCH 1/2] [tests] use correct storage type for results from
+ StringUtils
+
+Reduce noise in build output.
+
+d:\win-64\xbmc\utils\test\teststringutils.cpp(335): warning C4267: '=': conversion from 'size_t' to 'int'
+d:\win-64\xbmc\utils\test\teststringutils.cpp(397): warning C4267: '=': conversion from 'size_t' to 'int'
+d:\win-64\xbmc\utils\test\teststringutils.cpp(399): warning C4267: '=': conversion from 'size_t' to 'int'
+d:\win-64\xbmc\utils\test\teststringutils.cpp(401): warning C4267: '=': conversion from 'size_t' to 'int'
+d:\win-64\xbmc\utils\test\teststringutils.cpp(404): warning C4267: '=': conversion from 'size_t' to 'int'
+d:\win-64\xbmc\utils\test\teststringutils.cpp(406): warning C4267: '=': conversion from 'size_t' to 'int'
+d:\win-64\xbmc\utils\test\teststringutils.cpp(408): warning C4267: '=': conversion from 'size_t' to 'int'
+d:\win-64\xbmc\utils\test\teststringutils.cpp(410): warning C4267: '=': conversion from 'size_t' to 'int'
+d:\win-64\xbmc\utils\test\teststringutils.cpp(419): warning C4267: '=': conversion from 'size_t' to 'int'
+d:\win-64\xbmc\utils\test\teststringutils.cpp(421): warning C4267: '=': conversion from 'size_t' to 'int'
+d:\win-64\xbmc\utils\test\teststringutils.cpp(423): warning C4267: '=': conversion from 'size_t' to 'int'
+d:\win-64\xbmc\utils\test\teststringutils.cpp(426): warning C4267: '=': conversion from 'size_t' to 'int'
+
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+---
+ xbmc/utils/test/TestStringUtils.cpp | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/xbmc/utils/test/TestStringUtils.cpp b/xbmc/utils/test/TestStringUtils.cpp
+index 9cf761cd04bb..baf1d42783fd 100644
+--- a/xbmc/utils/test/TestStringUtils.cpp
++++ b/xbmc/utils/test/TestStringUtils.cpp
+@@ -329,7 +329,7 @@ TEST(TestStringUtils, RemoveCRLF)
+ 
+ TEST(TestStringUtils, utf8_strlen)
+ {
+-  int ref, var;
++  size_t ref, var;
+ 
+   ref = 9;
+   var = StringUtils::utf8_strlen("ｔｅｓｔ＿ＵＴＦ８");
+@@ -391,7 +391,7 @@ TEST(TestStringUtils, EmptyString)
+ 
+ TEST(TestStringUtils, FindWords)
+ {
+-  int ref, var;
++  size_t ref, var;
+ 
+   ref = 5;
+   var = StringUtils::FindWords("test string", "string");
+@@ -413,7 +413,7 @@ TEST(TestStringUtils, FindWords)
+ 
+ TEST(TestStringUtils, FindWords_NonAscii)
+ {
+-  int ref, var;
++  size_t ref, var;
+ 
+   ref = 6;
+   var = StringUtils::FindWords("我的视频", "视频");
+
+From 0c0016ee6f1e80e1fd49b8c93ff97cc9357d0146 Mon Sep 17 00:00:00 2001
+From: Olaf Hering <olaf@aepfle.de>
+Date: Mon, 1 Apr 2019 23:26:24 +0200
+Subject: [PATCH 2/2] [tests] use correct storage type for results from
+ XFILE::CFile
+
+Reduce noise in build output.
+
+d:\win-64\xbmc\utils\test\testregexp.cpp(155): warning C4244: '=': conversion from 'ssize_t' to 'unsigned int',
+d:\win-64\xbmc\utils\test\testlog.cpp(105): warning C4244: '=': conversion from 'ssize_t' to 'unsigned int'
+d:\win-64\xbmc\test\testutils.cpp(142): warning C4244: '=': conversion from 'ssize_t' to 'unsigned int',
+d:\win-64\xbmc\filesystem\test\testzipfile.cpp(185): warning C4244: '=': conversion from 'ssize_t' to 'unsigned int',
+d:\win-64\xbmc\filesystem\test\testfilefactory.cpp(75): warning C4244: '=': conversion from 'ssize_t' to 'unsigned int'
+d:\win-64\xbmc\filesystem\test\testfilefactory.cpp(120): warning C4244: '=': conversion from 'ssize_t' to 'unsigned int',
+d:\win-64\xbmc\filesystem\test\testfilefactory.cpp(136): warning C4244: '=': conversion from 'ssize_t' to 'unsigned int'
+d:\win-64\xbmc\filesystem\test\testfile.cpp(22): warning C4267: 'initializing': conversion from 'size_t' to 'int'
+d:\win-64\xbmc\filesystem\test\testfile.cpp(42): warning C4267: '=': conversion from 'size_t' to 'int'
+d:\win-64\xbmc\filesystem\test\testfile.cpp(46): warning C4267: '+=': conversion from 'size_t' to 'int'
+d:\win-64\xbmc\filesystem\test\testfile.cpp(54): warning C4267: '+=': conversion from 'size_t' to 'int'
+d:\win-64\xbmc\filesystem\test\testfile.cpp(62): warning C4267: '+=': conversion from 'size_t' to 'int'
+d:\win-64\xbmc\filesystem\test\testfile.cpp(65): warning C4267: '=': conversion from 'size_t' to 'int'
+d:\win-64\xbmc\filesystem\test\testfile.cpp(70): warning C4267: '+=': conversion from 'size_t' to 'int'
+d:\win-64\xbmc\filesystem\test\testfile.cpp(80): warning C4267: '+=': conversion from 'size_t' to 'int'
+
+Add cast to sizeof() result to fix this warning:
+warning: comparison between signed and unsigned integer expressions
+
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+---
+ xbmc/filesystem/test/TestFile.cpp        | 10 +++++-----
+ xbmc/filesystem/test/TestFileFactory.cpp |  6 +++---
+ xbmc/filesystem/test/TestZipFile.cpp     |  4 ++--
+ xbmc/test/TestUtils.cpp                  |  2 +-
+ xbmc/utils/test/TestRegExp.cpp           |  2 +-
+ xbmc/utils/test/Testlog.cpp              |  2 +-
+ 6 files changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/xbmc/filesystem/test/TestFile.cpp b/xbmc/filesystem/test/TestFile.cpp
+index d9fd4c1a8f71..898bdf91400a 100644
+--- a/xbmc/filesystem/test/TestFile.cpp
++++ b/xbmc/filesystem/test/TestFile.cpp
+@@ -17,10 +17,10 @@
+ TEST(TestFile, Read)
+ {
+   const std::string newLine = CXBMCTestUtils::Instance().getNewLineCharacters();
+-  const int size = 1616;
+-  const int lines = 25;
+-  int addPerLine = newLine.length() - 1;
+-  int realSize = size + lines * addPerLine;
++  const size_t size = 1616;
++  const size_t lines = 25;
++  size_t addPerLine = newLine.length() - 1;
++  size_t realSize = size + lines * addPerLine;
+ 
+   const std::string firstBuf  = "About" + newLine + "-----" + newLine + "XBMC is ";
+   const std::string secondBuf = "an award-winning fre";
+@@ -32,7 +32,7 @@ TEST(TestFile, Read)
+   char buf[23];
+   memset(buf, 0, sizeof(buf));
+ 
+-  int currentPos;
++  size_t currentPos;
+   ASSERT_TRUE(file.Open(
+     XBMC_REF_FILE_PATH("/xbmc/filesystem/test/reffile.txt")));
+   EXPECT_EQ(0, file.GetPosition());
+diff --git a/xbmc/filesystem/test/TestFileFactory.cpp b/xbmc/filesystem/test/TestFileFactory.cpp
+index db735657fba9..7495b58f9d39 100644
+--- a/xbmc/filesystem/test/TestFileFactory.cpp
++++ b/xbmc/filesystem/test/TestFileFactory.cpp
+@@ -52,7 +52,7 @@ TEST_F(TestFileFactory, Read)
+ {
+   XFILE::CFile file;
+   std::string str;
+-  unsigned int size, i;
++  ssize_t size, i;
+   unsigned char buf[16];
+   int64_t count = 0;
+ 
+@@ -82,7 +82,7 @@ TEST_F(TestFileFactory, Read)
+         str = StringUtils::Format("%02X ", buf[i]);
+         std::cout << str;
+       }
+-      while (i++ < sizeof(buf))
++      while (i++ < static_cast<ssize_t> (sizeof(buf)))
+         std::cout << "   ";
+       std::cout << " [";
+       for (i = 0; i < size; i++)
+@@ -102,7 +102,7 @@ TEST_F(TestFileFactory, Write)
+ {
+   XFILE::CFile file, inputfile;
+   std::string str;
+-  unsigned int size, i;
++  size_t size, i;
+   unsigned char buf[16];
+   int64_t count = 0;
+ 
+diff --git a/xbmc/filesystem/test/TestZipFile.cpp b/xbmc/filesystem/test/TestZipFile.cpp
+index f7fa5cb82398..5029cf73d03b 100644
+--- a/xbmc/filesystem/test/TestZipFile.cpp
++++ b/xbmc/filesystem/test/TestZipFile.cpp
+@@ -144,7 +144,7 @@ TEST_F(TestZipFile, CorruptedFile)
+   memset(&buf, 0, sizeof(buf));
+   std::string reffilepath, strpathinzip, str;
+   CFileItemList itemlist;
+-  unsigned int size, i;
++  ssize_t size, i;
+   int64_t count = 0;
+ 
+   reffilepath = XBMC_REF_FILE_PATH("xbmc/filesystem/test/reffile.txt.zip");
+@@ -192,7 +192,7 @@ TEST_F(TestZipFile, CorruptedFile)
+       str = StringUtils::Format("%02X ", buf[i]);
+       std::cout << str;
+     }
+-    while (i++ < sizeof(buf))
++    while (i++ < static_cast<ssize_t> (sizeof(buf)))
+       std::cout << "   ";
+     std::cout << " [";
+     for (i = 0; i < size; i++)
+diff --git a/xbmc/test/TestUtils.cpp b/xbmc/test/TestUtils.cpp
+index d495439a0731..5cb027a9391b 100644
+--- a/xbmc/test/TestUtils.cpp
++++ b/xbmc/test/TestUtils.cpp
+@@ -134,7 +134,7 @@ XFILE::CFile *CXBMCTestUtils::CreateCorruptedFile(std::string const& strFileName
+ {
+   XFILE::CFile inputfile, *tmpfile = CreateTempFile(suffix);
+   unsigned char buf[20], tmpchar;
+-  unsigned int size, i;
++  ssize_t size, i;
+ 
+   if (tmpfile && inputfile.Open(strFileName))
+   {
+diff --git a/xbmc/utils/test/TestRegExp.cpp b/xbmc/utils/test/TestRegExp.cpp
+index ab2b42bd8285..e866a678d9bc 100644
+--- a/xbmc/utils/test/TestRegExp.cpp
++++ b/xbmc/utils/test/TestRegExp.cpp
+@@ -137,7 +137,7 @@ TEST_F(TestRegExpLog, DumpOvector)
+   CRegExp regex;
+   std::string logfile, logstring;
+   char buf[100];
+-  unsigned int bytesread;
++  ssize_t bytesread;
+   XFILE::CFile file;
+ 
+   std::string appName = CCompileInfo::GetAppName();
+diff --git a/xbmc/utils/test/Testlog.cpp b/xbmc/utils/test/Testlog.cpp
+index 9ae94ed0b919..747096707351 100644
+--- a/xbmc/utils/test/Testlog.cpp
++++ b/xbmc/utils/test/Testlog.cpp
+@@ -32,7 +32,7 @@ TEST_F(Testlog, Log)
+ {
+   std::string logfile, logstring;
+   char buf[100];
+-  unsigned int bytesread;
++  ssize_t bytesread;
+   XFILE::CFile file;
+   CRegExp regex;
+ 
