@@ -1,0 +1,24 @@
+From 4cc899eafbb8278c597640c5e926a40c7b0dedb3 Mon Sep 17 00:00:00 2001
+From: "Ch1llb0/skin.osmc" <36623079+Ch1llb0@users.noreply.github.com>
+Date: Fri, 5 Apr 2019 09:56:14 +0200
+Subject: [PATCH] Subtitles dialog fix
+
+DialogSubtitles.xml:
+- fix onup of manual search button
+---
+ 16x9/DialogSubtitles.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/16x9/DialogSubtitles.xml b/16x9/DialogSubtitles.xml
+index 6374e14..79862b8 100755
+--- a/16x9/DialogSubtitles.xml
++++ b/16x9/DialogSubtitles.xml
+@@ -324,7 +324,7 @@
+ 					<height>66</height>
+ 					<onleft>noop</onleft>
+ 					<onright>noop</onright>
+-					<onup>120</onup>
++					<onup>150</onup>
+ 					<ondown>noop</ondown>
+ 					<label>24120</label>
+ 					<textcolor>$VAR[TextColor2]</textcolor>
