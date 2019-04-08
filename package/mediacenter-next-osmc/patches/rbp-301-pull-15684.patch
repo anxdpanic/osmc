@@ -1,0 +1,110 @@
+From d277ad4e790d4d6122e014610a184b74ca63847d Mon Sep 17 00:00:00 2001
+From: kszaq <kszaquitto@gmail.com>
+Date: Mon, 4 Mar 2019 21:22:39 +0100
+Subject: [PATCH] [GLES] Check for UNPACK_ROW_LENGTH support on renderer
+ instantiation, not on every LoadPlane call
+
+---
+ .../VideoRenderers/LinuxRendererGLES.cpp      | 63 +++++++++----------
+ .../VideoRenderers/LinuxRendererGLES.h        |  1 +
+ 2 files changed, 30 insertions(+), 34 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.cpp
+index ec4df2690421..c8a5b6b4560e 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.cpp
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.cpp
+@@ -39,6 +39,23 @@ CLinuxRendererGLES::CLinuxRendererGLES()
+   m_fullRange = !CServiceBroker::GetWinSystem()->UseLimitedColor();
+ 
+   m_renderSystem = dynamic_cast<CRenderSystemGLES*>(CServiceBroker::GetRenderSystem());
++
++#if HAS_GLES >= 3
++  unsigned int verMajor, verMinor;
++  m_renderSystem->GetRenderVersion(verMajor, verMinor);
++
++  if (verMajor >= 3)
++  {
++    m_pixelStoreKey = GL_UNPACK_ROW_LENGTH;
++  }
++#endif
++
++#if defined (GL_UNPACK_ROW_LENGTH_EXT)
++  if (m_renderSystem->IsExtSupported("GL_EXT_unpack_subimage"))
++  {
++    m_pixelStoreKey = GL_UNPACK_ROW_LENGTH_EXT;
++  }
++#endif
+ }
+ 
+ CLinuxRendererGLES::~CLinuxRendererGLES()
+@@ -262,46 +279,24 @@ void CLinuxRendererGLES::LoadPlane(CYuvPlane& plane, int type,
+ 
+   glBindTexture(m_textureTarget, plane.id);
+ 
+-  // OpenGL ES does not support strided texture input.
+-  GLint pixelStore = -1;
+-  unsigned int pixelStoreKey = -1;
+-
+-  if (stride != static_cast<int>(width * bps))
++  if (m_pixelStoreKey > 0)
+   {
+-#if HAS_GLES >= 3
+-    unsigned int verMajor, verMinor;
+-    m_renderSystem->GetRenderVersion(verMajor, verMinor);
+-
+-    if (verMajor >= 3)
+-    {
+-      glGetIntegerv(GL_UNPACK_ROW_LENGTH, &pixelStore);
+-      glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
+-      pixelStoreKey = GL_UNPACK_ROW_LENGTH;
+-    }
+-    else
+-#elif defined (GL_UNPACK_ROW_LENGTH_EXT)
+-    if (m_renderSystem->IsExtSupported("GL_EXT_unpack_subimage"))
+-    {
+-      glGetIntegerv(GL_UNPACK_ROW_LENGTH_EXT, &pixelStore);
+-      glPixelStorei(GL_UNPACK_ROW_LENGTH_EXT, stride);
+-      pixelStoreKey = GL_UNPACK_ROW_LENGTH_EXT;
+-    }
+-    else
+-#endif
+-    {
+-      unsigned char *src(static_cast<unsigned char*>(data)),
+-                    *dst(m_planeBuffer);
++    glPixelStorei(m_pixelStoreKey, stride);
++  }
++  else if (stride != static_cast<int>(width * bps))
++  {
++    unsigned char *src(static_cast<unsigned char*>(data)),
++                  *dst(m_planeBuffer);
+ 
+-      for (unsigned int y = 0; y < height; ++y, src += stride, dst += width * bpp)
+-        memcpy(dst, src, width * bpp);
++    for (unsigned int y = 0; y < height; ++y, src += stride, dst += width * bpp)
++      memcpy(dst, src, width * bpp);
+ 
+-      pixelData = m_planeBuffer;
+-    }
++    pixelData = m_planeBuffer;
+   }
+   glTexSubImage2D(m_textureTarget, 0, 0, 0, width, height, type, GL_UNSIGNED_BYTE, pixelData);
+ 
+-  if (pixelStore >= 0)
+-    glPixelStorei(pixelStoreKey, pixelStore);
++  if (m_pixelStoreKey > 0)
++    glPixelStorei(m_pixelStoreKey, 0);
+ 
+   // check if we need to load any border pixels
+   if (height < plane.texheight)
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h b/xbmc/cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h
+index f0a310ff931d..c1c94b799144 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h
+@@ -148,6 +148,7 @@ class CLinuxRendererGLES : public CBaseRenderer
+   int m_currentField{FIELD_FULL};
+   int m_reloadShaders{0};
+   CRenderSystemGLES *m_renderSystem{nullptr};
++  GLenum m_pixelStoreKey{0};
+ 
+   struct CYuvPlane
+   {

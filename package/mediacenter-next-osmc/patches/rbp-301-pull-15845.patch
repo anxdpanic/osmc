@@ -1,0 +1,22 @@
+From 5424c25b73f84c00e1109b9b0eff1b65dcf9114a Mon Sep 17 00:00:00 2001
+From: afl1 <afl2001@gmail.com>
+Date: Fri, 11 May 2018 13:34:03 +0200
+Subject: [PATCH] [Application] - register Stereoscopicmanager for message
+ target - workaround for #13878 for leia
+
+---
+ xbmc/Application.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/xbmc/Application.cpp b/xbmc/Application.cpp
+index bfa6083209b6..1c4f5dfcd0e4 100644
+--- a/xbmc/Application.cpp
++++ b/xbmc/Application.cpp
+@@ -1316,6 +1316,7 @@ bool CApplication::LoadSkin(const std::string& skinID)
+   CServiceBroker::GetGUI()->GetWindowManager().AddMsgTarget(this);
+   CServiceBroker::GetGUI()->GetWindowManager().AddMsgTarget(&CServiceBroker::GetPlaylistPlayer());
+   CServiceBroker::GetGUI()->GetWindowManager().AddMsgTarget(&g_fontManager);
++  CServiceBroker::GetGUI()->GetWindowManager().AddMsgTarget(&CServiceBroker::GetGUI()->GetStereoscopicsManager());
+   CServiceBroker::GetGUI()->GetWindowManager().SetCallback(*this);
+   //@todo should be done by GUIComponents
+   CServiceBroker::GetGUI()->GetWindowManager().Initialize();
