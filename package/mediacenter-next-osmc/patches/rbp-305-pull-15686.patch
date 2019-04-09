@@ -99,9 +99,9 @@ index 8f0a8327e3c3..ba1428d63b4a 100644
    m_userAgent = g_sysinfo.GetUserAgent();
 +  m_nfsTimeout = 2;
 +
-  #ifdef TARGET_RASPBERRY_PI
-    g_RBP.InitializeSettings();
-  #endif
+ #ifdef TARGET_RASPBERRY_PI
+   g_RBP.InitializeSettings();
+ #endif
 @@ -534,6 +536,14 @@ void CAdvancedSettings::ParseSettingsFile(const std::string &file)
          passTag->LinkEndChild(new TiXmlText("*****"));
        }
