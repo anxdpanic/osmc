@@ -1,0 +1,131 @@
+From 0f44b81505b92720fb1553d72c6f8d35642a53db Mon Sep 17 00:00:00 2001
+From: peak3d <pfau@peak3d.de>
+Date: Thu, 14 Mar 2019 15:04:24 +0100
+Subject: [PATCH] [NFS] Implement nfs timeout / advancedsettings
+
+---
+ cmake/modules/FindNFS.cmake        |  9 +++++++++
+ xbmc/filesystem/NFSFile.cpp        | 14 ++++++++++++++
+ xbmc/filesystem/NFSFile.h          |  1 +
+ xbmc/settings/AdvancedSettings.cpp | 10 ++++++++++
+ xbmc/settings/AdvancedSettings.h   |  1 +
+ 5 files changed, 35 insertions(+)
+
+diff --git a/cmake/modules/FindNFS.cmake b/cmake/modules/FindNFS.cmake
+index c2414a1f434c..32fb7691cd2a 100644
+--- a/cmake/modules/FindNFS.cmake
++++ b/cmake/modules/FindNFS.cmake
+@@ -36,6 +36,15 @@ if(NFS_FOUND)
+   set(NFS_INCLUDE_DIRS ${NFS_INCLUDE_DIR})
+   set(NFS_DEFINITIONS -DHAS_FILESYSTEM_NFS=1)
+ 
++  if(NFS_VERSION)
++    string(REPLACE "." ";" VERSION_LIST ${NFS_VERSION})
++    list(GET VERSION_LIST 0 NFS_VERSION_MAJOR)
++    if(NFS_VERSION_MAJOR LESS 2)
++      list(APPEND NFS_DEFINITIONS -DNO_NFS_SET_TIMEOUT)
++    endif()
++  endif()
++
++
+   if(NOT TARGET NFS::NFS)
+     add_library(NFS::NFS UNKNOWN IMPORTED)
+     if(NFS_LIBRARY)
+diff --git a/xbmc/filesystem/NFSFile.cpp b/xbmc/filesystem/NFSFile.cpp
+index abbef6805d3f..09b65ef2ceda 100644
+--- a/xbmc/filesystem/NFSFile.cpp
++++ b/xbmc/filesystem/NFSFile.cpp
+@@ -11,6 +11,9 @@
+ //////////////////////////////////////////////////////////////////////
+ 
+ #include "NFSFile.h"
++#include "ServiceBroker.h"
++#include "settings/AdvancedSettings.h"
++#include "settings/SettingsComponent.h"
+ #include "threads/SingleLock.h"
+ #include "utils/log.h"
+ #include "utils/StringUtils.h"
+@@ -178,6 +181,7 @@ int CNfsConnection::getContextForExport(const std::string &exportname)
+     {
+       struct contextTimeout tmp;
+       CSingleLock lock(openContextLock);
++      setTimeout(m_pNfsContext);
+       tmp.pContext = m_pNfsContext;
+       tmp.lastAccessedTime = XbmcThreads::SystemClockMillis();
+       m_openContextMap[exportname] = tmp; //add context to list of all contexts
+@@ -424,6 +428,7 @@ int CNfsConnection::stat(const CURL &url, NFSSTAT *statbuff)
+ 
+     if(pTmpContext)
+     {
++      setTimeout(pTmpContext);
+       //we connect to the directory of the path. This will be the "root" path of this connection then.
+       //So all fileoperations are relative to this mountpoint...
+       nfsRet = nfs_mount(pTmpContext, m_resolvedHostName.c_str(), exportPath.c_str());
+@@ -461,6 +466,15 @@ void CNfsConnection::AddIdleConnection()
+   m_IdleTimeout = 180;
+ }
+ 
++
++void CNfsConnection::setTimeout(struct nfs_context *context)
++{
++#ifndef NO_NFS_SET_TIMEOUT
++  uint32_t timeout = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_nfsTimeout;
++  nfs_set_timeout(context, timeout > 0 ? timeout * 1000 : -1);
++#endif
++}
++
+ CNfsConnection gNfsConnection;
+ 
+ CNFSFile::CNFSFile()
+diff --git a/xbmc/filesystem/NFSFile.h b/xbmc/filesystem/NFSFile.h
+index ea13014a9024..9e3094eb1249 100644
+--- a/xbmc/filesystem/NFSFile.h
++++ b/xbmc/filesystem/NFSFile.h
+@@ -94,6 +94,7 @@ class CNfsConnection : public CCriticalSection
+   void destroyContext(const std::string &exportName);
+   void resolveHost(const CURL &url);//resolve hostname by dnslookup
+   void keepAlive(std::string _exportPath, struct nfsfh  *_pFileHandle);
++  static void setTimeout(struct nfs_context *context);
+ };
+ 
+ extern CNfsConnection gNfsConnection;
+diff --git a/xbmc/settings/AdvancedSettings.cpp b/xbmc/settings/AdvancedSettings.cpp
+index 8f0a8327e3c3..ba1428d63b4a 100644
+--- a/xbmc/settings/AdvancedSettings.cpp
++++ b/xbmc/settings/AdvancedSettings.cpp
+@@ -454,6 +454,8 @@ void CAdvancedSettings::Initialize()
+   m_extraLogLevels = 0;
+ 
+   m_userAgent = g_sysinfo.GetUserAgent();
++  m_nfsTimeout = 2;
++
+  #ifdef TARGET_RASPBERRY_PI
+    g_RBP.InitializeSettings();
+  #endif
+@@ -534,6 +536,14 @@ void CAdvancedSettings::ParseSettingsFile(const std::string &file)
+         passTag->LinkEndChild(new TiXmlText("*****"));
+       }
+     }
++    if (network->FirstChildElement("nfstimeout"))
++    {
++#ifndef NO_NFS_SET_TIMEOUT
++      XMLUtils::GetUInt(network, "nfstimeout", m_nfsTimeout, 0, 3600);
++#else
++      CLog::Log(LOGWARNING, "nfstimeout unsupported");
++#endif
++    }
+   }
+ 
+   // Dump contents of copied AS.xml to debug log
+diff --git a/xbmc/settings/AdvancedSettings.h b/xbmc/settings/AdvancedSettings.h
+index 1de3b00b276d..f4eba081b7ae 100644
+--- a/xbmc/settings/AdvancedSettings.h
++++ b/xbmc/settings/AdvancedSettings.h
+@@ -386,6 +386,7 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
+     bool m_openGlDebugging;
+ 
+     std::string m_userAgent;
++    uint32_t m_nfsTimeout;
+ 
+   private:
+     void SetExtraLogLevel(const std::vector<CVariant> &components);
