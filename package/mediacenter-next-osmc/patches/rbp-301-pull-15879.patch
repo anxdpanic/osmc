@@ -1,0 +1,738 @@
+From 591b91793fb9c5b33ec86b957c323adad841ce02 Mon Sep 17 00:00:00 2001
+From: Rechi <Rechi@users.noreply.github.com>
+Date: Mon, 8 Apr 2019 15:29:09 +0200
+Subject: [PATCH] [cleanup] remove retroplayer leftovers after 3ed099ae0d
+
+---
+ .../RetroPlayer/savestates/Savestate.cpp      | 253 ------------------
+ xbmc/cores/RetroPlayer/savestates/Savestate.h |  95 -------
+ .../RetroPlayer/savestates/SavestateDefines.h |  32 ---
+ .../savestates/SavestateReader.cpp            |  60 -----
+ .../RetroPlayer/savestates/SavestateReader.h  |  41 ---
+ .../savestates/SavestateTranslator.cpp        |  35 ---
+ .../savestates/SavestateWriter.cpp            | 106 --------
+ .../RetroPlayer/savestates/SavestateWriter.h  |  44 ---
+ 8 files changed, 666 deletions(-)
+ delete mode 100644 xbmc/cores/RetroPlayer/savestates/Savestate.cpp
+ delete mode 100644 xbmc/cores/RetroPlayer/savestates/Savestate.h
+ delete mode 100644 xbmc/cores/RetroPlayer/savestates/SavestateDefines.h
+ delete mode 100644 xbmc/cores/RetroPlayer/savestates/SavestateReader.cpp
+ delete mode 100644 xbmc/cores/RetroPlayer/savestates/SavestateReader.h
+ delete mode 100644 xbmc/cores/RetroPlayer/savestates/SavestateTranslator.cpp
+ delete mode 100644 xbmc/cores/RetroPlayer/savestates/SavestateWriter.cpp
+ delete mode 100644 xbmc/cores/RetroPlayer/savestates/SavestateWriter.h
+
+diff --git a/xbmc/cores/RetroPlayer/savestates/Savestate.cpp b/xbmc/cores/RetroPlayer/savestates/Savestate.cpp
+deleted file mode 100644
+index ed0ab3e1b990..000000000000
+--- a/xbmc/cores/RetroPlayer/savestates/Savestate.cpp
++++ /dev/null
+@@ -1,253 +0,0 @@
+-/*
+- *  Copyright (C) 2012-2018 Team Kodi
+- *  This file is part of Kodi - https://kodi.tv
+- *
+- *  SPDX-License-Identifier: GPL-2.0-or-later
+- *  See LICENSES/README.md for more information.
+- */
+-
+-#include "Savestate.h"
+-#include "SavestateDefines.h"
+-#include "SavestateTranslator.h"
+-#include "utils/log.h"
+-#include "utils/Variant.h"
+-#include "utils/XMLUtils.h"
+-
+-#include <tinyxml.h>
+-
+-using namespace KODI;
+-using namespace RETRO;
+-
+-void CSavestate::Reset()
+-{
+-  m_path.clear();
+-  m_type = SAVETYPE::UNKNOWN;
+-  m_slot = -1;
+-  m_label.clear();
+-  m_size = 0;
+-  m_gameClient.clear();
+-  m_databaseId = -1;
+-  m_gamePath.clear();
+-  m_gameCRC.clear();
+-  m_playtimeFrames = 0;
+-  m_playtimeWallClock = 0.0;
+-  m_timestamp.Reset();
+-  m_thumbnail.clear();
+-}
+-
+-void CSavestate::Serialize(CVariant& value) const
+-{
+-  value[SAVESTATE_FIELD_PATH] = m_path;
+-  value[SAVESTATE_FIELD_TYPE] = static_cast<unsigned int>(m_type);
+-  value[SAVESTATE_FIELD_SLOT] = m_slot;
+-  value[SAVESTATE_FIELD_LABEL] = m_label;
+-  value[SAVESTATE_FIELD_SIZE] = static_cast<unsigned int>(m_size);
+-  value[SAVESTATE_FIELD_GAMECLIENT] = m_gameClient;
+-  value[SAVESTATE_FIELD_DB_ID] = m_databaseId;
+-  value[SAVESTATE_FIELD_GAME_PATH] = m_gamePath;
+-  value[SAVESTATE_FIELD_GAME_CRC] = m_gameCRC;
+-  value[SAVESTATE_FIELD_FRAMES] = m_playtimeFrames;
+-  value[SAVESTATE_FIELD_WALLCLOCK] = m_playtimeWallClock;
+-  value[SAVESTATE_FIELD_TIMESTAMP] = m_timestamp.GetAsDBDateTime();
+-  value[SAVESTATE_FIELD_THUMBNAIL] = m_thumbnail;
+-}
+-
+-void CSavestate::Deserialize(const CVariant& value)
+-{
+-  m_path = value[SAVESTATE_FIELD_PATH].asString();
+-  m_type = static_cast<SAVETYPE>(value[SAVESTATE_FIELD_TYPE].asInteger());
+-  m_slot = static_cast<int>(value[SAVESTATE_FIELD_SLOT].asInteger());
+-  m_label = value[SAVESTATE_FIELD_LABEL].asString();
+-  m_size = static_cast<size_t>(value[SAVESTATE_FIELD_SIZE].asUnsignedInteger());
+-  m_gameClient = value[SAVESTATE_FIELD_GAMECLIENT].asString();
+-  m_databaseId = static_cast<int>(value[SAVESTATE_FIELD_DB_ID].asInteger());
+-  m_gamePath = value[SAVESTATE_FIELD_GAME_PATH].asString();
+-  m_gameCRC = value[SAVESTATE_FIELD_GAME_CRC].asString();
+-  m_playtimeFrames = value[SAVESTATE_FIELD_FRAMES].asUnsignedInteger();
+-  m_playtimeWallClock = value[SAVESTATE_FIELD_WALLCLOCK].asDouble();
+-  m_timestamp.SetFromDBDateTime(value[SAVESTATE_FIELD_TIMESTAMP].asString());
+-  m_thumbnail = value[SAVESTATE_FIELD_THUMBNAIL].asString();
+-}
+-
+-bool CSavestate::Serialize(const std::string& path) const
+-{
+-  if (m_type == SAVETYPE::UNKNOWN)
+-  {
+-    CLog::Log(LOGERROR, "Failed to serialize savestate (unknown type)");
+-    return false;
+-  }
+-
+-  TiXmlDocument xmlFile;
+-
+-  TiXmlDeclaration* decl = new TiXmlDeclaration("1.0", "", "");
+-  xmlFile.LinkEndChild(decl);
+-
+-  TiXmlElement rootElement(SAVESTATE_XML_ROOT);
+-  TiXmlNode* root = xmlFile.InsertEndChild(rootElement);
+-  if (root == nullptr)
+-    return false;
+-
+-  TiXmlElement* pElement = root->ToElement();
+-  if (!pElement)
+-    return false;
+-
+-  XMLUtils::SetString(pElement, SAVESTATE_FIELD_PATH, m_path);
+-  XMLUtils::SetString(pElement, SAVESTATE_FIELD_TYPE, CSavestateTranslator::TranslateType(m_type));
+-  if (m_type == SAVETYPE::SLOT)
+-    XMLUtils::SetInt(pElement, SAVESTATE_FIELD_SLOT, m_slot);
+-  XMLUtils::SetString(pElement, SAVESTATE_FIELD_LABEL, m_label);
+-  XMLUtils::SetLong(pElement, SAVESTATE_FIELD_SIZE, static_cast<long>(m_size));
+-  XMLUtils::SetString(pElement, SAVESTATE_FIELD_GAMECLIENT, m_gameClient);
+-  XMLUtils::SetString(pElement, SAVESTATE_FIELD_GAME_PATH, m_gamePath);
+-  XMLUtils::SetString(pElement, SAVESTATE_FIELD_GAME_CRC, m_gameCRC);
+-  XMLUtils::SetLong(pElement, SAVESTATE_FIELD_FRAMES, static_cast<long>(m_playtimeFrames));
+-  XMLUtils::SetFloat(pElement, SAVESTATE_FIELD_WALLCLOCK, static_cast<float>(m_playtimeWallClock));
+-  XMLUtils::SetString(pElement, SAVESTATE_FIELD_TIMESTAMP, m_timestamp.GetAsDBDateTime());
+-  XMLUtils::SetString(pElement, SAVESTATE_FIELD_THUMBNAIL, m_thumbnail);
+-
+-  if (!xmlFile.SaveFile(path))
+-  {
+-    CLog::Log(LOGERROR, "Failed to serialize savestate to %s: %s", path.c_str(), xmlFile.ErrorDesc());
+-    return false;
+-  }
+-
+-  return true;
+-}
+-
+-bool CSavestate::Deserialize(const std::string& path)
+-{
+-  Reset();
+-
+-  TiXmlDocument xmlFile;
+-  if (!xmlFile.LoadFile(path))
+-  {
+-    CLog::Log(LOGERROR, "Failed to open %s: %s", path.c_str(), xmlFile.ErrorDesc());
+-    return false;
+-  }
+-
+-  TiXmlElement* pElement = xmlFile.RootElement();
+-  if (!pElement || pElement->NoChildren() || pElement->ValueStr() != SAVESTATE_XML_ROOT)
+-  {
+-    CLog::Log(LOGERROR, "Can't find root <%s> tag", SAVESTATE_XML_ROOT);
+-    return false;
+-  }
+-
+-  // Path
+-  if (!XMLUtils::GetString(pElement, SAVESTATE_FIELD_PATH, m_path))
+-  {
+-    CLog::Log(LOGERROR, "Savestate has no <%s> element", SAVESTATE_FIELD_PATH);
+-    return false;
+-  }
+-
+-  // Type
+-  std::string type;
+-  if (!XMLUtils::GetString(pElement, SAVESTATE_FIELD_TYPE, type))
+-  {
+-    CLog::Log(LOGERROR, "Savestate has no <%s> element", SAVESTATE_FIELD_TYPE);
+-    return false;
+-  }
+-  m_type = CSavestateTranslator::TranslateType(type);
+-  if (m_type == SAVETYPE::UNKNOWN)
+-  {
+-    CLog::Log(LOGERROR, "Invalid savestate type: %s", type.c_str());
+-    return false;
+-  }
+-
+-  // Slot
+-  if (m_type == SAVETYPE::SLOT)
+-  {
+-    if (!XMLUtils::GetInt(pElement, SAVESTATE_FIELD_SLOT, m_slot))
+-    {
+-      CLog::Log(LOGERROR, "Savestate has type \"%s\" but no <%s> element!", type.c_str(), SAVESTATE_FIELD_TYPE);
+-      return false;
+-    }
+-    if (m_slot < 0)
+-    {
+-      CLog::Log(LOGERROR, "Invalid savestate slot: %d", m_slot);
+-      return false;
+-    }
+-  }
+-
+-  // Label (optional)
+-  XMLUtils::GetString(pElement, SAVESTATE_FIELD_LABEL, m_label);
+-
+-  // Size
+-  long size;
+-  if (!XMLUtils::GetLong(pElement, SAVESTATE_FIELD_SIZE, size))
+-  {
+-    CLog::Log(LOGERROR, "Savestate has no <%s> element", SAVESTATE_FIELD_SIZE);
+-    return false;
+-  }
+-  if (size < 0)
+-  {
+-    CLog::Log(LOGERROR, "Invalid savestate size: %ld", size);
+-    return false;
+-  }
+-  m_size = size;
+-
+-  // Game client
+-  if (!XMLUtils::GetString(pElement, SAVESTATE_FIELD_GAMECLIENT, m_gameClient))
+-  {
+-    CLog::Log(LOGERROR, "Savestate has no <%s> element", SAVESTATE_FIELD_GAMECLIENT);
+-    return false;
+-  }
+-
+-  // Game path
+-  if (!XMLUtils::GetString(pElement, SAVESTATE_FIELD_GAME_PATH, m_gamePath))
+-  {
+-    CLog::Log(LOGERROR, "Savestate has no <%s> element", SAVESTATE_FIELD_GAME_PATH);
+-    return false;
+-  }
+-
+-  // Game CRC
+-  if (!XMLUtils::GetString(pElement, SAVESTATE_FIELD_GAME_CRC, m_gameCRC))
+-  {
+-    CLog::Log(LOGERROR, "Savestate has no <%s> element", SAVESTATE_FIELD_GAME_CRC);
+-    return false;
+-  }
+-
+-  // Playtime (frames)
+-  long playtimeFrames;
+-  if (!XMLUtils::GetLong(pElement, SAVESTATE_FIELD_FRAMES, playtimeFrames))
+-  {
+-    CLog::Log(LOGERROR, "Savestate has no <%s> element", SAVESTATE_FIELD_FRAMES);
+-    return false;
+-  }
+-  if (playtimeFrames < 0)
+-  {
+-    CLog::Log(LOGERROR, "Invalid savestate frame count: %ld", playtimeFrames);
+-    return false;
+-  }
+-  m_size = playtimeFrames;
+-
+-  // Playtime (wall clock)
+-  float playtimeWallClock;
+-  if (!XMLUtils::GetFloat(pElement, SAVESTATE_FIELD_WALLCLOCK, playtimeWallClock))
+-  {
+-    CLog::Log(LOGERROR, "Savestate has no <%s> element", SAVESTATE_FIELD_WALLCLOCK);
+-    return false;
+-  }
+-  m_playtimeWallClock = playtimeWallClock;
+-
+-  // Timestamp
+-  std::string timestamp;
+-  if (!XMLUtils::GetString(pElement, SAVESTATE_FIELD_TIMESTAMP, timestamp))
+-  {
+-    CLog::Log(LOGERROR, "Savestate has no <%s> element", SAVESTATE_FIELD_TIMESTAMP);
+-    return false;
+-  }
+-  if (!m_timestamp.SetFromDBDateTime(timestamp))
+-  {
+-    CLog::Log(LOGERROR, "Invalid savestate timestamp: %s", timestamp.c_str());
+-    return false;
+-  }
+-
+-  // Thumbnail
+-  if (!XMLUtils::GetString(pElement, SAVESTATE_FIELD_THUMBNAIL, m_thumbnail))
+-  {
+-    CLog::Log(LOGERROR, "Savestate has no <%s> element", SAVESTATE_FIELD_THUMBNAIL);
+-    return false;
+-  }
+-
+-  return true;
+-}
+diff --git a/xbmc/cores/RetroPlayer/savestates/Savestate.h b/xbmc/cores/RetroPlayer/savestates/Savestate.h
+deleted file mode 100644
+index 886b7fa442ef..000000000000
+--- a/xbmc/cores/RetroPlayer/savestates/Savestate.h
++++ /dev/null
+@@ -1,95 +0,0 @@
+-/*
+- *  Copyright (C) 2012-2018 Team Kodi
+- *  This file is part of Kodi - https://kodi.tv
+- *
+- *  SPDX-License-Identifier: GPL-2.0-or-later
+- *  See LICENSES/README.md for more information.
+- */
+-
+-#pragma once
+-
+-#include "XBDateTime.h"
+-
+-#include <stdint.h>
+-#include <string>
+-
+-class CVariant;
+-
+-namespace KODI
+-{
+-namespace RETRO
+-{
+-  enum class SAVETYPE
+-  {
+-    UNKNOWN = 0,
+-    AUTO = 1,
+-    SLOT = 2,
+-    MANUAL = 3,
+-  };
+-
+-  class CSavestate
+-  {
+-  public:
+-    CSavestate() { Reset(); }
+-
+-    virtual ~CSavestate() = default;
+-
+-    void Reset();
+-
+-    const std::string& Path() const              { return m_path; }
+-    SAVETYPE           Type() const              { return m_type; }
+-    int                Slot() const              { return m_slot; }
+-    const std::string& Label() const             { return m_label; }
+-    size_t             Size() const              { return m_size; }
+-    const std::string& GameClient() const        { return m_gameClient; }
+-    int                DatabaseId() const        { return m_databaseId; }
+-    bool               IsDatabaseObject() const  { return m_databaseId != -1; }
+-    const std::string& GamePath() const          { return m_gamePath; }
+-    const std::string& GameCRC() const           { return m_gameCRC; }
+-    uint64_t           PlaytimeFrames() const    { return m_playtimeFrames; }
+-    double             PlaytimeWallClock() const { return m_playtimeWallClock; }
+-    const CDateTime&   Timestamp() const         { return m_timestamp; }
+-    const std::string& Thumbnail() const         { return m_thumbnail; }
+-
+-    void SetPath(const std::string& path)             { m_path = path; }
+-    void SetType(SAVETYPE type)                       { m_type = type; }
+-    void SetSlot(int slot)                            { m_slot = slot; }
+-    void SetLabel(const std::string& label)           { m_label = label; }
+-    void SetSize(size_t size)                         { m_size = size; }
+-    void SetGameClient(const std::string& gameClient) { m_gameClient = gameClient; }
+-    void SetDatabaseId(int id)                        { m_databaseId = id; }
+-    void SetGamePath(const std::string& gamePath)     { m_gamePath = gamePath; }
+-    void SetGameCRC(const std::string& crc)           { m_gameCRC = crc; }
+-    void SetPlaytimeFrames(uint64_t frames)           { m_playtimeFrames = frames; }
+-    void SetPlaytimeWallClock(double playtime)        { m_playtimeWallClock = playtime; }
+-    void SetTimestamp(const CDateTime& timestamp)     { m_timestamp = timestamp; }
+-    void SetThumbnail(const std::string& thumbnail)   { m_thumbnail = thumbnail; }
+-
+-    void Serialize(CVariant& value) const;
+-    void Deserialize(const CVariant& value);
+-
+-    bool Serialize(const std::string& path) const;
+-    bool Deserialize(const std::string& path);
+-
+-  private:
+-    // Savestate properties
+-    std::string  m_path;
+-    SAVETYPE     m_type;
+-    int          m_slot; // -1 for no slot
+-    std::string  m_label;
+-    size_t       m_size;
+-    std::string  m_gameClient;
+-
+-    // Database properties
+-    int          m_databaseId;
+-
+-    // Gameplay properties
+-    std::string  m_gamePath;
+-    std::string  m_gameCRC;
+-    uint64_t     m_playtimeFrames;
+-    double       m_playtimeWallClock; // seconds
+-    CDateTime    m_timestamp;
+-    std::string  m_thumbnail;
+-  };
+-}
+-}
+diff --git a/xbmc/cores/RetroPlayer/savestates/SavestateDefines.h b/xbmc/cores/RetroPlayer/savestates/SavestateDefines.h
+deleted file mode 100644
+index 7646cbb12ed8..000000000000
+--- a/xbmc/cores/RetroPlayer/savestates/SavestateDefines.h
++++ /dev/null
+@@ -1,32 +0,0 @@
+-/*
+- *  Copyright (C) 2016-2018 Team Kodi
+- *  This file is part of Kodi - https://kodi.tv
+- *
+- *  SPDX-License-Identifier: GPL-2.0-or-later
+- *  See LICENSES/README.md for more information.
+- */
+-
+-#pragma once
+-
+-#define SAVESTATE_XML_ROOT            "savestate"
+-
+-#define SAVESTATE_FIELD_PATH          "path"
+-#define SAVESTATE_FIELD_TYPE          "type"
+-#define SAVESTATE_FIELD_SLOT          "slot"
+-#define SAVESTATE_FIELD_LABEL         "label"
+-#define SAVESTATE_FIELD_SIZE          "size"
+-#define SAVESTATE_FIELD_GAMECLIENT    "gameclient"
+-#define SAVESTATE_FIELD_DB_ID         "databaseid"
+-#define SAVESTATE_FIELD_GAME_PATH     "gamepath"
+-#define SAVESTATE_FIELD_GAME_CRC      "gamecrc"
+-#define SAVESTATE_FIELD_FRAMES        "frames"
+-#define SAVESTATE_FIELD_WALLCLOCK     "wallclock"
+-#define SAVESTATE_FIELD_TIMESTAMP     "timestamp"
+-#define SAVESTATE_FIELD_THUMBNAIL     "thumbnail"
+-
+-#define SAVESTATE_TYPE_UNKNOWN        "unknown"
+-#define SAVESTATE_TYPE_AUTO           "auto"
+-#define SAVESTATE_TYPE_SLOT           "slot"
+-#define SAVESTATE_TYPE_MANUAL         "manual"
+-
+-#define FILEITEM_PROPERTY_SAVESTATE_DURATION  "duration"
+diff --git a/xbmc/cores/RetroPlayer/savestates/SavestateReader.cpp b/xbmc/cores/RetroPlayer/savestates/SavestateReader.cpp
+deleted file mode 100644
+index d693d64d76df..000000000000
+--- a/xbmc/cores/RetroPlayer/savestates/SavestateReader.cpp
++++ /dev/null
+@@ -1,60 +0,0 @@
+-/*
+- *  Copyright (C) 2016-2018 Team Kodi
+- *  This file is part of Kodi - https://kodi.tv
+- *
+- *  SPDX-License-Identifier: GPL-2.0-or-later
+- *  See LICENSES/README.md for more information.
+- */
+-
+-#include "SavestateReader.h"
+-#include "filesystem/File.h"
+-#include "games/addons/GameClient.h"
+-#include "utils/log.h"
+-
+-using namespace KODI;
+-using namespace RETRO;
+-
+-CSavestateReader::~CSavestateReader() = default;
+-
+-bool CSavestateReader::Initialize(const std::string& path, const GAME::CGameClient* gameClient)
+-{
+-  bool bSuccess = false;
+-
+-  CLog::Log(LOGDEBUG, "Loading savestate from %s", path.c_str());
+-
+-  if (m_db.GetSavestate(path, m_savestate))
+-  {
+-    // Sanity checks
+-    if (m_savestate.GameClient() == gameClient->ID())
+-      bSuccess = true;
+-    else
+-      CLog::Log(LOGDEBUG, "Savestate game client %s doesn't match active %s", m_savestate.GameClient().c_str(), gameClient->ID().c_str());
+-  }
+-  else
+-    CLog::Log(LOGERROR, "Failed to query savestate %s", path.c_str());
+-
+-  return bSuccess;
+-}
+-
+-bool CSavestateReader::ReadSave(uint8_t *data, size_t size)
+-{
+-  using namespace XFILE;
+-
+-  bool bSuccess = false;
+-
+-  CFile file;
+-  if (file.Open(m_savestate.Path()))
+-  {
+-    ssize_t read = file.Read(data, size);
+-    if (read == static_cast<ssize_t>(size))
+-    {
+-      m_frameCount = m_savestate.PlaytimeFrames();
+-      bSuccess = true;
+-    }
+-  }
+-
+-  if (!bSuccess)
+-    CLog::Log(LOGERROR, "Failed to read savestate %s", m_savestate.Path().c_str());
+-
+-  return bSuccess;
+-}
+diff --git a/xbmc/cores/RetroPlayer/savestates/SavestateReader.h b/xbmc/cores/RetroPlayer/savestates/SavestateReader.h
+deleted file mode 100644
+index 99c47ede2f1a..000000000000
+--- a/xbmc/cores/RetroPlayer/savestates/SavestateReader.h
++++ /dev/null
+@@ -1,41 +0,0 @@
+-/*
+- *  Copyright (C) 2016-2018 Team Kodi
+- *  This file is part of Kodi - https://kodi.tv
+- *
+- *  SPDX-License-Identifier: GPL-2.0-or-later
+- *  See LICENSES/README.md for more information.
+- */
+-
+-#pragma once
+-
+-#include "Savestate.h"
+-#include "SavestateDatabase.h"
+-
+-#include <stdint.h>
+-#include <string>
+-
+-namespace KODI
+-{
+-namespace GAME
+-{
+-  class CGameClient;
+-}
+-
+-namespace RETRO
+-{
+-  class CSavestateReader
+-  {
+-  public:
+-    ~CSavestateReader();
+-
+-    bool Initialize(const std::string& path, const GAME::CGameClient* gameClient);
+-    bool ReadSave(uint8_t *data, size_t size);
+-    uint64_t GetFrameCount(void) const { return m_frameCount; }
+-
+-  private:
+-    CSavestate         m_savestate;
+-    CSavestateDatabase m_db;
+-    uint64_t           m_frameCount = 0;
+-  };
+-}
+-}
+diff --git a/xbmc/cores/RetroPlayer/savestates/SavestateTranslator.cpp b/xbmc/cores/RetroPlayer/savestates/SavestateTranslator.cpp
+deleted file mode 100644
+index 376b4a8487f9..000000000000
+--- a/xbmc/cores/RetroPlayer/savestates/SavestateTranslator.cpp
++++ /dev/null
+@@ -1,35 +0,0 @@
+-/*
+- *  Copyright (C) 2012-2018 Team Kodi
+- *  This file is part of Kodi - https://kodi.tv
+- *
+- *  SPDX-License-Identifier: GPL-2.0-or-later
+- *  See LICENSES/README.md for more information.
+- */
+-
+-#include "SavestateTranslator.h"
+-#include "SavestateDefines.h"
+-
+-using namespace KODI;
+-using namespace RETRO;
+-
+-SAVETYPE CSavestateTranslator::TranslateType(const std::string& type)
+-{
+-  if      (type == SAVESTATE_TYPE_AUTO)   return SAVETYPE::AUTO;
+-  else if (type == SAVESTATE_TYPE_SLOT)   return SAVETYPE::SLOT;
+-  else if (type == SAVESTATE_TYPE_MANUAL) return SAVETYPE::MANUAL;
+-
+-  return SAVETYPE::UNKNOWN;
+-}
+-
+-std::string CSavestateTranslator::TranslateType(const SAVETYPE& type)
+-{
+-  switch (type)
+-  {
+-    case SAVETYPE::AUTO:   return SAVESTATE_TYPE_AUTO;
+-    case SAVETYPE::SLOT:   return SAVESTATE_TYPE_SLOT;
+-    case SAVETYPE::MANUAL: return SAVESTATE_TYPE_MANUAL;
+-    default:
+-      break;
+-  }
+-  return SAVESTATE_TYPE_UNKNOWN;
+-}
+diff --git a/xbmc/cores/RetroPlayer/savestates/SavestateWriter.cpp b/xbmc/cores/RetroPlayer/savestates/SavestateWriter.cpp
+deleted file mode 100644
+index ca42113c4005..000000000000
+--- a/xbmc/cores/RetroPlayer/savestates/SavestateWriter.cpp
++++ /dev/null
+@@ -1,106 +0,0 @@
+-/*
+- *  Copyright (C) 2016-2018 Team Kodi
+- *  This file is part of Kodi - https://kodi.tv
+- *
+- *  SPDX-License-Identifier: GPL-2.0-or-later
+- *  See LICENSES/README.md for more information.
+- */
+-
+-#include "SavestateWriter.h"
+-#include "SavestateUtils.h"
+-#include "filesystem/File.h"
+-#include "games/addons/GameClient.h"
+-#include "pictures/Picture.h"
+-#include "settings/AdvancedSettings.h"
+-#include "utils/log.h"
+-#include "utils/StringUtils.h"
+-#include "Application.h"
+-#include "XBDateTime.h"
+-
+-using namespace KODI;
+-using namespace RETRO;
+-
+-CSavestateWriter::~CSavestateWriter() = default;
+-
+-bool CSavestateWriter::Initialize(const GAME::CGameClient* gameClient, uint64_t frameHistoryCount)
+-{
+-  //! @todo Handle savestates for standalone game clients
+-  if (gameClient->GetGamePath().empty())
+-  {
+-    CLog::Log(LOGERROR, "Savestates not implemented for standalone game clients");
+-    return false;
+-  }
+-
+-  m_savestate.Reset();
+-  m_fps = 0.0;
+-
+-  m_fps = gameClient->GetFrameRate();
+-
+-  CDateTime now = CDateTime::GetCurrentDateTime();
+-  std::string label = now.GetAsLocalizedDateTime();
+-
+-  m_savestate.SetType(SAVETYPE::AUTO);
+-  m_savestate.SetLabel(label);
+-  m_savestate.SetGameClient(gameClient->ID());
+-  m_savestate.SetGamePath(gameClient->GetGamePath());
+-  m_savestate.SetTimestamp(now);
+-  m_savestate.SetPlaytimeFrames(frameHistoryCount);
+-  m_savestate.SetPlaytimeWallClock(frameHistoryCount / m_fps); //! @todo Accumulate playtime instead of deriving it
+-
+-  m_savestate.SetPath(CSavestateUtils::MakePath(m_savestate));
+-
+-  if (m_fps == 0.0)
+-    return false; // Sanity check
+-
+-  return !m_savestate.Path().empty();
+-}
+-
+-bool CSavestateWriter::WriteSave(const uint8_t *data, size_t size)
+-{
+-  using namespace XFILE;
+-
+-  if (data == nullptr)
+-    return false;
+-
+-  m_savestate.SetSize(size);
+-
+-  CLog::Log(LOGDEBUG, "Saving savestate to %s", m_savestate.Path().c_str());
+-
+-  bool bSuccess = false;
+-
+-  CFile file;
+-  if (file.OpenForWrite(m_savestate.Path()))
+-  {
+-    ssize_t written = file.Write(data, size);
+-    bSuccess = (written == static_cast<ssize_t>(size));
+-  }
+-
+-  if (!bSuccess)
+-    CLog::Log(LOGERROR, "Failed to write savestate to %s", m_savestate.Path().c_str());
+-
+-  return bSuccess;
+-}
+-
+-void CSavestateWriter::WriteThumb()
+-{
+-  //! @todo
+-}
+-
+-bool CSavestateWriter::CommitToDatabase()
+-{
+-  bool bSuccess = m_db.AddSavestate(m_savestate);
+-
+-  if (!bSuccess)
+-    CLog::Log(LOGERROR, "Failed to write savestate to database: %s", m_savestate.Path().c_str());
+-
+-  return bSuccess;
+-}
+-
+-void CSavestateWriter::CleanUpTransaction()
+-{
+-  using namespace XFILE;
+-
+-  CFile::Delete(m_savestate.Path());
+-  if (CFile::Exists(m_savestate.Thumbnail()))
+-    CFile::Delete(m_savestate.Thumbnail());
+-}
+diff --git a/xbmc/cores/RetroPlayer/savestates/SavestateWriter.h b/xbmc/cores/RetroPlayer/savestates/SavestateWriter.h
+deleted file mode 100644
+index 2c4d331827d8..000000000000
+--- a/xbmc/cores/RetroPlayer/savestates/SavestateWriter.h
++++ /dev/null
+@@ -1,44 +0,0 @@
+-/*
+- *  Copyright (C) 2016-2018 Team Kodi
+- *  This file is part of Kodi - https://kodi.tv
+- *
+- *  SPDX-License-Identifier: GPL-2.0-or-later
+- *  See LICENSES/README.md for more information.
+- */
+-
+-#pragma once
+-
+-#include "Savestate.h"
+-#include "SavestateDatabase.h"
+-
+-#include <stdint.h>
+-#include <string>
+-
+-namespace KODI
+-{
+-namespace GAME
+-{
+-  class CGameClient;
+-}
+-
+-namespace RETRO
+-{
+-  class CSavestateWriter
+-  {
+-  public:
+-    ~CSavestateWriter();
+-
+-    bool Initialize(const GAME::CGameClient* gameClient, uint64_t frameHistoryCount);
+-    bool WriteSave(const uint8_t *data, size_t size);
+-    void WriteThumb();
+-    bool CommitToDatabase();
+-    void CleanUpTransaction();
+-    const std::string& GetPath() const { return m_savestate.Path(); }
+-
+-  private:
+-    CSavestate         m_savestate;
+-    double             m_fps = 0.0; //! @todo
+-    CSavestateDatabase m_db;
+-  };
+-}
+-}
