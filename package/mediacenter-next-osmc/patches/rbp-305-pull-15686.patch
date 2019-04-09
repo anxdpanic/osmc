@@ -94,7 +94,7 @@ index 8f0a8327e3c3..ba1428d63b4a 100644
 --- a/xbmc/settings/AdvancedSettings.cpp
 +++ b/xbmc/settings/AdvancedSettings.cpp
 @@ -454,6 +454,8 @@ void CAdvancedSettings::Initialize()
-   m_extraLogLevels = 0;
+   m_openGlDebugging = false;
  
    m_userAgent = g_sysinfo.GetUserAgent();
 +  m_nfsTimeout = 2;
