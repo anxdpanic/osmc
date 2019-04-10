@@ -1,0 +1,25 @@
+From e88e212af4ef84c0f2c5a66c00d5278b9fce8db4 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Mon, 8 Apr 2019 19:21:54 -0700
+Subject: [PATCH] CRenderBufferPoolGBM: use DRM_FORMAT_ARGB1555 for
+ AV_PIX_FMT_RGB555
+
+---
+ xbmc/cores/RetroPlayer/buffers/RenderBufferPoolGBM.cpp | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/xbmc/cores/RetroPlayer/buffers/RenderBufferPoolGBM.cpp b/xbmc/cores/RetroPlayer/buffers/RenderBufferPoolGBM.cpp
+index e51c0bafc099..66fedfb789f2 100644
+--- a/xbmc/cores/RetroPlayer/buffers/RenderBufferPoolGBM.cpp
++++ b/xbmc/cores/RetroPlayer/buffers/RenderBufferPoolGBM.cpp
+@@ -45,6 +45,10 @@ bool CRenderBufferPoolGBM::ConfigureInternal()
+       return true;
+     }
+     case AV_PIX_FMT_RGB555:
++    {
++      m_fourcc = DRM_FORMAT_ARGB1555;
++      return true;
++    }
+     case AV_PIX_FMT_RGB565:
+     {
+       m_fourcc = DRM_FORMAT_RGB565;
