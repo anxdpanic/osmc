@@ -1,0 +1,53 @@
+From ace7269be3af65ae927c9233e295cc7c45008c18 Mon Sep 17 00:00:00 2001
+From: peak3d <pfau@peak3d.de>
+Date: Tue, 9 Apr 2019 22:14:28 +0200
+Subject: [PATCH] Fix pixelstore usage
+
+---
+ .../VideoRenderers/LinuxRendererGLES.cpp      | 27 +++++++++++--------
+ 1 file changed, 16 insertions(+), 11 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.cpp
+index c8a5b6b4560e..39e3866face4 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.cpp
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.cpp
+@@ -279,23 +279,28 @@ void CLinuxRendererGLES::LoadPlane(CYuvPlane& plane, int type,
+ 
+   glBindTexture(m_textureTarget, plane.id);
+ 
+-  if (m_pixelStoreKey > 0)
++  bool pixelStoreChanged = false;
++  if (stride != static_cast<int>(width * bps))
+   {
+-    glPixelStorei(m_pixelStoreKey, stride);
+-  }
+-  else if (stride != static_cast<int>(width * bps))
+-  {
+-    unsigned char *src(static_cast<unsigned char*>(data)),
+-                  *dst(m_planeBuffer);
++    if (m_pixelStoreKey > 0)
++    {
++      pixelStoreChanged = true;
++      glPixelStorei(m_pixelStoreKey, stride);
++    }
++    else
++    {
++      unsigned char *src(static_cast<unsigned char*>(data)),
++                    *dst(m_planeBuffer);
+ 
+-    for (unsigned int y = 0; y < height; ++y, src += stride, dst += width * bpp)
+-      memcpy(dst, src, width * bpp);
++      for (unsigned int y = 0; y < height; ++y, src += stride, dst += width * bpp)
++        memcpy(dst, src, width * bpp);
+ 
+-    pixelData = m_planeBuffer;
++      pixelData = m_planeBuffer;
++    }
+   }
+   glTexSubImage2D(m_textureTarget, 0, 0, 0, width, height, type, GL_UNSIGNED_BYTE, pixelData);
+ 
+-  if (m_pixelStoreKey > 0)
++  if (m_pixelStoreKey > 0 && pixelStoreChanged)
+     glPixelStorei(m_pixelStoreKey, 0);
+ 
+   // check if we need to load any border pixels

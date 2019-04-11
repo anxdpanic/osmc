@@ -1,0 +1,23 @@
+From 83dd26698077bbdc166134df3c437a27aed2f602 Mon Sep 17 00:00:00 2001
+From: DaveTBlake <oak99sky@yahoo.co.uk>
+Date: Wed, 10 Apr 2019 06:31:51 +0100
+Subject: [PATCH] Fix log statement - remove { and } from format are not
+ parsing
+
+---
+ xbmc/platform/win32/IMMNotificationClient.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/platform/win32/IMMNotificationClient.h b/xbmc/platform/win32/IMMNotificationClient.h
+index 9a6212bc11a6..39ed24c64cd3 100644
+--- a/xbmc/platform/win32/IMMNotificationClient.h
++++ b/xbmc/platform/win32/IMMNotificationClient.h
+@@ -146,7 +146,7 @@ class CMMNotificationClient : public IMMNotificationClient
+ 
+   HRESULT STDMETHODCALLTYPE OnPropertyValueChanged(LPCWSTR pwstrDeviceId, const PROPERTYKEY key)
+   {
+-    CLog::Log(LOGDEBUG, "%s: Changed device property of %s is {{%8.8x-%4.4x-%4.4x-%2.2x%2.2x-%2.2x%2.2x%2.2x%2.2x%2.2x%2.2x}}#%d",
++    CLog::Log(LOGDEBUG, "%s: Changed device property of %s is (%8.8x-%4.4x-%4.4x-%2.2x%2.2x-%2.2x%2.2x%2.2x%2.2x%2.2x%2.2x)#%d",
+               __FUNCTION__, FromW(pwstrDeviceId), key.fmtid.Data1, key.fmtid.Data2, key.fmtid.Data3,
+                                            key.fmtid.Data4[0], key.fmtid.Data4[1],
+                                            key.fmtid.Data4[2], key.fmtid.Data4[3],

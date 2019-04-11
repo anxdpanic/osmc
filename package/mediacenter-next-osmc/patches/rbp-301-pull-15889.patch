@@ -1,0 +1,23 @@
+From 471045d4260e6a9b3b36811298f46ef4e2c25e60 Mon Sep 17 00:00:00 2001
+From: peak3d <pfau@peak3d.de>
+Date: Tue, 9 Apr 2019 22:23:03 +0200
+Subject: [PATCH] [Android] Add colorMode to android:configChanges to avoid
+ restarts
+
+---
+ tools/android/packaging/xbmc/AndroidManifest.xml.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/android/packaging/xbmc/AndroidManifest.xml.in b/tools/android/packaging/xbmc/AndroidManifest.xml.in
+index 73b918ab9cbc..2f5bf76023c1 100644
+--- a/tools/android/packaging/xbmc/AndroidManifest.xml.in
++++ b/tools/android/packaging/xbmc/AndroidManifest.xml.in
+@@ -51,7 +51,7 @@
+         android:logo="@drawable/banner">
+         <activity
+             android:name=".Splash"
+-            android:configChanges="orientation|keyboard|keyboardHidden|navigation|touchscreen|screenLayout|screenSize"
++            android:configChanges="orientation|keyboard|keyboardHidden|navigation|touchscreen|screenLayout|screenSize|colorMode"
+             android:finishOnTaskLaunch="true"
+             android:launchMode="singleInstance"
+             android:screenOrientation="sensorLandscape"
