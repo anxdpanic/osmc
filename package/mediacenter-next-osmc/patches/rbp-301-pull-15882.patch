@@ -1,0 +1,96 @@
+From 05cbc16e57f3edc9a2e2fe35a1932623b5d527e2 Mon Sep 17 00:00:00 2001
+From: djp952 <djp952@gmail.com>
+Date: Mon, 8 Apr 2019 14:54:36 -0400
+Subject: [PATCH] Initialize timer info tag with first available timer type
+ from client instead of manual one-shot
+
+---
+ xbmc/pvr/timers/PVRTimerInfoTag.cpp | 11 ++---------
+ xbmc/pvr/timers/PVRTimerType.cpp    | 18 +++++++++++++-----
+ xbmc/pvr/timers/PVRTimerType.h      |  5 +++--
+ 3 files changed, 18 insertions(+), 16 deletions(-)
+
+diff --git a/xbmc/pvr/timers/PVRTimerInfoTag.cpp b/xbmc/pvr/timers/PVRTimerInfoTag.cpp
+index 7dcf26efad90..988ef285ee96 100644
+--- a/xbmc/pvr/timers/PVRTimerInfoTag.cpp
++++ b/xbmc/pvr/timers/PVRTimerInfoTag.cpp
+@@ -48,15 +48,8 @@ CPVRTimerInfoTag::CPVRTimerInfoTag(bool bRadio /* = false */) :
+   const CPVRClientPtr client = CServiceBroker::GetPVRManager().GetClient(m_iClientId);
+   if (client && client->GetClientCapabilities().SupportsTimers())
+   {
+-    // default to manual one-shot timer for given client
+-    CPVRTimerTypePtr type(CPVRTimerType::CreateFromAttributes(
+-      PVR_TIMER_TYPE_IS_MANUAL, PVR_TIMER_TYPE_IS_REPEATING | PVR_TIMER_TYPE_FORBIDS_NEW_INSTANCES, m_iClientId));
+-
+-    if (!type)
+-    {
+-      // last resort. default to first available type from any client.
+-      type = CPVRTimerType::GetFirstAvailableType();
+-    }
++    // default to first available type for given client
++    CPVRTimerTypePtr type = CPVRTimerType::GetFirstAvailableType(m_iClientId);
+ 
+     if (type)
+       SetTimerType(type);
+diff --git a/xbmc/pvr/timers/PVRTimerType.cpp b/xbmc/pvr/timers/PVRTimerType.cpp
+index 2788114f6503..f0dfad519864 100644
+--- a/xbmc/pvr/timers/PVRTimerType.cpp
++++ b/xbmc/pvr/timers/PVRTimerType.cpp
+@@ -26,10 +26,18 @@ const std::vector<CPVRTimerTypePtr> CPVRTimerType::GetAllTypes()
+   return allTypes;
+ }
+ 
+-const CPVRTimerTypePtr CPVRTimerType::GetFirstAvailableType()
++const CPVRTimerTypePtr CPVRTimerType::GetFirstAvailableType(int iClientId)
+ {
+-  std::vector<CPVRTimerTypePtr> allTypes(GetAllTypes());
+-  return allTypes.empty() ? CPVRTimerTypePtr() : *(allTypes.begin());
++  const CPVRClientPtr client = CServiceBroker::GetPVRManager().GetClient(iClientId);
++  if (client)
++  {
++    std::vector<CPVRTimerTypePtr> types;
++    if (client->GetTimerTypes(types) == PVR_ERROR_NO_ERROR && !types.empty())
++    {
++      return *(types.begin());
++    }
++  }
++  return {};
+ }
+ 
+ CPVRTimerTypePtr CPVRTimerType::CreateFromIds(unsigned int iTypeId, int iClientId)
+@@ -49,7 +57,7 @@ CPVRTimerTypePtr CPVRTimerType::CreateFromIds(unsigned int iTypeId, int iClientI
+   }
+ 
+   CLog::LogF(LOGERROR, "Unable to resolve numeric timer type (%d, %d)", iTypeId, iClientId);
+-  return CPVRTimerTypePtr();
++  return {};
+ }
+ 
+ CPVRTimerTypePtr CPVRTimerType::CreateFromAttributes(
+@@ -71,7 +79,7 @@ CPVRTimerTypePtr CPVRTimerType::CreateFromAttributes(
+   }
+ 
+   CLog::LogF(LOGERROR, "Unable to resolve timer type (0x%x, 0x%x, %d)", iMustHaveAttr, iMustNotHaveAttr, iClientId);
+-  return CPVRTimerTypePtr();
++  return {};
+ }
+ 
+ CPVRTimerType::CPVRTimerType() :
+diff --git a/xbmc/pvr/timers/PVRTimerType.h b/xbmc/pvr/timers/PVRTimerType.h
+index dd8e7bb39812..6cbadb3e7daf 100644
+--- a/xbmc/pvr/timers/PVRTimerType.h
++++ b/xbmc/pvr/timers/PVRTimerType.h
+@@ -35,10 +35,11 @@ namespace PVR
+     static const std::vector<CPVRTimerTypePtr> GetAllTypes();
+ 
+     /*!
+-     * @brief Return the first available timer type.
++     * @brief Return the first available timer type from given client id.
++     * @param iClientId the PVR client id.
+      * @return A timer type or NULL if none available.
+      */
+-    static const CPVRTimerTypePtr GetFirstAvailableType();
++    static const CPVRTimerTypePtr GetFirstAvailableType(int iClientId);
+ 
+     /*!
+      * @brief Create a timer type from given timer type id and client id.
