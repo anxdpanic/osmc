@@ -1,4 +1,4 @@
-From 636b75ab1a9ec6fb851a3beb3d707b0ccc93e589 Mon Sep 17 00:00:00 2001
+From 7e0c2d40b6a24418740dab9f06bf39c6ba595f9f Mon Sep 17 00:00:00 2001
 From: Sam Nazarko <email@samnazarko.co.uk>
 Date: Sun, 20 Sep 2015 14:40:24 +0100
 Subject: [PATCH] Ensure that Kodi's 'services.devicename' reflects
@@ -11,37 +11,36 @@ Do not worry about /etc/hosts as libnss-myhostname should handle this.
 
 Signed-off-by: Sam Nazarko <email@samnazarko.co.uk>
 ---
- xbmc/Application.cpp             |  1 +
- xbmc/guilib/guiinfo/SystemGUIInfo.cpp          |  6 +++++-
- xbmc/network/NetworkServices.cpp | 17 +++++++++++++++++
- xbmc/settings/Settings.cpp       |  1 +
- 4 files changed, 24 insertions(+), 1 deletion(-)
+ xbmc/Application.cpp                  |  1 +
+ xbmc/guilib/guiinfo/SystemGUIInfo.cpp |  9 +++++++--
+ xbmc/network/NetworkServices.cpp      | 20 +++++++++++++++++++-
+ 3 files changed, 27 insertions(+), 3 deletions(-)
 
 diff --git a/xbmc/Application.cpp b/xbmc/Application.cpp
-index af16cab..469a612 100644
+index 3bd24ef..ac1f4f5 100644
 --- a/xbmc/Application.cpp
 +++ b/xbmc/Application.cpp
-@@ -627,6 +627,7 @@ bool CApplication::Create()
+@@ -542,6 +542,7 @@ bool CApplication::Create(const CAppParamParser &params)
      return false;
-
+ 
    CLog::Log(LOGINFO, "creating subdirectories");
 +  CServiceBroker::GetSettingsComponent()->GetSettings()->SetString(CSettings::SETTING_SERVICES_DEVICENAME, hostname);
    const std::shared_ptr<CProfileManager> profileManager = m_pSettingsComponent->GetProfileManager();
    const std::shared_ptr<CSettings> settings = m_pSettingsComponent->GetSettings();
    CLog::Log(LOGINFO, "userdata folder: %s", CURL::GetRedacted(profileManager->GetProfileUserDataFolder()).c_str());
 diff --git a/xbmc/guilib/guiinfo/SystemGUIInfo.cpp b/xbmc/guilib/guiinfo/SystemGUIInfo.cpp
-index 34ff2df2d2..b27fe31900 100644
+index a27bda4..e76ed82 100644
 --- a/xbmc/guilib/guiinfo/SystemGUIInfo.cpp
 +++ b/xbmc/guilib/guiinfo/SystemGUIInfo.cpp
-@@ -151,6 +151,7 @@ bool CSystemGUIInfo::InitCurrentItem(CFileItem *item)
-
+@@ -137,6 +137,7 @@ bool CSystemGUIInfo::InitCurrentItem(CFileItem *item)
+ 
  bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int contextWindow, const CGUIInfo &info, std::string *fallback) const
  {
 +  std::string strLabel;
    switch (info.m_info)
    {
      ///////////////////////////////////////////////////////////////////////////////////////////////
-@@ -291,8 +291,12 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
+@@ -277,8 +278,12 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
        value = g_langInfo.GetTemperatureUnitString();
        return true;
      case SYSTEM_FRIENDLY_NAME:
@@ -55,12 +54,22 @@ index 34ff2df2d2..b27fe31900 100644
 +    }
      case SYSTEM_STEREOSCOPIC_MODE:
      {
-       int iStereoMode = CServiceBroker::GetSettingsComponent()->GetInt(CSettings::SETTING_VIDEOSCREEN_STEREOSCOPICMODE);
+       int iStereoMode = CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_VIDEOSCREEN_STEREOSCOPICMODE);
 diff --git a/xbmc/network/NetworkServices.cpp b/xbmc/network/NetworkServices.cpp
-index 393dabc..27c6074 100644
+index cbbac07..18faef5 100644
 --- a/xbmc/network/NetworkServices.cpp
 +++ b/xbmc/network/NetworkServices.cpp
-@@ -449,6 +449,23 @@ void CNetworkServices::OnSettingChanged(const CSetting *setting)
+@@ -131,7 +131,8 @@ CNetworkServices::CNetworkServices()
+     CSettings::SETTING_SMB_WORKGROUP,
+     CSettings::SETTING_SMB_MINPROTOCOL,
+     CSettings::SETTING_SMB_MAXPROTOCOL,
+-    CSettings::SETTING_SMB_LEGACYSECURITY
++    CSettings::SETTING_SMB_LEGACYSECURITY,
++    CSettings::SETTING_SERVICES_DEVICENAME
+   };
+   m_settings = CServiceBroker::GetSettingsComponent()->GetSettings();
+   m_settings->GetSettingsManager()->RegisterCallback(this, settingSet);
+@@ -448,6 +449,23 @@ void CNetworkServices::OnSettingChanged(std::shared_ptr<const CSetting> setting)
        CApplicationMessenger::GetInstance().PostMsg(TMSG_RESTARTAPP);
      }
    }
@@ -83,7 +92,7 @@ index 393dabc..27c6074 100644
 +
  }
  
- bool CNetworkServices::OnSettingUpdate(CSetting* &setting, const char *oldSettingId, const TiXmlNode *oldSettingNode)
+ bool CNetworkServices::OnSettingUpdate(std::shared_ptr<CSetting> setting, const char *oldSettingId, const TiXmlNode *oldSettingNode)
 -- 
 2.7.4
 
