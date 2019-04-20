@@ -7,10 +7,10 @@
 if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ] || [ "$1" == "pc" ] || [ "$1" == "vero2" ] || [ "$1" == "vero3" ]
 then
 pull_source "https://github.com/xbmc/xbmc/archive/f985f24e2c01f0fa21f472989854bca4e57982ad.tar.gz" "$(pwd)/src"
-API_VERSION="18"
+API_VERSION="19"
 else
 pull_source "https://github.com/xbmc/xbmc/archive/master.tar.gz" "$(pwd)/kodi"
-API_VERSION="19"
+API_VERSION="20"
 fi
 if [ $? != 0 ]; then echo -e "Error fetching Kodi source" && exit 1; fi
 # Build in native environment
@@ -20,7 +20,7 @@ if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ] || [ "$1" == "vero2" ] || [ "$1" == 
 then
     BUILD_OPTS=$(($BUILD_OPTS + $BUILD_OPTION_NEEDS_SWAP))
 fi
-build_in_env "${1}" $(pwd) "mediacenter-osmc" "$BUILD_OPTS"
+build_in_env "${1}" $(pwd) "mediacenter-next-osmc" "$BUILD_OPTS"
 build_return=$?
 if [ $build_return == 99 ]
 then
@@ -369,8 +369,8 @@ then
         # Languages
         mkdir languages/
         pushd languages
-        if [ "$API_VERSION" = "18" ]; then api_name="leia"; fi
-	if [ "$API_VERSION" = "19" ]; then api_name="tbc"; fi
+        if [ "$API_VERSION" = "19" ]; then api_name="leia"; fi
+	if [ "$API_VERSION" = "20" ]; then api_name="tbc"; fi
 	base_url="http://mirror.ox.ac.uk/sites/xbmc.org/addons/${api_name}"
 	handle_dep "wget" # We do not usually use wget in the build environment
         languages=$(wget ${base_url} -O- | grep resource.language. | sed -e 's/<a/\n<a/g' | sed -e 's/<a .*href=['"'"'"]//' -e 's/["'"'"'].*$//' -e '/^$/ d' | sed '/tr/d' | sed 's/resource.language.//' | tr -d / | grep -v 'img src')
