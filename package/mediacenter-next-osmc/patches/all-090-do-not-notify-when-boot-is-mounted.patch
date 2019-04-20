@@ -1,25 +1,27 @@
-From 577e08236d434858b55ca68f4ffdd33d7c0cdae6 Mon Sep 17 00:00:00 2001
-From: Greg McCarthy <greg@gjmccarthy.co.uk>
-Date: Thu, 23 Nov 2017 14:39:35 +0000
-Subject: [PATCH] Fixup all-090
+From 5bb413414bbf176b66995741ab34b1ddcd0f8a6d Mon Sep 17 00:00:00 2001
+From: Sam Nazarko <email@samnazarko.co.uk>
+Date: Tue, 7 Feb 2017 17:49:18 +0000
+Subject: [PATCH] Don't notify when /boot is mounted. We do this when /boot is
+ first accessed (systemd-auto), which can cause a spurious notification
 
+Signed-off-by: Sam Nazarko <email@samnazarko.co.uk>
 ---
  xbmc/storage/MediaManager.cpp | 2 ++
  1 file changed, 2 insertions(+)
 
 diff --git a/xbmc/storage/MediaManager.cpp b/xbmc/storage/MediaManager.cpp
-index 27a28cd68c..4b9333b064 100644
+index ace02a1..1d9d5a1 100644
 --- a/xbmc/storage/MediaManager.cpp
 +++ b/xbmc/storage/MediaManager.cpp
-@@ -681,6 +681,8 @@ std::vector<std::string> CMediaManager::GetDiskUsage()
+@@ -687,6 +687,8 @@ std::vector<std::string> CMediaManager::GetDiskUsage()
  
  void CMediaManager::OnStorageAdded(const std::string &label, const std::string &path)
  {
 +if (path== "/boot")
 +  return;
  #ifdef HAS_DVD_DRIVE
-   if (CServiceBroker::GetSettingsComponent().GetInt(CSettings::SETTING_AUDIOCDS_AUTOACTION) != AUTOCD_NONE || CServiceBroker::GetSettingsComponent().GetBool(CSettings::SETTING_DVDS_AUTORUN))
-     if (CServiceBroker::GetSettingsComponent().GetInt(CSettings::SETTING_AUDIOCDS_AUTOACTION) == AUTOCD_RIP)
+   const std::shared_ptr<CSettings> settings = CServiceBroker::GetSettingsComponent()->GetSettings();
+   if (settings->GetInt(CSettings::SETTING_AUDIOCDS_AUTOACTION) != AUTOCD_NONE || settings->GetBool(CSettings::SETTING_DVDS_AUTORUN))
 -- 
-2.12.3
+2.7.4
 

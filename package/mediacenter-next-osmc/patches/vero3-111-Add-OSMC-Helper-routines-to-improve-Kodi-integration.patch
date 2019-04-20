@@ -1,4 +1,4 @@
-From 81759b4da3b0e8e8562211b227b985e2b81151ac Mon Sep 17 00:00:00 2001
+From 12380a73dd532322c244429b0db5a8d0b335dd0a Mon Sep 17 00:00:00 2001
 From: Sam Nazarko <email@samnazarko.co.uk>
 Date: Thu, 21 Dec 2017 11:38:02 +0000
 Subject: [PATCH] Add OSMC Helper routines to improve Kodi integration with
@@ -6,7 +6,7 @@ Subject: [PATCH] Add OSMC Helper routines to improve Kodi integration with
 
 Signed-off-by: Sam Nazarko <email@samnazarko.co.uk>
 ---
- xbmc/CMakeLists.txt | 2 ++
+ xbmc/CMakeLists.txt |  2 ++
  xbmc/OSMCHelper.cpp | 36 ++++++++++++++++++++++++++++++++++++
  xbmc/OSMCHelper.h   | 38 ++++++++++++++++++++++++++++++++++++++
  3 files changed, 76 insertions(+)
@@ -14,10 +14,10 @@ Signed-off-by: Sam Nazarko <email@samnazarko.co.uk>
  create mode 100644 xbmc/OSMCHelper.h
 
 diff --git a/xbmc/CMakeLists.txt b/xbmc/CMakeLists.txt
-index 0043a45749..94bdff5b30 100644
+index 50eadc1..19ed9aa 100644
 --- a/xbmc/CMakeLists.txt
 +++ b/xbmc/CMakeLists.txt
-@@ -19,6 +19,7 @@ set(SOURCES Application.cpp
+@@ -21,6 +21,7 @@ set(SOURCES Application.cpp
              LangInfo.cpp
              MediaSource.cpp
              NfoFile.cpp
@@ -25,21 +25,20 @@ index 0043a45749..94bdff5b30 100644
              PasswordManager.cpp
              PlayListPlayer.cpp
              PartyModeManager.cpp
-@@ -62,6 +63,7 @@ set(HEADERS AppParamParser.h
-             LangInfo.h                                                   
-             MediaSource.h                                                
-             NfoFile.h                                                    
-+            OSMCHelper.h                                       
-             PartyModeManager.h                                 
-             PasswordManager.h                                  
-             PlayListPlayer.h                                   
-                                                                
-diff --git a/xbmc/OSMCHelper.cpp b/xbmc/OSMCHelper.cpp          
-new file mode 100644                                            
-index 0000000..febc8c6                                
---- /dev/null                                         
-+++ b/xbmc/OSMCHelper.cpp                             
-@@ -0,0 +1,36 @@                                      
+@@ -67,6 +68,7 @@ set(HEADERS AppParamParser.h
+             LangInfo.h
+             MediaSource.h
+             NfoFile.h
++	    OSMCHelper.h
+             PartyModeManager.h
+             PasswordManager.h
+             PlayListPlayer.h
+diff --git a/xbmc/OSMCHelper.cpp b/xbmc/OSMCHelper.cpp
+new file mode 100644
+index 0000000..2b60588
+--- /dev/null
++++ b/xbmc/OSMCHelper.cpp
+@@ -0,0 +1,36 @@
 +/*                                                   
 + *      Copyright (C) 2005-2013 Team XBMC            
 + *      http://xbmc.org                              
@@ -76,12 +75,12 @@ index 0000000..febc8c6
 +     }                                                                                     
 +   #endif // __arm__                                                                       
 +}                                                                                          
-diff --git a/xbmc/OSMCHelper.h b/xbmc/OSMCHelper.h                                          
-new file mode 100644                                                                        
-index 0000000..04bd5fe                                                                      
---- /dev/null                                                                               
-+++ b/xbmc/OSMCHelper.h                                                                     
-@@ -0,0 +1,38 @@                                                                            
+diff --git a/xbmc/OSMCHelper.h b/xbmc/OSMCHelper.h
+new file mode 100644
+index 0000000..709d21a
+--- /dev/null
++++ b/xbmc/OSMCHelper.h
+@@ -0,0 +1,38 @@
 +/*                                                                                         
 + *      Copyright (C) 2005-2013 Team XBMC                                                  
 + *      http://xbmc.org                                                                    
@@ -120,5 +119,6 @@ index 0000000..04bd5fe
 +      int uname(struct utsname *buf);                                                      
 +    #endif // __arm__                                                                      
 +}                                                                                          
---                                                                                          
+-- 
 2.7.4
+

@@ -1,20 +1,22 @@
-From 82814c0538397a1c86a3a207f9c216a3e4478bf8 Mon Sep 17 00:00:00 2001
-From: Greg McCarthy <greg@gjmccarthy.co.uk>
-Date: Thu, 11 Oct 2018 20:41:23 +0100
-Subject: [PATCH] Update all-098
+From 1b8052c9dd22a17951998a4092c62e9da4e7e376 Mon Sep 17 00:00:00 2001
+From: Sam Nazarko <email@samnazarko.co.uk>
+Date: Fri, 4 Aug 2017 21:13:59 +0100
+Subject: [PATCH] Fix a crash caused by multiple calls to ReloadSkin() before
+ the first one completes
 
+Signed-off-by: Sam Nazarko <email@samnazarko.co.uk>
 ---
  xbmc/Application.cpp | 11 ++++++++++-
  xbmc/Application.h   |  3 +++
  2 files changed, 13 insertions(+), 1 deletion(-)
 
 diff --git a/xbmc/Application.cpp b/xbmc/Application.cpp
-index 93b6cc3f18..be61e6c9b2 100644
+index 5c0af96..57831ef 100644
 --- a/xbmc/Application.cpp
 +++ b/xbmc/Application.cpp
-@@ -1143,6 +1143,11 @@ void CApplication::ReloadSkin(bool confirm/*=false*/)
-   if (!g_SkinInfo || m_bInitializing)
-     return; // Don't allow reload before skin is loaded by system
+@@ -1157,6 +1157,11 @@ void CApplication::ReloadSkin(bool confirm/*=false*/)
+      return;
+   }
  
 +  if (m_SkinReloading) {
 +    CLog::Log(LOGINFO, "Suppressing skin reload as we are already doing so");
@@ -24,7 +26,7 @@ index 93b6cc3f18..be61e6c9b2 100644
    std::string oldSkin = g_SkinInfo->ID();
  
    CGUIMessage msg(GUI_MSG_LOAD_SKIN, -1, CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindow());
-@@ -1150,7 +1155,11 @@ void CApplication::ReloadSkin(bool confirm/*=false*/)
+@@ -1164,7 +1169,11 @@ void CApplication::ReloadSkin(bool confirm/*=false*/)
  
    const std::shared_ptr<CSettings> settings = CServiceBroker::GetSettingsComponent()->GetSettings();
    std::string newSkin = settings->GetString(CSettings::SETTING_LOOKANDFEEL_SKIN);
@@ -38,19 +40,19 @@ index 93b6cc3f18..be61e6c9b2 100644
      /* The Reset() or SetString() below will cause recursion, so the m_confirmSkinChange boolean is set so as to not prompt the
         user as to whether they want to keep the current skin. */
 diff --git a/xbmc/Application.h b/xbmc/Application.h
-index 38be160f4a..dfefec7b98 100644
+index 0edd896..8a54e4a 100644
 --- a/xbmc/Application.h
 +++ b/xbmc/Application.h
-@@ -341,6 +341,9 @@ public:
+@@ -339,6 +339,9 @@ public:
  
-   std::unique_ptr<CServiceManager> m_ServiceManager;
+   void SetLoggingIn(bool switchingProfiles);
  
 +  /*! \Ensure that we only handle one request to reload the skin at once */
 +  bool m_SkinReloading;
 +
    /*!
-   \brief Locks calls from outside kodi (e.g. python) until framemove is processed.
-   */
+    \brief Register an action listener.
+    \param listener The listener to register
 -- 
-2.16.4
+2.7.4
 

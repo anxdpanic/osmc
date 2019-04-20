@@ -1,18 +1,23 @@
-From a1552c9395f31d5a2c7def75951a48e134073f74 Mon Sep 17 00:00:00 2001
-From: Greg McCarthy <greg@gjmccarthy.co.uk>
-Date: Wed, 20 Dec 2017 13:47:54 +0000
-Subject: [PATCH] Update all-014
+From a08e094103041ee625b35a5e36f777a61107990a Mon Sep 17 00:00:00 2001
+From: Sam Nazarko <email@samnazarko.co.uk>
+Date: Sun, 13 Dec 2015 18:19:06 +0000
+Subject: [PATCH] Sometimes the shutdown or reboot process can hang:
 
+* Ensure that logind receives a request to initiate the exit process.
+
+* Allow OSMC's sigterm handler to know when to do the business or not, otherwise we get code on EXIT and POWERDOWN/REBOOT paths
+
+Signed-off-by: Sam Nazarko <email@samnazarko.co.uk>
 ---
  xbmc/Application.cpp | 6 ++++--
  xbmc/Application.h   | 5 +++++
  2 files changed, 9 insertions(+), 2 deletions(-)
 
 diff --git a/xbmc/Application.cpp b/xbmc/Application.cpp
-index dd6e204cec..3ffc17fb02 100644
+index 3bd24ef..f877516 100644
 --- a/xbmc/Application.cpp
 +++ b/xbmc/Application.cpp
-@@ -2373,8 +2373,9 @@ void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
+@@ -2029,8 +2029,9 @@ void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
    switch (msg)
    {
    case TMSG_POWERDOWN:
@@ -23,7 +28,7 @@ index dd6e204cec..3ffc17fb02 100644
      break;
  
    case TMSG_QUIT:
-@@ -2399,8 +2400,9 @@ void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
+@@ -2055,8 +2056,9 @@ void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
  
    case TMSG_RESTART:
    case TMSG_RESET:
@@ -35,10 +40,10 @@ index dd6e204cec..3ffc17fb02 100644
  
    case TMSG_RESTARTAPP:
 diff --git a/xbmc/Application.h b/xbmc/Application.h
-index 957bc08629..280fd7c9f7 100644
+index 30cf6e7..b38409a 100644
 --- a/xbmc/Application.h
 +++ b/xbmc/Application.h
-@@ -373,6 +373,11 @@ public:
+@@ -340,6 +340,11 @@ public:
  
    std::unique_ptr<CServiceManager> m_ServiceManager;
  
@@ -51,5 +56,5 @@ index 957bc08629..280fd7c9f7 100644
    \brief Locks calls from outside kodi (e.g. python) until framemove is processed.
    */
 -- 
-2.12.3
+2.7.4
 
