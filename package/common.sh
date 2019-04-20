@@ -23,7 +23,6 @@ function fix_arch_ctl()
 	sed '/Architecture/d' -i $1
 	test $(arch)x == i686x && echo "Architecture: i386" >> $1
 	test $(arch)x == armv7lx && echo "Architecture: armhf" >> $1
-	test $(arch)x == armv8lx && echo "Architecture: armhf" >> $1
 	test $(arch)x == x86_64x && echo "Architecture: amd64" >> $1
 	test $(arch)x == aarch64x && echo "Architecture: arm64" >> $1
 	sed '$!N; /^\(.*\)\n\1$/!P; D' -i $1
@@ -118,12 +117,8 @@ function build_in_env()
         then
             if [ ! -f /opt/osmc-tc/swap ]
             then
-                if [ ! -f /opt/osmc-tc ] 
-		then
-			mkdir /opt/osmc-tc
-		fi
-
-		dd if=/dev/zero of=/opt/osmc-tc/swap bs=1M count=384
+		mkdir -p /opt/osmc-tc
+                dd if=/dev/zero of=/opt/osmc-tc/swap bs=1M count=384
                 mkswap /opt/osmc-tc/swap
                 chmod 0600 /opt/osmc-tc/swap
             fi
@@ -272,7 +267,6 @@ function dpkg_build()
 	size=$(du -s --apparent-size "$1" | awk '{print $1}')
 	echo "Installed-Size: $size" >> "$1/DEBIAN/control"
 	dpkg -b "$1" "$2"
-        if [ $? != 0 ]; then echo -e "Failed to build package $1" && exit 1; fi
 }
 
 export -f fix_arch_ctl
