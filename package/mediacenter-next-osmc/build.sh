@@ -9,7 +9,7 @@ then
 pull_source "https://github.com/popcornmix/xbmc/archive/f557accb02daa604eb1f373cf1e30751d74ad927.tar.gz" "$(pwd)/src"
 API_VERSION="19"
 else
-pull_source "https://github.com/xbmc/xbmc/archive/d8cdf4621424fa89d608a42b5f8050e07e3c9dfc.tar.gz" "$(pwd)/kodi"
+pull_source "https://github.com/xbmc/xbmc/archive/d8cdf4621424fa89d608a42b5f8050e07e3c9dfc.tar.gz" "$(pwd)/src"
 API_VERSION="19"
 
 
