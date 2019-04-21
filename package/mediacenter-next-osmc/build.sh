@@ -4,13 +4,15 @@
 #!/bin/bash
 
 . ../common.sh
-if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ] || [ "$1" == "pc" ] || [ "$1" == "vero2" ] || [ "$1" == "vero3" ]
+if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ]
 then
-pull_source "https://github.com/xbmc/xbmc/archive/d8cdf4621424fa89d608a42b5f8050e07e3c9dfc.tar.gz" "$(pwd)/src"
+pull_source "https://github.com/popcornmix/xbmc/archive/f557accb02daa604eb1f373cf1e30751d74ad927.tar.gz" "$(pwd)/src"
 API_VERSION="19"
 else
-pull_source "https://github.com/xbmc/xbmc/archive/master.tar.gz" "$(pwd)/kodi"
-API_VERSION="20"
+pull_source "https://github.com/xbmc/xbmc/archive/d8cdf4621424fa89d608a42b5f8050e07e3c9dfc.tar.gz" "$(pwd)/kodi"
+API_VERSION="19"
+
+
 fi
 if [ $? != 0 ]; then echo -e "Error fetching Kodi source" && exit 1; fi
 # Build in native environment
