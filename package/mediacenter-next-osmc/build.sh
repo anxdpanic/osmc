@@ -174,7 +174,7 @@ then
 	sed '/Package/d' -i files-debug/DEBIAN/control
 	sed '/Depends/d' -i files-debug/DEBIAN/control
 	sed '/Version/d' -i files-debug/DEBIAN/control
-	echo "Package: ${1}-mediacenter--osmc" >> files/DEBIAN/control
+	echo "Package: ${1}-mediacenter-osmc" >> files/DEBIAN/control
 	echo "Package: ${1}-mediacenter-debug-osmc" >> files-debug/DEBIAN/control
 	VERSION_DBG=$(grep Version ${out}/DEBIAN/control)
 	VERSION_NUM=$(echo $VERSION_DBG | awk {'print $2'})
