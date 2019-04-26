@@ -9,7 +9,7 @@ then
 pull_source "https://github.com/popcornmix/xbmc/archive/f557accb02daa604eb1f373cf1e30751d74ad927.tar.gz" "$(pwd)/src"
 API_VERSION="19"
 else
-pull_source "https://github.com/xbmc/xbmc/archive/d8cdf4621424fa89d608a42b5f8050e07e3c9dfc.tar.gz" "$(pwd)/src"
+pull_source "https://github.com/xbmc/xbmc/archive/ac7c75fb085634fa945bdb157943da54e261492e.tar.gz" "$(pwd)/src"
 API_VERSION="19"
 
 
@@ -371,7 +371,7 @@ then
         # Languages
         mkdir languages/
         pushd languages
-        if [ "$API_VERSION" = "19" ]; then api_name="leia"; fi
+        if [ "$API_VERSION" = "19" ]; then api_name="matrix"; fi
 	if [ "$API_VERSION" = "20" ]; then api_name="tbc"; fi
 	base_url="http://mirror.ox.ac.uk/sites/xbmc.org/addons/${api_name}"
 	handle_dep "wget" # We do not usually use wget in the build environment
