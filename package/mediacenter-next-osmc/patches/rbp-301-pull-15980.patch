@@ -1,0 +1,26 @@
+From 121762a77d2ac00645abe95e9717b6cece10bda0 Mon Sep 17 00:00:00 2001
+From: fritsch <Peter.Fruehberger@gmail.com>
+Date: Wed, 24 Apr 2019 19:12:30 +0200
+Subject: [PATCH] VideoPlayerCodec: Ask Demuxer to seek for us
+
+---
+ xbmc/cores/paplayer/VideoPlayerCodec.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/cores/paplayer/VideoPlayerCodec.cpp b/xbmc/cores/paplayer/VideoPlayerCodec.cpp
+index 4edadf0454cf..b13c2cd18778 100644
+--- a/xbmc/cores/paplayer/VideoPlayerCodec.cpp
++++ b/xbmc/cores/paplayer/VideoPlayerCodec.cpp
+@@ -213,10 +213,10 @@ bool VideoPlayerCodec::Init(const CFileItem &file, unsigned int filecache)
+   m_bCanSeek = false;
+   if (m_pInputStream->Seek(0, SEEK_POSSIBLE))
+   {
+-    if (Seek(1))
++    if (m_pDemuxer->SeekTime(1, true))
+     {
+       // rewind stream to beginning
+-      Seek(0);
++      m_pDemuxer->SeekTime(0, true);
+       m_bCanSeek = true;
+     }
+     else
