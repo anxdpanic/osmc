@@ -25,7 +25,7 @@ index c431c0f..4950d74 100644
    </requires>
  	<extension point="xbmc.addon.repository">
  		<!-- Do not forget to bump add-on version when changing paths to force a repo refresh -->
--		<info>http://mirrors.kodi.tv/addons/leai/addons.xml.gz</info>
+-		<info>http://mirrors.kodi.tv/addons/leia/addons.xml.gz</info>
 -		<checksum verify="sha256">http://mirrors.kodi.tv/addons/leia/addons.xml.gz?sha256</checksum>
 -		<datadir>https://mirrors.kodi.tv/addons/leia</datadir>
 -		<artdir>http://mirrors.kodi.tv/addons/leia</artdir>
