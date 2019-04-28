@@ -19,7 +19,7 @@ index 116b3bf..0d7a889 100644
  #include <cassert>
 +#include <stdlib.h>
  #ifdef TARGET_POSIX
- #include "platform/linux/XTimeUtils.h"
+ #include "linux/XTimeUtils.h"
  #endif
 @@ -52,6 +53,20 @@ CRPIUtils::CRPIUtils()
  {
