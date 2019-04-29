@@ -1,0 +1,3362 @@
+From ef24528358d7561b0fd9e419e84530acea5d96e7 Mon Sep 17 00:00:00 2001
+From: XODIDOX <xodidox@gmail.com>
+Date: Thu, 29 Nov 2018 11:35:26 -0800
+Subject: [PATCH 01/15] Added movie version feature.
+
+With this feature, it's possible to connect more than one video file with one movie entry in library.  For example, Kodi will support both STANDARD version and EXTENDED version of a movie live under one movie item. A context menu item "Manage movie version" under "Manage" menu item has been added to the GUI. A "Version" button has also been added to the video info dialog for movie, which allows user change the default video file for the movie. The change will be saved to DB.
+---
+ .../resources/strings.po                      |  37 +++
+ addons/skin.estuary/media/DefaultTypes.png    | Bin 0 -> 4163 bytes
+ .../media/icons/infodialogs/version.png       | Bin 0 -> 707 bytes
+ addons/skin.estuary/xml/DialogVideoInfo.xml   |   6 +
+ xbmc/dialogs/GUIDialogContextMenu.h           |   1 +
+ xbmc/filesystem/VideoDatabaseDirectory.cpp    |   4 +
+ .../VideoDatabaseDirectory/DirectoryNode.cpp  |   1 +
+ .../VideoDatabaseDirectory/DirectoryNode.h    |   3 +-
+ .../DirectoryNodeGrouped.cpp                  |   2 +
+ .../DirectoryNodeMoviesOverview.cpp           |   3 +-
+ .../DirectoryNodeTvShowsOverview.cpp          |   3 +-
+ .../VideoDatabaseDirectory/QueryParams.cpp    |   3 +
+ .../VideoDatabaseDirectory/QueryParams.h      |   2 +
+ xbmc/interfaces/json-rpc/VideoLibrary.cpp     |   3 +
+ xbmc/interfaces/legacy/ListItem.cpp           |   2 +
+ xbmc/utils/DatabaseUtils.h                    |   1 +
+ xbmc/video/GUIViewStateVideo.cpp              |   1 +
+ xbmc/video/VideoDatabase.cpp                  | 212 +++++++++++++++++-
+ xbmc/video/VideoDatabase.h                    |   9 +
+ xbmc/video/VideoDbUrl.cpp                     |   4 +
+ xbmc/video/VideoInfoTag.cpp                   |  15 +-
+ xbmc/video/VideoInfoTag.h                     |   2 +
+ xbmc/video/dialogs/GUIDialogVideoInfo.cpp     | 156 ++++++++++++-
+ xbmc/video/dialogs/GUIDialogVideoInfo.h       |   3 +
+ xbmc/video/windows/GUIWindowVideoNav.cpp      |   2 +
+ 25 files changed, 463 insertions(+), 12 deletions(-)
+ create mode 100644 addons/skin.estuary/media/DefaultTypes.png
+ create mode 100644 addons/skin.estuary/media/icons/infodialogs/version.png
+
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index 6e670c77dfea..e5a11f333b7b 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -21588,3 +21588,40 @@ msgstr ""
+ msgctxt "#39113"
+ msgid "Center Mix Level in dB relative to metadata or default (-3 dB)"
+ msgstr ""
++
++#: xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeMoviesOverview.cpp
++#: xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeOverview.cpp
++#: xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeTvShowOverview.cpp
++msgctxt "#39300"
++msgid "Types"
++msgstr ""
++
++#: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++msgctxt "#39301"
++msgid "Manage movie version"
++msgstr ""
++
++#: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++msgctxt "#39302"
++msgid "Convert movie to an additional version of moive"
++msgstr ""
++
++#: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++msgctxt "#39303"
++msgid "Select movie version"
++msgstr ""
++
++#: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++msgctxt "#39304"
++msgid "Add movie to a new version"
++msgstr ""
++
++#: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++msgctxt "#39305"
++msgid "Invalid movie selection"
++msgstr ""
++
++#: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++msgctxt "#39306"
++msgid "There is more than one movie version exist for the selected movie."
++msgstr ""
+diff --git a/addons/skin.estuary/media/DefaultTypes.png b/addons/skin.estuary/media/DefaultTypes.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..cd8729b76710a69a496cb7bed3df4f188091be16
+GIT binary patch
+literal 4163
+zcmds)do<MB`^P`ymeNEkB{S$qPNk9x<$kG1a=(uZQZXjPxXrkXL#o4(B9|}*<uV2%
+z48@F5jwFrSxZkFZdyLx{H0JWv`Tg_z`}g1P`^R2;zn{I<v-W!Sv-az~|FpF>2k(RI
+z0{{SQapRgj0DyLvAV5-Lce))?cK??`*_)dJRb2`TyF$#@#L5H!-lj_Nyv29*-iJ5b
+zPyleC_16Hk2bJ9g0O?_iYbK77aMpxPnc|Fm``Wm=!~E}k>bIbBzuU^ag(9TP_SyLr
+zp6IbUo^AC;{pKz0K__s(I$7$_glnDD)k+W9DYN9gPmkRC(3g{#c-IGV8Qft%F|)Zf
+zt-lq5n&n@b%X@|L?PBv=I-_R4;!(@IpL9Lc{n@HY5@`jHVO*w2$jE>IF*5-8;~-${
+zB?ibG{eLbKq~bUnPP+3<Ql1M{#%e0bDKTvZkB5}nO_%(5kKh?N(`{?~neGpogVvX)
+zt3Bj|fw_%>2Y7hGB&l-G$nl|o=nN?}U#A1}{N6(Gp4VhD*#marS>&94{u)H|^}Qzd
+zd!#QW8Hd!4`MWV4(O28zqhuxH1pK~5wEjO@X2#0ZmNR>)yj#lE4=uywf9<p^zVZ{-
+zEyzI7BJNzP8xJp6=(||g`pD!ML<TUZrN%qQqYsGYuR~Od@6p@`qEPC>;@^NwpZwN1
+zd}PYO+QGPT7g>=6{qxl&=V#A9F=5WVxj$+-IZ_~4DHD3H<RzB`UuO(2;!Y#sm;J`s
+zkgewtlh^ry1g84R_?s<S-wt!5OAQ=E7fMr64uM?vuN-O$7jG}TG>Mp~|5*R3n>H9(
+zUyAI}Y_{cmd_$b~%=u(482v=76wPv^>MZ!T2{w@eOnQmKZRvjDOIqIM^CZRm3DR1C
+zD5<Yb9XY&*in_AVCgBvwY>u%H%jDu+G87sDdNr5ka?_?Goq6o^{uKx8NI`5j@uoGZ
+z(a%*ceY{}HXfsQvW5MloOwenAHZy%HGwD-jm*q;90?CorboVDSO(7!Fp1Z8BGilbl
+z9mQ*^`v>b10vmI>A~rub2QSs14TEY5&0AoH)t-=*6`g*5VXEtV=Xl8g6OHp>H;I?H
+zuoo3SnSS<*eE0IeTa6kgVDKP<E?f!(ZWziWMH~<T^;|gjjVM@Ghi&T(te{uUcHsCn
+z)^e@ilvlZLh<>)T<=tF0hi(e9DYyJlN1r1Fv=uFho64(o4gEJI!UFbydMZ~46kYTy
+z$J^V3`u#Uw`U}QLlBLu`t(#RtI$Ib6NipO0y298u;K5jdzb$Rl+qeoHIfC5piP+<{
+zXuRM%UaSIe*XoB(7w_IQ+8||Ccx3eH66WzIMGWD%CG~e^I3T!a$wX+#i5~>`k-dvA
+zr@iBxlT--Qgvo|vte+tDX{K9^_`5b!xtg#)f%!kQhmo+oY4mVTr=rBPx}2b4=x8d5
+zs-!PcV3cBsZn(h$g+zb_ACLtoF=K4a6Oh07lFJz{_7z)_B^|pHBR^%Y$1uwF72j>k
+zwN{`Bq3XNHi1ibYWc0qWvn=WZw>tyOfem8lX6(Q5?v{9`8OPkB50)qI>Xmk%g|i3(
+zvQ%Pb5-|TFO;C3va-I8-)5J!`aTz@P1el(C>6|6U_x-bhs!fG{)d?|UVU66HpGrgN
+zfFQbWz?hA_Tc^*WShMVzHWVc>kpk>)T@uuc@+c1qei|8)2yJ#z#-Ht_E&L_p@)3#E
+zt#RYQ%$Og{$m3wTaIN>E9`WA&Kk|#c)e+er@&HY-mXH&<Y?yoq{d$g2<qniqK9yco
+z<V#iBFXE+hKcGuEh}@s8%@b8ScIGqdSb}V>0J2>4*llxfNBIRq+0el~rla}cZ0{^H
+z#{6Po!N{J>a;6oBIJvjvdvni2Ca0_ErQulErfpBXCOjNo&UE68&EYB$l*u8G19#bs
+zpDZmt@Q!>aHo{LgJgB7=5^GBr>TS$OIPpIG>5(h=t66DZPK@h41f^0l&p;-05^<uv
+z)*kA@H)q@S=oA~4)+?R8g<mU9BFjSXMvp!!x2)G0?6_0#3R8vPuT>zODg)uS9061^
+zPW5eu@tJFD+IEXZ(;4C{gxjdNk+dKB0Cz}1#OuA`s&47vF;U;Bm<-hD>K0-DN;Y;M
+zsQNZ})_^X2(PxJ3)Q+asQ3Y>1np(|)voEw(sEFZ$ErcNTQDz2fhEzUmWijXY%ztFU
+z2ipAQ+ZNXyyzFZXbY7JLB>w^c5fvb=MH2W;L*&0kLazZ8Boe-^ocIp|*|XzPkyH9P
+z4C*-(|HUms6oU<f(6%pkq6Zjht>GSj&ob(!tDP^lc3)#$DGHe^DGr&K9EDAnY}I<F
+zbvB$kCahYpk<%e!;2j8<+eTAF$`NBrBof)=v{|m;s8hIJc%-EAWl-7D+6N8M+#t1j
+z6J|e;SNlczaBh23%yTPDP}XiHcujEhc=IfOO{vu2s91|gbaAxld868l;C1!U9v%ih
+z;M;7nl0zBG@7}qJL9i!F22NW=m6k{R?m<ij=Hn{Q)?f6$z6+eh17K&|Y$}UmG|0nr
+zU9L&oreM2D7J|ae7!#z0a3%Gtra<V8Gk<A$Fc~*dch?Wp*Q9t3FtzZpn&?tJZMvbU
+zaqJ8;O7$S1$Vl>wBD*-Fi``mwl+vj4Dq@;ediv;qJ~C!dvz0fq*&A_%AkR;W&@L0I
+zIt5ub!gNRr9_*o9P23p_mh>xp8mq%n&fu$UA$iVpXRF1U$1y#6P#BN?FV!fmpVqQe
+zQ<0P<rTW#&fgB^NsdHGWa#N9Cj*Ax0aOGB?hMeYCla;f5)t+TFAyZvYz3^!FHfx|>
+z*QH<$Tk35S<(t5jn~O>Mq*EN+73ph*fYUGH1Pf9DQSW1RHZ2C+egyeOrB8L)Ybx%@
+z6HfeZ&IH1!Jo>q2&k)KHRZBdAt)<n4v)^&Q?Dx)Q*B0Ch*HsJ8FTT+lO}H}$sbSa|
+z97^$_>7FRfI^`x9Aq3YKKa|uERo&9cXw3;WcWPd5u(Xa;^awNbi_K?HVr*wru*45r
+zdD2K%<iY!hE6C!o#;gI&hy|3(a+Z>a*8!M(1^NN)kla<{R@Q(<A@*<&Gl<Sw^3Lkj
+z2!DtAs+X*pr#R{cj47LTyoN`Z;R9$J75#hRB3{-o`LkkheCT0=nJ~xHDBN9W&FqZF
+zoUXsVSpKWfVnjABXY;nvcLc>=YU(=4MFdn0RNl2g-g`fT(+OYKs2ODn%}Ks@Kow~0
+zfF4STjdAYwAMF^#8Add4so!z0ci)F)4-#sbqpJ{bYLM40@W1n&AQ-9Toa50K^WMjX
+z^heaNWw5wVRlX@RM)d$oGOmsKBP`9i<kfkUhw>&HVG$q=XUmb&9|W<^`<4W!B2;Yh
+zeQk}T$Qkdny<|ZJ@_|FqL6de)YBl|r$lSn@+Ck_Bt_Uu>agK!2j-A6>cA{yYEt;0l
+z5;66-ZywXnKA04U_kb!T$(Q;r;ih5A%q`uyq9GK6LLwh;p5lD1dohN7+y^#!P4jsU
+z%zqk!`?Q@BTWU=0D{LuSIeG$!Ym}n|+DiV#eP$w303~1I>!0!ZyY2<P*9@+ETb`wu
+zAZEOWayq+MkOEDQFH?jJ#H#xFxP9MwqrE<@bqv=0n(FiL*SWD4|AH_JQ=Dm7JIr$s
+zjwYHCmr%RK+QO*kG(=?{ZZ^a%)i?_ixP}RsNl&N`0yN&U-;hz`h=u%cW%<`$$1W<>
+z3Nbhbig`ieNvd_9#K;1rfn&*_Ea6Tk-|nwFcSX!Kj`fG*fO;7J@5QJ7azBO@!;_b^
+zkVYgy`=a^?*yMfZBlC#%-$2#bLv=mLR<>@0T=V<hl@|hJ$jB43jrU*-gQA6@k6Sjs
+zx(4w?goY1Q4U3h#gO`lcL5S-UGYYpKLBXgFm+a5G*sx%?SC!>1%tF9H=SX*|{f{<v
+zKI9V2a6O?mNN&ef5QoT;kw^rx6OJ@{h+v}ooHi<kUhvJ>#Le+XC!_P75m&~xSs#kX
+zi#+CL<N1^R*rB5`z@;9MhIXeBmC9elO^3I7^lNk)D(hUy*)u58sIl;+7F~|sB+z}Z
+zL=*nm69R&FGL-hX)>qb$g`=+Cb8p<Owlk-&pgs<g`lv7T2<BATr+}~^T8U3PRT{bd
+zfK6*-jz^yIgF?EMp88+5nW;b<5SNmQx*zOPbrDiBFoA{)&f+staub*G<D;}<$>_@9
+z020puoD22@J4BuGTSUJ>93CPdAo)+?t+UWdeZ!_dQ2x^59@&PiN;h7`RL__Z`1BvN
+zi_+rcJM3#Smel18!&X6%&$`|NS+IjUGi|E)O9eIy8@_8+?RL%T^ZRA2m}gm=hIT*o
+z35Mpu2Xi(%xq0wh0fV<vuJq6T!=RpnmC@n79ilL0j1HT!FM85dvOgA*_h({K690T$
+zaUc)6@qR>4;>k0>^*Jee^TuL~S}%5;xGqy|9(A5~7I?kjx;lD6819+q5`AOA_8@@j
+zON#g(tj7|~VLl(@?Pu)hG;_zK?(OckV9z$|GPl*h9p$X%tE}(J3D<zS0&!#%+Wq@d
+z$s3fKIk{!UPN(D}9BW<wy`1ODW*cT?IjNTqM+fGeT-^!~j6F>C(;r)Xg3^xpXuX>9
+vW0qvX+b`)A)g$uX=m!2T{-#1vPawT<U;qcX2prk{_yZQ#t*=#?dd2?-ZLD(O
+
+literal 0
+HcmV?d00001
+
+diff --git a/addons/skin.estuary/media/icons/infodialogs/version.png b/addons/skin.estuary/media/icons/infodialogs/version.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..78a5c178d3daf6d83778750bebd6e261c8a1611b
+GIT binary patch
+literal 707
+zcmeAS@N?(olHy`uVBq!ia0vp^1|ZDA1|-9oezpTC#^NA%Cx&(BWL^R}Ea{HEjtmSN
+z`?>!lvI6;>1s;*b3=DjSL74G){)!X^2Brv47srqc=eN_X{g@3!T#a)Suas<P5>XJD
+z#$a0QkjVe0;k?|07Yi0IP;|Nws5G%})|y0%?`J<x_^IMG!y{}${}Y?vRc}sytq|I;
+zbN=%^warfplRepzCi5IolkD&{5}5rzv*Gd46&ycH7e*vUwEWo@P-WG;;%}76+J&#1
+z?Rat}0{1!JKVv$7N|DcnjzxuQk66u}?=UU(cbq75Kktsb=tg~`r9NDmw>SGaSgT*z
+zYTk5AX5o7wX*Da!5BiHT{JUnqVb7gw@P0<6{GFCEC(rBZ0%64p!c#QA^1qH0+;>N{
+zQL}D)O0Ryu=(UeR_E}FmZ`tWD`@^`e;)WA@>!k#D`7ixzpRPH4V6NSrBa>gfW-E4n
+zX0P^Y?urc;7@E&<Je<BjbS;Olzeez@aJ}_B$%n-*t)JSs%=KjF`4?5}QvT|xDH~Bd
+z8^-*{I@(Ft>qqtX8y8qhRjn@Rd|WABu{L(G*Izru$ROwR`pnIqSGT`b<(|(VeqX?%
+zDZ(geL8Q?lrdr=D+0ZrdqQ7)C8&6rX)wYy*)+~^mBqn>qOPI;``No|kx18?0X_G$D
+z5>^!IC%K&YL8p|9ELZBcfZT<3`k#whj<VgceSG_K;EPGMUv0xKG*y@uG%oX5f5&UH
+z&hFMzHd~LaJ6_(udcm8ujNjM1xbvIqZSRd;Q>}6peNR0RPEz%bniPF3^Y_hp>ROo>
+zf9{`nb)o!;8SBbdrmWO`a@67Ss`hx^wP*G$-z;z}GxdDuag+4PV%6$VJ3d4xs+yn%
+jL5hNzbl!sNzZp+z6|Fb(ynP&)@EAN@{an^LB{Ts5`^z-9
+
+literal 0
+HcmV?d00001
+
+diff --git a/addons/skin.estuary/xml/DialogVideoInfo.xml b/addons/skin.estuary/xml/DialogVideoInfo.xml
+index 283757d3514a..9249c588eae1 100644
+--- a/addons/skin.estuary/xml/DialogVideoInfo.xml
++++ b/addons/skin.estuary/xml/DialogVideoInfo.xml
+@@ -382,6 +382,12 @@
+ 					<align>center</align>
+ 					<orientation>horizontal</orientation>
+ 					<scrolltime tween="quadratic">200</scrolltime>
++					<include content="InfoDialogButton">
++						<param name="id" value="14" />
++						<param name="icon" value="icons/infodialogs/version.png" />
++						<param name="label" value="$LOCALIZE[19114]" />
++						<param name="visible" value="String.IsEqual(ListItem.DBType,movie)" />
++					</include>
+ 					<include content="InfoDialogToggleButton">
+ 						<param name="id" value="8" />
+ 						<param name="icon_on" value="icons/filemanager.png" />
+diff --git a/xbmc/dialogs/GUIDialogContextMenu.h b/xbmc/dialogs/GUIDialogContextMenu.h
+index 3e8194aa308a..a5f6f7bba599 100644
+--- a/xbmc/dialogs/GUIDialogContextMenu.h
++++ b/xbmc/dialogs/GUIDialogContextMenu.h
+@@ -95,6 +95,7 @@ enum CONTEXT_BUTTON { CONTEXT_BUTTON_CANCELLED = 0,
+                       CONTEXT_BUTTON_DELETE_ALL,
+                       CONTEXT_BUTTON_HELP,
+                       CONTEXT_BUTTON_PLAY_NEXT,
++                      CONTEXT_BUTTON_SET_MOVIE_VERSION
+                     };
+ 
+ class CContextButtons : public std::vector< std::pair<size_t, std::string> >
+diff --git a/xbmc/filesystem/VideoDatabaseDirectory.cpp b/xbmc/filesystem/VideoDatabaseDirectory.cpp
+index d6c345b35301..83aa45c4cc82 100644
+--- a/xbmc/filesystem/VideoDatabaseDirectory.cpp
++++ b/xbmc/filesystem/VideoDatabaseDirectory.cpp
+@@ -190,6 +190,8 @@ bool CVideoDatabaseDirectory::GetLabel(const std::string& strDirectory, std::str
+       strLabel = g_localizeStrings.Get(20434); break;
+     case NODE_TYPE_TAGS: // Tags
+       strLabel = g_localizeStrings.Get(20459); break;
++    case NODE_TYPE_TYPES: // Types
++        strLabel = g_localizeStrings.Get(39300); break;
+     case NODE_TYPE_MOVIES_OVERVIEW: // Movies
+       strLabel = g_localizeStrings.Get(342); break;
+     case NODE_TYPE_TVSHOWS_OVERVIEW: // TV Shows
+@@ -257,6 +259,8 @@ std::string CVideoDatabaseDirectory::GetIcon(const std::string &strDirectory)
+     return "DefaultSets.png";
+   case NODE_TYPE_TAGS: // Tags
+     return "DefaultTags.png";
++  case NODE_TYPE_TYPES: // Types
++    return "DefaultTypes.png";
+   case NODE_TYPE_YEAR: // Year
+     return "DefaultYear.png";
+   case NODE_TYPE_DIRECTOR: // Director
+diff --git a/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNode.cpp b/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNode.cpp
+index 33ecb411128e..0f94a84b37bf 100644
+--- a/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNode.cpp
++++ b/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNode.cpp
+@@ -98,6 +98,7 @@ CDirectoryNode* CDirectoryNode::CreateNode(NODE_TYPE Type, const std::string& st
+   case NODE_TYPE_COUNTRY:
+   case NODE_TYPE_SETS:
+   case NODE_TYPE_TAGS:
++  case NODE_TYPE_TYPES:
+   case NODE_TYPE_YEAR:
+   case NODE_TYPE_ACTOR:
+   case NODE_TYPE_DIRECTOR:
+diff --git a/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNode.h b/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNode.h
+index 2fbeeba1a54a..c552ebfdf456 100644
+--- a/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNode.h
++++ b/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNode.h
+@@ -44,7 +44,8 @@ namespace XFILE
+       NODE_TYPE_SETS,
+       NODE_TYPE_COUNTRY,
+       NODE_TYPE_TAGS,
+-      NODE_TYPE_INPROGRESS_TVSHOWS
++      NODE_TYPE_INPROGRESS_TVSHOWS,
++      NODE_TYPE_TYPES
+     } NODE_TYPE;
+ 
+     typedef struct {
+diff --git a/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeGrouped.cpp b/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeGrouped.cpp
+index 6a31a7817802..ddd30736b73a 100644
+--- a/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeGrouped.cpp
++++ b/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeGrouped.cpp
+@@ -85,6 +85,8 @@ std::string CDirectoryNodeGrouped::GetContentType(const CQueryParams &params) co
+       return "sets";
+     case NODE_TYPE_TAGS:
+       return "tags";
++    case NODE_TYPE_TYPES:
++      return "types";
+     case NODE_TYPE_YEAR:
+       return "years";
+     case NODE_TYPE_ACTOR:
+diff --git a/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeMoviesOverview.cpp b/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeMoviesOverview.cpp
+index 74a149af4fc0..8ad177e5924a 100644
+--- a/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeMoviesOverview.cpp
++++ b/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeMoviesOverview.cpp
+@@ -24,7 +24,8 @@ Node MovieChildren[] = {
+                         { NODE_TYPE_STUDIO,       "studios",    20388 },
+                         { NODE_TYPE_SETS,         "sets",       20434 },
+                         { NODE_TYPE_COUNTRY,      "countries",  20451 },
+-                        { NODE_TYPE_TAGS,         "tags",       20459 }
++                        { NODE_TYPE_TAGS,         "tags",       20459 },
++                        { NODE_TYPE_TYPES,        "types",      39300 }
+                        };
+ 
+ CDirectoryNodeMoviesOverview::CDirectoryNodeMoviesOverview(const std::string& strName, CDirectoryNode* pParent)
+diff --git a/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeTvShowsOverview.cpp b/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeTvShowsOverview.cpp
+index 1212e9b7b418..30281f4a4e32 100644
+--- a/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeTvShowsOverview.cpp
++++ b/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeTvShowsOverview.cpp
+@@ -20,7 +20,8 @@ Node TvShowChildren[] = {
+                           { NODE_TYPE_YEAR,          "years",    652 },
+                           { NODE_TYPE_ACTOR,         "actors",   344 },
+                           { NODE_TYPE_STUDIO,        "studios",  20388 },
+-                          { NODE_TYPE_TAGS,          "tags",     20459 }
++                          { NODE_TYPE_TAGS,          "tags",     20459 },
++                          { NODE_TYPE_TYPES,         "types",    39300 }
+                         };
+ 
+ CDirectoryNodeTvShowsOverview::CDirectoryNodeTvShowsOverview(const std::string& strName, CDirectoryNode* pParent)
+diff --git a/xbmc/filesystem/VideoDatabaseDirectory/QueryParams.cpp b/xbmc/filesystem/VideoDatabaseDirectory/QueryParams.cpp
+index 7aac15b47057..69c06de3e949 100644
+--- a/xbmc/filesystem/VideoDatabaseDirectory/QueryParams.cpp
++++ b/xbmc/filesystem/VideoDatabaseDirectory/QueryParams.cpp
+@@ -90,6 +90,9 @@ void CQueryParams::SetQueryParam(NODE_TYPE NodeType, const std::string& strNodeN
+   case NODE_TYPE_TAGS:
+     m_idTag = idDb;
+     break;
++  case NODE_TYPE_TYPES:
++    m_idType = idDb;
++    break;
+   default:
+     break;
+   }
+diff --git a/xbmc/filesystem/VideoDatabaseDirectory/QueryParams.h b/xbmc/filesystem/VideoDatabaseDirectory/QueryParams.h
+index f9d7e4535b38..1904442e0109 100644
+--- a/xbmc/filesystem/VideoDatabaseDirectory/QueryParams.h
++++ b/xbmc/filesystem/VideoDatabaseDirectory/QueryParams.h
+@@ -33,6 +33,7 @@ namespace XFILE
+       long GetMVideoId() const { return m_idMVideo; }
+       long GetSetId() const { return m_idSet; }
+       long GetTagId() const { return m_idTag; }
++      long GetTypeId() const { return m_idType; }
+ 
+     protected:
+       void SetQueryParam(NODE_TYPE NodeType, const std::string& strNodeName);
+@@ -54,6 +55,7 @@ namespace XFILE
+       long m_idAlbum;
+       long m_idSet;
+       long m_idTag;
++      long m_idType;
+     };
+   }
+ }
+diff --git a/xbmc/interfaces/json-rpc/VideoLibrary.cpp b/xbmc/interfaces/json-rpc/VideoLibrary.cpp
+index 073dd0ad1965..2c9e6a5c3935 100644
+--- a/xbmc/interfaces/json-rpc/VideoLibrary.cpp
++++ b/xbmc/interfaces/json-rpc/VideoLibrary.cpp
+@@ -1228,6 +1228,9 @@ void CVideoLibrary::UpdateVideoTag(const CVariant &parameterObject, CVideoInfoTa
+   UpdateVideoTagField(parameterObject, "tag", tags, updatedDetails);
+   details.SetTags(tags);
+ 
++  if (ParameterNotNull(parameterObject, "version"))
++    details.SetVersion(parameterObject["version"].asString());
++
+   if (ParameterNotNull(parameterObject, "thumbnail"))
+   {
+     std::string value = parameterObject["thumbnail"].asString();
+diff --git a/xbmc/interfaces/legacy/ListItem.cpp b/xbmc/interfaces/legacy/ListItem.cpp
+index c7c1086a1964..bf51a00bb71c 100644
+--- a/xbmc/interfaces/legacy/ListItem.cpp
++++ b/xbmc/interfaces/legacy/ListItem.cpp
+@@ -473,6 +473,8 @@ namespace XBMCAddon
+             videotag.SetSetOverview(value);
+           else if (key == "tag")
+             videotag.SetTags(getStringArray(alt, key, value));
++          else if (key == "version")
++            videotag.SetVersion(value);
+           else if (key == "imdbnumber")
+             videotag.SetUniqueID(value);
+           else if (key == "code")
+diff --git a/xbmc/utils/DatabaseUtils.h b/xbmc/utils/DatabaseUtils.h
+index c09e284223f0..19960638bfda 100644
+--- a/xbmc/utils/DatabaseUtils.h
++++ b/xbmc/utils/DatabaseUtils.h
+@@ -117,6 +117,7 @@ typedef enum {
+   FieldSubtitleLanguage,
+   FieldProductionCode,
+   FieldTag,
++  FieldVersion,
+   FieldChannelName,
+   FieldChannelNumber,
+   FieldInstruments,
+diff --git a/xbmc/video/GUIViewStateVideo.cpp b/xbmc/video/GUIViewStateVideo.cpp
+index 3cde8ffd0da5..8da7b572a503 100644
+--- a/xbmc/video/GUIViewStateVideo.cpp
++++ b/xbmc/video/GUIViewStateVideo.cpp
+@@ -171,6 +171,7 @@ CGUIViewStateWindowVideoNav::CGUIViewStateWindowVideoNav(const CFileItemList& it
+       }
+       break;
+     case NODE_TYPE_TAGS:
++    case NODE_TYPE_TYPES:
+       {
+         AddSortMethod(SortByLabel, sortAttributes, 551, LABEL_MASKS("%T","", "%T",""));  // Title, empty | Title, empty
+         SetSortMethod(SortByLabel);
+diff --git a/xbmc/video/VideoDatabase.cpp b/xbmc/video/VideoDatabase.cpp
+index 13c6aab5ce7a..717b8a0743b1 100644
+--- a/xbmc/video/VideoDatabase.cpp
++++ b/xbmc/video/VideoDatabase.cpp
+@@ -193,6 +193,13 @@ void CVideoDatabase::CreateTables()
+ 
+   CLog::Log(LOGINFO, "create uniqueid table");
+   m_pDS->exec("CREATE TABLE uniqueid (uniqueid_id INTEGER PRIMARY KEY, media_id INTEGER, media_type TEXT, value TEXT, type TEXT)");
++
++  CLog::Log(LOGINFO, "create type table");
++  m_pDS->exec("CREATE TABLE type (type_id INTEGER PRIMARY KEY, name TEXT)");
++  m_pDS->exec("INSERT INTO type VALUES(1, 'STANDARD')");
++
++  CLog::Log(LOGINFO, "create type_link table");
++  m_pDS->exec("CREATE TABLE type_link (file_id INTEGER PRIMARY KEY, media_id INTEGER, media_type TEXT, type_id INTEGER)");
+ }
+ 
+ void CVideoDatabase::CreateLinkIndex(const char *table)
+@@ -1286,6 +1293,7 @@ int CVideoDatabase::AddMovie(const std::string& strFilenameAndPath)
+       std::string strSQL=PrepareSQL("insert into movie (idMovie, idFile) values (NULL, %i)", idFile);
+       m_pDS->exec(strSQL);
+       idMovie = (int)m_pDS->lastinsertid();
++      m_pDS->exec(PrepareSQL("INSERT INTO type_link VALUES(%i, %i, 'movie', 1)", idFile, idMovie));
+     }
+ 
+     return idMovie;
+@@ -1586,6 +1594,40 @@ int CVideoDatabase::AddSet(const std::string& strSet, const std::string& strOver
+   return -1;
+ }
+ 
++int CVideoDatabase::AddType(const std::string& strType)
++{
++  if (strType.empty())
++    return -1;
++
++  try
++  {
++    if (m_pDB.get() == nullptr || m_pDS.get() == nullptr)
++      return -1;
++
++    std::string strSQL = PrepareSQL("SELECT type_id FROM type WHERE name LIKE '%s'", strType.c_str());
++    m_pDS->query(strSQL);
++    if (m_pDS->num_rows() == 0)
++    {
++      m_pDS->close();
++      strSQL = PrepareSQL("INSERT INTO type (type_id, name) VALUES(NULL, '%s')", strType.c_str(), 0);
++      m_pDS->exec(strSQL);
++      return static_cast<int>(m_pDS->lastinsertid());
++    }
++    else
++    {
++      int id = m_pDS->fv("type_id").get_asInt();
++      m_pDS->close();
++      return id;
++    }
++  }
++  catch (...)
++  {
++    CLog::Log(LOGERROR, "%s (%s) failed", __FUNCTION__, strType.c_str());
++  }
++
++  return -1;
++}
++
+ int CVideoDatabase::AddTag(const std::string& name)
+ {
+   if (name.empty())
+@@ -3373,8 +3415,8 @@ void CVideoDatabase::DeleteMovie(int idMovie, bool bKeepId /* = false */)
+       if (!path.empty())
+         InvalidatePathHash(path);
+ 
+-      std::string strSQL = PrepareSQL("delete from movie where idMovie=%i", idMovie);
+-      m_pDS->exec(strSQL);
++      m_pDS->exec(PrepareSQL("DELETE FROM movie WHERE idMovie = %i", idMovie));
++      m_pDS->exec(PrepareSQL("DELETE FROM type_link WHERE media_id = %i", idMovie));
+     }
+ 
+     //! @todo move this below CommitTransaction() once UPnP doesn't rely on this anymore
+@@ -3625,6 +3667,121 @@ void CVideoDatabase::SetMovieSet(int idMovie, int idSet)
+     ExecuteQuery(PrepareSQL("update movie set idSet = null where idMovie = %i", idMovie));
+ }
+ 
++void CVideoDatabase::GetMovieVersion(int idMovie, CFileItemList& items)
++{
++  if (m_pDB.get() == nullptr || m_pDS.get() == nullptr)
++    return;
++
++  try
++  {
++      m_pDS->query(PrepareSQL("SELECT type.name AS name,"
++                              "  path.strPath AS strPath,"
++                              "  files.strFileName AS strFileName "
++                              "FROM type"
++                              "  JOIN type_link ON"
++                              "    type_link.type_id = type.type_id"
++                              "  JOIN files ON"
++                              "    files.idFile = type_link.file_id"
++                              "  JOIN path ON"
++                              "    path.idPath = files.idPath "
++                              "WHERE type_link.media_id = %i", idMovie));
++
++    while (!m_pDS->eof())
++    {
++      CFileItemPtr pItem(new CFileItem());
++      pItem->SetLabel(m_pDS->fv(0).get_asString());
++      std::string file;
++      ConstructPath(file, m_pDS->fv(1).get_asString(), m_pDS->fv(2).get_asString());
++      pItem->SetLabel2(file);
++      items.Add(pItem);
++      m_pDS->next();
++    }
++    m_pDS->close();
++  }
++  catch (...)
++  {
++    CLog::Log(LOGERROR, "%s failed for movie %d", __FUNCTION__, idMovie);
++  }
++}
++
++int CVideoDatabase::GetFileIdByMovie(int idMovie)
++{
++  if (m_pDB.get() == nullptr || m_pDS.get() == nullptr)
++    return -1;
++
++  int idFile = -1;
++
++  try
++  {
++    m_pDS->query(PrepareSQL("SELECT idFile FROM movie WHERE idMovie = %i", idMovie));
++
++    if (!m_pDS->eof())
++    {
++      idFile = m_pDS->fv(0).get_asInt();
++    }
++
++    m_pDS->close();
++  }
++  catch (...)
++  {
++    CLog::Log(LOGERROR, "%s failed for movie %d", __FUNCTION__, idMovie);
++  }
++
++  return idFile;
++}
++
++int CVideoDatabase::GetFileIdByMovieVersion(int idMovie, int idType)
++{
++  if (m_pDB.get() == nullptr || m_pDS.get() == nullptr)
++    return -1;
++
++  int idFile = -1;
++
++  try
++  {
++    m_pDS->query(PrepareSQL("SELECT file_id FROM type_link WHERE media_id = %i AND type_id = %i", idMovie, idType));
++
++    if (!m_pDS->eof())
++    {
++      idFile = m_pDS->fv(0).get_asInt();
++    }
++
++    m_pDS->close();
++  }
++  catch (...)
++  {
++    CLog::Log(LOGERROR, "%s failed for movie %d", __FUNCTION__, idMovie);
++  }
++
++  return idFile;
++}
++
++void CVideoDatabase::SetMovieVersion(int idMovieSource, int idMovieTarget, int idType)
++{
++  int idFile = GetFileIdByMovie(idMovieSource);
++  if (idFile < 0)
++    return;
++
++  if (idMovieSource != idMovieTarget)
++  {
++    //ExecuteQuery(PrepareSQL("DELETE FROM type_link WHERE file_id = %i", idFile));
++    //ExecuteQuery(PrepareSQL("INSERT INTO type_link VALUES(%i, %i, 'movie', %i)", idFile, idMovieTarget, idType));
++    ExecuteQuery(PrepareSQL("UPDATE type_link SET media_id = %i, type_id = %i WHERE file_id = %i", idMovieTarget, idType, idFile));
++    DeleteMovie(idMovieSource);
++  }
++  else
++    ExecuteQuery(PrepareSQL("UPDATE type_link SET type_id = %i WHERE file_id = %i", idType, idFile));
++}
++
++void CVideoDatabase::ChangeMovieVersion(int idMovie, int idType)
++{
++  int idFile = GetFileIdByMovieVersion(idMovie, idType);
++  if (idFile < 0)
++    return;
++
++  ExecuteQuery(PrepareSQL("UPDATE movie SET idFile = %i WHERE idMovie = %i", idFile, idMovie));
++}
++
+ void CVideoDatabase::DeleteTag(int idTag, VIDEODB_CONTENT_TYPE mediaType)
+ {
+   try
+@@ -4066,7 +4223,7 @@ CVideoInfoTag CVideoDatabase::GetDetailsForEpisode(const dbiplus::sql_record* co
+     return details;
+ 
+   details = GetBasicDetailsForEpisode(record);
+-  
++
+   unsigned int time = XbmcThreads::SystemClockMillis();
+ 
+   details.m_strPath = record->at(VIDEODB_DETAILS_EPISODE_PATH).get_asString();
+@@ -4080,7 +4237,7 @@ CVideoInfoTag CVideoDatabase::GetDetailsForEpisode(const dbiplus::sql_record* co
+   details.m_genre = StringUtils::Split(record->at(VIDEODB_DETAILS_EPISODE_TVSHOW_GENRE).get_asString(), CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_videoItemSeparator);
+   details.m_studio = StringUtils::Split(record->at(VIDEODB_DETAILS_EPISODE_TVSHOW_STUDIO).get_asString(), CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_videoItemSeparator);
+   details.SetPremieredFromDBDate(record->at(VIDEODB_DETAILS_EPISODE_TVSHOW_AIRED).get_asString());
+-  
++
+   details.SetResumePoint(record->at(VIDEODB_DETAILS_EPISODE_RESUME_TIME).get_asInt(),
+                          record->at(VIDEODB_DETAILS_EPISODE_TOTAL_TIME).get_asInt(),
+                          record->at(VIDEODB_DETAILS_EPISODE_PLAYER_STATE).get_asString());
+@@ -5379,11 +5536,22 @@ void CVideoDatabase::UpdateTables(int iVersion)
+ 
+   if (iVersion < 112)
+     m_pDS->exec("ALTER TABLE settings ADD CenterMixLevel integer");
++
++  if (iVersion < 113)
++  {
++      // create type table
++      m_pDS->exec("CREATE TABLE type (type_id INTEGER PRIMARY KEY, name TEXT)");
++      m_pDS->exec("INSERT INTO type VALUES(1, 'STANDARD')");
++
++      // create type_link table
++      m_pDS->exec("CREATE TABLE type_link (file_id INTEGER PRIMARY KEY, media_id INTEGER, media_type TEXT, type_id INTEGER)");
++      m_pDS->exec("INSERT INTO type_link SELECT idFile, idMovie, 'movie', 1 FROM movie");
++  }
+ }
+ 
+ int CVideoDatabase::GetSchemaVersion() const
+ {
+-  return 112;
++  return 113;
+ }
+ 
+ bool CVideoDatabase::LookupByFolders(const std::string &path, bool shows)
+@@ -6019,6 +6187,40 @@ bool CVideoDatabase::GetSetsByWhere(const std::string& strBaseDir, const Filter
+   return false;
+ }
+ 
++bool CVideoDatabase::GetTypesNav(const std::string& strBaseDir, CFileItemList& items, int idMedia /* = -1 */)
++{
++  if (m_pDB.get() == nullptr || m_pDS.get() == nullptr)
++    return false;
++
++  try
++  {
++    std::string strSQL;
++
++    if (idMedia != -1)
++      strSQL = PrepareSQL("SELECT type.name, type.type_id FROM type JOIN type_link ON type_link.type_id = type.type_id WHERE media_id = %i", idMedia);
++    else
++      strSQL = PrepareSQL("SELECT name, type_id FROM type");
++
++    m_pDS->query(strSQL);
++
++    while (!m_pDS->eof())
++    {
++      CFileItemPtr pItem(new CFileItem());
++      pItem->SetLabel(m_pDS->fv(0).get_asString());
++      pItem->SetLabel2(m_pDS->fv(1).get_asString());
++      items.Add(pItem);
++      m_pDS->next();
++    }
++    m_pDS->close();
++    return true;
++  }
++  catch (...)
++  {
++    CLog::Log(LOGERROR, "%s failed", __FUNCTION__);
++  }
++  return false;
++}
++
+ bool CVideoDatabase::GetMusicVideoAlbumsNav(const std::string& strBaseDir, CFileItemList& items, int idArtist /* = -1 */, const Filter &filter /* = Filter() */, bool countOnly /* = false */)
+ {
+   try
+diff --git a/xbmc/video/VideoDatabase.h b/xbmc/video/VideoDatabase.h
+index b4d75424febe..91d4932896eb 100644
+--- a/xbmc/video/VideoDatabase.h
++++ b/xbmc/video/VideoDatabase.h
+@@ -733,6 +733,7 @@ class CVideoDatabase : public CDatabase
+   bool GetDirectorsNav(const std::string& strBaseDir, CFileItemList& items, int idContent=-1, const Filter &filter = Filter(), bool countOnly = false);
+   bool GetWritersNav(const std::string& strBaseDir, CFileItemList& items, int idContent=-1, const Filter &filter = Filter(), bool countOnly = false);
+   bool GetSetsNav(const std::string& strBaseDir, CFileItemList& items, int idContent=-1, const Filter &filter = Filter(), bool ignoreSingleMovieSets = false);
++  bool GetTypesNav(const std::string& strBaseDir, CFileItemList& items, int idMedia = -1);
+   bool GetTagsNav(const std::string& strBaseDir, CFileItemList& items, int idContent=-1, const Filter &filter = Filter(), bool countOnly = false);
+   bool GetMusicVideoAlbumsNav(const std::string& strBaseDir, CFileItemList& items, int idArtist, const Filter &filter = Filter(), bool countOnly = false);
+ 
+@@ -860,8 +861,13 @@ class CVideoDatabase : public CDatabase
+   int AddSet(const std::string& strSet, const std::string& strOverview = "");
+   void ClearMovieSet(int idMovie);
+   void SetMovieSet(int idMovie, int idSet);
++  void GetMovieVersion(int idMovie, CFileItemList& items);
++  void SetMovieVersion(int idMovieSource, int idMovieTarget, int idType);
++  void ChangeMovieVersion(int idMovie, int idType);
+   bool SetVideoUserRating(int dbId, int rating, const MediaType& mediaType);
+ 
++  int AddType(const std::string& strType);
++
+ protected:
+   int GetMovieId(const std::string& strFilenameAndPath);
+   int GetMusicVideoId(const std::string& strFilenameAndPath);
+@@ -879,6 +885,9 @@ class CVideoDatabase : public CDatabase
+    */
+   int GetFileId(const std::string& url);
+ 
++  int GetFileIdByMovie(int idMovie);
++  int GetFileIdByMovieVersion(int idMovie, int idType);
++
+   int AddToTable(const std::string& table, const std::string& firstField, const std::string& secondField, const std::string& value);
+   int UpdateRatings(int mediaId, const char *mediaType, const RatingMap& values, const std::string& defaultRating);
+   int AddRatings(int mediaId, const char *mediaType, const RatingMap& values, const std::string& defaultRating);
+diff --git a/xbmc/video/VideoDbUrl.cpp b/xbmc/video/VideoDbUrl.cpp
+index 5be0b0928067..f5c24916a8ab 100644
+--- a/xbmc/video/VideoDbUrl.cpp
++++ b/xbmc/video/VideoDbUrl.cpp
+@@ -130,6 +130,10 @@ bool CVideoDbUrl::parse()
+       m_itemType = "tags";
+       break;
+ 
++    case VIDEODATABASEDIRECTORY::NODE_TYPE_TYPES:
++      m_itemType = "types";
++      break;
++
+     case VIDEODATABASEDIRECTORY::NODE_TYPE_ROOT:
+     case VIDEODATABASEDIRECTORY::NODE_TYPE_OVERVIEW:
+     default:
+diff --git a/xbmc/video/VideoInfoTag.cpp b/xbmc/video/VideoInfoTag.cpp
+index 562dfbb7619f..4e0dee2ede49 100644
+--- a/xbmc/video/VideoInfoTag.cpp
++++ b/xbmc/video/VideoInfoTag.cpp
+@@ -42,6 +42,7 @@ void CVideoInfoTag::Reset()
+   m_set.id = -1;
+   m_set.overview.clear();
+   m_tags.clear();
++  m_strVersion = "STANDARD";
+   m_strFile.clear();
+   m_strPath.clear();
+   m_strMPAARating.clear();
+@@ -220,6 +221,7 @@ bool CVideoInfoTag::Save(TiXmlNode *node, const std::string &tag, bool savePathI
+     movie->InsertEndChild(set);
+   }
+   XMLUtils::SetStringArray(movie, "tag", m_tags);
++  XMLUtils::SetString(movie, "version", m_strVersion);
+   XMLUtils::SetStringArray(movie, "credits", m_writingCredits);
+   XMLUtils::SetStringArray(movie, "director", m_director);
+   if (HasPremiered())
+@@ -352,6 +354,7 @@ void CVideoInfoTag::Archive(CArchive& ar)
+     ar << m_set.id;
+     ar << m_set.overview;
+     ar << m_tags;
++    ar << m_strVersion;
+     ar << m_duration;
+     ar << m_strFile;
+     ar << m_strPath;
+@@ -453,6 +456,7 @@ void CVideoInfoTag::Archive(CArchive& ar)
+     ar >> m_set.id;
+     ar >> m_set.overview;
+     ar >> m_tags;
++    ar >> m_strVersion;
+     ar >> m_duration;
+     ar >> m_strFile;
+     ar >> m_strPath;
+@@ -574,6 +578,7 @@ void CVideoInfoTag::Serialize(CVariant& value) const
+   value["setid"] = m_set.id;
+   value["setoverview"] = m_set.overview;
+   value["tag"] = m_tags;
++  value["version"] = m_strVersion;
+   value["runtime"] = GetDuration();
+   value["file"] = m_strFile;
+   value["path"] = m_strPath;
+@@ -693,6 +698,7 @@ void CVideoInfoTag::ToSortable(SortItem& sortable, Field field) const
+   case FieldId:                       sortable[FieldId] = m_iDbId; break;
+   case FieldTrackNumber:              sortable[FieldTrackNumber] = m_iTrack; break;
+   case FieldTag:                      sortable[FieldTag] = m_tags; break;
++  case FieldVersion:                  sortable[FieldVersion] = m_strVersion; break;
+ 
+   case FieldVideoResolution:          sortable[FieldVideoResolution] = m_streamDetails.GetVideoHeight(); break;
+   case FieldVideoAspectRatio:         sortable[FieldVideoAspectRatio] = m_streamDetails.GetVideoAspect(); break;
+@@ -896,7 +902,6 @@ void CVideoInfoTag::ParseNative(const TiXmlElement* movie, bool prioritise)
+   if (XMLUtils::GetString(movie, "tagline", value))
+     SetTagLine(value);
+ 
+-
+   if (XMLUtils::GetString(movie, "runtime", value) && !value.empty())
+     m_duration = GetDurationFromMinuteString(StringUtils::Trim(value));
+ 
+@@ -1080,6 +1085,9 @@ void CVideoInfoTag::ParseNative(const TiXmlElement* movie, bool prioritise)
+   if (XMLUtils::GetStringArray(movie, "tag", tags, prioritise, itemSeparator))
+     SetTags(tags);
+ 
++  if (XMLUtils::GetString(movie, "version", value))
++    SetVersion(value);
++
+   std::vector<std::string> studio(m_studio);
+   if (XMLUtils::GetStringArray(movie, "studio", studio, prioritise, itemSeparator))
+     SetStudio(studio);
+@@ -1438,6 +1446,11 @@ void CVideoInfoTag::SetTags(std::vector<std::string> tags)
+   m_tags = Trim(std::move(tags));
+ }
+ 
++void CVideoInfoTag::SetVersion(std::string version)
++{
++    m_strVersion = Trim(std::move(version));
++}
++
+ void CVideoInfoTag::SetFile(std::string file)
+ {
+   m_strFile = Trim(std::move(file));
+diff --git a/xbmc/video/VideoInfoTag.h b/xbmc/video/VideoInfoTag.h
+index d6b91729efe9..dc9890c460cd 100644
+--- a/xbmc/video/VideoInfoTag.h
++++ b/xbmc/video/VideoInfoTag.h
+@@ -143,6 +143,7 @@ class CVideoInfoTag : public IArchivable, public ISerializable, public ISortable
+   void SetSet(std::string set);
+   void SetSetOverview(std::string setOverview);
+   void SetTags(std::vector<std::string> tags);
++  void SetVersion(std::string version);
+   void SetFile(std::string file);
+   void SetPath(std::string path);
+   void SetMPAARating(std::string mpaaRating);
+@@ -236,6 +237,7 @@ class CVideoInfoTag : public IArchivable, public ISerializable, public ISortable
+   };
+   SetInfo m_set; //!< Assigned movie set
+   std::vector<std::string> m_tags;
++  std::string m_strVersion;
+   std::string m_strFile;
+   std::string m_strPath;
+   std::string m_strMPAARating;
+diff --git a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+index 091472544b90..a6635abf61ac 100644
+--- a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++++ b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+@@ -19,6 +19,7 @@
+ #include "utils/URIUtils.h"
+ #include "video/windows/GUIWindowVideoNav.h"
+ #include "dialogs/GUIDialogFileBrowser.h"
++#include "dialogs/GUIDialogOK.h"
+ #include "video/VideoInfoScanner.h"
+ #include "video/tags/VideoTagLoaderFFmpeg.h"
+ #include "messaging/ApplicationMessenger.h"
+@@ -69,6 +70,7 @@ using namespace KODI::MESSAGING;
+ #define CONTROL_BTN_PLAY_TRAILER    11
+ #define CONTROL_BTN_GET_FANART      12
+ #define CONTROL_BTN_DIRECTOR        13
++#define CONTROL_BTN_CHANGE_VERSION  14
+ 
+ #define CONTROL_LIST                50
+ 
+@@ -145,6 +147,10 @@ bool CGUIDialogVideoInfo::OnMessage(CGUIMessage& message)
+         m_bViewReview = !m_bViewReview;
+         Update();
+       }
++      else if (iControl == CONTROL_BTN_CHANGE_VERSION)
++      {
++        OnChangeVersion();
++      }
+       else if (iControl == CONTROL_BTN_PLAY)
+       {
+         Play();
+@@ -377,14 +383,14 @@ void CGUIDialogVideoInfo::SetMovie(const CFileItem *item)
+ void CGUIDialogVideoInfo::Update()
+ {
+   // setup plot text area
+-  std::shared_ptr<CSettingList> setting(std::dynamic_pointer_cast<CSettingList>( 
++  std::shared_ptr<CSettingList> setting(std::dynamic_pointer_cast<CSettingList>(
+     CServiceBroker::GetSettingsComponent()->GetSettings()->GetSetting(CSettings::SETTING_VIDEOLIBRARY_SHOWUNWATCHEDPLOTS)));
+   std::string strTmp = m_movieItem->GetVideoInfoTag()->m_strPlot;
+   if (m_movieItem->GetVideoInfoTag()->m_type != MediaTypeTvShow)
+-    if (m_movieItem->GetVideoInfoTag()->GetPlayCount() == 0 && 
++    if (m_movieItem->GetVideoInfoTag()->GetPlayCount() == 0 &&
+         setting &&
+         (
+-         (m_movieItem->GetVideoInfoTag()->m_type == MediaTypeMovie && (!setting->FindIntInList(CSettings::VIDEOLIBRARY_PLOTS_SHOW_UNWATCHED_MOVIES))) || 
++         (m_movieItem->GetVideoInfoTag()->m_type == MediaTypeMovie && (!setting->FindIntInList(CSettings::VIDEOLIBRARY_PLOTS_SHOW_UNWATCHED_MOVIES))) ||
+          (m_movieItem->GetVideoInfoTag()->m_type == MediaTypeEpisode && (!setting->FindIntInList(CSettings::VIDEOLIBRARY_PLOTS_SHOW_UNWATCHED_TVSHOWEPISODES)))
+         )
+        )
+@@ -590,6 +596,47 @@ void CGUIDialogVideoInfo::ClearCastList()
+   m_castList->Clear();
+ }
+ 
++void CGUIDialogVideoInfo::OnChangeVersion()
++{
++  CVideoDatabase videodb;
++  if (!videodb.Open())
++    return;
++
++  CFileItemList list;
++  int dbId = m_movieItem->GetVideoInfoTag()->m_iDbId;
++
++  CGUIDialogSelect* dialog = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogSelect>(WINDOW_DIALOG_SELECT);
++  if (!dialog)
++    return;
++
++  int selected = -1;
++
++  videodb.GetTypesNav("videodb://movies/types", list, dbId);
++  list.Sort(SortByLabel, SortOrderAscending, CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_FILELISTS_IGNORETHEWHENSORTING) ? SortAttributeIgnoreArticle : SortAttributeNone);
++  dialog->Reset();
++  dialog->SetItems(list);
++  dialog->SetHeading(CVariant{39303});
++  dialog->Open();
++
++  if (dialog->IsConfirmed())
++  {
++    CFileItemPtr selectedItem = dialog->GetSelectedFileItem();
++    if (selectedItem != nullptr)
++      selected = atoi(selectedItem->GetLabel2().c_str());
++  }
++  else
++    return;
++
++  if (selected < 0)
++    return;
++
++  videodb.ChangeMovieVersion(dbId, selected);
++
++  std::string path;
++  videodb.GetFilePathById(dbId, path, VIDEODB_CONTENT_MOVIES);
++  m_movieItem->SetPath(path);
++}
++
+ void CGUIDialogVideoInfo::Play(bool resume)
+ {
+   if (!m_movieItem->GetVideoInfoTag()->m_strEpisodeGuide.empty())
+@@ -1097,6 +1144,9 @@ int CGUIDialogVideoInfo::ManageVideoItem(const CFileItemPtr &item)
+ 
+     // set or change movie set the movie belongs to
+     buttons.Add(CONTEXT_BUTTON_SET_MOVIESET, 20465);
++
++    // set movie version
++    buttons.Add(CONTEXT_BUTTON_SET_MOVIE_VERSION, 39301);
+   }
+ 
+   if (type == MediaTypeEpisode &&
+@@ -1167,6 +1217,10 @@ int CGUIDialogVideoInfo::ManageVideoItem(const CFileItemPtr &item)
+         break;
+       }
+ 
++      case CONTEXT_BUTTON_SET_MOVIE_VERSION:
++        result = SetMovieVersion(item);
++        break;
++
+       case CONTEXT_BUTTON_UNLINK_BOOKMARK:
+         database.DeleteBookMarkForEpisode(*item->GetVideoInfoTag());
+         result = true;
+@@ -1631,6 +1685,102 @@ bool CGUIDialogVideoInfo::SetMovieSet(const CFileItem *movieItem, const CFileIte
+   return true;
+ }
+ 
++bool CGUIDialogVideoInfo::SetMovieVersion(const CFileItemPtr &item)
++{
++  // Set this movie as an alternate version of another movie, user will
++  // be asked to provide the target movie and the alternate version type
++  // (EXTENDED, DIRECTORS CUT, etc.), this movie entry will be deleted
++  // from DB at last
++  //
++  // N.B. Choosing the movie itself as target movie is also allowed, which
++  //      will just change the alternate version type if that get changed
++
++  if (item == nullptr || !item->HasVideoInfoTag())
++    return false;
++
++  CVideoDatabase videodb;
++  if (!videodb.Open())
++    return false;
++
++  CFileItemList list;
++  int dbId = item->GetVideoInfoTag()->m_iDbId;
++
++  videodb.GetMovieVersion(dbId, list);
++  if (list.Size() > 1)
++  {
++      CGUIDialogOK* dialog = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogOK>(WINDOW_DIALOG_OK);
++      if (!dialog)
++        return false;
++
++      dialog->SetHeading(CVariant{39305});
++      dialog->SetLine(1, CVariant{"\n"});
++      dialog->SetLine(2, CVariant{39306});
++      dialog->Open();
++
++      return false;
++  }
++
++  int targetDbId;
++
++  // choose the target movie
++  videodb.GetMoviesNav("videodb://movies/titles", list);
++  if (list.Size() < 1)
++    return false;
++
++  CGUIDialogSelect* dialog = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogSelect>(WINDOW_DIALOG_SELECT);
++  if (!dialog)
++    return false;
++
++  int selected = -1;
++
++  list.Sort(SortByLabel, SortOrderAscending, CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_FILELISTS_IGNORETHEWHENSORTING) ? SortAttributeIgnoreArticle : SortAttributeNone);
++  dialog->Reset();
++  dialog->SetItems(list);
++  dialog->SetHeading(CVariant{39302});
++  dialog->Open();
++  selected = dialog->GetSelectedItem();
++
++  if (selected < 0)
++    return false;
++
++  targetDbId = list[selected]->GetVideoInfoTag()->m_iDbId;
++
++  list.ClearItems();
++
++  // choose the version type
++  videodb.GetTypesNav("videodb://movies/types", list);
++  list.Sort(SortByLabel, SortOrderAscending, CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_FILELISTS_IGNORETHEWHENSORTING) ? SortAttributeIgnoreArticle : SortAttributeNone);
++  dialog->Reset();
++  dialog->SetItems(list);
++  dialog->SetHeading(CVariant{39303});
++  dialog->EnableButton(true, 39304); // new version via button
++  dialog->Open();
++
++  if (dialog->IsButtonPressed())
++  {
++    // create a new version type
++    std::string newType;
++    if (!CGUIKeyboardFactory::ShowAndGetInput(newType, CVariant{g_localizeStrings.Get(39304)}, false))
++      return false;
++    selected = videodb.AddType(StringUtils::Trim(newType));
++  }
++  else if (dialog->IsConfirmed())
++  {
++    CFileItemPtr selectedItem = dialog->GetSelectedFileItem();
++    if (selectedItem != nullptr)
++      selected = atoi(selectedItem->GetLabel2().c_str());
++  }
++  else
++    return false;
++
++  if (selected < 0)
++    return false;
++
++  videodb.SetMovieVersion(dbId, targetDbId, selected);
++
++  return true;
++}
++
+ bool CGUIDialogVideoInfo::GetItemsForTag(const std::string &strHeading, const std::string &type, CFileItemList &items, int idTag /* = -1 */, bool showAll /* = true */)
+ {
+   CVideoDatabase videodb;
+diff --git a/xbmc/video/dialogs/GUIDialogVideoInfo.h b/xbmc/video/dialogs/GUIDialogVideoInfo.h
+index 0976541b1cb3..6687fe6ecbd9 100644
+--- a/xbmc/video/dialogs/GUIDialogVideoInfo.h
++++ b/xbmc/video/dialogs/GUIDialogVideoInfo.h
+@@ -47,6 +47,8 @@ class CGUIDialogVideoInfo :
+   static bool GetSetForMovie(const CFileItem *movieItem, CFileItemPtr &selectedSet);
+   static bool SetMovieSet(const CFileItem *movieItem, const CFileItem *selectedSet);
+ 
++  static bool SetMovieVersion(const CFileItemPtr &item);
++
+   static bool GetItemsForTag(const std::string &strHeading, const std::string &type, CFileItemList &items, int idTag = -1, bool showAll = true);
+   static bool AddItemsToTag(const CFileItemPtr &tagItem);
+   static bool RemoveItemsFromTag(const CFileItemPtr &tagItem);
+@@ -81,6 +83,7 @@ class CGUIDialogVideoInfo :
+    * \param pItem Search result item
+    */
+   void OnSearchItemFound(const CFileItem* pItem);
++  void OnChangeVersion();
+   void Play(bool resume = false);
+   void OnGetArt();
+   void OnGetFanart();
+diff --git a/xbmc/video/windows/GUIWindowVideoNav.cpp b/xbmc/video/windows/GUIWindowVideoNav.cpp
+index b42e1676817d..337138c70d41 100644
+--- a/xbmc/video/windows/GUIWindowVideoNav.cpp
++++ b/xbmc/video/windows/GUIWindowVideoNav.cpp
+@@ -518,6 +518,8 @@ bool CGUIWindowVideoNav::GetDirectory(const std::string &strDirectory, CFileItem
+         items.SetContent("sets");
+       else if (node == NODE_TYPE_TAGS)
+         items.SetContent("tags");
++      else if (node == NODE_TYPE_TYPES)
++      items.SetContent("types");
+       else
+         items.SetContent("");
+     }
+
+From 454f34fe49f909b3e6c74f6b34e3198b924d0e06 Mon Sep 17 00:00:00 2001
+From: XODIDOX <xodidox@gmail.com>
+Date: Fri, 30 Nov 2018 07:02:05 -0800
+Subject: [PATCH 02/15] 1. Added common movie versions 2. Change movie verson
+ dialogs tweak (change fouchs, etc.) 3. Close video info dialog after version
+ changed 4. Moved the type_link table cleanup to movie delete trigger 5. Fixed
+ the videodb://movies/types opening failure issue 6. Minor fix
+
+---
+ .../resources/strings.po                      | 11 ++-
+ xbmc/dialogs/GUIDialogContextMenu.h           |  2 +-
+ .../VideoDatabaseDirectory/DirectoryNode.h    |  2 +-
+ .../VideoDatabaseDirectory/QueryParams.cpp    |  1 +
+ xbmc/interfaces/legacy/ListItem.h             |  1 +
+ xbmc/video/VideoDatabase.cpp                  | 95 +++++++++++++++----
+ xbmc/video/VideoDatabase.h                    |  3 +
+ xbmc/video/VideoInfoTag.cpp                   |  2 +-
+ xbmc/video/dialogs/GUIDialogVideoInfo.cpp     | 25 +++--
+ 9 files changed, 114 insertions(+), 28 deletions(-)
+
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index e5a11f333b7b..c37be0b892c8 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -21603,7 +21603,7 @@ msgstr ""
+ 
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+ msgctxt "#39302"
+-msgid "Convert movie to an additional version of moive"
++msgid "Convert movie to an additional version for"
+ msgstr ""
+ 
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+@@ -21618,10 +21618,15 @@ msgstr ""
+ 
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+ msgctxt "#39305"
+-msgid "Invalid movie selection"
++msgid "Invalid operation"
+ msgstr ""
+ 
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+ msgctxt "#39306"
+-msgid "There is more than one movie version exist for the selected movie."
++msgid "There is more than one movie version exist for the selected movie. It's not allowed to convert this movie to an additonal version for another movie. Please remove it from library and covert each version separately after rescanning them."
++msgstr ""
++
++#: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++msgctxt "#39307"
++msgid "Change default movie version"
+ msgstr ""
+diff --git a/xbmc/dialogs/GUIDialogContextMenu.h b/xbmc/dialogs/GUIDialogContextMenu.h
+index a5f6f7bba599..c2df1a655659 100644
+--- a/xbmc/dialogs/GUIDialogContextMenu.h
++++ b/xbmc/dialogs/GUIDialogContextMenu.h
+@@ -95,7 +95,7 @@ enum CONTEXT_BUTTON { CONTEXT_BUTTON_CANCELLED = 0,
+                       CONTEXT_BUTTON_DELETE_ALL,
+                       CONTEXT_BUTTON_HELP,
+                       CONTEXT_BUTTON_PLAY_NEXT,
+-                      CONTEXT_BUTTON_SET_MOVIE_VERSION
++                      CONTEXT_BUTTON_SET_MOVIE_VERSION,
+                     };
+ 
+ class CContextButtons : public std::vector< std::pair<size_t, std::string> >
+diff --git a/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNode.h b/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNode.h
+index c552ebfdf456..93c15afb0642 100644
+--- a/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNode.h
++++ b/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNode.h
+@@ -45,7 +45,7 @@ namespace XFILE
+       NODE_TYPE_COUNTRY,
+       NODE_TYPE_TAGS,
+       NODE_TYPE_INPROGRESS_TVSHOWS,
+-      NODE_TYPE_TYPES
++      NODE_TYPE_TYPES,
+     } NODE_TYPE;
+ 
+     typedef struct {
+diff --git a/xbmc/filesystem/VideoDatabaseDirectory/QueryParams.cpp b/xbmc/filesystem/VideoDatabaseDirectory/QueryParams.cpp
+index 69c06de3e949..4a85878298d0 100644
+--- a/xbmc/filesystem/VideoDatabaseDirectory/QueryParams.cpp
++++ b/xbmc/filesystem/VideoDatabaseDirectory/QueryParams.cpp
+@@ -28,6 +28,7 @@ CQueryParams::CQueryParams()
+   m_idAlbum = -1;
+   m_idSet = -1;
+   m_idTag = -1;
++  m_idType = -1;
+ }
+ 
+ void CQueryParams::SetQueryParam(NODE_TYPE NodeType, const std::string& strNodeName)
+diff --git a/xbmc/interfaces/legacy/ListItem.h b/xbmc/interfaces/legacy/ListItem.h
+index 32a999490092..4129a514fbbc 100644
+--- a/xbmc/interfaces/legacy/ListItem.h
++++ b/xbmc/interfaces/legacy/ListItem.h
+@@ -640,6 +640,7 @@ namespace XBMCAddon
+       /// | set           | string (Batman Collection) - name of the collection
+       /// | setoverview   | string (All Batman movies) - overview of the collection
+       /// | tag           | string (cult) or list of strings (["cult", "documentary", "best movies"]) - movie tag
++      /// | version       | string (Movie version, "EXTENDED" for example)
+       /// | imdbnumber    | string (tt0110293) - IMDb code
+       /// | code          | string (101) - Production code
+       /// | aired         | string (2008-12-07)
+diff --git a/xbmc/video/VideoDatabase.cpp b/xbmc/video/VideoDatabase.cpp
+index 717b8a0743b1..2b0f41641cca 100644
+--- a/xbmc/video/VideoDatabase.cpp
++++ b/xbmc/video/VideoDatabase.cpp
+@@ -196,7 +196,7 @@ void CVideoDatabase::CreateTables()
+ 
+   CLog::Log(LOGINFO, "create type table");
+   m_pDS->exec("CREATE TABLE type (type_id INTEGER PRIMARY KEY, name TEXT)");
+-  m_pDS->exec("INSERT INTO type VALUES(1, 'STANDARD')");
++  InitializeTypeTable();
+ 
+   CLog::Log(LOGINFO, "create type_link table");
+   m_pDS->exec("CREATE TABLE type_link (file_id INTEGER PRIMARY KEY, media_id INTEGER, media_type TEXT, type_id INTEGER)");
+@@ -292,6 +292,7 @@ void CVideoDatabase::CreateAnalytics()
+               "DELETE FROM tag_link WHERE media_id=old.idMovie AND media_type='movie'; "
+               "DELETE FROM rating WHERE media_id=old.idMovie AND media_type='movie'; "
+               "DELETE FROM uniqueid WHERE media_id=old.idMovie AND media_type='movie'; "
++              "DELETE FROM type_link WHERE media_id=old.idMovie AND media_type='movie'; "
+               "END");
+   m_pDS->exec("CREATE TRIGGER delete_tvshow AFTER DELETE ON tvshow FOR EACH ROW BEGIN "
+               "DELETE FROM actor_link WHERE media_id=old.idShow AND media_type='tvshow'; "
+@@ -3416,7 +3417,6 @@ void CVideoDatabase::DeleteMovie(int idMovie, bool bKeepId /* = false */)
+         InvalidatePathHash(path);
+ 
+       m_pDS->exec(PrepareSQL("DELETE FROM movie WHERE idMovie = %i", idMovie));
+-      m_pDS->exec(PrepareSQL("DELETE FROM type_link WHERE media_id = %i", idMovie));
+     }
+ 
+     //! @todo move this below CommitTransaction() once UPnP doesn't rely on this anymore
+@@ -3674,17 +3674,17 @@ void CVideoDatabase::GetMovieVersion(int idMovie, CFileItemList& items)
+ 
+   try
+   {
+-      m_pDS->query(PrepareSQL("SELECT type.name AS name,"
+-                              "  path.strPath AS strPath,"
+-                              "  files.strFileName AS strFileName "
+-                              "FROM type"
+-                              "  JOIN type_link ON"
+-                              "    type_link.type_id = type.type_id"
+-                              "  JOIN files ON"
+-                              "    files.idFile = type_link.file_id"
+-                              "  JOIN path ON"
+-                              "    path.idPath = files.idPath "
+-                              "WHERE type_link.media_id = %i", idMovie));
++    m_pDS->query(PrepareSQL("SELECT type.name AS name,"
++                            "  path.strPath AS strPath,"
++                            "  files.strFileName AS strFileName "
++                            "FROM type"
++                            "  JOIN type_link ON"
++                            "    type_link.type_id = type.type_id"
++                            "  JOIN files ON"
++                            "    files.idFile = type_link.file_id"
++                            "  JOIN path ON"
++                            "    path.idPath = files.idPath "
++                            "WHERE type_link.media_id = %i", idMovie));
+ 
+     while (!m_pDS->eof())
+     {
+@@ -3704,6 +3704,38 @@ void CVideoDatabase::GetMovieVersion(int idMovie, CFileItemList& items)
+   }
+ }
+ 
++std::string CVideoDatabase::GetMovieCurrentVersion(int idMovie)
++{
++  if (m_pDB.get() == nullptr || m_pDS.get() == nullptr)
++    return "";
++
++  std::string name = "";
++
++  try
++  {
++    m_pDS->query(PrepareSQL("SELECT type.name AS name "
++                            "FROM type"
++                            "  JOIN type_link ON"
++                            "    type_link.type_id = type.type_id"
++                            "  JOIN movie ON"
++                            "    movie.idFile = type_link.file_id "
++                            "WHERE movie.idMovie = %i", idMovie));
++
++    if (!m_pDS->eof())
++    {
++      name = m_pDS->fv(0).get_asString();
++    }
++
++    m_pDS->close();
++  }
++  catch (...)
++  {
++    CLog::Log(LOGERROR, "%s failed for movie %d", __FUNCTION__, idMovie);
++  }
++
++  return name;
++}
++
+ int CVideoDatabase::GetFileIdByMovie(int idMovie)
+ {
+   if (m_pDB.get() == nullptr || m_pDS.get() == nullptr)
+@@ -3764,8 +3796,6 @@ void CVideoDatabase::SetMovieVersion(int idMovieSource, int idMovieTarget, int i
+ 
+   if (idMovieSource != idMovieTarget)
+   {
+-    //ExecuteQuery(PrepareSQL("DELETE FROM type_link WHERE file_id = %i", idFile));
+-    //ExecuteQuery(PrepareSQL("INSERT INTO type_link VALUES(%i, %i, 'movie', %i)", idFile, idMovieTarget, idType));
+     ExecuteQuery(PrepareSQL("UPDATE type_link SET media_id = %i, type_id = %i WHERE file_id = %i", idMovieTarget, idType, idFile));
+     DeleteMovie(idMovieSource);
+   }
+@@ -5541,7 +5571,7 @@ void CVideoDatabase::UpdateTables(int iVersion)
+   {
+       // create type table
+       m_pDS->exec("CREATE TABLE type (type_id INTEGER PRIMARY KEY, name TEXT)");
+-      m_pDS->exec("INSERT INTO type VALUES(1, 'STANDARD')");
++      InitializeTypeTable();
+ 
+       // create type_link table
+       m_pDS->exec("CREATE TABLE type_link (file_id INTEGER PRIMARY KEY, media_id INTEGER, media_type TEXT, type_id INTEGER)");
+@@ -7039,6 +7069,8 @@ bool CVideoDatabase::GetItems(const std::string &strBaseDir, VIDEODB_CONTENT_TYP
+     return GetCountriesNav(strBaseDir, items, mediaType, filter);
+   else if (StringUtils::EqualsNoCase(itemType, "tags"))
+     return GetTagsNav(strBaseDir, items, mediaType, filter);
++  else if (StringUtils::EqualsNoCase(itemType, "types"))
++      return GetTypesNav(strBaseDir, items);
+   else if (StringUtils::EqualsNoCase(itemType, "artists") && mediaType == VIDEODB_CONTENT_MUSICVIDEOS)
+     return GetActorsNav(strBaseDir, items, mediaType, filter);
+   else if (StringUtils::EqualsNoCase(itemType, "albums") && mediaType == VIDEODB_CONTENT_MUSICVIDEOS)
+@@ -10484,3 +10516,34 @@ bool CVideoDatabase::SetVideoUserRating(int dbId, int rating, const MediaType& m
+   }
+   return false;
+ }
++
++void CVideoDatabase::InitializeTypeTable()
++{
++  const char* types[] = { "Standard",
++                          "Extended",
++                          "Unrated",
++                          "Uncut",
++                          "Remastered",
++                          "Limited",
++                          "Special",
++                          "Director Cut",
++                          "The Final Cut",
++                          "Super Duper Cut",
++                          "Theatrical",
++                          "3D",
++                          "4K UHD",
++                          "IMAX",
++                          "Collector",
++                          "Ultimate Collector",
++                          "Criterion Collection",
++                          "10th Anniversary",
++                          "20th Anniversary",
++                          "25th Anniversary",
++                          "30th Anniversary",
++                          "40th Anniversary",
++                          "50th Anniversary",
++  };
++
++  for (int i = 0; i < sizeof(types)/sizeof(types[0]); i++)
++    m_pDS->exec(PrepareSQL("INSERT INTO type VALUES(%i, '%s')", i + 1, types[i]));
++}
+diff --git a/xbmc/video/VideoDatabase.h b/xbmc/video/VideoDatabase.h
+index 91d4932896eb..fdfc81fcc42b 100644
+--- a/xbmc/video/VideoDatabase.h
++++ b/xbmc/video/VideoDatabase.h
+@@ -862,6 +862,7 @@ class CVideoDatabase : public CDatabase
+   void ClearMovieSet(int idMovie);
+   void SetMovieSet(int idMovie, int idSet);
+   void GetMovieVersion(int idMovie, CFileItemList& items);
++  std::string GetMovieCurrentVersion(int idMovie);
+   void SetMovieVersion(int idMovieSource, int idMovieTarget, int idType);
+   void ChangeMovieVersion(int idMovie, int idType);
+   bool SetVideoUserRating(int dbId, int rating, const MediaType& mediaType);
+@@ -999,6 +1000,8 @@ class CVideoDatabase : public CDatabase
+   void SplitPath(const std::string& strFileNameAndPath, std::string& strPath, std::string& strFileName);
+   void InvalidatePathHash(const std::string& strPath);
+ 
++  void InitializeTypeTable();
++
+   /*! \brief Get a safe filename from a given string
+    \param dir directory to use for the file
+    \param name movie, show name, or actor to get a safe filename for
+diff --git a/xbmc/video/VideoInfoTag.cpp b/xbmc/video/VideoInfoTag.cpp
+index 4e0dee2ede49..66830f9ceeb7 100644
+--- a/xbmc/video/VideoInfoTag.cpp
++++ b/xbmc/video/VideoInfoTag.cpp
+@@ -42,7 +42,7 @@ void CVideoInfoTag::Reset()
+   m_set.id = -1;
+   m_set.overview.clear();
+   m_tags.clear();
+-  m_strVersion = "STANDARD";
++  m_strVersion.clear();
+   m_strFile.clear();
+   m_strPath.clear();
+   m_strMPAARating.clear();
+diff --git a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+index a6635abf61ac..a8c4e1628637 100644
+--- a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++++ b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+@@ -615,7 +615,8 @@ void CGUIDialogVideoInfo::OnChangeVersion()
+   list.Sort(SortByLabel, SortOrderAscending, CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_FILELISTS_IGNORETHEWHENSORTING) ? SortAttributeIgnoreArticle : SortAttributeNone);
+   dialog->Reset();
+   dialog->SetItems(list);
+-  dialog->SetHeading(CVariant{39303});
++  dialog->SetHeading(CVariant{39307});
++  dialog->SetSelected(videodb.GetMovieCurrentVersion(dbId));
+   dialog->Open();
+ 
+   if (dialog->IsConfirmed())
+@@ -632,9 +633,7 @@ void CGUIDialogVideoInfo::OnChangeVersion()
+ 
+   videodb.ChangeMovieVersion(dbId, selected);
+ 
+-  std::string path;
+-  videodb.GetFilePathById(dbId, path, VIDEODB_CONTENT_MOVIES);
+-  m_movieItem->SetPath(path);
++  Close();
+ }
+ 
+ void CGUIDialogVideoInfo::Play(bool resume)
+@@ -1713,13 +1712,14 @@ bool CGUIDialogVideoInfo::SetMovieVersion(const CFileItemPtr &item)
+         return false;
+ 
+       dialog->SetHeading(CVariant{39305});
+-      dialog->SetLine(1, CVariant{"\n"});
+-      dialog->SetLine(2, CVariant{39306});
++      dialog->SetLine(1, CVariant{39306});
+       dialog->Open();
+ 
+       return false;
+   }
+ 
++  list.Clear();
++
+   int targetDbId;
+ 
+   // choose the target movie
+@@ -1727,6 +1727,17 @@ bool CGUIDialogVideoInfo::SetMovieVersion(const CFileItemPtr &item)
+   if (list.Size() < 1)
+     return false;
+ 
++  int itemId = 0;
++
++  for (int i = 0; i < list.Size(); i++)
++  {
++    if (list[i]->GetVideoInfoTag()->m_iDbId == dbId)
++    {
++      itemId = i;
++      break;
++    }
++  }
++
+   CGUIDialogSelect* dialog = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogSelect>(WINDOW_DIALOG_SELECT);
+   if (!dialog)
+     return false;
+@@ -1737,6 +1748,7 @@ bool CGUIDialogVideoInfo::SetMovieVersion(const CFileItemPtr &item)
+   dialog->Reset();
+   dialog->SetItems(list);
+   dialog->SetHeading(CVariant{39302});
++  dialog->SetSelected(itemId);
+   dialog->Open();
+   selected = dialog->GetSelectedItem();
+ 
+@@ -1754,6 +1766,7 @@ bool CGUIDialogVideoInfo::SetMovieVersion(const CFileItemPtr &item)
+   dialog->SetItems(list);
+   dialog->SetHeading(CVariant{39303});
+   dialog->EnableButton(true, 39304); // new version via button
++  dialog->SetSelected(1); // skip the first one as it's default
+   dialog->Open();
+ 
+   if (dialog->IsButtonPressed())
+
+From eb0105ed5e05f99e0322a33d162aebd98ba4dbcf Mon Sep 17 00:00:00 2001
+From: XODIDOX <xodidox@gmail.com>
+Date: Fri, 30 Nov 2018 09:13:27 -0800
+Subject: [PATCH 03/15] Optimized version adding logic, giving user warning
+ when a duplicated version is selected
+
+---
+ .../resources/strings.po                      |  5 ++
+ xbmc/video/dialogs/GUIDialogVideoInfo.cpp     | 85 +++++++++++++------
+ 2 files changed, 62 insertions(+), 28 deletions(-)
+
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index c37be0b892c8..b60346f80ad2 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -21630,3 +21630,8 @@ msgstr ""
+ msgctxt "#39307"
+ msgid "Change default movie version"
+ msgstr ""
++
++#: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++msgctxt "#39308"
++msgid "The \"%s\" version of this movie already exists, are you sure to add a duplication?"
++msgstr ""
+diff --git a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+index a8c4e1628637..efda51bfd689 100644
+--- a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++++ b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+@@ -1701,6 +1701,7 @@ bool CGUIDialogVideoInfo::SetMovieVersion(const CFileItemPtr &item)
+   if (!videodb.Open())
+     return false;
+ 
++  // invalid operation warning
+   CFileItemList list;
+   int dbId = item->GetVideoInfoTag()->m_iDbId;
+ 
+@@ -1718,7 +1719,7 @@ bool CGUIDialogVideoInfo::SetMovieVersion(const CFileItemPtr &item)
+       return false;
+   }
+ 
+-  list.Clear();
++  list.ClearItems();
+ 
+   int targetDbId;
+ 
+@@ -1757,37 +1758,65 @@ bool CGUIDialogVideoInfo::SetMovieVersion(const CFileItemPtr &item)
+ 
+   targetDbId = list[selected]->GetVideoInfoTag()->m_iDbId;
+ 
+-  list.ClearItems();
++  CFileItemList targetList;
++  videodb.GetMovieVersion(targetDbId, targetList);
+ 
+-  // choose the version type
+-  videodb.GetTypesNav("videodb://movies/types", list);
+-  list.Sort(SortByLabel, SortOrderAscending, CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_FILELISTS_IGNORETHEWHENSORTING) ? SortAttributeIgnoreArticle : SortAttributeNone);
+-  dialog->Reset();
+-  dialog->SetItems(list);
+-  dialog->SetHeading(CVariant{39303});
+-  dialog->EnableButton(true, 39304); // new version via button
+-  dialog->SetSelected(1); // skip the first one as it's default
+-  dialog->Open();
+-
+-  if (dialog->IsButtonPressed())
++  do
+   {
+-    // create a new version type
+-    std::string newType;
+-    if (!CGUIKeyboardFactory::ShowAndGetInput(newType, CVariant{g_localizeStrings.Get(39304)}, false))
++    list.ClearItems();
++
++    std::string selectedType;
++
++    // choose the version type
++    videodb.GetTypesNav("videodb://movies/types", list);
++    list.Sort(SortByLabel, SortOrderAscending, CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_FILELISTS_IGNORETHEWHENSORTING) ? SortAttributeIgnoreArticle : SortAttributeNone);
++    dialog->Reset();
++    dialog->SetItems(list);
++    dialog->SetHeading(CVariant{39303});
++    dialog->EnableButton(true, 39304); // new version via button
++    dialog->SetSelected(1); // skip the first one as it's default
++    dialog->Open();
++
++    if (dialog->IsButtonPressed())
++    {
++      // create a new version type
++      std::string newType;
++      if (!CGUIKeyboardFactory::ShowAndGetInput(newType, CVariant{g_localizeStrings.Get(39304)}, false))
++        return false;
++      selectedType = StringUtils::Trim(newType);
++      selected = videodb.AddType(selectedType);
++    }
++    else if (dialog->IsConfirmed())
++    {
++      CFileItemPtr selectedItem = dialog->GetSelectedFileItem();
++      if (selectedItem != nullptr)
++      {
++        selectedType = selectedItem->GetLabel();
++        selected = atoi(selectedItem->GetLabel2().c_str());
++      }
++    }
++    else
+       return false;
+-    selected = videodb.AddType(StringUtils::Trim(newType));
+-  }
+-  else if (dialog->IsConfirmed())
+-  {
+-    CFileItemPtr selectedItem = dialog->GetSelectedFileItem();
+-    if (selectedItem != nullptr)
+-      selected = atoi(selectedItem->GetLabel2().c_str());
+-  }
+-  else
+-    return false;
+ 
+-  if (selected < 0)
+-    return false;
++    if (selected < 0)
++      return false;
++
++    // check for duplicate versions
++    bool duplicate = false;
++    for (int i = 0; i < targetList.Size(); i++)
++    {
++      if (StringUtils::EqualsNoCase(selectedType, targetList[i]->GetLabel()))
++      {
++        duplicate = true;
++        break;
++      }
++    }
++
++    // confirm with user for duplication
++    if (!duplicate || CGUIDialogYesNo::ShowAndGetInput(CVariant{14117}, StringUtils::Format(g_localizeStrings.Get(39308), selectedType)))
++      break;
++  }
++  while (true);
+ 
+   videodb.SetMovieVersion(dbId, targetDbId, selected);
+ 
+
+From c712005d42019ed38063d176392665d9dfc1783f Mon Sep 17 00:00:00 2001
+From: XODIDOX <xodidox@gmail.com>
+Date: Fri, 30 Nov 2018 10:28:56 -0800
+Subject: [PATCH 04/15] Fix based on feedback
+
+---
+ .../resources/strings.po                      |  9 +++++++
+ xbmc/video/VideoDatabase.cpp                  | 25 ++++++++++---------
+ xbmc/video/VideoDatabase.h                    |  8 +++---
+ xbmc/video/VideoInfoTag.cpp                   |  2 +-
+ xbmc/video/dialogs/GUIDialogVideoInfo.cpp     | 22 ++++++++--------
+ xbmc/video/windows/GUIWindowVideoNav.cpp      |  2 +-
+ 6 files changed, 38 insertions(+), 30 deletions(-)
+
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index b60346f80ad2..b8596f79207f 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -21589,6 +21589,7 @@ msgctxt "#39113"
+ msgid "Center Mix Level in dB relative to metadata or default (-3 dB)"
+ msgstr ""
+ 
++#. Video version types (Director's Cut, for example)
+ #: xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeMoviesOverview.cpp
+ #: xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeOverview.cpp
+ #: xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeTvShowOverview.cpp
+@@ -21596,41 +21597,49 @@ msgctxt "#39300"
+ msgid "Types"
+ msgstr ""
+ 
++#. Movie version management menu
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+ msgctxt "#39301"
+ msgid "Manage movie version"
+ msgstr ""
+ 
++#. Manage movie version dialog title
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+ msgctxt "#39302"
+ msgid "Convert movie to an additional version for"
+ msgstr ""
+ 
++#. Movie version selection dialog title
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+ msgctxt "#39303"
+ msgid "Select movie version"
+ msgstr ""
+ 
++#. Movie version selection dialog button
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+ msgctxt "#39304"
+ msgid "Add movie to a new version"
+ msgstr ""
+ 
++#. Warning dialog title
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+ msgctxt "#39305"
+ msgid "Invalid operation"
+ msgstr ""
+ 
++#. Warning dialog text
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+ msgctxt "#39306"
+ msgid "There is more than one movie version exist for the selected movie. It's not allowed to convert this movie to an additonal version for another movie. Please remove it from library and covert each version separately after rescanning them."
+ msgstr ""
+ 
++#. Default movie version change dialog title
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+ msgctxt "#39307"
+ msgid "Change default movie version"
+ msgstr ""
+ 
++#. Warning dialog text
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+ msgctxt "#39308"
+ msgid "The \"%s\" version of this movie already exists, are you sure to add a duplication?"
+diff --git a/xbmc/video/VideoDatabase.cpp b/xbmc/video/VideoDatabase.cpp
+index 2b0f41641cca..6b3baab5c669 100644
+--- a/xbmc/video/VideoDatabase.cpp
++++ b/xbmc/video/VideoDatabase.cpp
+@@ -1602,7 +1602,7 @@ int CVideoDatabase::AddType(const std::string& strType)
+ 
+   try
+   {
+-    if (m_pDB.get() == nullptr || m_pDS.get() == nullptr)
++    if (!m_pDB || !m_pDS)
+       return -1;
+ 
+     std::string strSQL = PrepareSQL("SELECT type_id FROM type WHERE name LIKE '%s'", strType.c_str());
+@@ -3669,7 +3669,7 @@ void CVideoDatabase::SetMovieSet(int idMovie, int idSet)
+ 
+ void CVideoDatabase::GetMovieVersion(int idMovie, CFileItemList& items)
+ {
+-  if (m_pDB.get() == nullptr || m_pDS.get() == nullptr)
++  if (!m_pDB || !m_pDS)
+     return;
+ 
+   try
+@@ -3686,11 +3686,12 @@ void CVideoDatabase::GetMovieVersion(int idMovie, CFileItemList& items)
+                             "    path.idPath = files.idPath "
+                             "WHERE type_link.media_id = %i", idMovie));
+ 
++    std::string file;
++
+     while (!m_pDS->eof())
+     {
+       CFileItemPtr pItem(new CFileItem());
+       pItem->SetLabel(m_pDS->fv(0).get_asString());
+-      std::string file;
+       ConstructPath(file, m_pDS->fv(1).get_asString(), m_pDS->fv(2).get_asString());
+       pItem->SetLabel2(file);
+       items.Add(pItem);
+@@ -3704,12 +3705,12 @@ void CVideoDatabase::GetMovieVersion(int idMovie, CFileItemList& items)
+   }
+ }
+ 
+-std::string CVideoDatabase::GetMovieCurrentVersion(int idMovie)
++std::string CVideoDatabase::GetMovieCurrentVersion(int idMovie) const
+ {
+-  if (m_pDB.get() == nullptr || m_pDS.get() == nullptr)
++  if (!m_pDB || !m_pDS)
+     return "";
+ 
+-  std::string name = "";
++  std::string name;
+ 
+   try
+   {
+@@ -3736,9 +3737,9 @@ std::string CVideoDatabase::GetMovieCurrentVersion(int idMovie)
+   return name;
+ }
+ 
+-int CVideoDatabase::GetFileIdByMovie(int idMovie)
++int CVideoDatabase::GetFileIdByMovie(int idMovie) const
+ {
+-  if (m_pDB.get() == nullptr || m_pDS.get() == nullptr)
++  if (!m_pDB || !m_pDS)
+     return -1;
+ 
+   int idFile = -1;
+@@ -3762,9 +3763,9 @@ int CVideoDatabase::GetFileIdByMovie(int idMovie)
+   return idFile;
+ }
+ 
+-int CVideoDatabase::GetFileIdByMovieVersion(int idMovie, int idType)
++int CVideoDatabase::GetFileIdByMovieVersion(int idMovie, int idType) const
+ {
+-  if (m_pDB.get() == nullptr || m_pDS.get() == nullptr)
++  if (!m_pDB || !m_pDS)
+     return -1;
+ 
+   int idFile = -1;
+@@ -6217,9 +6218,9 @@ bool CVideoDatabase::GetSetsByWhere(const std::string& strBaseDir, const Filter
+   return false;
+ }
+ 
+-bool CVideoDatabase::GetTypesNav(const std::string& strBaseDir, CFileItemList& items, int idMedia /* = -1 */)
++bool CVideoDatabase::GetTypesNav(const std::string& strBaseDir, CFileItemList& items, int idMedia /* = -1 */) const
+ {
+-  if (m_pDB.get() == nullptr || m_pDS.get() == nullptr)
++  if (!m_pDB || !m_pDS)
+     return false;
+ 
+   try
+diff --git a/xbmc/video/VideoDatabase.h b/xbmc/video/VideoDatabase.h
+index fdfc81fcc42b..67d4a3ee11e1 100644
+--- a/xbmc/video/VideoDatabase.h
++++ b/xbmc/video/VideoDatabase.h
+@@ -733,7 +733,7 @@ class CVideoDatabase : public CDatabase
+   bool GetDirectorsNav(const std::string& strBaseDir, CFileItemList& items, int idContent=-1, const Filter &filter = Filter(), bool countOnly = false);
+   bool GetWritersNav(const std::string& strBaseDir, CFileItemList& items, int idContent=-1, const Filter &filter = Filter(), bool countOnly = false);
+   bool GetSetsNav(const std::string& strBaseDir, CFileItemList& items, int idContent=-1, const Filter &filter = Filter(), bool ignoreSingleMovieSets = false);
+-  bool GetTypesNav(const std::string& strBaseDir, CFileItemList& items, int idMedia = -1);
++  bool GetTypesNav(const std::string& strBaseDir, CFileItemList& items, int idMedia = -1) const;
+   bool GetTagsNav(const std::string& strBaseDir, CFileItemList& items, int idContent=-1, const Filter &filter = Filter(), bool countOnly = false);
+   bool GetMusicVideoAlbumsNav(const std::string& strBaseDir, CFileItemList& items, int idArtist, const Filter &filter = Filter(), bool countOnly = false);
+ 
+@@ -862,7 +862,7 @@ class CVideoDatabase : public CDatabase
+   void ClearMovieSet(int idMovie);
+   void SetMovieSet(int idMovie, int idSet);
+   void GetMovieVersion(int idMovie, CFileItemList& items);
+-  std::string GetMovieCurrentVersion(int idMovie);
++  std::string GetMovieCurrentVersion(int idMovie) const;
+   void SetMovieVersion(int idMovieSource, int idMovieTarget, int idType);
+   void ChangeMovieVersion(int idMovie, int idType);
+   bool SetVideoUserRating(int dbId, int rating, const MediaType& mediaType);
+@@ -886,8 +886,8 @@ class CVideoDatabase : public CDatabase
+    */
+   int GetFileId(const std::string& url);
+ 
+-  int GetFileIdByMovie(int idMovie);
+-  int GetFileIdByMovieVersion(int idMovie, int idType);
++  int GetFileIdByMovie(int idMovie) const;
++  int GetFileIdByMovieVersion(int idMovie, int idType) const;
+ 
+   int AddToTable(const std::string& table, const std::string& firstField, const std::string& secondField, const std::string& value);
+   int UpdateRatings(int mediaId, const char *mediaType, const RatingMap& values, const std::string& defaultRating);
+diff --git a/xbmc/video/VideoInfoTag.cpp b/xbmc/video/VideoInfoTag.cpp
+index 66830f9ceeb7..149614b15812 100644
+--- a/xbmc/video/VideoInfoTag.cpp
++++ b/xbmc/video/VideoInfoTag.cpp
+@@ -1448,7 +1448,7 @@ void CVideoInfoTag::SetTags(std::vector<std::string> tags)
+ 
+ void CVideoInfoTag::SetVersion(std::string version)
+ {
+-    m_strVersion = Trim(std::move(version));
++  m_strVersion = Trim(std::move(version));
+ }
+ 
+ void CVideoInfoTag::SetFile(std::string file)
+diff --git a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+index efda51bfd689..58674aaefed5 100644
+--- a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++++ b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+@@ -598,6 +598,10 @@ void CGUIDialogVideoInfo::ClearCastList()
+ 
+ void CGUIDialogVideoInfo::OnChangeVersion()
+ {
++  CGUIDialogSelect* dialog = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogSelect>(WINDOW_DIALOG_SELECT);
++  if (!dialog)
++    return;
++
+   CVideoDatabase videodb;
+   if (!videodb.Open())
+     return;
+@@ -605,12 +609,6 @@ void CGUIDialogVideoInfo::OnChangeVersion()
+   CFileItemList list;
+   int dbId = m_movieItem->GetVideoInfoTag()->m_iDbId;
+ 
+-  CGUIDialogSelect* dialog = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogSelect>(WINDOW_DIALOG_SELECT);
+-  if (!dialog)
+-    return;
+-
+-  int selected = -1;
+-
+   videodb.GetTypesNav("videodb://movies/types", list, dbId);
+   list.Sort(SortByLabel, SortOrderAscending, CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_FILELISTS_IGNORETHEWHENSORTING) ? SortAttributeIgnoreArticle : SortAttributeNone);
+   dialog->Reset();
+@@ -619,10 +617,12 @@ void CGUIDialogVideoInfo::OnChangeVersion()
+   dialog->SetSelected(videodb.GetMovieCurrentVersion(dbId));
+   dialog->Open();
+ 
++  int selected = -1;
++
+   if (dialog->IsConfirmed())
+   {
+     CFileItemPtr selectedItem = dialog->GetSelectedFileItem();
+-    if (selectedItem != nullptr)
++    if (selectedItem)
+       selected = atoi(selectedItem->GetLabel2().c_str());
+   }
+   else
+@@ -1694,7 +1694,7 @@ bool CGUIDialogVideoInfo::SetMovieVersion(const CFileItemPtr &item)
+   // N.B. Choosing the movie itself as target movie is also allowed, which
+   //      will just change the alternate version type if that get changed
+ 
+-  if (item == nullptr || !item->HasVideoInfoTag())
++  if (!item || !item->HasVideoInfoTag())
+     return false;
+ 
+   CVideoDatabase videodb;
+@@ -1743,15 +1743,13 @@ bool CGUIDialogVideoInfo::SetMovieVersion(const CFileItemPtr &item)
+   if (!dialog)
+     return false;
+ 
+-  int selected = -1;
+-
+   list.Sort(SortByLabel, SortOrderAscending, CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_FILELISTS_IGNORETHEWHENSORTING) ? SortAttributeIgnoreArticle : SortAttributeNone);
+   dialog->Reset();
+   dialog->SetItems(list);
+   dialog->SetHeading(CVariant{39302});
+   dialog->SetSelected(itemId);
+   dialog->Open();
+-  selected = dialog->GetSelectedItem();
++  int selected = dialog->GetSelectedItem();
+ 
+   if (selected < 0)
+     return false;
+@@ -1789,7 +1787,7 @@ bool CGUIDialogVideoInfo::SetMovieVersion(const CFileItemPtr &item)
+     else if (dialog->IsConfirmed())
+     {
+       CFileItemPtr selectedItem = dialog->GetSelectedFileItem();
+-      if (selectedItem != nullptr)
++      if (selectedItem)
+       {
+         selectedType = selectedItem->GetLabel();
+         selected = atoi(selectedItem->GetLabel2().c_str());
+diff --git a/xbmc/video/windows/GUIWindowVideoNav.cpp b/xbmc/video/windows/GUIWindowVideoNav.cpp
+index 337138c70d41..5e734eaee761 100644
+--- a/xbmc/video/windows/GUIWindowVideoNav.cpp
++++ b/xbmc/video/windows/GUIWindowVideoNav.cpp
+@@ -519,7 +519,7 @@ bool CGUIWindowVideoNav::GetDirectory(const std::string &strDirectory, CFileItem
+       else if (node == NODE_TYPE_TAGS)
+         items.SetContent("tags");
+       else if (node == NODE_TYPE_TYPES)
+-      items.SetContent("types");
++        items.SetContent("types");
+       else
+         items.SetContent("");
+     }
+
+From 14f7f1a755c19782cf0783d15d93cdc91459a416 Mon Sep 17 00:00:00 2001
+From: XODIDOX <xodidox@gmail.com>
+Date: Fri, 30 Nov 2018 17:31:54 -0800
+Subject: [PATCH 05/15] Minor fix
+
+---
+ .../resource.language.en_gb/resources/strings.po   |  4 ++--
+ xbmc/video/VideoDatabase.cpp                       | 10 +++++-----
+ xbmc/video/VideoDatabase.h                         |  6 +++---
+ xbmc/video/dialogs/GUIDialogVideoInfo.cpp          | 14 ++------------
+ 4 files changed, 12 insertions(+), 22 deletions(-)
+
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index b8596f79207f..3e5ad42b06f0 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -21606,7 +21606,7 @@ msgstr ""
+ #. Manage movie version dialog title
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+ msgctxt "#39302"
+-msgid "Convert movie to an additional version for"
++msgid "Convert movie to an additional version of"
+ msgstr ""
+ 
+ #. Movie version selection dialog title
+@@ -21642,5 +21642,5 @@ msgstr ""
+ #. Warning dialog text
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+ msgctxt "#39308"
+-msgid "The \"%s\" version of this movie already exists, are you sure to add a duplication?"
++msgid "The \"{0:s}\" version of this movie already exists, are you sure to add a duplication?"
+ msgstr ""
+diff --git a/xbmc/video/VideoDatabase.cpp b/xbmc/video/VideoDatabase.cpp
+index 6b3baab5c669..8a66aea86fea 100644
+--- a/xbmc/video/VideoDatabase.cpp
++++ b/xbmc/video/VideoDatabase.cpp
+@@ -3667,7 +3667,7 @@ void CVideoDatabase::SetMovieSet(int idMovie, int idSet)
+     ExecuteQuery(PrepareSQL("update movie set idSet = null where idMovie = %i", idMovie));
+ }
+ 
+-void CVideoDatabase::GetMovieVersion(int idMovie, CFileItemList& items)
++void CVideoDatabase::GetMovieVersion(int idMovie, CFileItemList& items) const
+ {
+   if (!m_pDB || !m_pDS)
+     return;
+@@ -10022,7 +10022,7 @@ bool CVideoDatabase::ImportArtFromXML(const TiXmlNode *node, std::map<std::strin
+   return !artwork.empty();
+ }
+ 
+-void CVideoDatabase::ConstructPath(std::string& strDest, const std::string& strPath, const std::string& strFileName)
++void CVideoDatabase::ConstructPath(std::string& strDest, const std::string& strPath, const std::string& strFileName) const
+ {
+   if (URIUtils::IsStack(strFileName) ||
+       URIUtils::IsInArchive(strFileName) || URIUtils::IsPlugin(strPath))
+@@ -10031,7 +10031,7 @@ void CVideoDatabase::ConstructPath(std::string& strDest, const std::string& strP
+     strDest = URIUtils::AddFileToFolder(strPath, strFileName);
+ }
+ 
+-void CVideoDatabase::SplitPath(const std::string& strFileNameAndPath, std::string& strPath, std::string& strFileName)
++void CVideoDatabase::SplitPath(const std::string& strFileNameAndPath, std::string& strPath, std::string& strFileName) const
+ {
+   if (URIUtils::IsStack(strFileNameAndPath) || StringUtils::StartsWithNoCase(strFileNameAndPath, "rar://") || StringUtils::StartsWithNoCase(strFileNameAndPath, "zip://"))
+   {
+@@ -10545,6 +10545,6 @@ void CVideoDatabase::InitializeTypeTable()
+                           "50th Anniversary",
+   };
+ 
+-  for (int i = 0; i < sizeof(types)/sizeof(types[0]); i++)
+-    m_pDS->exec(PrepareSQL("INSERT INTO type VALUES(%i, '%s')", i + 1, types[i]));
++  for (const char* type : types)
++    m_pDS->exec(PrepareSQL("INSERT INTO type VALUES(NULL, '%s')", type));
+ }
+diff --git a/xbmc/video/VideoDatabase.h b/xbmc/video/VideoDatabase.h
+index 67d4a3ee11e1..327f030886ff 100644
+--- a/xbmc/video/VideoDatabase.h
++++ b/xbmc/video/VideoDatabase.h
+@@ -861,7 +861,7 @@ class CVideoDatabase : public CDatabase
+   int AddSet(const std::string& strSet, const std::string& strOverview = "");
+   void ClearMovieSet(int idMovie);
+   void SetMovieSet(int idMovie, int idSet);
+-  void GetMovieVersion(int idMovie, CFileItemList& items);
++  void GetMovieVersion(int idMovie, CFileItemList& items) const;
+   std::string GetMovieCurrentVersion(int idMovie) const;
+   void SetMovieVersion(int idMovieSource, int idMovieTarget, int idType);
+   void ChangeMovieVersion(int idMovie, int idType);
+@@ -996,8 +996,8 @@ class CVideoDatabase : public CDatabase
+   virtual int GetExportVersion() const { return 1; };
+   const char *GetBaseDBName() const override { return "MyVideos"; };
+ 
+-  void ConstructPath(std::string& strDest, const std::string& strPath, const std::string& strFileName);
+-  void SplitPath(const std::string& strFileNameAndPath, std::string& strPath, std::string& strFileName);
++  void ConstructPath(std::string& strDest, const std::string& strPath, const std::string& strFileName) const;
++  void SplitPath(const std::string& strFileNameAndPath, std::string& strPath, std::string& strFileName) const;
+   void InvalidatePathHash(const std::string& strPath);
+ 
+   void InitializeTypeTable();
+diff --git a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+index 58674aaefed5..79848bbd3135 100644
+--- a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++++ b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+@@ -1799,19 +1799,9 @@ bool CGUIDialogVideoInfo::SetMovieVersion(const CFileItemPtr &item)
+     if (selected < 0)
+       return false;
+ 
+-    // check for duplicate versions
+-    bool duplicate = false;
+-    for (int i = 0; i < targetList.Size(); i++)
+-    {
+-      if (StringUtils::EqualsNoCase(selectedType, targetList[i]->GetLabel()))
+-      {
+-        duplicate = true;
+-        break;
+-      }
+-    }
+-
+     // confirm with user for duplication
+-    if (!duplicate || CGUIDialogYesNo::ShowAndGetInput(CVariant{14117}, StringUtils::Format(g_localizeStrings.Get(39308), selectedType)))
++    if (!std::any_of(targetList.begin(), targetList.end(), [&selectedType](const CFileItemPtr& item) { return StringUtils::EqualsNoCase(selectedType, item->GetLabel()); }) ||
++        CGUIDialogYesNo::ShowAndGetInput(CVariant{14117}, StringUtils::Format(g_localizeStrings.Get(39308), selectedType)))
+       break;
+   }
+   while (true);
+
+From 41df7ef69ad7a4d115c076ad7df6acd3c512b268 Mon Sep 17 00:00:00 2001
+From: XODIDOX <xodidox@gmail.com>
+Date: Fri, 30 Nov 2018 21:26:57 -0800
+Subject: [PATCH 06/15] Fixed staled video info tag after version changed
+
+---
+ xbmc/video/dialogs/GUIDialogVideoInfo.cpp | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+index 79848bbd3135..0c3367f1ae5a 100644
+--- a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++++ b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+@@ -633,7 +633,8 @@ void CGUIDialogVideoInfo::OnChangeVersion()
+ 
+   videodb.ChangeMovieVersion(dbId, selected);
+ 
+-  Close();
++  // update video info tag since we changed the video file for the movie
++  *(m_movieItem->GetVideoInfoTag()) = videodb.GetDetailsByTypeAndId(VIDEODB_CONTENT_MOVIES, dbId);
+ }
+ 
+ void CGUIDialogVideoInfo::Play(bool resume)
+
+From 8479ddce89d251057784e03537ac7d9cd15705de Mon Sep 17 00:00:00 2001
+From: XODIDOX <xodidox@gmail.com>
+Date: Sat, 1 Dec 2018 00:37:52 -0800
+Subject: [PATCH 07/15] Fixed ListItem.FileNameAndPath label issue
+
+---
+ xbmc/video/dialogs/GUIDialogVideoInfo.cpp | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+index 0c3367f1ae5a..57160fb9129a 100644
+--- a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++++ b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+@@ -633,6 +633,11 @@ void CGUIDialogVideoInfo::OnChangeVersion()
+ 
+   videodb.ChangeMovieVersion(dbId, selected);
+ 
++  std::string path;
++  videodb.GetFilePathById(dbId, path, VIDEODB_CONTENT_MOVIES);
++  m_movieItem->SetPath(path);
++  m_movieItem->SetDynPath(path);
++
+   // update video info tag since we changed the video file for the movie
+   *(m_movieItem->GetVideoInfoTag()) = videodb.GetDetailsByTypeAndId(VIDEODB_CONTENT_MOVIES, dbId);
+ }
+
+From bcc5b00f7ab39d204122a36b21bb76992868dd2f Mon Sep 17 00:00:00 2001
+From: XODIDOX <xodidox@gmail.com>
+Date: Sat, 1 Dec 2018 08:09:01 -0800
+Subject: [PATCH 08/15] 1.  Added more versions 2. Fix the default section
+ issue 3. Minor fix
+
+---
+ .../DirectoryNodeMoviesOverview.cpp                   |  2 +-
+ .../DirectoryNodeTvShowsOverview.cpp                  |  2 +-
+ xbmc/video/VideoDatabase.cpp                          | 11 ++++++++---
+ xbmc/video/dialogs/GUIDialogVideoInfo.cpp             |  7 +++----
+ 4 files changed, 13 insertions(+), 9 deletions(-)
+
+diff --git a/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeMoviesOverview.cpp b/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeMoviesOverview.cpp
+index 8ad177e5924a..bd7b54406095 100644
+--- a/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeMoviesOverview.cpp
++++ b/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeMoviesOverview.cpp
+@@ -25,7 +25,7 @@ Node MovieChildren[] = {
+                         { NODE_TYPE_SETS,         "sets",       20434 },
+                         { NODE_TYPE_COUNTRY,      "countries",  20451 },
+                         { NODE_TYPE_TAGS,         "tags",       20459 },
+-                        { NODE_TYPE_TYPES,        "types",      39300 }
++                        { NODE_TYPE_TYPES,        "types",      39300 },
+                        };
+ 
+ CDirectoryNodeMoviesOverview::CDirectoryNodeMoviesOverview(const std::string& strName, CDirectoryNode* pParent)
+diff --git a/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeTvShowsOverview.cpp b/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeTvShowsOverview.cpp
+index 30281f4a4e32..ee0966f74769 100644
+--- a/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeTvShowsOverview.cpp
++++ b/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNodeTvShowsOverview.cpp
+@@ -21,7 +21,7 @@ Node TvShowChildren[] = {
+                           { NODE_TYPE_ACTOR,         "actors",   344 },
+                           { NODE_TYPE_STUDIO,        "studios",  20388 },
+                           { NODE_TYPE_TAGS,          "tags",     20459 },
+-                          { NODE_TYPE_TYPES,         "types",    39300 }
++                          { NODE_TYPE_TYPES,         "types",    39300 },
+                         };
+ 
+ CDirectoryNodeTvShowsOverview::CDirectoryNodeTvShowsOverview(const std::string& strName, CDirectoryNode* pParent)
+diff --git a/xbmc/video/VideoDatabase.cpp b/xbmc/video/VideoDatabase.cpp
+index 8a66aea86fea..9acb8b5bda1f 100644
+--- a/xbmc/video/VideoDatabase.cpp
++++ b/xbmc/video/VideoDatabase.cpp
+@@ -10528,12 +10528,17 @@ void CVideoDatabase::InitializeTypeTable()
+                           "Limited",
+                           "Special",
+                           "Director Cut",
++                          "3D",
++                          "4K",
++                          "IMAX",
++                          "BluRay",
++                          "WEB-DL",
++                          "DVD",
++                          "VHS",
++                          "VCD",
+                           "The Final Cut",
+                           "Super Duper Cut",
+                           "Theatrical",
+-                          "3D",
+-                          "4K UHD",
+-                          "IMAX",
+                           "Collector",
+                           "Ultimate Collector",
+                           "Criterion Collection",
+diff --git a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+index 57160fb9129a..5ee99249c45e 100644
+--- a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++++ b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+@@ -1727,13 +1727,13 @@ bool CGUIDialogVideoInfo::SetMovieVersion(const CFileItemPtr &item)
+ 
+   list.ClearItems();
+ 
+-  int targetDbId;
+-
+   // choose the target movie
+   videodb.GetMoviesNav("videodb://movies/titles", list);
+   if (list.Size() < 1)
+     return false;
+ 
++  list.Sort(SortByLabel, SortOrderAscending, CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_FILELISTS_IGNORETHEWHENSORTING) ? SortAttributeIgnoreArticle : SortAttributeNone);
++
+   int itemId = 0;
+ 
+   for (int i = 0; i < list.Size(); i++)
+@@ -1749,7 +1749,6 @@ bool CGUIDialogVideoInfo::SetMovieVersion(const CFileItemPtr &item)
+   if (!dialog)
+     return false;
+ 
+-  list.Sort(SortByLabel, SortOrderAscending, CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_FILELISTS_IGNORETHEWHENSORTING) ? SortAttributeIgnoreArticle : SortAttributeNone);
+   dialog->Reset();
+   dialog->SetItems(list);
+   dialog->SetHeading(CVariant{39302});
+@@ -1760,7 +1759,7 @@ bool CGUIDialogVideoInfo::SetMovieVersion(const CFileItemPtr &item)
+   if (selected < 0)
+     return false;
+ 
+-  targetDbId = list[selected]->GetVideoInfoTag()->m_iDbId;
++  int targetDbId = list[selected]->GetVideoInfoTag()->m_iDbId;
+ 
+   CFileItemList targetList;
+   videodb.GetMovieVersion(targetDbId, targetList);
+
+From 7c6f0900b50982fe75e1156e87d76032172d4473 Mon Sep 17 00:00:00 2001
+From: XODIDOX <xodidox@gmail.com>
+Date: Sat, 1 Dec 2018 20:21:04 -0800
+Subject: [PATCH 09/15] Added the version selection dialog when playing movie
+ with multiple versions based on feedback and enabled by default. Added a
+ setting in player settings to give user option to turn the dialog off Other
+ fixes
+
+---
+ .../resources/strings.po                      | 16 +++++++--
+ system/settings/settings.xml                  |  5 +++
+ xbmc/interfaces/legacy/ListItem.h             |  1 +
+ xbmc/settings/Settings.cpp                    |  1 +
+ xbmc/settings/Settings.h                      |  1 +
+ xbmc/video/windows/GUIWindowVideoBase.cpp     | 36 ++++++++++++++++++-
+ xbmc/video/windows/GUIWindowVideoBase.h       |  2 +-
+ 7 files changed, 58 insertions(+), 4 deletions(-)
+
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index 3e5ad42b06f0..c8b5113e6804 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -21624,13 +21624,13 @@ msgstr ""
+ #. Warning dialog title
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+ msgctxt "#39305"
+-msgid "Invalid operation"
++msgid "Not supported"
+ msgstr ""
+ 
+ #. Warning dialog text
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+ msgctxt "#39306"
+-msgid "There is more than one movie version exist for the selected movie. It's not allowed to convert this movie to an additonal version for another movie. Please remove it from library and covert each version separately after rescanning them."
++msgid "There is more than one movie version exist for the selected movie. It's not allowed to convert this movie to an additonal version of another movie. Please remove it from library and covert each version separately after rescanning them."
+ msgstr ""
+ 
+ #. Default movie version change dialog title
+@@ -21644,3 +21644,15 @@ msgstr ""
+ msgctxt "#39308"
+ msgid "The \"{0:s}\" version of this movie already exists, are you sure to add a duplication?"
+ msgstr ""
++
++#. Play default video version setting
++#: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++msgctxt "#39309"
++msgid "Play default video version automatically"
++msgstr ""
++
++#. Help for play default video version setting
++#: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++msgctxt "#39310"
++msgid "Select player action for multiple version video.[CR][Enabled] Play default video version without asking.[CR][Disabled] Always show a dialogue to select desired video version."
++msgstr ""
+diff --git a/system/settings/settings.xml b/system/settings/settings.xml
+index ed201cc591b7..e81bdfe7587f 100755
+--- a/system/settings/settings.xml
++++ b/system/settings/settings.xml
+@@ -3,6 +3,11 @@
+   <section id="player" label="14200" help="38100">
+     <category id="videoplayer" label="14215" help="38103">
+       <group id="1" label="14230">
++        <setting id="videoplayer.playdefaultversion" type="boolean" label="39309" help="39310">
++          <level>0</level>
++          <default>false</default>
++          <control type="toggle" />
++        </setting>
+         <setting id="videoplayer.autoplaynextitem" type="list[integer]" label="13433" help="36152">
+           <constraints>
+             <options>
+diff --git a/xbmc/interfaces/legacy/ListItem.h b/xbmc/interfaces/legacy/ListItem.h
+index 4129a514fbbc..9cbfdb57f7ee 100644
+--- a/xbmc/interfaces/legacy/ListItem.h
++++ b/xbmc/interfaces/legacy/ListItem.h
+@@ -710,6 +710,7 @@ namespace XBMCAddon
+       /// @python_v18 Added new **game** type and associated infolabels.
+       /// Added labels **setoverview**, **tag**, **sortepisode**, **sortseason**, **episodeguide**, **showlink**.
+       /// Extended labels **genre**, **country**, **director**, **studio**, **writer**, **tag**, **credits** to also use a list of strings.
++      /// @python_v19 Added version infolabel for movies
+       ///
+       /// **Example:**
+       /// ~~~~~~~~~~~~~{.py}
+diff --git a/xbmc/settings/Settings.cpp b/xbmc/settings/Settings.cpp
+index 432aa53550ef..7354927d2ea4 100644
+--- a/xbmc/settings/Settings.cpp
++++ b/xbmc/settings/Settings.cpp
+@@ -122,6 +122,7 @@ const std::string CSettings::SETTING_VIDEOLIBRARY_IMPORT = "videolibrary.import"
+ const std::string CSettings::SETTING_VIDEOLIBRARY_SHOWEMPTYTVSHOWS = "videolibrary.showemptytvshows";
+ const std::string CSettings::SETTING_LOCALE_AUDIOLANGUAGE = "locale.audiolanguage";
+ const std::string CSettings::SETTING_VIDEOPLAYER_PREFERDEFAULTFLAG = "videoplayer.preferdefaultflag";
++const std::string CSettings::SETTING_VIDEOPLAYER_PLAYDEFAULTVERSION = "videoplayer.playdefaultversion";
+ const std::string CSettings::SETTING_VIDEOPLAYER_AUTOPLAYNEXTITEM = "videoplayer.autoplaynextitem";
+ const std::string CSettings::SETTING_VIDEOPLAYER_SEEKSTEPS = "videoplayer.seeksteps";
+ const std::string CSettings::SETTING_VIDEOPLAYER_SEEKDELAY = "videoplayer.seekdelay";
+diff --git a/xbmc/settings/Settings.h b/xbmc/settings/Settings.h
+index 41698194d4a5..bf51d2bf7436 100644
+--- a/xbmc/settings/Settings.h
++++ b/xbmc/settings/Settings.h
+@@ -82,6 +82,7 @@ class CSettings : public CSettingsBase, public CSettingCreator, public CSettingC
+   static const std::string SETTING_VIDEOLIBRARY_SHOWEMPTYTVSHOWS;
+   static const std::string SETTING_LOCALE_AUDIOLANGUAGE;
+   static const std::string SETTING_VIDEOPLAYER_PREFERDEFAULTFLAG;
++  static const std::string SETTING_VIDEOPLAYER_PLAYDEFAULTVERSION;
+   static const std::string SETTING_VIDEOPLAYER_AUTOPLAYNEXTITEM;
+   static const std::string SETTING_VIDEOPLAYER_SEEKSTEPS;
+   static const std::string SETTING_VIDEOPLAYER_SEEKDELAY;
+diff --git a/xbmc/video/windows/GUIWindowVideoBase.cpp b/xbmc/video/windows/GUIWindowVideoBase.cpp
+index ce086ea0813c..2c3d07af28ff 100644
+--- a/xbmc/video/windows/GUIWindowVideoBase.cpp
++++ b/xbmc/video/windows/GUIWindowVideoBase.cpp
+@@ -1123,11 +1123,45 @@ bool CGUIWindowVideoBase::OnPlayAndQueueMedia(const CFileItemPtr &item, std::str
+   return CGUIMediaWindow::OnPlayAndQueueMedia(movieItem, player);
+ }
+ 
+-void CGUIWindowVideoBase::PlayMovie(const CFileItem *item, const std::string &player)
++void CGUIWindowVideoBase::PlayMovie(CFileItem *item, const std::string &player)
+ {
+   if(m_thumbLoader.IsLoading())
+     m_thumbLoader.StopAsync();
+ 
++  if (!CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_VIDEOPLAYER_PLAYDEFAULTVERSION))
++  {
++    CVideoDatabase videodb;
++    if (!videodb.Open())
++      return;
++
++    CFileItemList list;
++    int dbId = item->GetVideoInfoTag()->m_iDbId;
++    videodb.GetMovieVersion(dbId, list);
++
++    if (list.Size() > 1)
++    {
++      CGUIDialogSelect* dialog = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogSelect>(WINDOW_DIALOG_SELECT);
++      if (!dialog)
++        return;
++
++      list.Sort(SortByLabel, SortOrderAscending, CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_FILELISTS_IGNORETHEWHENSORTING) ? SortAttributeIgnoreArticle : SortAttributeNone);
++      dialog->Reset();
++      dialog->SetItems(list);
++      dialog->SetHeading(CVariant{39303});
++      dialog->SetSelected(videodb.GetMovieCurrentVersion(dbId));
++      dialog->Open();
++
++      if (dialog->IsConfirmed())
++      {
++        CFileItemPtr selectedItem = dialog->GetSelectedFileItem();
++        if (selectedItem)
++          item->SetPath(selectedItem->GetLabel2());
++      }
++      else
++        return;
++    }
++  }
++
+   CServiceBroker::GetPlaylistPlayer().Play(std::make_shared<CFileItem>(*item), player);
+ 
+   if(!g_application.GetAppPlayer().IsPlayingVideo())
+diff --git a/xbmc/video/windows/GUIWindowVideoBase.h b/xbmc/video/windows/GUIWindowVideoBase.h
+index 0a6712717437..8650db3ef6c6 100644
+--- a/xbmc/video/windows/GUIWindowVideoBase.h
++++ b/xbmc/video/windows/GUIWindowVideoBase.h
+@@ -32,7 +32,7 @@ class CGUIWindowVideoBase : public CGUIMediaWindow, public IBackgroundLoaderObse
+   bool OnMessage(CGUIMessage& message) override;
+   bool OnAction(const CAction &action) override;
+ 
+-  void PlayMovie(const CFileItem *item, const std::string &player = "");
++  void PlayMovie(CFileItem *item, const std::string &player = "");
+   static void GetResumeItemOffset(const CFileItem *item, int64_t& startoffset, int& partNumber);
+   static bool HasResumeItemOffset(const CFileItem *item);
+ 
+
+From 507c07cc44d4c3eccb21ecc1569dc97b21f2fe44 Mon Sep 17 00:00:00 2001
+From: XODIDOX <xodidox@gmail.com>
+Date: Sat, 1 Dec 2018 21:16:11 -0800
+Subject: [PATCH 10/15] Fixed scanning failure for versioned movie
+
+---
+ xbmc/video/VideoDatabase.cpp | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/xbmc/video/VideoDatabase.cpp b/xbmc/video/VideoDatabase.cpp
+index 9acb8b5bda1f..32642e019f3f 100644
+--- a/xbmc/video/VideoDatabase.cpp
++++ b/xbmc/video/VideoDatabase.cpp
+@@ -1123,14 +1123,14 @@ int CVideoDatabase::GetMovieId(const std::string& strFilenameAndPath)
+ 
+     std::string strSQL;
+     if (idFile == -1)
+-      strSQL=PrepareSQL("select idMovie from movie join files on files.idFile=movie.idFile where files.idPath=%i",idPath);
++      strSQL=PrepareSQL("select idMovie from movie join files on files.idFile=movie.idFile where files.idPath = %i",idPath);
+     else
+-      strSQL=PrepareSQL("select idMovie from movie where idFile=%i", idFile);
++      strSQL=PrepareSQL("select media_id from type_link where file_id = %i and media_type = 'movie'", idFile);
+ 
+     CLog::Log(LOGDEBUG, LOGDATABASE, "%s (%s), query = %s", __FUNCTION__, CURL::GetRedacted(strFilenameAndPath).c_str(), strSQL.c_str());
+     m_pDS->query(strSQL);
+     if (m_pDS->num_rows() > 0)
+-      idMovie = m_pDS->fv("idMovie").get_asInt();
++      idMovie = m_pDS->fv(0).get_asInt();
+     m_pDS->close();
+ 
+     return idMovie;
+
+From 87c97f2823a83dd2987f162af7cbe2a79d05aeaf Mon Sep 17 00:00:00 2001
+From: XODIDOX <xodidox@gmail.com>
+Date: Tue, 4 Dec 2018 23:06:33 -0800
+Subject: [PATCH 11/15] Fixed issue for version selection dialog missing when
+ playing from the context menu Fixed issue for staled file item info in media
+ window after version change Fixed issue for GUI_MSG_UPDATE_ITEM to update
+ file item in a inactive media window Fixed issue for staled strBasePath in
+ movie DB table
+
+---
+ .../resources/strings.po                      | 12 ++---
+ xbmc/Application.cpp                          | 48 ++++++++++++++++++-
+ xbmc/Application.h                            |  2 +
+ xbmc/FileItem.cpp                             |  7 +--
+ xbmc/GUIUserMessages.h                        |  4 ++
+ xbmc/video/VideoDatabase.cpp                  | 41 +++++++++++++++-
+ xbmc/video/VideoDatabase.h                    |  1 +
+ xbmc/video/dialogs/GUIDialogVideoInfo.cpp     | 23 +++++----
+ xbmc/video/windows/GUIWindowVideoBase.cpp     | 38 +--------------
+ xbmc/video/windows/GUIWindowVideoBase.h       |  2 +-
+ xbmc/windows/GUIMediaWindow.cpp               |  8 +++-
+ 11 files changed, 126 insertions(+), 60 deletions(-)
+
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index c8b5113e6804..843c5ebb34cb 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -21606,7 +21606,7 @@ msgstr ""
+ #. Manage movie version dialog title
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+ msgctxt "#39302"
+-msgid "Convert movie to an additional version of"
++msgid "Convert to an additional version of movie"
+ msgstr ""
+ 
+ #. Movie version selection dialog title
+@@ -21630,29 +21630,29 @@ msgstr ""
+ #. Warning dialog text
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+ msgctxt "#39306"
+-msgid "There is more than one movie version exist for the selected movie. It's not allowed to convert this movie to an additonal version of another movie. Please remove it from library and covert each version separately after rescanning them."
++msgid "More than one version of the selected movie exists. It cannot be converted to an additional version of another movie. Please remove it from the library, then rescan and convert each version separately."
+ msgstr ""
+ 
+ #. Default movie version change dialog title
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+ msgctxt "#39307"
+-msgid "Change default movie version"
++msgid "Change default version"
+ msgstr ""
+ 
+ #. Warning dialog text
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+ msgctxt "#39308"
+-msgid "The \"{0:s}\" version of this movie already exists, are you sure to add a duplication?"
++msgid "The \"{0:s}\" version of this movie already exists, do you want to add a duplicate?"
+ msgstr ""
+ 
+ #. Play default video version setting
+-#: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++#: system/settings/settings.xml
+ msgctxt "#39309"
+ msgid "Play default video version automatically"
+ msgstr ""
+ 
+ #. Help for play default video version setting
+-#: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++#: system/settings/settings.xml
+ msgctxt "#39310"
+ msgid "Select player action for multiple version video.[CR][Enabled] Play default video version without asking.[CR][Disabled] Always show a dialogue to select desired video version."
+ msgstr ""
+diff --git a/xbmc/Application.cpp b/xbmc/Application.cpp
+index 715c4e616c34..77e3629313c7 100644
+--- a/xbmc/Application.cpp
++++ b/xbmc/Application.cpp
+@@ -13,6 +13,7 @@
+ #include "AppParamParser.h"
+ #include "AppInboundProtocol.h"
+ #include "dialogs/GUIDialogBusy.h"
++#include "dialogs/GUIDialogSelect.h"
+ #include "events/EventLog.h"
+ #include "events/NotificationEvent.h"
+ #include "interfaces/builtins/Builtins.h"
+@@ -2739,8 +2740,53 @@ bool CApplication::PlayStack(CFileItem& item, bool bRestart)
+   return PlayFile(selectedStackPart, "", true);
+ }
+ 
++void CApplication::SelectMovieVersion(CFileItem& item)
++{
++  if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_VIDEOPLAYER_PLAYDEFAULTVERSION))
++    return;
++
++  CVideoDatabase videodb;
++  if (!videodb.Open())
++    return;
++
++  CFileItemList list;
++  int dbId = item.GetVideoInfoTag()->m_iDbId;
++  videodb.GetMovieVersion(dbId, list);
++
++  if (list.Size() < 2)
++    return;
++
++  CGUIDialogSelect* dialog = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogSelect>(WINDOW_DIALOG_SELECT);
++  if (!dialog)
++    return;
++
++  list.Sort(SortByLabel, SortOrderAscending, CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_FILELISTS_IGNORETHEWHENSORTING) ? SortAttributeIgnoreArticle : SortAttributeNone);
++  dialog->Reset();
++  dialog->SetItems(list);
++  dialog->SetHeading(CVariant{39303});
++  dialog->SetSelected(videodb.GetMovieCurrentVersion(dbId));
++  dialog->Open();
++
++  if (dialog->IsConfirmed())
++  {
++    CFileItemPtr selectedItem = dialog->GetSelectedFileItem();
++    if (selectedItem)
++    {
++      std::string path = selectedItem->GetLabel2();
++      item.SetPath(path);
++      item.SetDynPath(path);
++      videodb.GetMovieInfo(path, *item.GetVideoInfoTag());
++    }
++  }
++}
++
+ bool CApplication::PlayFile(CFileItem item, const std::string& player, bool bRestart)
+ {
++  if (item.IsVideo() && item.GetVideoContentType() == VIDEODB_CONTENT_MOVIES)
++  {
++    SelectMovieVersion(item);
++  }
++
+   // Ensure the MIME type has been retrieved for http:// and shout:// streams
+   if (item.GetMimeType().empty())
+     item.FillInMimeType();
+@@ -3493,7 +3539,7 @@ void CApplication::CheckOSScreenSaverInhibitionSetting()
+   // Kodi screen saver overrides OS one: always inhibit OS screen saver then
+   // except when DPMS is active (inhibiting the screen saver then might also
+   // disable DPMS again)
+-  if (!m_dpmsIsActive && 
++  if (!m_dpmsIsActive &&
+       !CServiceBroker::GetSettingsComponent()->GetSettings()->GetString(CSettings::SETTING_SCREENSAVER_MODE).empty() &&
+       CServiceBroker::GetWinSystem()->GetOSScreenSaver())
+   {
+diff --git a/xbmc/Application.h b/xbmc/Application.h
+index 30cf6e7d3246..fa1b01b1f0f5 100644
+--- a/xbmc/Application.h
++++ b/xbmc/Application.h
+@@ -463,6 +463,8 @@ friend class CAppInboundProtocol;
+   */
+   void HandleShutdownMessage();
+ 
++  void SelectMovieVersion(CFileItem& movieItem);
++
+   CInertialScrollingHandler *m_pInertialScrollingHandler;
+ 
+   ReplayGainSettings m_replayGainSettings;
+diff --git a/xbmc/FileItem.cpp b/xbmc/FileItem.cpp
+index cef49b864171..57c7ba59b353 100644
+--- a/xbmc/FileItem.cpp
++++ b/xbmc/FileItem.cpp
+@@ -1168,9 +1168,9 @@ bool CFileItem::IsBluray() const
+ {
+   if (URIUtils::IsBluray(m_strPath))
+     return true;
+-  
++
+   CFileItem item = CFileItem(GetOpticalMediaPath(), false);
+-  
++
+   return item.IsBDFile();
+ }
+ 
+@@ -1478,7 +1478,7 @@ void CFileItem::FillInMimeType(bool lookup /*= true*/)
+   }
+ 
+   // change protocol to mms for the following mime-type.  Allows us to create proper FileMMS.
+-  if(StringUtils::StartsWithNoCase(m_mimetype, "application/vnd.ms.wms-hdr.asfv1") || 
++  if(StringUtils::StartsWithNoCase(m_mimetype, "application/vnd.ms.wms-hdr.asfv1") ||
+      StringUtils::StartsWithNoCase(m_mimetype, "application/x-mms-framed"))
+   {
+     if (m_strDynPath.empty())
+@@ -1579,6 +1579,7 @@ void CFileItem::UpdateInfo(const CFileItem &item, bool replaceLabels /*=true*/)
+       m_videoInfoTag = new CVideoInfoTag;
+     }
+ 
++    m_strDynPath = item.m_strDynPath;
+     m_pvrRecordingInfoTag = item.m_pvrRecordingInfoTag;
+ 
+     SetOverlayImage(ICON_OVERLAY_UNWATCHED, GetVideoInfoTag()->GetPlayCount() > 0);
+diff --git a/xbmc/GUIUserMessages.h b/xbmc/GUIUserMessages.h
+index 3d1e8ee7c544..d0dded634a38 100644
+--- a/xbmc/GUIUserMessages.h
++++ b/xbmc/GUIUserMessages.h
+@@ -103,6 +103,10 @@
+ // Message sent to tell the GUI to update a single item
+ #define GUI_MSG_UPDATE_ITEM           GUI_MSG_USER + 29
+ 
++  // Flags for GUI_MSG_UPDATE_ITEM message
++  #define GUI_MSG_FLAG_UPDATE_LIST    0x00000001
++  #define GUI_MSG_FLAG_FORCE_UPDATE   0x00000002
++
+ // Message sent to tell the GUI to change view mode
+ #define GUI_MSG_CHANGE_VIEW_MODE      GUI_MSG_USER + 30
+ 
+diff --git a/xbmc/video/VideoDatabase.cpp b/xbmc/video/VideoDatabase.cpp
+index 32642e019f3f..9893d47e5227 100644
+--- a/xbmc/video/VideoDatabase.cpp
++++ b/xbmc/video/VideoDatabase.cpp
+@@ -3697,6 +3697,7 @@ void CVideoDatabase::GetMovieVersion(int idMovie, CFileItemList& items) const
+       items.Add(pItem);
+       m_pDS->next();
+     }
++
+     m_pDS->close();
+   }
+   catch (...)
+@@ -3737,6 +3738,32 @@ std::string CVideoDatabase::GetMovieCurrentVersion(int idMovie) const
+   return name;
+ }
+ 
++std::string CVideoDatabase::GetFilePathByFileId(int idFile) const
++{
++  if (!m_pDB || !m_pDS)
++    return "";
++
++  std::string path;
++
++  try
++  {
++    m_pDS->query(PrepareSQL("SELECT strPath, strFileName FROM files JOIN path ON path.idPath = files.idPath WHERE idFile = %i", idFile));
++
++    if (!m_pDS->eof())
++    {
++      ConstructPath(path, m_pDS->fv(0).get_asString(), m_pDS->fv(1).get_asString());
++    }
++
++    m_pDS->close();
++  }
++  catch (...)
++  {
++    CLog::Log(LOGERROR, "%s failed for file %d", __FUNCTION__, idFile);
++  }
++
++  return path;
++}
++
+ int CVideoDatabase::GetFileIdByMovie(int idMovie) const
+ {
+   if (!m_pDB || !m_pDS)
+@@ -3795,6 +3822,8 @@ void CVideoDatabase::SetMovieVersion(int idMovieSource, int idMovieTarget, int i
+   if (idFile < 0)
+     return;
+ 
++  BeginTransaction();
++
+   if (idMovieSource != idMovieTarget)
+   {
+     ExecuteQuery(PrepareSQL("UPDATE type_link SET media_id = %i, type_id = %i WHERE file_id = %i", idMovieTarget, idType, idFile));
+@@ -3802,6 +3831,8 @@ void CVideoDatabase::SetMovieVersion(int idMovieSource, int idMovieTarget, int i
+   }
+   else
+     ExecuteQuery(PrepareSQL("UPDATE type_link SET type_id = %i WHERE file_id = %i", idType, idFile));
++
++  CommitTransaction();
+ }
+ 
+ void CVideoDatabase::ChangeMovieVersion(int idMovie, int idType)
+@@ -3810,7 +3841,15 @@ void CVideoDatabase::ChangeMovieVersion(int idMovie, int idType)
+   if (idFile < 0)
+     return;
+ 
+-  ExecuteQuery(PrepareSQL("UPDATE movie SET idFile = %i WHERE idMovie = %i", idFile, idMovie));
++  std::string path = GetFilePathByFileId(idFile);
++  if (path.empty())
++    return;
++
++  BeginTransaction();
++
++  ExecuteQuery(PrepareSQL("UPDATE movie SET idFile = %i, c22 = '%s' WHERE idMovie = %i", idFile, path.c_str(), idMovie));
++
++  CommitTransaction();
+ }
+ 
+ void CVideoDatabase::DeleteTag(int idTag, VIDEODB_CONTENT_TYPE mediaType)
+diff --git a/xbmc/video/VideoDatabase.h b/xbmc/video/VideoDatabase.h
+index 327f030886ff..d2d55f544095 100644
+--- a/xbmc/video/VideoDatabase.h
++++ b/xbmc/video/VideoDatabase.h
+@@ -888,6 +888,7 @@ class CVideoDatabase : public CDatabase
+ 
+   int GetFileIdByMovie(int idMovie) const;
+   int GetFileIdByMovieVersion(int idMovie, int idType) const;
++  std::string GetFilePathByFileId(int idFile) const;
+ 
+   int AddToTable(const std::string& table, const std::string& firstField, const std::string& secondField, const std::string& value);
+   int UpdateRatings(int mediaId, const char *mediaType, const RatingMap& values, const std::string& defaultRating);
+diff --git a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+index 5ee99249c45e..7990db6a86d6 100644
+--- a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++++ b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+@@ -639,7 +639,11 @@ void CGUIDialogVideoInfo::OnChangeVersion()
+   m_movieItem->SetDynPath(path);
+ 
+   // update video info tag since we changed the video file for the movie
+-  *(m_movieItem->GetVideoInfoTag()) = videodb.GetDetailsByTypeAndId(VIDEODB_CONTENT_MOVIES, dbId);
++  videodb.GetMovieInfo(path, *m_movieItem->GetVideoInfoTag());
++
++  // send a message to all windows to tell them to update the fileitem (eg playlistplayer, media windows)
++  CGUIMessage msg(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_UPDATE_ITEM, GUI_MSG_FLAG_FORCE_UPDATE, m_movieItem);
++  CServiceBroker::GetGUI()->GetWindowManager().SendMessage(msg);
+ }
+ 
+ void CGUIDialogVideoInfo::Play(bool resume)
+@@ -1714,15 +1718,15 @@ bool CGUIDialogVideoInfo::SetMovieVersion(const CFileItemPtr &item)
+   videodb.GetMovieVersion(dbId, list);
+   if (list.Size() > 1)
+   {
+-      CGUIDialogOK* dialog = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogOK>(WINDOW_DIALOG_OK);
+-      if (!dialog)
+-        return false;
++    CGUIDialogOK* dialog = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogOK>(WINDOW_DIALOG_OK);
++    if (!dialog)
++      return false;
+ 
+-      dialog->SetHeading(CVariant{39305});
+-      dialog->SetLine(1, CVariant{39306});
+-      dialog->Open();
++    dialog->SetHeading(CVariant{39305});
++    dialog->SetLine(1, CVariant{39306});
++    dialog->Open();
+ 
+-      return false;
++    return false;
+   }
+ 
+   list.ClearItems();
+@@ -1764,7 +1768,7 @@ bool CGUIDialogVideoInfo::SetMovieVersion(const CFileItemPtr &item)
+   CFileItemList targetList;
+   videodb.GetMovieVersion(targetDbId, targetList);
+ 
+-  do
++  while (true)
+   {
+     list.ClearItems();
+ 
+@@ -1809,7 +1813,6 @@ bool CGUIDialogVideoInfo::SetMovieVersion(const CFileItemPtr &item)
+         CGUIDialogYesNo::ShowAndGetInput(CVariant{14117}, StringUtils::Format(g_localizeStrings.Get(39308), selectedType)))
+       break;
+   }
+-  while (true);
+ 
+   videodb.SetMovieVersion(dbId, targetDbId, selected);
+ 
+diff --git a/xbmc/video/windows/GUIWindowVideoBase.cpp b/xbmc/video/windows/GUIWindowVideoBase.cpp
+index 2c3d07af28ff..c6bab9747808 100644
+--- a/xbmc/video/windows/GUIWindowVideoBase.cpp
++++ b/xbmc/video/windows/GUIWindowVideoBase.cpp
+@@ -1123,45 +1123,11 @@ bool CGUIWindowVideoBase::OnPlayAndQueueMedia(const CFileItemPtr &item, std::str
+   return CGUIMediaWindow::OnPlayAndQueueMedia(movieItem, player);
+ }
+ 
+-void CGUIWindowVideoBase::PlayMovie(CFileItem *item, const std::string &player)
++void CGUIWindowVideoBase::PlayMovie(const CFileItem *item, const std::string &player)
+ {
+-  if(m_thumbLoader.IsLoading())
++  if (m_thumbLoader.IsLoading())
+     m_thumbLoader.StopAsync();
+ 
+-  if (!CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_VIDEOPLAYER_PLAYDEFAULTVERSION))
+-  {
+-    CVideoDatabase videodb;
+-    if (!videodb.Open())
+-      return;
+-
+-    CFileItemList list;
+-    int dbId = item->GetVideoInfoTag()->m_iDbId;
+-    videodb.GetMovieVersion(dbId, list);
+-
+-    if (list.Size() > 1)
+-    {
+-      CGUIDialogSelect* dialog = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogSelect>(WINDOW_DIALOG_SELECT);
+-      if (!dialog)
+-        return;
+-
+-      list.Sort(SortByLabel, SortOrderAscending, CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_FILELISTS_IGNORETHEWHENSORTING) ? SortAttributeIgnoreArticle : SortAttributeNone);
+-      dialog->Reset();
+-      dialog->SetItems(list);
+-      dialog->SetHeading(CVariant{39303});
+-      dialog->SetSelected(videodb.GetMovieCurrentVersion(dbId));
+-      dialog->Open();
+-
+-      if (dialog->IsConfirmed())
+-      {
+-        CFileItemPtr selectedItem = dialog->GetSelectedFileItem();
+-        if (selectedItem)
+-          item->SetPath(selectedItem->GetLabel2());
+-      }
+-      else
+-        return;
+-    }
+-  }
+-
+   CServiceBroker::GetPlaylistPlayer().Play(std::make_shared<CFileItem>(*item), player);
+ 
+   if(!g_application.GetAppPlayer().IsPlayingVideo())
+diff --git a/xbmc/video/windows/GUIWindowVideoBase.h b/xbmc/video/windows/GUIWindowVideoBase.h
+index 8650db3ef6c6..0a6712717437 100644
+--- a/xbmc/video/windows/GUIWindowVideoBase.h
++++ b/xbmc/video/windows/GUIWindowVideoBase.h
+@@ -32,7 +32,7 @@ class CGUIWindowVideoBase : public CGUIMediaWindow, public IBackgroundLoaderObse
+   bool OnMessage(CGUIMessage& message) override;
+   bool OnAction(const CAction &action) override;
+ 
+-  void PlayMovie(CFileItem *item, const std::string &player = "");
++  void PlayMovie(const CFileItem *item, const std::string &player = "");
+   static void GetResumeItemOffset(const CFileItem *item, int64_t& startoffset, int& partNumber);
+   static bool HasResumeItemOffset(const CFileItem *item);
+ 
+diff --git a/xbmc/windows/GUIMediaWindow.cpp b/xbmc/windows/GUIMediaWindow.cpp
+index 01f4e2e883d8..45e935cd9fbd 100644
+--- a/xbmc/windows/GUIMediaWindow.cpp
++++ b/xbmc/windows/GUIMediaWindow.cpp
+@@ -411,10 +411,14 @@ bool CGUIMediaWindow::OnMessage(CGUIMessage& message)
+       }
+       else if (message.GetParam1()==GUI_MSG_UPDATE_ITEM && message.GetItem())
+       {
++        int flag = message.GetParam2();
+         CFileItemPtr newItem = std::static_pointer_cast<CFileItem>(message.GetItem());
+-        if (IsActive())
++
++        if (IsActive() || (flag & GUI_MSG_FLAG_FORCE_UPDATE))
+         {
+-          if (m_vecItems->UpdateItem(newItem.get()) && message.GetParam2() == 1)
++          m_vecItems->UpdateItem(newItem.get());
++
++          if (flag & GUI_MSG_FLAG_UPDATE_LIST)
+           { // need the list updated as well
+             UpdateFileList();
+           }
+
+From 0e62c740760f11da60debcabd8183f85eef763bb Mon Sep 17 00:00:00 2001
+From: XODIDOX <xodidox@gmail.com>
+Date: Wed, 5 Dec 2018 09:18:39 -0800
+Subject: [PATCH 12/15] Merge movie versions at scanning time
+
+---
+ xbmc/video/VideoDatabase.cpp    | 52 ++++++++++++++++++++++++++++++++-
+ xbmc/video/VideoDatabase.h      |  3 ++
+ xbmc/video/VideoInfoScanner.cpp | 17 ++++++++++-
+ xbmc/video/VideoInfoScanner.h   |  2 ++
+ 4 files changed, 72 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/video/VideoDatabase.cpp b/xbmc/video/VideoDatabase.cpp
+index 9893d47e5227..a307baea0cd0 100644
+--- a/xbmc/video/VideoDatabase.cpp
++++ b/xbmc/video/VideoDatabase.cpp
+@@ -2018,6 +2018,19 @@ bool CVideoDatabase::GetMovieInfo(const std::string& strFilenameAndPath, CVideoI
+   return false;
+ }
+ 
++std::string CVideoDatabase::GetMovieTitle(int idMovie) const
++{
++  if (!m_pDB || !m_pDS)
++    return "";
++
++  m_pDS->query(PrepareSQL("SELECT c%02d from movie where idMovie = %i", VIDEODB_ID_TITLE, idMovie));
++
++  if (!m_pDS->eof())
++    return m_pDS->fv(0).get_asString();
++  else
++    return "";
++}
++
+ //********************************************************************************************************************************
+ bool CVideoDatabase::GetTvShowInfo(const std::string& strPath, CVideoInfoTag& details, int idTvShow /* = -1 */, CFileItem *item /* = NULL */, int getDetails /* = VideoDbDetailsAll */)
+ {
+@@ -3847,11 +3860,48 @@ void CVideoDatabase::ChangeMovieVersion(int idMovie, int idType)
+ 
+   BeginTransaction();
+ 
+-  ExecuteQuery(PrepareSQL("UPDATE movie SET idFile = %i, c22 = '%s' WHERE idMovie = %i", idFile, path.c_str(), idMovie));
++  ExecuteQuery(PrepareSQL("UPDATE movie SET idFile = %i, c%02d = '%s' WHERE idMovie = %i", idFile, VIDEODB_ID_BASEPATH, path.c_str(), idMovie));
+ 
+   CommitTransaction();
+ }
+ 
++void CVideoDatabase::GetMoviesByTitle(std::string title, CFileItemList& items) const
++{
++  if (!m_pDB || !m_pDS)
++    return;
++
++  try
++  {
++    m_pDS->query(PrepareSQL("SELECT movie.idMovie AS idMovie,"
++                            "  path.strPath AS strPath,"
++                            "  files.strFileName AS strFileName "
++                            "FROM movie"
++                            "  JOIN files ON"
++                            "    files.idFile = movie.idFile"
++                            "  JOIN path ON"
++                            "    path.idPath = files.idPath "
++                            "WHERE movie.c%02d = %s", VIDEODB_ID_TITLE, title.c_str()));
++
++    std::string file;
++
++    while (!m_pDS->eof())
++    {
++      CFileItemPtr pItem(new CFileItem());
++      ConstructPath(file, m_pDS->fv(1).get_asString(), m_pDS->fv(2).get_asString());
++      pItem->SetLabel(file);
++      pItem->SetLabel2(m_pDS->fv(0).get_asString());
++      items.Add(pItem);
++      m_pDS->next();
++    }
++
++    m_pDS->close();
++  }
++  catch (...)
++  {
++    CLog::Log(LOGERROR, "%s failed for movie %s", __FUNCTION__, title.c_str());
++  }
++}
++
+ void CVideoDatabase::DeleteTag(int idTag, VIDEODB_CONTENT_TYPE mediaType)
+ {
+   try
+diff --git a/xbmc/video/VideoDatabase.h b/xbmc/video/VideoDatabase.h
+index d2d55f544095..c8606e554094 100644
+--- a/xbmc/video/VideoDatabase.h
++++ b/xbmc/video/VideoDatabase.h
+@@ -869,6 +869,9 @@ class CVideoDatabase : public CDatabase
+ 
+   int AddType(const std::string& strType);
+ 
++  std::string GetMovieTitle(int idMovie) const;
++  void GetMoviesByTitle(std::string title, CFileItemList& items) const;
++
+ protected:
+   int GetMovieId(const std::string& strFilenameAndPath);
+   int GetMusicVideoId(const std::string& strFilenameAndPath);
+diff --git a/xbmc/video/VideoInfoScanner.cpp b/xbmc/video/VideoInfoScanner.cpp
+index 470e97f8031a..e00b058c9dbb 100644
+--- a/xbmc/video/VideoInfoScanner.cpp
++++ b/xbmc/video/VideoInfoScanner.cpp
+@@ -687,8 +687,11 @@ namespace VIDEO
+                     result == CInfoScanner::OVERRIDE_NFO) ? loader.get() : nullptr,
+                    pDlgProgress))
+     {
+-      if (AddVideo(pItem, info2->Content(), bDirNames, useLocal) < 0)
++      int dbId = AddVideo(pItem, info2->Content(), bDirNames, useLocal);
++      if (dbId < 0)
+         return INFO_ERROR;
++      if (info2->Content() == CONTENT_MOVIES && ProcessMovieVersion(dbId))
++        return INFO_HAVE_ALREADY;
+       return INFO_ADDED;
+     }
+     //! @todo This is not strictly correct as we could fail to download information here or error, or be cancelled
+@@ -2068,4 +2071,16 @@ namespace VIDEO
+     return 0;    // didn't find anything
+   }
+ 
++  bool CVideoInfoScanner::ProcessMovieVersion(int dbId)
++  {
++    CVideoDatabase videodb;
++    if (!videodb.Open())
++      return false;
++
++    CFileItemList list;
++    std::string title = videodb.GetMovieTitle(dbId);
++    videodb.GetMoviesByTitle(title, list);
++    if (list.Size() < 2)
++      return false;
++  }
+ }
+diff --git a/xbmc/video/VideoInfoScanner.h b/xbmc/video/VideoInfoScanner.h
+index 7e683511ad8f..8a6dcfd87957 100644
+--- a/xbmc/video/VideoInfoScanner.h
++++ b/xbmc/video/VideoInfoScanner.h
+@@ -225,6 +225,8 @@ namespace VIDEO
+     bool EnumerateSeriesFolder(CFileItem* item, EPISODELIST& episodeList);
+     bool ProcessItemByVideoInfoTag(const CFileItem *item, EPISODELIST &episodeList);
+ 
++    bool ProcessMovieVersion(int dbId);
++
+     bool m_bStop;
+     bool m_scanAll;
+     std::string m_strStartDir;
+
+From 383ac185d834af89936ba9789d3f7b643dc81142 Mon Sep 17 00:00:00 2001
+From: XODIDOX <xodidox@gmail.com>
+Date: Wed, 5 Dec 2018 12:25:41 -0800
+Subject: [PATCH 13/15] Add duplicate movie checking in scanning and ask user
+ to convert it to an additional version of the original movie Added setting
+ for the duplicate video scanning
+
+---
+ .../resources/strings.po                      | 24 +++++
+ system/settings/settings.xml                  |  5 ++
+ xbmc/FileItem.cpp                             |  2 +-
+ xbmc/settings/Settings.cpp                    |  1 +
+ xbmc/settings/Settings.h                      |  1 +
+ xbmc/video/VideoDatabase.cpp                  |  2 +-
+ xbmc/video/VideoInfoScanner.cpp               | 89 ++++++++++++++++++-
+ 7 files changed, 121 insertions(+), 3 deletions(-)
+
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index 843c5ebb34cb..2eb99c068cd4 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -21656,3 +21656,27 @@ msgstr ""
+ msgctxt "#39310"
+ msgid "Select player action for multiple version video.[CR][Enabled] Play default video version without asking.[CR][Disabled] Always show a dialogue to select desired video version."
+ msgstr ""
++
++#. Merge version dialog text
++#: xbmc\video\VideoInfoScanner.cpp
++msgctxt "#39311"
++msgid "Duplicate movie found"
++msgstr ""
++
++#. Merge version dialog text
++#: xbmc\video\VideoInfoScanner.cpp
++msgctxt "#39312"
++msgid "A duplicate movie \"{0:s}\" was just added to the library, do you want to convert it to an additional version of the original movie?"
++msgstr ""
++
++#. Add duplicate video settting
++#: system/settings/settings.xml
++msgctxt "#39313"
++msgid "Add duplicate video automatically"
++msgstr ""
++
++#. Help for Add duplicate video settting
++#: system/settings/settings.xml
++msgctxt "#39314"
++msgid "Select scanner action for duplicate video.[CR][Enabled] Add duplicate video to library without asking.[CR][Disabled] Always show a dialogue to convert video to an andditonal version of the original video."
++msgstr ""
+diff --git a/system/settings/settings.xml b/system/settings/settings.xml
+index e81bdfe7587f..0dc2dff42257 100755
+--- a/system/settings/settings.xml
++++ b/system/settings/settings.xml
+@@ -797,6 +797,11 @@
+           <default>false</default>
+           <control type="toggle" />
+         </setting>
++        <setting id="videolibrary.addduplicatevideo" type="boolean" label="39313" help="39314">
++          <level>1</level>
++          <default>false</default>
++          <control type="toggle" />
++        </setting>
+         <setting id="videolibrary.cleanup" type="action" label="14247" help="36148">
+           <level>2</level>
+           <control type="button" format="action" />
+diff --git a/xbmc/FileItem.cpp b/xbmc/FileItem.cpp
+index 57c7ba59b353..472692871ed5 100644
+--- a/xbmc/FileItem.cpp
++++ b/xbmc/FileItem.cpp
+@@ -1579,7 +1579,7 @@ void CFileItem::UpdateInfo(const CFileItem &item, bool replaceLabels /*=true*/)
+       m_videoInfoTag = new CVideoInfoTag;
+     }
+ 
+-    m_strDynPath = item.m_strDynPath;
++    SetDynPath(item.GetDynPath());
+     m_pvrRecordingInfoTag = item.m_pvrRecordingInfoTag;
+ 
+     SetOverlayImage(ICON_OVERLAY_UNWATCHED, GetVideoInfoTag()->GetPlayCount() > 0);
+diff --git a/xbmc/settings/Settings.cpp b/xbmc/settings/Settings.cpp
+index 7354927d2ea4..001378736b31 100644
+--- a/xbmc/settings/Settings.cpp
++++ b/xbmc/settings/Settings.cpp
+@@ -116,6 +116,7 @@ const std::string CSettings::SETTING_VIDEOLIBRARY_GROUPMOVIESETS = "videolibrary
+ const std::string CSettings::SETTING_VIDEOLIBRARY_GROUPSINGLEITEMSETS = "videolibrary.groupsingleitemsets";
+ const std::string CSettings::SETTING_VIDEOLIBRARY_UPDATEONSTARTUP = "videolibrary.updateonstartup";
+ const std::string CSettings::SETTING_VIDEOLIBRARY_BACKGROUNDUPDATE = "videolibrary.backgroundupdate";
++const std::string CSettings::SETTING_VIDEOLIBRARY_ADDDUPLICATEVIDEO = "videolibrary.addduplicatevideo";
+ const std::string CSettings::SETTING_VIDEOLIBRARY_CLEANUP = "videolibrary.cleanup";
+ const std::string CSettings::SETTING_VIDEOLIBRARY_EXPORT = "videolibrary.export";
+ const std::string CSettings::SETTING_VIDEOLIBRARY_IMPORT = "videolibrary.import";
+diff --git a/xbmc/settings/Settings.h b/xbmc/settings/Settings.h
+index bf51d2bf7436..e2b700b17cf8 100644
+--- a/xbmc/settings/Settings.h
++++ b/xbmc/settings/Settings.h
+@@ -76,6 +76,7 @@ class CSettings : public CSettingsBase, public CSettingCreator, public CSettingC
+   static const std::string SETTING_VIDEOLIBRARY_GROUPSINGLEITEMSETS;
+   static const std::string SETTING_VIDEOLIBRARY_UPDATEONSTARTUP;
+   static const std::string SETTING_VIDEOLIBRARY_BACKGROUNDUPDATE;
++  static const std::string SETTING_VIDEOLIBRARY_ADDDUPLICATEVIDEO;
+   static const std::string SETTING_VIDEOLIBRARY_CLEANUP;
+   static const std::string SETTING_VIDEOLIBRARY_EXPORT;
+   static const std::string SETTING_VIDEOLIBRARY_IMPORT;
+diff --git a/xbmc/video/VideoDatabase.cpp b/xbmc/video/VideoDatabase.cpp
+index a307baea0cd0..ebe18deaa38e 100644
+--- a/xbmc/video/VideoDatabase.cpp
++++ b/xbmc/video/VideoDatabase.cpp
+@@ -3880,7 +3880,7 @@ void CVideoDatabase::GetMoviesByTitle(std::string title, CFileItemList& items) c
+                             "    files.idFile = movie.idFile"
+                             "  JOIN path ON"
+                             "    path.idPath = files.idPath "
+-                            "WHERE movie.c%02d = %s", VIDEODB_ID_TITLE, title.c_str()));
++                            "WHERE movie.c%02d = '%s'", VIDEODB_ID_TITLE, title.c_str()));
+ 
+     std::string file;
+ 
+diff --git a/xbmc/video/VideoInfoScanner.cpp b/xbmc/video/VideoInfoScanner.cpp
+index e00b058c9dbb..647a32c4d4b3 100644
+--- a/xbmc/video/VideoInfoScanner.cpp
++++ b/xbmc/video/VideoInfoScanner.cpp
+@@ -14,6 +14,8 @@
+ #include "ServiceBroker.h"
+ #include "dialogs/GUIDialogExtendedProgressBar.h"
+ #include "dialogs/GUIDialogProgress.h"
++#include "dialogs/GUIDialogSelect.h"
++#include "dialogs/GUIDialogYesNo.h"
+ #include "events/EventLog.h"
+ #include "events/MediaLibraryEvent.h"
+ #include "FileItem.h"
+@@ -26,6 +28,7 @@
+ #include "guilib/GUIComponent.h"
+ #include "guilib/GUIWindowManager.h"
+ #include "guilib/LocalizeStrings.h"
++#include "guilib/GUIKeyboardFactory.h"
+ #include "GUIUserMessages.h"
+ #include "interfaces/AnnouncementManager.h"
+ #include "messaging/helpers/DialogHelper.h"
+@@ -2073,6 +2076,9 @@ namespace VIDEO
+ 
+   bool CVideoInfoScanner::ProcessMovieVersion(int dbId)
+   {
++    if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_VIDEOLIBRARY_ADDDUPLICATEVIDEO))
++      return false;
++
+     CVideoDatabase videodb;
+     if (!videodb.Open())
+       return false;
+@@ -2082,5 +2088,86 @@ namespace VIDEO
+     videodb.GetMoviesByTitle(title, list);
+     if (list.Size() < 2)
+       return false;
++
++    if (!CGUIDialogYesNo::ShowAndGetInput(CVariant{ 39311 }, StringUtils::Format(g_localizeStrings.Get(39312), title)))
++    {
++      return false;
++    }
++
++    CGUIDialogSelect* dialog = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogSelect>(WINDOW_DIALOG_SELECT);
++    if (!dialog)
++      return false;
++
++    for (int i = 0; i < list.Size(); i++)
++    {
++      if (dbId == atoi(list[i]->GetLabel2().c_str()))
++      {
++        list.Remove(i);
++        break;
++      }
++    }
++
++    dialog->Reset();
++    dialog->SetItems(list);
++    dialog->SetHeading(CVariant{39302});
++    dialog->Open();
++    int selected = dialog->GetSelectedItem();
++
++    if (selected < 0)
++      return false;
++
++    int targetDbId = atoi(list[selected]->GetLabel2().c_str());
++
++    CFileItemList targetList;
++    videodb.GetMovieVersion(targetDbId, targetList);
++
++    while (true)
++    {
++      list.ClearItems();
++
++      std::string selectedType;
++
++      // choose the version type
++      videodb.GetTypesNav("videodb://movies/types", list);
++      dialog->Reset();
++      dialog->SetItems(list);
++      dialog->SetHeading(CVariant{39303});
++      dialog->EnableButton(true, 39304); // new version via button
++      dialog->SetSelected(1); // skip the first one as it's default
++      dialog->Open();
++
++      if (dialog->IsButtonPressed())
++      {
++        // create a new version type
++        std::string newType;
++        if (!CGUIKeyboardFactory::ShowAndGetInput(newType, CVariant{g_localizeStrings.Get(39304)}, false))
++          return false;
++        selectedType = StringUtils::Trim(newType);
++        selected = videodb.AddType(selectedType);
++      }
++      else if (dialog->IsConfirmed())
++      {
++        CFileItemPtr selectedItem = dialog->GetSelectedFileItem();
++        if (selectedItem)
++        {
++          selectedType = selectedItem->GetLabel();
++          selected = atoi(selectedItem->GetLabel2().c_str());
++        }
++      }
++      else
++        return false;
++
++      if (selected < 0)
++        return false;
++
++      // confirm with user for duplication
++      if (!std::any_of(targetList.begin(), targetList.end(), [&selectedType](const CFileItemPtr& item) { return StringUtils::EqualsNoCase(selectedType, item->GetLabel()); }) ||
++          CGUIDialogYesNo::ShowAndGetInput(CVariant{14117}, StringUtils::Format(g_localizeStrings.Get(39308), selectedType)))
++        break;
++    }
++
++    videodb.SetMovieVersion(dbId, targetDbId, selected);
++
++    return true;
+   }
+-}
++}
+\ No newline at end of file
+
+From c8d94dfe4a86fbe7884eca4f0d9c68429af69c57 Mon Sep 17 00:00:00 2001
+From: XODIDOX <xodidox@gmail.com>
+Date: Thu, 6 Dec 2018 03:51:40 -0800
+Subject: [PATCH 14/15] Minor string tweaks
+
+---
+ addons/resource.language.en_gb/resources/strings.po | 12 ++++++------
+ system/settings/settings.xml                        | 10 +++++-----
+ xbmc/GUIUserMessages.h                              |  4 ++--
+ xbmc/settings/Settings.cpp                          |  2 +-
+ xbmc/settings/Settings.h                            |  2 +-
+ 5 files changed, 15 insertions(+), 15 deletions(-)
+
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index 2eb99c068cd4..2b962ba51fd2 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -21648,7 +21648,7 @@ msgstr ""
+ #. Play default video version setting
+ #: system/settings/settings.xml
+ msgctxt "#39309"
+-msgid "Play default video version automatically"
++msgid "Play default video version"
+ msgstr ""
+ 
+ #. Help for play default video version setting
+@@ -21657,26 +21657,26 @@ msgctxt "#39310"
+ msgid "Select player action for multiple version video.[CR][Enabled] Play default video version without asking.[CR][Disabled] Always show a dialogue to select desired video version."
+ msgstr ""
+ 
+-#. Merge version dialog text
++#. Duplicate movie found dialog title
+ #: xbmc\video\VideoInfoScanner.cpp
+ msgctxt "#39311"
+ msgid "Duplicate movie found"
+ msgstr ""
+ 
+-#. Merge version dialog text
++#. Duplicate movie found dialog text
+ #: xbmc\video\VideoInfoScanner.cpp
+ msgctxt "#39312"
+-msgid "A duplicate movie \"{0:s}\" was just added to the library, do you want to convert it to an additional version of the original movie?"
++msgid "A duplicate movie \"{0:s}\" has just been added to the library. Would you like to convert it to an additional version of the original movie?"
+ msgstr ""
+ 
+ #. Add duplicate video settting
+ #: system/settings/settings.xml
+ msgctxt "#39313"
+-msgid "Add duplicate video automatically"
++msgid "Add duplicate video to library"
+ msgstr ""
+ 
+ #. Help for Add duplicate video settting
+ #: system/settings/settings.xml
+ msgctxt "#39314"
+-msgid "Select scanner action for duplicate video.[CR][Enabled] Add duplicate video to library without asking.[CR][Disabled] Always show a dialogue to convert video to an andditonal version of the original video."
++msgid "Select scanner action for duplicate video.[CR][Enabled] Add duplicate video to library without asking.[CR][Disabled] Ask for converting duplicate video to an andditonal version of the original video."
+ msgstr ""
+diff --git a/system/settings/settings.xml b/system/settings/settings.xml
+index 0dc2dff42257..68cc6bc0c570 100755
+--- a/system/settings/settings.xml
++++ b/system/settings/settings.xml
+@@ -3,11 +3,6 @@
+   <section id="player" label="14200" help="38100">
+     <category id="videoplayer" label="14215" help="38103">
+       <group id="1" label="14230">
+-        <setting id="videoplayer.playdefaultversion" type="boolean" label="39309" help="39310">
+-          <level>0</level>
+-          <default>false</default>
+-          <control type="toggle" />
+-        </setting>
+         <setting id="videoplayer.autoplaynextitem" type="list[integer]" label="13433" help="36152">
+           <constraints>
+             <options>
+@@ -26,6 +21,11 @@
+             <hidevalue>false</hidevalue>
+           </control>
+         </setting>
++        <setting id="videoplayer.playdefaultversion" type="boolean" label="39309" help="39310">
++          <level>0</level>
++          <default>false</default>
++          <control type="toggle" />
++        </setting>
+         <setting id="videoplayer.seeksteps" type="list[integer]" label="13556" help="37042">
+           <level>1</level>
+           <default>-600,-300,-180,-60,-30,-10,10,30,60,180,300,600</default>
+diff --git a/xbmc/GUIUserMessages.h b/xbmc/GUIUserMessages.h
+index d0dded634a38..9624951e22fa 100644
+--- a/xbmc/GUIUserMessages.h
++++ b/xbmc/GUIUserMessages.h
+@@ -104,8 +104,8 @@
+ #define GUI_MSG_UPDATE_ITEM           GUI_MSG_USER + 29
+ 
+   // Flags for GUI_MSG_UPDATE_ITEM message
+-  #define GUI_MSG_FLAG_UPDATE_LIST    0x00000001
+-  #define GUI_MSG_FLAG_FORCE_UPDATE   0x00000002
++  constexpr int GUI_MSG_FLAG_UPDATE_LIST = 0x00000001;
++  constexpr int GUI_MSG_FLAG_FORCE_UPDATE = 0x00000002;
+ 
+ // Message sent to tell the GUI to change view mode
+ #define GUI_MSG_CHANGE_VIEW_MODE      GUI_MSG_USER + 30
+diff --git a/xbmc/settings/Settings.cpp b/xbmc/settings/Settings.cpp
+index 001378736b31..114f943ce005 100644
+--- a/xbmc/settings/Settings.cpp
++++ b/xbmc/settings/Settings.cpp
+@@ -123,8 +123,8 @@ const std::string CSettings::SETTING_VIDEOLIBRARY_IMPORT = "videolibrary.import"
+ const std::string CSettings::SETTING_VIDEOLIBRARY_SHOWEMPTYTVSHOWS = "videolibrary.showemptytvshows";
+ const std::string CSettings::SETTING_LOCALE_AUDIOLANGUAGE = "locale.audiolanguage";
+ const std::string CSettings::SETTING_VIDEOPLAYER_PREFERDEFAULTFLAG = "videoplayer.preferdefaultflag";
+-const std::string CSettings::SETTING_VIDEOPLAYER_PLAYDEFAULTVERSION = "videoplayer.playdefaultversion";
+ const std::string CSettings::SETTING_VIDEOPLAYER_AUTOPLAYNEXTITEM = "videoplayer.autoplaynextitem";
++const std::string CSettings::SETTING_VIDEOPLAYER_PLAYDEFAULTVERSION = "videoplayer.playdefaultversion";
+ const std::string CSettings::SETTING_VIDEOPLAYER_SEEKSTEPS = "videoplayer.seeksteps";
+ const std::string CSettings::SETTING_VIDEOPLAYER_SEEKDELAY = "videoplayer.seekdelay";
+ const std::string CSettings::SETTING_VIDEOPLAYER_ADJUSTREFRESHRATE = "videoplayer.adjustrefreshrate";
+diff --git a/xbmc/settings/Settings.h b/xbmc/settings/Settings.h
+index e2b700b17cf8..41d67761ce0a 100644
+--- a/xbmc/settings/Settings.h
++++ b/xbmc/settings/Settings.h
+@@ -83,8 +83,8 @@ class CSettings : public CSettingsBase, public CSettingCreator, public CSettingC
+   static const std::string SETTING_VIDEOLIBRARY_SHOWEMPTYTVSHOWS;
+   static const std::string SETTING_LOCALE_AUDIOLANGUAGE;
+   static const std::string SETTING_VIDEOPLAYER_PREFERDEFAULTFLAG;
+-  static const std::string SETTING_VIDEOPLAYER_PLAYDEFAULTVERSION;
+   static const std::string SETTING_VIDEOPLAYER_AUTOPLAYNEXTITEM;
++  static const std::string SETTING_VIDEOPLAYER_PLAYDEFAULTVERSION;
+   static const std::string SETTING_VIDEOPLAYER_SEEKSTEPS;
+   static const std::string SETTING_VIDEOPLAYER_SEEKDELAY;
+   static const std::string SETTING_VIDEOPLAYER_ADJUSTREFRESHRATE;
+
+From fd50cd9a4c4bc07bc09762c4dbd17cfcb46c6734 Mon Sep 17 00:00:00 2001
+From: XODIDOX <xodidox@gmail.com>
+Date: Thu, 6 Dec 2018 06:39:56 -0800
+Subject: [PATCH 15/15] Report video file name in duplicate movie found dialog
+ to give user more informaiton
+
+---
+ addons/resource.language.en_gb/resources/strings.po | 2 +-
+ xbmc/video/VideoInfoScanner.cpp                     | 5 ++++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index 2b962ba51fd2..634370db604d 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -21666,7 +21666,7 @@ msgstr ""
+ #. Duplicate movie found dialog text
+ #: xbmc\video\VideoInfoScanner.cpp
+ msgctxt "#39312"
+-msgid "A duplicate movie \"{0:s}\" has just been added to the library. Would you like to convert it to an additional version of the original movie?"
++msgid "A duplicate movie \"{0:s}\" ({1:s}) has just been added to the library. Would you like to convert it to an additional version of the original movie?"
+ msgstr ""
+ 
+ #. Add duplicate video settting
+diff --git a/xbmc/video/VideoInfoScanner.cpp b/xbmc/video/VideoInfoScanner.cpp
+index 647a32c4d4b3..db3060ae0137 100644
+--- a/xbmc/video/VideoInfoScanner.cpp
++++ b/xbmc/video/VideoInfoScanner.cpp
+@@ -2089,7 +2089,10 @@ namespace VIDEO
+     if (list.Size() < 2)
+       return false;
+ 
+-    if (!CGUIDialogYesNo::ShowAndGetInput(CVariant{ 39311 }, StringUtils::Format(g_localizeStrings.Get(39312), title)))
++    std::string path;
++    videodb.GetFilePathById(dbId, path, VIDEODB_CONTENT_MOVIES);
++
++    if (!CGUIDialogYesNo::ShowAndGetInput(CVariant{39311}, StringUtils::Format(g_localizeStrings.Get(39312), title, path)))
+     {
+       return false;
+     }
