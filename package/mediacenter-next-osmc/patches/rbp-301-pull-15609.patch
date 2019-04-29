@@ -1,0 +1,377 @@
+From 8334332b77824559915d69be40e56770dd29140e Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Thu, 25 Apr 2019 14:05:50 +0100
+Subject: [PATCH 1/2] [addons] this adds helper functions to get current time
+
+The code happens on "p8platform", but since this defines "long"
+as value, it is useless because it is too inaccurate in frames.
+
+Since a lot of addons (over 20) need this I think it belongs to the dev kit.
+
+The code is completely independent of Kodi and gives no access to it.
+---
+ .../include/kodi/tools/CMakeLists.txt         |  3 +-
+ .../include/kodi/tools/Time.h                 | 91 +++++++++++++++++++
+ 2 files changed, 93 insertions(+), 1 deletion(-)
+ create mode 100644 xbmc/addons/kodi-addon-dev-kit/include/kodi/tools/Time.h
+
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/tools/CMakeLists.txt b/xbmc/addons/kodi-addon-dev-kit/include/kodi/tools/CMakeLists.txt
+index 939585c963e0..ef2fa250fd07 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/tools/CMakeLists.txt
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/tools/CMakeLists.txt
+@@ -1,4 +1,5 @@
+-set(HEADERS DllHelper.h )
++set(HEADERS DllHelper.h
++            Time.h)
+ 
+ if(NOT ENABLE_STATIC_LIBS)
+   core_add_library(addons_kodi-addon-dev-kit_include_kodi_tools)
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/tools/Time.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/tools/Time.h
+new file mode 100644
+index 000000000000..31c29fd3a27b
+--- /dev/null
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/tools/Time.h
+@@ -0,0 +1,91 @@
++#pragma once
++/*
++ *  Copyright (C) 2005-2019 Team Kodi
++ *  Copyright (C) 2011-2012 Pulse-Eight Limited.
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#if defined(TARGET_DARWIN)
++#include <mach/mach_time.h>
++#include <CoreVideo/CVHostTime.h>
++#elif defined(TARGET_WINDOWS)
++#include <Windows.h>
++#include <time.h>
++#else
++#include <time.h>
++#endif
++
++namespace kodi
++{
++namespace time
++{
++
++//===============================================================================
++/// @brief Function to get current time in milliseconds
++///
++/// @return Current time in milliseconds as a double value
++///
++///
++/// -----------------------------------------------------------------------------
++///
++/// **Example:**
++/// ~~~~~~~~~~~~~{.cpp}
++///
++/// #include <kodi/tools/Time.h>
++///
++/// ...
++/// double time = kodi::time::GetTimeMs();
++/// ...
++/// ~~~~~~~~~~~~~
++///
++inline double GetTimeMs()
++{
++#if defined(TARGET_DARWIN)
++  return static_cast<double>(CVGetCurrentHostTime() / static_cast<double>(CVGetHostClockFrequency() * 0.001));
++#elif defined(TARGET_WINDOWS)
++  LARGE_INTEGER tickPerSecond;
++  LARGE_INTEGER tick;
++  if (QueryPerformanceFrequency(&tickPerSecond))
++  {
++    QueryPerformanceCounter(&tick);
++    return static_cast<double>(tick.QuadPart) / (tickPerSecond.QuadPart / 1000.0);
++  }
++  return 0.0;
++#else
++  timespec time;
++  clock_gettime(CLOCK_MONOTONIC, &time);
++  return static_cast<double>(time.tv_sec) * 1000.0 + time.tv_nsec / 1000000.0;
++#endif
++}
++//-------------------------------------------------------------------------------
++
++//===============================================================================
++/// @brief Function to get current time in seconds
++///
++/// @return Current time in seconds with the value type defined in the template
++///
++///
++/// -----------------------------------------------------------------------------
++///
++/// **Example:**
++/// ~~~~~~~~~~~~~{.cpp}
++///
++/// #include <kodi/tools/Time.h>
++///
++/// ...
++/// double time = kodi::time::GetTimeSec<double>();
++/// ...
++/// ~~~~~~~~~~~~~
++///
++template <class T>
++inline T GetTimeSec()
++{
++  return static_cast<T>(GetTimeMs()) / static_cast<T>(1000.0);
++}
++//-------------------------------------------------------------------------------
++
++} /* namespace time */
++} /* namespace kodi */
+
+From c997ad2ef23add4d95df190323c60183044fef2a Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Sat, 13 Apr 2019 03:02:26 +0200
+Subject: [PATCH 2/2] [addons] add possibility to get ID3D11DeviceContext all
+ the time
+
+Have seen by help of afedchin that the context can be change on the fly.
+Before was to Screensaver and Visualization this only given during start.
+
+This adds a new addon interface function (`void* kodi::gui::GetHWContext()`)
+where the addon can ask about them if needed.
+
+Further is the use of ifdef's removed and becomes handled by WinSystem.h.
+---
+ xbmc/addons/ScreenSaver.cpp                   |  9 +----
+ xbmc/addons/Visualization.cpp                 |  9 +----
+ xbmc/addons/interfaces/GUI/General.cpp        |  6 ++++
+ xbmc/addons/interfaces/GUI/General.h          |  1 +
+ .../include/kodi/gui/General.h                | 34 +++++++++++++++++--
+ .../include/kodi/gui/definitions.h            |  1 +
+ .../include/kodi/versions.h                   |  2 +-
+ xbmc/windowing/WinSystem.h                    | 11 ++++++
+ xbmc/windowing/win10/WinSystemWin10DX.h       |  1 +
+ xbmc/windowing/windows/WinSystemWin32DX.h     |  1 +
+ 10 files changed, 56 insertions(+), 19 deletions(-)
+
+diff --git a/xbmc/addons/ScreenSaver.cpp b/xbmc/addons/ScreenSaver.cpp
+index e2653042bafa..27af4be8e2c5 100644
+--- a/xbmc/addons/ScreenSaver.cpp
++++ b/xbmc/addons/ScreenSaver.cpp
+@@ -11,9 +11,6 @@
+ #include "windowing/GraphicContext.h"
+ #include "windowing/WinSystem.h"
+ #include "utils/log.h"
+-#ifdef TARGET_WINDOWS
+-#include "rendering/dx/DeviceResources.h"
+-#endif
+ 
+ namespace ADDON
+ {
+@@ -26,13 +23,9 @@ CScreenSaver::CScreenSaver(BinaryAddonBasePtr addonBase)
+   m_profile = CSpecialProtocol::TranslatePath(Profile());
+ 
+   m_struct = {{0}};
+-#ifdef TARGET_WINDOWS
+-  m_struct.props.device = DX::DeviceResources::Get()->GetD3DContext();
+-#else
+-  m_struct.props.device = nullptr;
+-#endif
+   m_struct.props.x = 0;
+   m_struct.props.y = 0;
++  m_struct.props.device = CServiceBroker::GetWinSystem()->GetHWContext();
+   m_struct.props.width = CServiceBroker::GetWinSystem()->GetGfxContext().GetWidth();
+   m_struct.props.height = CServiceBroker::GetWinSystem()->GetGfxContext().GetHeight();
+   m_struct.props.pixelRatio = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo().fPixelRatio;
+diff --git a/xbmc/addons/Visualization.cpp b/xbmc/addons/Visualization.cpp
+index 2075ca18b2d4..e33e3b9fc67c 100644
+--- a/xbmc/addons/Visualization.cpp
++++ b/xbmc/addons/Visualization.cpp
+@@ -11,9 +11,6 @@
+ #include "filesystem/SpecialProtocol.h"
+ #include "guilib/GUIWindowManager.h"
+ #include "utils/log.h"
+-#if defined(TARGET_WINDOWS)
+-#include "rendering/dx/DeviceResources.h"
+-#endif
+ 
+ namespace ADDON
+ {
+@@ -27,15 +24,11 @@ CVisualization::CVisualization(ADDON::BinaryAddonBasePtr addonBase, float x, flo
+   m_profilePath = CSpecialProtocol::TranslatePath(Profile());
+ 
+   m_struct = {{0}};
+-#if defined(TARGET_WINDOWS)
+-  m_struct.props.device = DX::DeviceResources::Get()->GetD3DContext();
+-#else
+-  m_struct.props.device = nullptr;
+-#endif
+   m_struct.props.x = static_cast<int>(x);
+   m_struct.props.y = static_cast<int>(y);
+   m_struct.props.width = static_cast<int>(w);
+   m_struct.props.height = static_cast<int>(h);
++  m_struct.props.device = CServiceBroker::GetWinSystem()->GetHWContext();
+   m_struct.props.pixelRatio = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo().fPixelRatio;
+   m_struct.props.name = m_name.c_str();
+   m_struct.props.presets = m_presetsPath.c_str();
+diff --git a/xbmc/addons/interfaces/GUI/General.cpp b/xbmc/addons/interfaces/GUI/General.cpp
+index ab5ede29c584..f03a040dd664 100644
+--- a/xbmc/addons/interfaces/GUI/General.cpp
++++ b/xbmc/addons/interfaces/GUI/General.cpp
+@@ -91,6 +91,7 @@ void Interface_GUIGeneral::Init(AddonGlobalInterface* addonInterface)
+   addonInterface->toKodi->kodi_gui->general->get_video_resolution = get_video_resolution;
+   addonInterface->toKodi->kodi_gui->general->get_current_window_dialog_id = get_current_window_dialog_id;
+   addonInterface->toKodi->kodi_gui->general->get_current_window_id = get_current_window_id;
++  addonInterface->toKodi->kodi_gui->general->get_hw_context = get_hw_context;
+ }
+ 
+ void Interface_GUIGeneral::DeInit(AddonGlobalInterface* addonInterface)
+@@ -213,6 +214,11 @@ int Interface_GUIGeneral::get_current_window_id(void* kodiBase)
+   return CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindow();
+ }
+ 
++void* Interface_GUIGeneral::get_hw_context(void* kodiBase)
++{
++  return CServiceBroker::GetWinSystem()->GetHWContext();
++}
++
+ //@}
+ 
+ } /* namespace ADDON */
+diff --git a/xbmc/addons/interfaces/GUI/General.h b/xbmc/addons/interfaces/GUI/General.h
+index fc1170cc5c56..0042329b0f79 100644
+--- a/xbmc/addons/interfaces/GUI/General.h
++++ b/xbmc/addons/interfaces/GUI/General.h
+@@ -48,6 +48,7 @@ namespace ADDON
+     static int get_video_resolution(void* kodiBase);
+     static int get_current_window_dialog_id(void* kodiBase);
+     static int get_current_window_id(void* kodiBase);
++    static void* get_hw_context(void* kodiBase);
+     //@}
+ 
+   private:
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/gui/General.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/gui/General.h
+index 30b6d89d8573..a3b8bcb43062 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/gui/General.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/gui/General.h
+@@ -106,7 +106,7 @@ namespace gui
+   /// **Example:**
+   /// ~~~~~~~~~~~~~{.cpp}
+   /// ..
+-  /// int wid = kodi::gui::GetCurrentWindowDialogId()
++  /// int wid = kodi::gui::GetCurrentWindowDialogId();
+   /// ..
+   /// ~~~~~~~~~~~~~
+   ///
+@@ -130,7 +130,7 @@ namespace gui
+   /// **Example:**
+   /// ~~~~~~~~~~~~~{.cpp}
+   /// ..
+-  /// int wid = kodi::gui::GetCurrentWindowId()
++  /// int wid = kodi::gui::GetCurrentWindowId();
+   /// ..
+   /// ~~~~~~~~~~~~~
+   ///
+@@ -141,5 +141,35 @@ namespace gui
+   }
+   //--------------------------------------------------------------------------
+ 
++  //==========================================================================
++  ///
++  /// \ingroup cpp_kodi_gui
++  /// \brief To get hardware specific device context interface
++  ///
++  /// \return                        The currently active device context
++  ///
++  /// \warning This function is only be supported under Windows, on all other
++  /// OS it return `nullptr`!
++  ///
++  /// \note Returned Windows class pointer is `ID3D11DeviceContext1`.
++  ///
++  ///
++  ///-------------------------------------------------------------------------
++  ///
++  /// **Example:**
++  /// ~~~~~~~~~~~~~{.cpp}
++  /// #include <d3d11_1.h>
++  /// ..
++  /// ID3D11DeviceContext1* context = static_cast<ID3D11DeviceContext1*>(kodi::gui::GetHWContext());
++  /// ..
++  /// ~~~~~~~~~~~~~
++  ///
++  inline void* GetHWContext()
++  {
++    using namespace ::kodi::addon;
++    return CAddonBase::m_interface->toKodi->kodi_gui->general->get_hw_context(CAddonBase::m_interface->toKodi->kodiBase);
++  }
++  //--------------------------------------------------------------------------
++
+ } /* namespace gui */
+ } /* namespace kodi */
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/gui/definitions.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/gui/definitions.h
+index 770a4160ed46..b8b4cbf2b9b0 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/gui/definitions.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/gui/definitions.h
+@@ -26,6 +26,7 @@ typedef struct AddonToKodiFuncTable_kodi_gui_general
+   int (*get_video_resolution)(void* kodiBase);
+   int (*get_current_window_dialog_id)(void* kodiBase);
+   int (*get_current_window_id)(void* kodiBase);
++  void* (*get_hw_context)(void* kodiBase);
+ } AddonToKodiFuncTable_kodi_gui_general;
+ 
+ typedef struct AddonToKodiFuncTable_kodi_gui_control_button
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
+index 723f4b2787a9..a9f17986c30b 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
+@@ -44,7 +44,7 @@
+ #define ADDON_GLOBAL_VERSION_GENERAL_XML_ID           "kodi.binary.global.general"
+ #define ADDON_GLOBAL_VERSION_GENERAL_DEPENDS          "General.h"
+ 
+-#define ADDON_GLOBAL_VERSION_GUI                      "5.12.0"
++#define ADDON_GLOBAL_VERSION_GUI                      "5.12.1"
+ #define ADDON_GLOBAL_VERSION_GUI_MIN                  "5.10.0"
+ #define ADDON_GLOBAL_VERSION_GUI_XML_ID               "kodi.binary.global.gui"
+ #define ADDON_GLOBAL_VERSION_GUI_DEPENDS              "libKODI_guilib.h" \
+diff --git a/xbmc/windowing/WinSystem.h b/xbmc/windowing/WinSystem.h
+index 6e84c49e5fd5..e8c13a159b55 100644
+--- a/xbmc/windowing/WinSystem.h
++++ b/xbmc/windowing/WinSystem.h
+@@ -139,6 +139,17 @@ class CWinSystemBase
+   // Access render system interface
+   CGraphicContext& GetGfxContext();
+ 
++  /**
++   * Get OS specific hardware context
++   *
++   * \return OS specific context or nullptr if OS not have
++   *
++   * \note This function is currently only related to Windows with DirectX,
++   * all other OS where use GL returns nullptr.
++   * Returned Windows class pointer is ID3D11DeviceContext1.
++   */
++  virtual void* GetHWContext() { return nullptr; }
++
+ protected:
+   void UpdateDesktopResolution(RESOLUTION_INFO& newRes, const std::string &output, int width, int height, float refreshRate, uint32_t dwFlags);
+   virtual std::unique_ptr<KODI::WINDOWING::IOSScreenSaver> GetOSScreenSaverImpl() { return nullptr; }
+diff --git a/xbmc/windowing/win10/WinSystemWin10DX.h b/xbmc/windowing/win10/WinSystemWin10DX.h
+index 5edfd27bd8ae..61c747224c4c 100644
+--- a/xbmc/windowing/win10/WinSystemWin10DX.h
++++ b/xbmc/windowing/win10/WinSystemWin10DX.h
+@@ -25,6 +25,7 @@ class CWinSystemWin10DX : public CWinSystemWin10, public CRenderSystemDX
+   void PresentRenderImpl(bool rendered) override;
+   bool DPIChanged(WORD dpi, RECT windowRect) const override;
+   bool DestroyRenderSystem() override;
++  void* GetHWContext() override { return m_deviceResources->GetD3DContext(); }
+ 
+   void UninitHooks();
+   void InitHooks(IDXGIOutput* pOutput);
+diff --git a/xbmc/windowing/windows/WinSystemWin32DX.h b/xbmc/windowing/windows/WinSystemWin32DX.h
+index 3a613c264355..8a79c8be65fb 100644
+--- a/xbmc/windowing/windows/WinSystemWin32DX.h
++++ b/xbmc/windowing/windows/WinSystemWin32DX.h
+@@ -30,6 +30,7 @@ class CWinSystemWin32DX : public CWinSystemWin32, public CRenderSystemDX
+   bool DPIChanged(WORD dpi, RECT windowRect) const override;
+   void SetWindow(HWND hWnd) const;
+   bool DestroyRenderSystem() override;
++  void* GetHWContext() override { return m_deviceResources->GetD3DContext(); }
+ 
+   void UninitHooks();
+   void InitHooks(IDXGIOutput* pOutput);
