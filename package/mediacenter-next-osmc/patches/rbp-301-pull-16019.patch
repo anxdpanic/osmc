@@ -1,0 +1,31 @@
+From 6fe2b8e1cae1b0c9ba8629148d9aebc64b0fbfba Mon Sep 17 00:00:00 2001
+From: netpok <netpok@gmail.com>
+Date: Tue, 30 Apr 2019 09:04:50 +0200
+Subject: [PATCH] Fix formatting
+
+---
+ xbmc/video/VideoThumbLoader.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/video/VideoThumbLoader.cpp b/xbmc/video/VideoThumbLoader.cpp
+index 4334d1dabfa4..2e9c9a59369f 100644
+--- a/xbmc/video/VideoThumbLoader.cpp
++++ b/xbmc/video/VideoThumbLoader.cpp
+@@ -108,7 +108,7 @@ bool CThumbExtractor::DoWork()
+     CTextureDetails details;
+     details.file = CTextureCache::GetCacheFile(m_target) + ".jpg";
+     result = CDVDFileInfo::ExtractThumb(m_item, details, m_fillStreamDetails ? &m_item.GetVideoInfoTag()->m_streamDetails : nullptr, m_pos);
+-    if(result)
++    if (result)
+     {
+       CTextureCache::GetInstance().AddCachedTexture(m_target, details);
+       m_item.SetProperty("HasAutoThumb", true);
+@@ -361,7 +361,7 @@ bool CVideoThumbLoader::LoadItemCached(CFileItem* pItem)
+      )
+   {
+     // use fanart if available
+-    if(pItem->HasArt("fanart"))
++    if (pItem->HasArt("fanart"))
+     {
+       pItem->SetArt("thumb", pItem->GetArt("fanart"));
+     }

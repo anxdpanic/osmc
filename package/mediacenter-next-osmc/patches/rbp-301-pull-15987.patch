@@ -1,0 +1,56 @@
+From 48d4dd4074b456d1a44e18dd75420b37aa1fadf9 Mon Sep 17 00:00:00 2001
+From: wsnipex <wsnipex@a1.net>
+Date: Thu, 25 Apr 2019 15:52:15 +0200
+Subject: [PATCH] [cmake] make sure CXX11 is also always set for addons
+
+---
+ CMakeLists.txt                              | 6 +-----
+ cmake/addons/CMakeLists.txt                 | 2 ++
+ cmake/scripts/common/CompilerSettings.cmake | 6 ++++++
+ 3 files changed, 9 insertions(+), 5 deletions(-)
+ create mode 100644 cmake/scripts/common/CompilerSettings.cmake
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 67e10f71c63e..bfd702f5009e 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -35,13 +35,9 @@ include(cmake/scripts/common/Macros.cmake)
+ include(cmake/scripts/common/ProjectMacros.cmake)
+ core_find_versions()
+ include(cmake/scripts/${CORE_SYSTEM_NAME}/PathSetup.cmake)
++include(cmake/scripts/common/CompilerSettings.cmake)
+ include(ExternalProject)
+ 
+-# Languages and global compiler settings
+-set(CMAKE_CXX_STANDARD 11)
+-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+-set(CMAKE_CXX_EXTENSIONS OFF)
+-set(CMAKE_ASM_FLAGS "${CMAKE_C_FLAGS} -x assembler-with-cpp")
+ 
+ # general
+ option(VERBOSE            "Enable verbose output?" OFF)
+diff --git a/cmake/addons/CMakeLists.txt b/cmake/addons/CMakeLists.txt
+index 5fc798b54512..8f0420f9450c 100644
+--- a/cmake/addons/CMakeLists.txt
++++ b/cmake/addons/CMakeLists.txt
+@@ -80,6 +80,8 @@ if (CMAKE_SYSTEM_NAME STREQUAL WindowsStore)
+                      -DCMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION})
+ endif()
+ 
++include(${CORE_SOURCE_DIR}/cmake/scripts/common/CompilerSettings.cmake)
++
+ set(BUILD_ARGS -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
+                -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+                -DPACKAGE_CONFIG_PATH=${ADDON_DEPENDS_PATH}/lib/pkgconfig
+diff --git a/cmake/scripts/common/CompilerSettings.cmake b/cmake/scripts/common/CompilerSettings.cmake
+new file mode 100644
+index 000000000000..48cc69bd65d6
+--- /dev/null
++++ b/cmake/scripts/common/CompilerSettings.cmake
+@@ -0,0 +1,6 @@
++# Languages and global compiler settings
++set(CMAKE_CXX_STANDARD 11)
++set(CMAKE_CXX_STANDARD_REQUIRED ON)
++set(CMAKE_CXX_EXTENSIONS OFF)
++set(CMAKE_ASM_FLAGS "${CMAKE_C_FLAGS} -x assembler-with-cpp")
++

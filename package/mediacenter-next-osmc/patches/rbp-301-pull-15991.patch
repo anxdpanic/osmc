@@ -1,0 +1,30 @@
+From 2e938fc963d79d5fea24bc9dcc76c6339faea577 Mon Sep 17 00:00:00 2001
+From: netpok <netpok@gmail.com>
+Date: Thu, 25 Apr 2019 21:14:08 +0200
+Subject: [PATCH] Use fanart to hide spoilers if available
+
+---
+ xbmc/video/VideoThumbLoader.cpp | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/video/VideoThumbLoader.cpp b/xbmc/video/VideoThumbLoader.cpp
+index 75946ca44275..4334d1dabfa4 100644
+--- a/xbmc/video/VideoThumbLoader.cpp
++++ b/xbmc/video/VideoThumbLoader.cpp
+@@ -360,7 +360,15 @@ bool CVideoThumbLoader::LoadItemCached(CFileItem* pItem)
+       !setting->FindIntInList(CSettings::VIDEOLIBRARY_THUMB_SHOW_UNWATCHED_EPISODE)
+      )
+   {
+-    pItem->SetArt("thumb", "OverlaySpoiler.png");
++    // use fanart if available
++    if(pItem->HasArt("fanart"))
++    {
++      pItem->SetArt("thumb", pItem->GetArt("fanart"));
++    }
++    else
++    {
++      pItem->SetArt("thumb", "OverlaySpoiler.png");
++    }
+   }
+ 
+   m_videoDatabase->Close();
