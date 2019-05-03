@@ -1,0 +1,23 @@
+From e4d9d0ef9df69aa9369de61ca2f6bd58bab77be0 Mon Sep 17 00:00:00 2001
+From: djp952 <djp952@gmail.com>
+Date: Thu, 2 May 2019 00:11:41 -0400
+Subject: [PATCH] Fix problem with newly added channels causing EPG UI
+ corruption
+
+---
+ xbmc/pvr/channels/PVRChannelGroup.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/pvr/channels/PVRChannelGroup.cpp b/xbmc/pvr/channels/PVRChannelGroup.cpp
+index ac140fcae24b..a3ebd15eb90c 100644
+--- a/xbmc/pvr/channels/PVRChannelGroup.cpp
++++ b/xbmc/pvr/channels/PVRChannelGroup.cpp
+@@ -926,7 +926,7 @@ std::vector<std::shared_ptr<CPVREpgInfoTag>> CPVRChannelGroup::GetEPGAll(bool bI
+     channel = (*it).channel;
+     if (!channel->IsHidden())
+     {
+-      bool bEmpty = false;
++      bool bEmpty = true;
+ 
+       CPVREpgPtr epg = channel->GetEPG();
+       if (epg)
