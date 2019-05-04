@@ -1,0 +1,47 @@
+From 7c8b2b8a8d5c779ce8f14040a1c82a6ccc103fa8 Mon Sep 17 00:00:00 2001
+From: ronie <ronie@kodi.tv>
+Date: Sun, 3 Mar 2019 23:29:02 +0100
+Subject: [PATCH] [python] xbmcvfs - add file.tell() function
+
+---
+ xbmc/interfaces/legacy/File.h | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
+
+diff --git a/xbmc/interfaces/legacy/File.h b/xbmc/interfaces/legacy/File.h
+index 9eb18a05c2a4..f7fb35e9a112 100644
+--- a/xbmc/interfaces/legacy/File.h
++++ b/xbmc/interfaces/legacy/File.h
+@@ -202,6 +202,33 @@ namespace XBMCAddon
+       inline long long seek(long long seekBytes, int iWhence) { DelayedCallGuard dg(languageHook); return file->Seek(seekBytes,iWhence); }
+ #endif
+ 
++#ifdef DOXYGEN_SHOULD_USE_THIS
++      ///
++      /// \ingroup python_file
++      /// @brief \python_func{ tell() }
++      ///-----------------------------------------------------------------------
++      /// Get the current position in the file.
++      ///
++      /// @return                       The file position
++      ///
++      ///
++      ///-----------------------------------------------------------------------
++      /// @python_v19 New function added
++      ///
++      /// **Example:**
++      /// ~~~~~~~~~~~~~{.py}
++      /// ..
++      /// f = xbmcvfs.File(file)
++      /// s = f.tell()
++      /// f.close()
++      /// ..
++      /// ~~~~~~~~~~~~~
++      ///
++      tell();
++#else
++      inline long long tell() { DelayedCallGuard dg(languageHook); return file->GetPosition(); }
++#endif
++
+ #ifdef DOXYGEN_SHOULD_USE_THIS
+       ///
+       /// \ingroup python_file
