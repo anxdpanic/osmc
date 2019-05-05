@@ -1,0 +1,179 @@
+From 21b963a018154041b7d19c8f9e2bf21e6856a6d6 Mon Sep 17 00:00:00 2001
+From: Rechi <Rechi@users.noreply.github.com>
+Date: Fri, 3 May 2019 19:33:58 +0200
+Subject: [PATCH 1/3] [windows] use treedata instead of add_directory after
+ f47c959f0d
+
+---
+ cmake/treedata/windows/subdirs.txt                   | 1 +
+ cmake/treedata/windowsstore/subdirs.txt              | 1 +
+ xbmc/cores/VideoPlayer/VideoRenderers/CMakeLists.txt | 1 -
+ 3 files changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/cmake/treedata/windows/subdirs.txt b/cmake/treedata/windows/subdirs.txt
+index 0078758d2d8c..c63397758a83 100644
+--- a/cmake/treedata/windows/subdirs.txt
++++ b/cmake/treedata/windows/subdirs.txt
+@@ -1,6 +1,7 @@
+ xbmc/cores/RetroPlayer/process/windows cores/RetroPlayer/process/windows
+ xbmc/cores/RetroPlayer/rendering/VideoShaders/windows cores/RetroPlayer/rendering/VideoShaders/windows
+ xbmc/cores/VideoPlayer/Process/windows cores/VideoPlayer/Process/windows
++xbmc/cores/VideoPlayer/VideoRenderers/windows cores/VideoPlayer/VideoRenderers/windows
+ xbmc/input/touch                       input/touch
+ xbmc/input/touch/generic               input/touch/generic
+ xbmc/network/mdns                      network/mdns
+diff --git a/cmake/treedata/windowsstore/subdirs.txt b/cmake/treedata/windowsstore/subdirs.txt
+index 0644fd2762f3..da42566b5893 100644
+--- a/cmake/treedata/windowsstore/subdirs.txt
++++ b/cmake/treedata/windowsstore/subdirs.txt
+@@ -1,4 +1,5 @@
+ xbmc/cores/VideoPlayer/Process/windows cores/VideoPlayer/Process/windows
++xbmc/cores/VideoPlayer/VideoRenderers/windows cores/VideoPlayer/VideoRenderers/windows
+ xbmc/input/touch                       input/touch
+ xbmc/input/touch/generic               input/touch/generic
+ xbmc/network/mdns                      network/mdns
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/CMakeLists.txt b/xbmc/cores/VideoPlayer/VideoRenderers/CMakeLists.txt
+index 1426d42c4587..eb473ec6beb2 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/CMakeLists.txt
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/CMakeLists.txt
+@@ -26,7 +26,6 @@ if(CORE_SYSTEM_NAME STREQUAL windows OR CORE_SYSTEM_NAME STREQUAL windowsstore)
+                       OverlayRendererDX.cpp)
+   list(APPEND HEADERS WinRenderer.h
+                       OverlayRendererDX.h)
+-  add_subdirectory(windows)
+ endif()
+ 
+ if (OPENGL_FOUND OR OPENGLES_FOUND)
+
+From d485d8d71f94eacb76dd99fadfe1fad9bfe42fff Mon Sep 17 00:00:00 2001
+From: Rechi <Rechi@users.noreply.github.com>
+Date: Fri, 3 May 2019 19:33:58 +0200
+Subject: [PATCH 2/3] [cmake] add
+ treedata/common/${CORE_PLATFORM_NAME_LC}/*.txt to read files
+
+---
+ CMakeLists.txt                                              | 1 +
+ cmake/treedata/{optional/common => common/aml}/aml.txt      | 4 ++--
+ cmake/treedata/{optional/common => common/gbm}/gbm.txt      | 6 +++---
+ .../{optional/common => common/wayland}/wayland.txt         | 6 +++---
+ cmake/treedata/{optional/common => common/x11}/X.txt        | 6 +++---
+ 5 files changed, 12 insertions(+), 11 deletions(-)
+ rename cmake/treedata/{optional/common => common/aml}/aml.txt (50%)
+ rename cmake/treedata/{optional/common => common/gbm}/gbm.txt (70%)
+ rename cmake/treedata/{optional/common => common/wayland}/wayland.txt (57%)
+ rename cmake/treedata/{optional/common => common/x11}/X.txt (73%)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index bfd702f5009e..d7650b57f085 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -296,6 +296,7 @@ set(OTHER_FILES cmake/README.md)
+ 
+ # Subdirs
+ core_add_subdirs_from_filelist(${CMAKE_SOURCE_DIR}/cmake/treedata/common/*.txt
++                               ${CMAKE_SOURCE_DIR}/cmake/treedata/common/${CORE_PLATFORM_NAME_LC}/*.txt
+                                ${CMAKE_SOURCE_DIR}/cmake/treedata/${CORE_SYSTEM_NAME}/*.txt)
+ core_add_optional_subdirs_from_filelist(${CMAKE_SOURCE_DIR}/cmake/treedata/optional/common/*.txt
+                                         ${CMAKE_SOURCE_DIR}/cmake/treedata/optional/${CORE_SYSTEM_NAME}/*.txt)
+diff --git a/cmake/treedata/optional/common/aml.txt b/cmake/treedata/common/aml/aml.txt
+similarity index 50%
+rename from cmake/treedata/optional/common/aml.txt
+rename to cmake/treedata/common/aml/aml.txt
+index 09bf2db4f51c..1e4856fcd420 100644
+--- a/cmake/treedata/optional/common/aml.txt
++++ b/cmake/treedata/common/aml/aml.txt
+@@ -1,2 +1,2 @@
+-xbmc/cores/RetroPlayer/process/amlogic cores/RetroPlayer/process/amlogic # AML
+-xbmc/windowing/amlogic windowing/amlogic # AML
++xbmc/cores/RetroPlayer/process/amlogic cores/RetroPlayer/process/amlogic
++xbmc/windowing/amlogic windowing/amlogic
+diff --git a/cmake/treedata/optional/common/gbm.txt b/cmake/treedata/common/gbm/gbm.txt
+similarity index 70%
+rename from cmake/treedata/optional/common/gbm.txt
+rename to cmake/treedata/common/gbm/gbm.txt
+index ff07e6fbc9ed..113c47ba8b68 100644
+--- a/cmake/treedata/optional/common/gbm.txt
++++ b/cmake/treedata/common/gbm/gbm.txt
+@@ -1,3 +1,3 @@
+-xbmc/cores/RetroPlayer/process/gbm cores/RetroPlayer/process/gbm # GBM
+-xbmc/cores/VideoPlayer/Process/gbm cores/VideoPlayer/Process/gbm # GBM
+-xbmc/windowing/gbm windowing/gbm # GBM
++xbmc/cores/RetroPlayer/process/gbm cores/RetroPlayer/process/gbm
++xbmc/cores/VideoPlayer/Process/gbm cores/VideoPlayer/Process/gbm
++xbmc/windowing/gbm windowing/gbm
+diff --git a/cmake/treedata/optional/common/wayland.txt b/cmake/treedata/common/wayland/wayland.txt
+similarity index 57%
+rename from cmake/treedata/optional/common/wayland.txt
+rename to cmake/treedata/common/wayland/wayland.txt
+index f8f77a6366c3..bbbb14e7d6f9 100644
+--- a/cmake/treedata/optional/common/wayland.txt
++++ b/cmake/treedata/common/wayland/wayland.txt
+@@ -1,3 +1,3 @@
+-xbmc/cores/RetroPlayer/process/wayland cores/RetroPlayer/process/wayland # WAYLANDPP
+-xbmc/cores/VideoPlayer/Process/wayland cores/VideoPlayer/Process/wayland # WAYLANDPP
+-xbmc/windowing/wayland windowing/wayland # WAYLANDPP
++xbmc/cores/RetroPlayer/process/wayland cores/RetroPlayer/process/wayland
++xbmc/cores/VideoPlayer/Process/wayland cores/VideoPlayer/Process/wayland
++xbmc/windowing/wayland windowing/wayland
+diff --git a/cmake/treedata/optional/common/X.txt b/cmake/treedata/common/x11/X.txt
+similarity index 73%
+rename from cmake/treedata/optional/common/X.txt
+rename to cmake/treedata/common/x11/X.txt
+index a2505375ba65..548c9dd148e9 100644
+--- a/cmake/treedata/optional/common/X.txt
++++ b/cmake/treedata/common/x11/X.txt
+@@ -1,3 +1,3 @@
+-xbmc/cores/RetroPlayer/process/X11 cores/RetroPlayer/process/X11 # X
+-xbmc/cores/VideoPlayer/Process/X11 cores/VideoPlayer/Process/X11 # X
+-xbmc/windowing/X11 windowing/X11 # X
++xbmc/cores/RetroPlayer/process/X11 cores/RetroPlayer/process/X11
++xbmc/cores/VideoPlayer/Process/X11 cores/VideoPlayer/Process/X11
++xbmc/windowing/X11 windowing/X11
+
+From d3c8d850ffa62cbaf9d37567041d14432d4c3663 Mon Sep 17 00:00:00 2001
+From: Rechi <Rechi@users.noreply.github.com>
+Date: Fri, 3 May 2019 19:33:58 +0200
+Subject: [PATCH 3/3] [cmake] use treedata instead of add_directory for
+ omxplayer and rpi windowing
+
+---
+ cmake/treedata/common/rbpi/rbpi.txt | 2 ++
+ xbmc/cores/CMakeLists.txt           | 4 ----
+ xbmc/windowing/CMakeLists.txt       | 4 ----
+ 3 files changed, 2 insertions(+), 8 deletions(-)
+ create mode 100644 cmake/treedata/common/rbpi/rbpi.txt
+
+diff --git a/cmake/treedata/common/rbpi/rbpi.txt b/cmake/treedata/common/rbpi/rbpi.txt
+new file mode 100644
+index 000000000000..dc268e773c92
+--- /dev/null
++++ b/cmake/treedata/common/rbpi/rbpi.txt
+@@ -0,0 +1,2 @@
++xbmc/cores/omxplayer cores/omxplayer
++xbmc/windowing/rpi   windowing/rpi
+diff --git a/xbmc/cores/CMakeLists.txt b/xbmc/cores/CMakeLists.txt
+index f909646b934c..92eb3963a0da 100644
+--- a/xbmc/cores/CMakeLists.txt
++++ b/xbmc/cores/CMakeLists.txt
+@@ -10,8 +10,4 @@ set(HEADERS DataCacheCore.h
+             IPlayerCallback.h
+             VideoSettings.h)
+ 
+-if(CORE_PLATFORM_NAME_LC STREQUAL rbpi)
+-  add_subdirectory(omxplayer)
+-endif()
+-
+ core_add_library(cores)
+diff --git a/xbmc/windowing/CMakeLists.txt b/xbmc/windowing/CMakeLists.txt
+index 1904e2c0ff38..00439f5a26d5 100644
+--- a/xbmc/windowing/CMakeLists.txt
++++ b/xbmc/windowing/CMakeLists.txt
+@@ -11,8 +11,4 @@ set(HEADERS GraphicContext.h
+             XBMC_events.h
+             VideoSync.h)
+ 
+-if(CORE_PLATFORM_NAME_LC STREQUAL rbpi)
+-  add_subdirectory(rpi)
+-endif()
+-
+ core_add_library(windowing)
