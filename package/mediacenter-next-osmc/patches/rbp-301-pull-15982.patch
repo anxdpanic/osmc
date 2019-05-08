@@ -1,0 +1,339 @@
+From 2d6eafe50ea9ed4b0f2298f37d200832ea188abd Mon Sep 17 00:00:00 2001
+From: David Bridson <david@bridson.co.uk>
+Date: Wed, 24 Apr 2019 20:08:27 +0100
+Subject: [PATCH 1/2] Replace integer literals cast to bool with bool literals
+
+---
+ xbmc/URL.cpp                                         |  2 +-
+ xbmc/cores/AudioEngine/Utils/AEStreamInfo.cpp        |  2 +-
+ xbmc/cores/VideoPlayer/VideoPlayerRadioRDS.cpp       |  2 +-
+ .../VideoPlayer/VideoRenderers/LinuxRendererGL.cpp   |  2 +-
+ xbmc/dbwrappers/mysqldataset.cpp                     | 12 ++++++------
+ xbmc/dialogs/GUIDialogYesNo.cpp                      |  2 +-
+ xbmc/filesystem/iso9660.cpp                          |  4 ++--
+ xbmc/guilib/VisibleEffect.cpp                        |  2 +-
+ xbmc/music/MusicDatabase.cpp                         |  2 +-
+ xbmc/network/upnp/UPnPPlayer.cpp                     |  2 +-
+ xbmc/peripherals/devices/PeripheralCecAdapter.cpp    |  8 ++++----
+ xbmc/pictures/GUIWindowSlideShow.cpp                 |  2 +-
+ xbmc/playlists/PlayListPLS.cpp                       |  2 +-
+ xbmc/utils/CharsetConverter.cpp                      |  2 +-
+ xbmc/utils/StringUtils.cpp                           |  4 ++--
+ xbmc/video/GUIViewStateVideo.cpp                     |  2 +-
+ xbmc/video/Teletext.cpp                              |  2 +-
+ 17 files changed, 27 insertions(+), 27 deletions(-)
+
+diff --git a/xbmc/URL.cpp b/xbmc/URL.cpp
+index 0196362b4f1b..5e3d0d266cc6 100644
+--- a/xbmc/URL.cpp
++++ b/xbmc/URL.cpp
+@@ -72,7 +72,7 @@ void CURL::Parse(const std::string& strURL1)
+     // This should turn into zip://rar:///foo/bar.zip/alice.rar/bob.avi
+     iPos = 0;
+     bool is_apk = (strURL.find(".apk/", iPos) != std::string::npos);
+-    while (1)
++    while (true)
+     {
+       if (is_apk)
+         iPos = strURL.find(".apk/", iPos);
+diff --git a/xbmc/cores/AudioEngine/Utils/AEStreamInfo.cpp b/xbmc/cores/AudioEngine/Utils/AEStreamInfo.cpp
+index 0b3c07e4161a..9eb0a55fbf2b 100644
+--- a/xbmc/cores/AudioEngine/Utils/AEStreamInfo.cpp
++++ b/xbmc/cores/AudioEngine/Utils/AEStreamInfo.cpp
+@@ -154,7 +154,7 @@ int CAEStreamParser::AddData(uint8_t *data, unsigned int size, uint8_t **buffer/
+     unsigned int consumed = 0;
+     unsigned int offset = 0;
+     unsigned int room = sizeof(m_buffer) - m_bufferSize;
+-    while(1)
++    while(true)
+     {
+       if (!size)
+       {
+diff --git a/xbmc/cores/VideoPlayer/VideoPlayerRadioRDS.cpp b/xbmc/cores/VideoPlayer/VideoPlayerRadioRDS.cpp
+index 4407aaea5a98..d0d7a1cd220d 100644
+--- a/xbmc/cores/VideoPlayer/VideoPlayerRadioRDS.cpp
++++ b/xbmc/cores/VideoPlayer/VideoPlayerRadioRDS.cpp
+@@ -783,7 +783,7 @@ void CDVDRadioRDSData::ProcessUECP(const unsigned char *data, unsigned int len)
+       else
+       {
+         //! crc16-check
+-        unsigned short crc16 = crc16_ccitt(m_UECPData, m_UECPDataIndex-3, 1);
++        unsigned short crc16 = crc16_ccitt(m_UECPData, m_UECPDataIndex-3, true);
+         if (crc16 != (m_UECPData[m_UECPDataIndex-2]<<8) + m_UECPData[m_UECPDataIndex-1])
+         {
+           CLog::Log(LOGERROR, "Radio UECP (RDS) Processor - Error(TS): wrong CRC # calc = %04x <> transmit = %02x%02x",
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/LinuxRendererGL.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/LinuxRendererGL.cpp
+index acb8728ac3c4..ff25e61ae302 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/LinuxRendererGL.cpp
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/LinuxRendererGL.cpp
+@@ -2683,7 +2683,7 @@ bool CLinuxRendererGL::LoadCLUT()
+ 
+   int clutSize, dataSize;
+   if (!CColorManager::Get3dLutSize(CMS_DATA_FMT_RGB, &clutSize, &dataSize))
+-    return 0;
++    return false;
+ 
+   // allocate buffer
+   m_CLUTsize = clutSize;
+diff --git a/xbmc/dbwrappers/mysqldataset.cpp b/xbmc/dbwrappers/mysqldataset.cpp
+index be465afa2f02..95d72f8c13f7 100644
+--- a/xbmc/dbwrappers/mysqldataset.cpp
++++ b/xbmc/dbwrappers/mysqldataset.cpp
+@@ -1193,7 +1193,7 @@ void MysqlDatabase::mysqlVXPrintf(
+         if( n>etBUFSIZE ){
+           bufpt = zExtra = (char *)malloc(n);
+           if( bufpt==0 ){
+-            pAccum->mallocFailed = 1;
++            pAccum->mallocFailed = true;
+             return;
+           }
+         }else{
+@@ -1262,7 +1262,7 @@ bool MysqlDatabase::mysqlStrAccumAppend(StrAccum *p, const char *z, int N) {
+     szNew += N + 1;
+     if( szNew > p->mxAlloc ){
+       mysqlStrAccumReset(p);
+-      p->tooBig = 1;
++      p->tooBig = true;
+       return false;
+     }else{
+       p->nAlloc = szNew;
+@@ -1273,7 +1273,7 @@ bool MysqlDatabase::mysqlStrAccumAppend(StrAccum *p, const char *z, int N) {
+       mysqlStrAccumReset(p);
+       p->zText = zNew;
+     }else{
+-      p->mallocFailed = 1;
++      p->mallocFailed = true;
+       mysqlStrAccumReset(p);
+       return false;
+     }
+@@ -1306,7 +1306,7 @@ char * MysqlDatabase::mysqlStrAccumFinish(StrAccum *p){
+       if( p->zText ){
+         memcpy(p->zText, p->zBase, p->nChar+1);
+       }else{
+-        p->mallocFailed = 1;
++        p->mallocFailed = true;
+       }
+     }
+   }
+@@ -1331,8 +1331,8 @@ void MysqlDatabase::mysqlStrAccumInit(StrAccum *p, char *zBase, int n, int mx){
+   p->nChar = 0;
+   p->nAlloc = n;
+   p->mxAlloc = mx;
+-  p->tooBig = 0;
+-  p->mallocFailed = 0;
++  p->tooBig = false;
++  p->mallocFailed = false;
+ }
+ 
+ /*
+diff --git a/xbmc/dialogs/GUIDialogYesNo.cpp b/xbmc/dialogs/GUIDialogYesNo.cpp
+index 7d824a7d6740..6772f6d97ddc 100644
+--- a/xbmc/dialogs/GUIDialogYesNo.cpp
++++ b/xbmc/dialogs/GUIDialogYesNo.cpp
+@@ -29,7 +29,7 @@ bool CGUIDialogYesNo::OnMessage(CGUIMessage& message)
+     {
+       int iControl = message.GetSenderId();
+       int iAction = message.GetParam1();
+-      if (1 || ACTION_SELECT_ITEM == iAction)
++      if (true || ACTION_SELECT_ITEM == iAction)
+       {
+         if (iControl == CONTROL_NO_BUTTON)
+         {
+diff --git a/xbmc/filesystem/iso9660.cpp b/xbmc/filesystem/iso9660.cpp
+index 6f50bb7b3f25..ab64d4339c38 100644
+--- a/xbmc/filesystem/iso9660.cpp
++++ b/xbmc/filesystem/iso9660.cpp
+@@ -238,7 +238,7 @@ struct iso_dirtree *iso9660::ReadRecursiveDirFromSector( DWORD sector, const cha
+ 
+   strcpy( m_lastpath->path, path );
+ 
+-  while ( 1 )
++  while ( true )
+   {
+     if ( isodir.ucRecordLength )
+       iso9660searchpointer += isodir.ucRecordLength;
+@@ -325,7 +325,7 @@ struct iso_dirtree *iso9660::ReadRecursiveDirFromSector( DWORD sector, const cha
+   iso9660searchpointer = 0;
+   memcpy( &curr_dir, pCurr_dir_cache, sizeof(isodir) );
+   memcpy( &isodir, pCurr_dir_cache, sizeof(isodir) );
+-  while ( 1 )
++  while ( true )
+   {
+     if ( isodir.ucRecordLength )
+       iso9660searchpointer += isodir.ucRecordLength;
+diff --git a/xbmc/guilib/VisibleEffect.cpp b/xbmc/guilib/VisibleEffect.cpp
+index 89de7097cfd6..cf7ec2d5b2d3 100644
+--- a/xbmc/guilib/VisibleEffect.cpp
++++ b/xbmc/guilib/VisibleEffect.cpp
+@@ -723,7 +723,7 @@ void CScroller::ScrollTo(float endPos)
+ {
+   float delta = endPos - m_scrollValue;
+     // if there is scrolling running in same direction - set resume point
+-  m_hasResumePoint = m_delta != 0 && delta * m_delta > 0 && m_pTweener ? m_pTweener->HasResumePoint() : 0;
++  m_hasResumePoint = m_delta != 0 && delta * m_delta > 0 && m_pTweener ? m_pTweener->HasResumePoint() : false;
+ 
+   m_delta = delta;
+   m_startPosition = m_scrollValue;
+diff --git a/xbmc/music/MusicDatabase.cpp b/xbmc/music/MusicDatabase.cpp
+index 1d72b8dd2e52..23072e335684 100644
+--- a/xbmc/music/MusicDatabase.cpp
++++ b/xbmc/music/MusicDatabase.cpp
+@@ -3569,7 +3569,7 @@ bool CMusicDatabase::LookupCDDBInfo(bool bRequery/*=false*/)
+         pDlgSelect->Reset();
+         pDlgSelect->SetHeading(CVariant{255});
+         int i = 1;
+-        while (1)
++        while (true)
+         {
+           std::string strTitle = cddb.getInexactTitle(i);
+           if (strTitle == "") break;
+diff --git a/xbmc/network/upnp/UPnPPlayer.cpp b/xbmc/network/upnp/UPnPPlayer.cpp
+index 82ae8838d9db..626d4202af34 100644
+--- a/xbmc/network/upnp/UPnPPlayer.cpp
++++ b/xbmc/network/upnp/UPnPPlayer.cpp
+@@ -398,7 +398,7 @@ bool CUPnPPlayer::QueueNextFile(const CFileItem& file)
+     thumb_loader = NPT_Reference<CThumbLoader>(new CMusicThumbLoader());
+ 
+ 
+-  obj = BuildObject(item, path, 0, thumb_loader, NULL, CUPnP::GetServer(), UPnPPlayer);
++  obj = BuildObject(item, path, false, thumb_loader, NULL, CUPnP::GetServer(), UPnPPlayer);
+   if(!obj.IsNull())
+   {
+     NPT_CHECK_LABEL_SEVERE(PLT_Didl::ToDidl(*obj, "", tmp), failed);
+diff --git a/xbmc/peripherals/devices/PeripheralCecAdapter.cpp b/xbmc/peripherals/devices/PeripheralCecAdapter.cpp
+index 802dd0779ee8..7fb35359070c 100644
+--- a/xbmc/peripherals/devices/PeripheralCecAdapter.cpp
++++ b/xbmc/peripherals/devices/PeripheralCecAdapter.cpp
+@@ -1346,11 +1346,11 @@ void CPeripheralCecAdapter::SetConfigurationFromSettings(void)
+     ReadLogicalAddresses(GetSettingInt("standby_devices"), m_configuration.powerOffDevices);
+ 
+   // read the boolean settings
+-  m_bUseTVMenuLanguage                 = GetSettingBool("use_tv_menu_language") ? 1 : 0;
++  m_bUseTVMenuLanguage                 = GetSettingBool("use_tv_menu_language") ? true : false;
+   m_configuration.bActivateSource      = GetSettingBool("activate_source") ? 1 : 0;
+-  m_bPowerOffScreensaver               = GetSettingBool("cec_standby_screensaver") ? 1 : 0;
+-  m_bPowerOnScreensaver                = GetSettingBool("cec_wake_screensaver") ? 1 : 0;
+-  m_bSendInactiveSource                = GetSettingBool("send_inactive_source") ? 1 : 0;
++  m_bPowerOffScreensaver               = GetSettingBool("cec_standby_screensaver") ? true : false;
++  m_bPowerOnScreensaver                = GetSettingBool("cec_wake_screensaver") ? true : false;
++  m_bSendInactiveSource                = GetSettingBool("send_inactive_source") ? true : false;
+   m_configuration.bAutoWakeAVR         = GetSettingBool("power_avr_on_as") ? 1 : 0;
+ 
+   // read the mutually exclusive boolean settings
+diff --git a/xbmc/pictures/GUIWindowSlideShow.cpp b/xbmc/pictures/GUIWindowSlideShow.cpp
+index ef8a4eaf1c65..ae3c49330c55 100644
+--- a/xbmc/pictures/GUIWindowSlideShow.cpp
++++ b/xbmc/pictures/GUIWindowSlideShow.cpp
+@@ -919,7 +919,7 @@ bool CGUIWindowSlideShow::OnMessage(CGUIMessage& message)
+       m_Resolution = (RESOLUTION) CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_PICTURES_DISPLAYRESOLUTION);
+ 
+       //FIXME: Use GUI resolution for now
+-      if (0 /*m_Resolution != CDisplaySettings::GetInstance().GetCurrentResolution() && m_Resolution != INVALID && m_Resolution!=AUTORES*/)
++      if (false /*m_Resolution != CDisplaySettings::GetInstance().GetCurrentResolution() && m_Resolution != INVALID && m_Resolution!=AUTORES*/)
+         CServiceBroker::GetWinSystem()->GetGfxContext().SetVideoResolution(m_Resolution, false);
+       else
+         m_Resolution = CServiceBroker::GetWinSystem()->GetGfxContext().GetVideoResolution();
+diff --git a/xbmc/playlists/PlayListPLS.cpp b/xbmc/playlists/PlayListPLS.cpp
+index 5617575ed501..19c40c55d669 100644
+--- a/xbmc/playlists/PlayListPLS.cpp
++++ b/xbmc/playlists/PlayListPLS.cpp
+@@ -82,7 +82,7 @@ bool CPlayListPLS::Load(const std::string &strFile)
+ 
+   // run through looking for the [playlist] marker.
+   // if we find another http stream, then load it.
+-  while (1)
++  while (true)
+   {
+     if ( !file.ReadString(szLine, sizeof(szLine) ) )
+     {
+diff --git a/xbmc/utils/CharsetConverter.cpp b/xbmc/utils/CharsetConverter.cpp
+index aab642e08ece..507b1181934e 100644
+--- a/xbmc/utils/CharsetConverter.cpp
++++ b/xbmc/utils/CharsetConverter.cpp
+@@ -385,7 +385,7 @@ bool CCharsetConverter::CInnerConverter::convert(iconv_t type, int multiplier, c
+   char*       outBufStart   = outBuf;     //where in out output buffer iconv() should start writing
+ 
+   size_t returnV;
+-  while(1)
++  while(true)
+   {
+     //iconv() will update inBufStart, inBytesAvail, outBufStart and outBytesAvail
+     returnV = iconv(type, charPtrPtrAdapter(&inBufStart), &inBytesAvail, &outBufStart, &outBytesAvail);
+diff --git a/xbmc/utils/StringUtils.cpp b/xbmc/utils/StringUtils.cpp
+index 79fc0a75c8d5..74d67ddcb05a 100644
+--- a/xbmc/utils/StringUtils.cpp
++++ b/xbmc/utils/StringUtils.cpp
+@@ -217,7 +217,7 @@ std::string StringUtils::FormatV(const char *fmt, va_list args)
+   int size = FORMAT_BLOCK_SIZE;
+   va_list argCopy;
+ 
+-  while (1)
++  while (true)
+   {
+     char *cstr = reinterpret_cast<char*>(malloc(sizeof(char) * size));
+     if (!cstr)
+@@ -261,7 +261,7 @@ std::wstring StringUtils::FormatV(const wchar_t *fmt, va_list args)
+   int size = FORMAT_BLOCK_SIZE;
+   va_list argCopy;
+ 
+-  while (1)
++  while (true)
+   {
+     wchar_t *cstr = reinterpret_cast<wchar_t*>(malloc(sizeof(wchar_t) * size));
+     if (!cstr)
+diff --git a/xbmc/video/GUIViewStateVideo.cpp b/xbmc/video/GUIViewStateVideo.cpp
+index 3cde8ffd0da5..6305250bdb97 100644
+--- a/xbmc/video/GUIViewStateVideo.cpp
++++ b/xbmc/video/GUIViewStateVideo.cpp
+@@ -539,7 +539,7 @@ void CGUIViewStateVideoTVShows::SaveViewState()
+ 
+ CGUIViewStateVideoEpisodes::CGUIViewStateVideoEpisodes(const CFileItemList& items) : CGUIViewStateWindowVideo(items)
+ {
+-  if (0)//params.GetSeason() > -1)
++  if (false)//params.GetSeason() > -1)
+   {
+     AddSortMethod(SortByEpisodeNumber, 20359, LABEL_MASKS("%E. %T","%R"));  // Episode. Title, Rating | empty, empty
+     AddSortMethod(SortByRating, 563, LABEL_MASKS("%E. %T", "%R"));  // Episode. Title, Rating | empty, empty
+diff --git a/xbmc/video/Teletext.cpp b/xbmc/video/Teletext.cpp
+index fd40314eb3e4..e37cdb40ff59 100644
+--- a/xbmc/video/Teletext.cpp
++++ b/xbmc/video/Teletext.cpp
+@@ -553,7 +553,7 @@ bool CTeletextDecoder::HandleAction(const CAction &action)
+   if (m_RenderInfo.PageCatching)
+   {
+     m_txtCache->PageUpdate    = true;
+-    m_RenderInfo.PageCatching = 0;
++    m_RenderInfo.PageCatching = false;
+     return true;
+   }
+ 
+
+From 3e1d448fcece2ddab74f979b391f681bf275045d Mon Sep 17 00:00:00 2001
+From: David Bridson <david@bridson.co.uk>
+Date: Thu, 25 Apr 2019 21:48:02 +0100
+Subject: [PATCH 2/2] Remove redundant ternary notation
+
+---
+ xbmc/peripherals/devices/PeripheralCecAdapter.cpp | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/xbmc/peripherals/devices/PeripheralCecAdapter.cpp b/xbmc/peripherals/devices/PeripheralCecAdapter.cpp
+index 7fb35359070c..5da7ded37a93 100644
+--- a/xbmc/peripherals/devices/PeripheralCecAdapter.cpp
++++ b/xbmc/peripherals/devices/PeripheralCecAdapter.cpp
+@@ -1346,11 +1346,11 @@ void CPeripheralCecAdapter::SetConfigurationFromSettings(void)
+     ReadLogicalAddresses(GetSettingInt("standby_devices"), m_configuration.powerOffDevices);
+ 
+   // read the boolean settings
+-  m_bUseTVMenuLanguage                 = GetSettingBool("use_tv_menu_language") ? true : false;
++  m_bUseTVMenuLanguage                 = GetSettingBool("use_tv_menu_language");
+   m_configuration.bActivateSource      = GetSettingBool("activate_source") ? 1 : 0;
+-  m_bPowerOffScreensaver               = GetSettingBool("cec_standby_screensaver") ? true : false;
+-  m_bPowerOnScreensaver                = GetSettingBool("cec_wake_screensaver") ? true : false;
+-  m_bSendInactiveSource                = GetSettingBool("send_inactive_source") ? true : false;
++  m_bPowerOffScreensaver               = GetSettingBool("cec_standby_screensaver");
++  m_bPowerOnScreensaver                = GetSettingBool("cec_wake_screensaver");
++  m_bSendInactiveSource                = GetSettingBool("send_inactive_source");
+   m_configuration.bAutoWakeAVR         = GetSettingBool("power_avr_on_as") ? 1 : 0;
+ 
+   // read the mutually exclusive boolean settings

@@ -1,0 +1,47 @@
+From 3ce65caa7dfcb3864c26c0b9093ee4cc75d6be68 Mon Sep 17 00:00:00 2001
+From: ronie <ronie@kodi.tv>
+Date: Sun, 5 May 2019 17:49:49 +0200
+Subject: [PATCH] [Estuary] fix scrollbar focus with mouse
+
+---
+ addons/skin.estuary/xml/Includes.xml        | 1 -
+ addons/skin.estuary/xml/View_502_FanArt.xml | 1 -
+ addons/skin.estuary/xml/View_50_List.xml    | 1 -
+ 3 files changed, 3 deletions(-)
+
+diff --git a/addons/skin.estuary/xml/Includes.xml b/addons/skin.estuary/xml/Includes.xml
+index a9aa7c55d0c1..4067a71afe5f 100644
+--- a/addons/skin.estuary/xml/Includes.xml
++++ b/addons/skin.estuary/xml/Includes.xml
+@@ -57,7 +57,6 @@
+ 					<animation effect="fade" start="100" end="0" time="200">Hidden</animation>
+ 					<animation effect="slide" end="6,0" time="300" tween="sine" easing="inout" condition="!Control.HasFocus(531)">conditional</animation>
+ 					<visible>Control.IsVisible(52) | Control.IsVisible(500) | Control.IsVisible(55) | Control.IsVisible(501) | Control.IsVisible(54)</visible>
+-					<hitrect x="-20" y="0" w="80" bottom="0r" />
+ 				</control>
+ 			</control>
+ 			<control type="group">
+diff --git a/addons/skin.estuary/xml/View_502_FanArt.xml b/addons/skin.estuary/xml/View_502_FanArt.xml
+index 5f3c8374a55d..90710c2e33cd 100644
+--- a/addons/skin.estuary/xml/View_502_FanArt.xml
++++ b/addons/skin.estuary/xml/View_502_FanArt.xml
+@@ -57,7 +57,6 @@
+ 					<onright>502</onright>
+ 					<orientation>vertical</orientation>
+ 					<animation effect="zoom" end="50,100" time="300" tween="sine" center="20,0" easing="inout" condition="!Control.HasFocus(502600)">conditional</animation>
+-					<hitrect x="-30" y="0" w="120" h="100%" />
+ 				</control>
+ 				<control type="group">
+ 					<left>40</left>
+diff --git a/addons/skin.estuary/xml/View_50_List.xml b/addons/skin.estuary/xml/View_50_List.xml
+index c6d5d7a9e3e3..3591a9bfde50 100644
+--- a/addons/skin.estuary/xml/View_50_List.xml
++++ b/addons/skin.estuary/xml/View_50_List.xml
+@@ -31,7 +31,6 @@
+ 						<onright>50</onright>
+ 						<orientation>vertical</orientation>
+ 						<animation effect="zoom" end="50,100" time="300" tween="sine" center="20,0" easing="inout" condition="!Control.HasFocus(50600)">conditional</animation>
+-						<hitrect x="-30" y="0" w="120" h="100%" />
+ 					</control>
+ 					<control type="image">
+ 						<depth>DepthContentPopout</depth>

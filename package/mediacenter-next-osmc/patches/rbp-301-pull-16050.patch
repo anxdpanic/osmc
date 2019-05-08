@@ -1,0 +1,23 @@
+From 76e698e6d288cc1af2b5470e97f2f50207cb3bdc Mon Sep 17 00:00:00 2001
+From: DaveTBlake <oak99sky@yahoo.co.uk>
+Date: Fri, 3 May 2019 09:20:51 +0100
+Subject: [PATCH] Fix display of blank dialog when X key hit and there is no
+ visualisation
+
+---
+ system/keymaps/joystick.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/system/keymaps/joystick.xml b/system/keymaps/joystick.xml
+index 41fd40eea800..378d8ee249b2 100644
+--- a/system/keymaps/joystick.xml
++++ b/system/keymaps/joystick.xml
+@@ -229,7 +229,7 @@
+     <joystick profile="game.controller.default">
+       <a>Pause</a>
+       <b>Stop</b>
+-      <x>ActivateWindow(AddonSettings)</x>
++      <x>Addon.Default.OpenSettings(xbmc.player.musicviz)</x>
+       <y>ActivateWindow(VisualisationPresetList)</y>
+       <start>Info</start>
+       <rightthumb>ActivateWindow(MusicOSD)</rightthumb>
