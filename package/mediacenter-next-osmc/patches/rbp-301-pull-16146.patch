@@ -1,0 +1,63 @@
+From d8a3c12bf6af7940eb9990017a292bf1f914ef18 Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Thu, 16 May 2019 09:22:19 +0200
+Subject: [PATCH] [PVR] Prevent concurrent updates for all pvr windows.
+
+---
+ xbmc/pvr/windows/GUIWindowPVRBase.cpp  | 8 ++++++++
+ xbmc/pvr/windows/GUIWindowPVRBase.h    | 1 +
+ xbmc/pvr/windows/GUIWindowPVRGuide.cpp | 4 +---
+ 3 files changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/xbmc/pvr/windows/GUIWindowPVRBase.cpp b/xbmc/pvr/windows/GUIWindowPVRBase.cpp
+index 6affc0942827..7a08f00a4ac9 100644
+--- a/xbmc/pvr/windows/GUIWindowPVRBase.cpp
++++ b/xbmc/pvr/windows/GUIWindowPVRBase.cpp
+@@ -437,6 +437,14 @@ void CGUIWindowPVRBase::SetChannelGroup(CPVRChannelGroupPtr &&group, bool bUpdat
+ 
+ bool CGUIWindowPVRBase::Update(const std::string &strDirectory, bool updateFilterPath /*= true*/)
+ {
++  if (m_bUpdating)
++  {
++    // no concurrent updates
++    return false;
++  }
++
++  CUpdateGuard guard(m_bUpdating);
++
+   if (!GetChannelGroup())
+   {
+     // no updates before fully initialized
+diff --git a/xbmc/pvr/windows/GUIWindowPVRBase.h b/xbmc/pvr/windows/GUIWindowPVRBase.h
+index f8a4d98a63b2..da142d388223 100644
+--- a/xbmc/pvr/windows/GUIWindowPVRBase.h
++++ b/xbmc/pvr/windows/GUIWindowPVRBase.h
+@@ -102,6 +102,7 @@ namespace PVR
+ 
+     CCriticalSection m_critSection;
+     bool m_bRadio;
++    std::atomic_bool m_bUpdating = {false};
+ 
+   private:
+     bool OpenChannelGroupSelectionDialog(void);
+diff --git a/xbmc/pvr/windows/GUIWindowPVRGuide.cpp b/xbmc/pvr/windows/GUIWindowPVRGuide.cpp
+index 861502e25d47..3c64bfe4a2fe 100644
+--- a/xbmc/pvr/windows/GUIWindowPVRGuide.cpp
++++ b/xbmc/pvr/windows/GUIWindowPVRGuide.cpp
+@@ -192,15 +192,13 @@ void CGUIWindowPVRGuideBase::UpdateButtons(void)
+ 
+ bool CGUIWindowPVRGuideBase::Update(const std::string &strDirectory, bool updateFilterPath /* = true */)
+ {
+-  if (m_vecItemsUpdating)
++  if (m_bUpdating)
+   {
+     // Prevent concurrent updates. Instead, let the timeline items refresh thread pick it up later.
+     m_bRefreshTimelineItems = true;
+     return true;
+   }
+ 
+-  CUpdateGuard guard(m_vecItemsUpdating);
+-
+   bool bReturn = CGUIWindowPVRBase::Update(strDirectory, updateFilterPath);
+ 
+   if (bReturn && !m_bChannelSelectionRestored)

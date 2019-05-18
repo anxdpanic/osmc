@@ -1,0 +1,31 @@
+From fa9fdcba5346a4a5e800bba3b4d84ece27995c1b Mon Sep 17 00:00:00 2001
+From: ronie <ronie@kodi.tv>
+Date: Wed, 15 May 2019 23:32:20 +0200
+Subject: [PATCH] [Estuary] fix search button on side menu
+
+---
+ addons/skin.estuary/xml/Includes_MediaMenu.xml | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/addons/skin.estuary/xml/Includes_MediaMenu.xml b/addons/skin.estuary/xml/Includes_MediaMenu.xml
+index 69b7eeeab834..db4968709eaa 100644
+--- a/addons/skin.estuary/xml/Includes_MediaMenu.xml
++++ b/addons/skin.estuary/xml/Includes_MediaMenu.xml
+@@ -365,11 +365,16 @@
+ 				<visible>Control.IsEnabled(4)</visible>
+ 				<onclick>SendClick(4)</onclick>
+ 			</control>
++			<control type="button" id="8">
++				<include>MediaMenuItemsCommon</include>
++				<label>$LOCALIZE[137]</label>
++				<visible>Window.IsVisible(Videos) | Window.IsVisible(Music)</visible>
++			</control>
+ 			<control type="button" id="19">
+ 				<visible>Container.CanFilter + !Container.CanFilterAdvanced</visible>
+ 				<include>MediaMenuItemsCommon</include>
+ 				<onclick>right</onclick>
+-				<label>$LOCALIZE[137]</label>
++				<label>$LOCALIZE[587]</label>
+ 			</control>
+ 			<control type="button" id="199">
+ 				<visible>Container.CanFilterAdvanced</visible>
