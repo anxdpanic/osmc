@@ -1,0 +1,39 @@
+From 1d62372b369a41188cb11baf0fdad4b8eb51da09 Mon Sep 17 00:00:00 2001
+From: Rechi <Rechi@users.noreply.github.com>
+Date: Thu, 23 May 2019 09:57:59 +0200
+Subject: [PATCH] [cmake] use CMAKE_CXX_STANDARD to set WindowsStore specific
+ C++ standard
+
+---
+ cmake/scripts/common/CompilerSettings.cmake | 5 +++--
+ cmake/scripts/windowsstore/ArchSetup.cmake  | 3 ++-
+ 2 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/cmake/scripts/common/CompilerSettings.cmake b/cmake/scripts/common/CompilerSettings.cmake
+index 48cc69bd65d6..136ebd2b29be 100644
+--- a/cmake/scripts/common/CompilerSettings.cmake
++++ b/cmake/scripts/common/CompilerSettings.cmake
+@@ -1,6 +1,7 @@
+ # Languages and global compiler settings
+-set(CMAKE_CXX_STANDARD 11)
++if(NOT DEFINED CMAKE_CXX_STANDARD OR CMAKE_CXX_STANDARD LESS 11)
++  set(CMAKE_CXX_STANDARD 11)
++endif()
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+ set(CMAKE_CXX_EXTENSIONS OFF)
+ set(CMAKE_ASM_FLAGS "${CMAKE_C_FLAGS} -x assembler-with-cpp")
+-
+diff --git a/cmake/scripts/windowsstore/ArchSetup.cmake b/cmake/scripts/windowsstore/ArchSetup.cmake
+index 2e6d7cba7760..4f5fdda2937f 100644
+--- a/cmake/scripts/windowsstore/ArchSetup.cmake
++++ b/cmake/scripts/windowsstore/ArchSetup.cmake
+@@ -79,7 +79,8 @@ set(SYSTEM_DEFINES -DWIN32_LEAN_AND_MEAN -DNOMINMAX -DHAS_DX -D__STDC_CONSTANT_M
+ list(APPEND SYSTEM_DEFINES -DHAS_WIN10_NETWORK)
+ 
+ # The /MP option enables /FS by default.
+-set(CMAKE_CXX_FLAGS "/MP ${CMAKE_CXX_FLAGS} /EHsc /await /std:c++latest")
++set(CMAKE_CXX_FLAGS "/MP ${CMAKE_CXX_FLAGS} /EHsc /await")
++set(CMAKE_CXX_STANDARD 17)
+ # Google Test needs to use shared version of runtime libraries
+ set(gtest_force_shared_crt ON CACHE STRING "" FORCE)
+ 

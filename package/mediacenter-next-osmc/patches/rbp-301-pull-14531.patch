@@ -1,0 +1,36 @@
+From 75ea62bbaecdc2f3028a1862ee7dac5ff68ea6f9 Mon Sep 17 00:00:00 2001
+From: ronie <ronie@users.noreply.github.com>
+Date: Sat, 6 Oct 2018 22:57:16 +0200
+Subject: [PATCH] fix: SetSortMethod would fail on certain SortMethods
+
+---
+ xbmc/view/GUIViewState.cpp      | 2 +-
+ xbmc/view/ViewStateSettings.cpp | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/view/GUIViewState.cpp b/xbmc/view/GUIViewState.cpp
+index 68ad8dc0a513..e254b3240cf1 100644
+--- a/xbmc/view/GUIViewState.cpp
++++ b/xbmc/view/GUIViewState.cpp
+@@ -313,7 +313,7 @@ void CGUIViewState::AddSortMethod(SortDescription sortDescription, int buttonLab
+ void CGUIViewState::SetCurrentSortMethod(int method)
+ {
+   SortBy sortBy = (SortBy)method;
+-  if (sortBy < SortByNone || sortBy > SortByRandom)
++  if (sortBy < SortByNone || sortBy > SortByLastUsed)
+     return; // invalid
+ 
+   SetSortMethod(sortBy);
+diff --git a/xbmc/view/ViewStateSettings.cpp b/xbmc/view/ViewStateSettings.cpp
+index 60124266f3cd..955cc0ca1ecd 100644
+--- a/xbmc/view/ViewStateSettings.cpp
++++ b/xbmc/view/ViewStateSettings.cpp
+@@ -96,7 +96,7 @@ bool CViewStateSettings::Load(const TiXmlNode *settings)
+     else
+     {
+       int sortMethod;
+-      if (XMLUtils::GetInt(pViewState, XML_SORTMETHOD, sortMethod, SortByNone, SortByRandom))
++      if (XMLUtils::GetInt(pViewState, XML_SORTMETHOD, sortMethod, SortByNone, SortByLastUsed))
+         viewState->second->m_sortDescription.sortBy = (SortBy)sortMethod;
+       if (XMLUtils::GetInt(pViewState, XML_SORTATTRIBUTES, sortMethod, SortAttributeNone, SortAttributeIgnoreFolders))
+         viewState->second->m_sortDescription.sortAttributes = (SortAttribute)sortMethod;

@@ -1,0 +1,59 @@
+From fb8318e87396c5ad5360d46e21bacf954410f6d5 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Sun, 28 Apr 2019 22:47:12 +0200
+Subject: [PATCH] [cmake][addons] add THIRD_PARTY_PATH definition
+
+Used for addons where need special folders to store there content (if
+not set the addon define it byself).
+e.g. Google Chromium addon where his git bring:
+"unable to create file" ... "Filename too long"
+see also WARNING by Windows on: https://bitbucket.org/chromiumembedded/cef/wiki/MasterBuildQuickStart
+---
+ cmake/addons/CMakeLists.txt              | 11 +++++++++++
+ cmake/scripts/common/HandleDepends.cmake | 11 +++++++++++
+ 2 files changed, 22 insertions(+)
+
+diff --git a/cmake/addons/CMakeLists.txt b/cmake/addons/CMakeLists.txt
+index 8f0420f9450c..a2a962f87919 100644
+--- a/cmake/addons/CMakeLists.txt
++++ b/cmake/addons/CMakeLists.txt
+@@ -123,6 +123,17 @@ if(CMAKE_TOOLCHAIN_FILE)
+   message(STATUS ${BUILD_ARGS})
+ endif()
+ 
++# used for addons where need special folders to store there content (if
++# not set the addon define it byself).
++# e.g. Google Chromium addon where his git bring:
++# - "unable to create file" ... "Filename too long"
++# see also WARNING by Windows on: https://bitbucket.org/chromiumembedded/cef/wiki/MasterBuildQuickStart
++if(THIRD_PARTY_PATH)
++  message(STATUS "Third party lib path specified")
++  message(STATUS ${THIRD_PARTY_PATH})
++  list(APPEND BUILD_ARGS -DTHIRD_PARTY_PATH=${THIRD_PARTY_PATH})
++endif()
++
+ if(NOT ADDONS_TO_BUILD)
+   set(ADDONS_TO_BUILD "all")
+ else()
+diff --git a/cmake/scripts/common/HandleDepends.cmake b/cmake/scripts/common/HandleDepends.cmake
+index 40e382b94c22..f4fe6e2fe86c 100644
+--- a/cmake/scripts/common/HandleDepends.cmake
++++ b/cmake/scripts/common/HandleDepends.cmake
+@@ -88,6 +88,17 @@ function(add_addon_depends addon searchpath)
+           message(${BUILD_ARGS})
+         endif()
+ 
++        # used for addons where need special folders to store there content (if
++        # not set the addon define it byself).
++        # e.g. Google Chromium addon where his git bring:
++        # - "unable to create file" ... "Filename too long"
++        # see also WARNING by Windows on: https://bitbucket.org/chromiumembedded/cef/wiki/MasterBuildQuickStart
++        if(THIRD_PARTY_PATH)
++          message(STATUS "Third party lib path specified")
++          message(STATUS ${THIRD_PARTY_PATH})
++          list(APPEND BUILD_ARGS -DTHIRD_PARTY_PATH=${THIRD_PARTY_PATH})
++        endif()
++
+         set(PATCH_COMMAND)
+ 
+         # if there's a CMakeLists.txt use it to prepare the build

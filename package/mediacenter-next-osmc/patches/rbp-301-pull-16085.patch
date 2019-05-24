@@ -1,0 +1,166 @@
+From 217214efcd503d05789a517cd723453e34b37035 Mon Sep 17 00:00:00 2001
+From: David Bridson <david@bridson.co.uk>
+Date: Mon, 6 May 2019 14:15:36 +0100
+Subject: [PATCH] Simplify boolean expressions
+
+---
+ xbmc/Application.cpp                            |  7 ++-----
+ xbmc/CueDocument.cpp                            |  5 +----
+ xbmc/LangInfo.cpp                               | 10 ++--------
+ xbmc/PasswordManager.cpp                        |  7 ++-----
+ xbmc/PlayListPlayer.cpp                         |  2 +-
+ xbmc/TextureCacheJob.cpp                        |  5 +----
+ xbmc/games/controllers/types/ControllerGrid.cpp |  2 +-
+ xbmc/pictures/ExifParse.cpp                     |  4 ++--
+ 8 files changed, 12 insertions(+), 30 deletions(-)
+
+diff --git a/xbmc/Application.cpp b/xbmc/Application.cpp
+index c0ae967e7eb3..df97720249ee 100644
+--- a/xbmc/Application.cpp
++++ b/xbmc/Application.cpp
+@@ -1135,10 +1135,7 @@ bool CApplication::OnSettingsSaving() const
+   // don't save settings when we're busy stopping the application
+   // a lot of screens try to save settings on deinit and deinit is
+   // called for every screen when the application is stopping
+-  if (m_bStop)
+-    return false;
+-
+-  return true;
++  return !m_bStop;
+ }
+ 
+ void CApplication::ReloadSkin(bool confirm/*=false*/)
+@@ -4216,7 +4213,7 @@ void CApplication::Restart(bool bSamePosition)
+     return ;
+ 
+   // do we want to return to the current position in the file
+-  if (false == bSamePosition)
++  if (!bSamePosition)
+   {
+     // no, then just reopen the file and start at the beginning
+     PlayFile(*m_itemCurrentFile, "", true);
+diff --git a/xbmc/CueDocument.cpp b/xbmc/CueDocument.cpp
+index f2112de72b2c..485020ef4a44 100644
+--- a/xbmc/CueDocument.cpp
++++ b/xbmc/CueDocument.cpp
+@@ -137,10 +137,7 @@ class BufferReader
+     }
+ 
+     StringUtils::Trim(line);
+-    if (!line.empty())
+-      return true;
+-    
+-    return false;
++    return !line.empty();
+   }
+   bool ready() const override
+   {
+diff --git a/xbmc/LangInfo.cpp b/xbmc/LangInfo.cpp
+index 5e816c49a7cf..4e5cf8859766 100644
+--- a/xbmc/LangInfo.cpp
++++ b/xbmc/LangInfo.cpp
+@@ -1051,19 +1051,13 @@ std::set<std::string> CLangInfo::GetSortTokens() const
+ bool CLangInfo::DetermineUse24HourClockFromTimeFormat(const std::string& timeFormat)
+ {
+   // if the time format contains a "h" it's 12-hour and otherwise 24-hour clock format
+-  if (timeFormat.find("h") != std::string::npos)
+-    return false;
+-
+-  return true;
++  return timeFormat.find("h") == std::string::npos;
+ }
+ 
+ bool CLangInfo::DetermineUseMeridiemFromTimeFormat(const std::string& timeFormat)
+ {
+   // if the time format contains "xx" it's using meridiem
+-  if (timeFormat.find("xx") != std::string::npos)
+-    return true;
+-
+-  return false;
++  return timeFormat.find("xx") != std::string::npos;
+ }
+ 
+ std::string CLangInfo::PrepareTimeFormat(const std::string& timeFormat, bool use24HourClock)
+diff --git a/xbmc/PasswordManager.cpp b/xbmc/PasswordManager.cpp
+index f67ba59bff11..73fe842a8ad7 100644
+--- a/xbmc/PasswordManager.cpp
++++ b/xbmc/PasswordManager.cpp
+@@ -115,12 +115,9 @@ void CPasswordManager::SaveAuthenticatedURL(const CURL &url, bool saveToProfile)
+ 
+ bool CPasswordManager::IsURLSupported(const CURL &url)
+ {
+-  if ( url.IsProtocol("smb")
++  return url.IsProtocol("smb")
+     || url.IsProtocol("nfs")
+-    || url.IsProtocol("sftp"))
+-    return true;
+-
+-  return false;
++    || url.IsProtocol("sftp");
+ }
+ 
+ void CPasswordManager::Clear()
+diff --git a/xbmc/PlayListPlayer.cpp b/xbmc/PlayListPlayer.cpp
+index abb080c3a56c..1c16c1f6348f 100644
+--- a/xbmc/PlayListPlayer.cpp
++++ b/xbmc/PlayListPlayer.cpp
+@@ -306,7 +306,7 @@ bool CPlayListPlayer::Play(int iSong, std::string player, bool bAutoPlay /* = fa
+ 
+   unsigned int playAttempt = XbmcThreads::SystemClockMillis();
+   bool ret = g_application.PlayFile(*item, player, bAutoPlay);
+-  if (ret == false)
++  if (!ret)
+   {
+     CLog::Log(LOGERROR,"Playlist Player: skipping unplayable item: %i, path [%s]", m_iCurrentSong, CURL::GetRedacted(item->GetPath()).c_str());
+     playlist.SetUnPlayable(m_iCurrentSong);
+diff --git a/xbmc/TextureCacheJob.cpp b/xbmc/TextureCacheJob.cpp
+index 1910bc4c6799..c0085b348ea7 100644
+--- a/xbmc/TextureCacheJob.cpp
++++ b/xbmc/TextureCacheJob.cpp
+@@ -222,10 +222,7 @@ CBaseTexture *CTextureCacheJob::LoadImage(const std::string &image, unsigned int
+ bool CTextureCacheJob::UpdateableURL(const std::string &url) const
+ {
+   // we don't constantly check online images
+-  if (StringUtils::StartsWith(url, "http://") ||
+-      StringUtils::StartsWith(url, "https://"))
+-    return false;
+-  return true;
++  return !(StringUtils::StartsWith(url, "http://") || StringUtils::StartsWith(url, "https://"));
+ }
+ 
+ std::string CTextureCacheJob::GetImageHash(const std::string &url)
+diff --git a/xbmc/games/controllers/types/ControllerGrid.cpp b/xbmc/games/controllers/types/ControllerGrid.cpp
+index adf07290bbd5..550bfddb7454 100644
+--- a/xbmc/games/controllers/types/ControllerGrid.cpp
++++ b/xbmc/games/controllers/types/ControllerGrid.cpp
+@@ -101,7 +101,7 @@ unsigned int CControllerGrid::AddPorts(const ControllerPortVec &ports, Controlle
+         // Add controller
+         height = std::max(height, AddController(port, static_cast<unsigned int>(column.vertices.size()), column.vertices, grid));
+ 
+-        if (bFirstPlayer == true)
++        if (bFirstPlayer)
+         {
+           bFirstPlayer = false;
+ 
+diff --git a/xbmc/pictures/ExifParse.cpp b/xbmc/pictures/ExifParse.cpp
+index 5e55bb9b2a25..5894cbb0adbc 100644
+--- a/xbmc/pictures/ExifParse.cpp
++++ b/xbmc/pictures/ExifParse.cpp
+@@ -448,7 +448,7 @@ void CExifParse::ProcessDir(const unsigned char* const DirStart,
+       case TAG_DATETIME_DIGITIZED:
+       case TAG_DATETIME:
+       {
+-        if (m_DateFound == false)
++        if (!m_DateFound)
+         {
+           // If we don't already have a DATETIME_ORIGINAL, use whatever
+           // time fields we may have.
+@@ -794,7 +794,7 @@ bool CExifParse::Process (const unsigned char* const ExifSection, const unsigned
+   // First directory starts 16 bytes in.  All offset are relative to 8 bytes in.
+   ProcessDir(ExifSection+8+FirstOffset, ExifSection+8, length-8, 0);
+ 
+-  m_ExifInfo->ThumbnailAtEnd = m_ExifInfo->ThumbnailOffset >= m_LargestExifOffset ? true : false;
++  m_ExifInfo->ThumbnailAtEnd = m_ExifInfo->ThumbnailOffset >= m_LargestExifOffset;
+ 
+   // Compute the CCD width, in millimeters.
+   if (m_FocalPlaneXRes != 0)

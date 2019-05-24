@@ -1,0 +1,412 @@
+From d9b6d20f7c21be810ba16919e18e6b25cec23b76 Mon Sep 17 00:00:00 2001
+From: enen92 <92enen@gmail.com>
+Date: Sun, 12 May 2019 15:01:16 +0100
+Subject: [PATCH] [cleanup] Remove strings.xml support
+
+---
+ xbmc/addons/LanguageResource.cpp         |  3 +-
+ xbmc/guilib/GUIButtonControl.dox         |  2 +-
+ xbmc/guilib/GUIControlFactory.h          |  2 +-
+ xbmc/guilib/GUIEditControl.dox           |  2 +-
+ xbmc/guilib/GUIFadeLabelControl.dox      |  2 +-
+ xbmc/guilib/GUIFixedListContainer.dox    |  2 +-
+ xbmc/guilib/GUILabelControl.dox          |  4 +-
+ xbmc/guilib/GUIListContainer.dox         |  2 +-
+ xbmc/guilib/GUIMessage.h                 |  2 +-
+ xbmc/guilib/GUIPanelContainer.dox        |  2 +-
+ xbmc/guilib/GUIRadioButtonControl.dox    |  2 +-
+ xbmc/guilib/GUISettingsSliderControl.dox |  2 +-
+ xbmc/guilib/GUISpinControlEx.dox         |  2 +-
+ xbmc/guilib/GUIToggleButtonControl.dox   |  4 +-
+ xbmc/guilib/GUIWrappingListContainer.dox |  2 +-
+ xbmc/guilib/LocalizeStrings.cpp          | 51 +-----------------------
+ xbmc/interfaces/legacy/ModuleXbmc.h      |  2 +-
+ xbmc/music/MusicDatabase.h               |  2 +-
+ xbmc/pictures/ExifParse.cpp              |  2 +-
+ xbmc/weather/WeatherJob.cpp              | 44 +-------------------
+ 20 files changed, 23 insertions(+), 113 deletions(-)
+
+diff --git a/xbmc/addons/LanguageResource.cpp b/xbmc/addons/LanguageResource.cpp
+index 453cdf6b21d2..ac88ce49f9e1 100644
+--- a/xbmc/addons/LanguageResource.cpp
++++ b/xbmc/addons/LanguageResource.cpp
+@@ -141,8 +141,7 @@ bool CLanguageResource::IsAllowed(const std::string &file) const
+ {
+   return file.empty() ||
+          StringUtils::EqualsNoCase(file.c_str(), "langinfo.xml") ||
+-         StringUtils::EqualsNoCase(file.c_str(), "strings.po") ||
+-         StringUtils::EqualsNoCase(file.c_str(), "strings.xml");
++         StringUtils::EqualsNoCase(file.c_str(), "strings.po");
+ }
+ 
+ std::string CLanguageResource::GetAddonId(const std::string& locale)
+diff --git a/xbmc/guilib/GUIButtonControl.dox b/xbmc/guilib/GUIButtonControl.dox
+index 985e813e0682..f5611c1dec9f 100644
+--- a/xbmc/guilib/GUIButtonControl.dox
++++ b/xbmc/guilib/GUIButtonControl.dox
+@@ -56,7 +56,7 @@ important, as xml tags are case-sensitive.
+ |--------------:|:--------------------------------------------------------------|
+ | texturefocus  | Specifies the image file which should be displayed when the button has focus. [See here for additional information about textures](http://kodi.wiki/view/Texture_Attributes).
+ | texturenofocus| Specifies the image file which should be displayed when the button does not have focus.
+-| label         | The label used on the button. It can be a link into <b>`strings.xml`</b>, or an actual text label.
++| label         | The label used on the button. It can be a link into <b>`strings.po`</b>, or an actual text label.
+ | font          | Font used for the button label. From fonts.xml.
+ | textcolor     | Color used for displaying the button label. In **AARRGGBB** hex format, or a name from the [colour theme](http://kodi.wiki/view/Colour_Themes).
+ | focusedcolor  | Color used for the button label when the button has in focus. In **AARRGGBB** hex format or a name from the [colour theme](http://kodi.wiki/view/Colour_Themes).
+diff --git a/xbmc/guilib/GUIControlFactory.h b/xbmc/guilib/GUIControlFactory.h
+index 17b119dc2e8b..e4d23910e9a4 100644
+--- a/xbmc/guilib/GUIControlFactory.h
++++ b/xbmc/guilib/GUIControlFactory.h
+@@ -70,7 +70,7 @@ class CGUIControlFactory
+     <xmltag fallback="fallback_value">info_value</xmltag>
+    where info_value may use $INFO[], $LOCALIZE[], $NUMBER[] etc.
+    If either the fallback_value or info_value are natural numbers they are interpreted
+-   as ids for lookup in strings.xml. The fallback attribute is optional.
++   as ids for lookup in strings.po. The fallback attribute is optional.
+    \param element XML element to process
+    \param infoLabel Returned infoLabel
+    \param parentID The parent id
+diff --git a/xbmc/guilib/GUIEditControl.dox b/xbmc/guilib/GUIEditControl.dox
+index 61c678b9242d..9cad4d015fc7 100644
+--- a/xbmc/guilib/GUIEditControl.dox
++++ b/xbmc/guilib/GUIEditControl.dox
+@@ -42,7 +42,7 @@ important, as `xml` tags are case-sensitive.
+ | Tag           | Description                                                   |
+ |--------------:|:--------------------------------------------------------------|
+ | aligny        | Can be top or center. Aligns the text within its given control <b>`<height>`</b>. Defaults to top
+-| label         | Specifies the header text which should be shown. You should specify an entry from the **strings.xml** here (either the Kodi strings.xml or your skin's strings.xml file), however you may also hardcode a piece of text also if you wish, though of course it will not be localized. You can use the full [label formatting syntax](http://kodi.wiki/view/Label_Formatting) and [you may also specify more than one piece of information here by using the $INFO and $LOCALIZE formats.strings.xml](http://kodi.wiki/view/Label_Parsing))
++| label         | Specifies the header text which should be shown. You should specify an entry from the **strings.po** here (either the Kodi strings.po or your skin's strings.po file), however you may also hardcode a piece of text also if you wish, though of course it will not be localized. You can use the full [label formatting syntax](http://kodi.wiki/view/Label_Formatting) and [you may also specify more than one piece of information here by using the $INFO and $LOCALIZE formats.strings.po](http://kodi.wiki/view/Label_Parsing))
+ | hinttext      | Specifies the text which should be displayed in the edit label control, until the user enters some text. It can be used to provide a clue as to what a user should enter in this control.
+ | font          | Specifies the font to use from the **font.xml** file.
+ | textcolor     | Specifies the color the text should be, in hex **AARRGGBB** format, or a name from the [colour theme](http://kodi.wiki/view/Colour_Themes).
+diff --git a/xbmc/guilib/GUIFadeLabelControl.dox b/xbmc/guilib/GUIFadeLabelControl.dox
+index 228584ae713c..a64ab3069923 100644
+--- a/xbmc/guilib/GUIFadeLabelControl.dox
++++ b/xbmc/guilib/GUIFadeLabelControl.dox
+@@ -46,7 +46,7 @@ important, as `xml` tags are case-sensitive.
+ 
+ | Tag                 | Description                                                   |
+ |--------------------:|:--------------------------------------------------------------|
+-| label               | Specifies the text which should be drawn. You should specify an entry from the strings.xml here, however you may also specify a piece of text yourself if you wish, though of course it will not be localisable. [You may also specify more than one piece of information here by using the $INFO and $LOCALIZE formats](http://kodi.wiki/view/Label_Parsing).
++| label               | Specifies the text which should be drawn. You should specify an entry from the strings.po here, however you may also specify a piece of text yourself if you wish, though of course it will not be localisable. [You may also specify more than one piece of information here by using the $INFO and $LOCALIZE formats](http://kodi.wiki/view/Label_Parsing).
+ | info                | Specifies the information that should be presented. Kodi will auto-fill in this info in place of the <b>`<label>`</b>. [See here for more information](http://kodi.wiki/view/InfoLabels).
+ | font                | Specifies the font to use from the font.xml file.
+ | textcolor           | Specified the color the text should be, in hex **AARRGGBB** format, or a name from the [colour theme](http://kodi.wiki/view/Colour_Themes).
+diff --git a/xbmc/guilib/GUIFixedListContainer.dox b/xbmc/guilib/GUIFixedListContainer.dox
+index cd021c8c2c84..b9e7726f12b8 100644
+--- a/xbmc/guilib/GUIFixedListContainer.dox
++++ b/xbmc/guilib/GUIFixedListContainer.dox
+@@ -117,7 +117,7 @@ important, as xml tags are case-sensitive.
+ 
+ | Tag           | Description                                                   |
+ |--------------:|:--------------------------------------------------------------|
+-| viewtype      | The type of view. Choices are list, icon, wide, wrap, biglist, bigicon, bigwide, bigwrap, info and biginfo. The label attribute indicates the label that will be used in the "View As" control within the GUI. It is localizable via **strings.xml**. *viewtype* has no effect on the view itself. It is used by kodi when switching skin to automatically select a view with a similar layout. Skinners should try to set viewtype to describe the layout as best as possible.
++| viewtype      | The type of view. Choices are list, icon, wide, wrap, biglist, bigicon, bigwide, bigwrap, info and biginfo. The label attribute indicates the label that will be used in the "View As" control within the GUI. It is localizable via **strings.po**. *viewtype* has no effect on the view itself. It is used by kodi when switching skin to automatically select a view with a similar layout. Skinners should try to set viewtype to describe the layout as best as possible.
+ | orientation   | The orientation of the list. Defaults to vertical.
+ | pagecontrol   | Used to set the <b>`<id>`</b> of the page control used to control this list.
+ | scrolltime    | The time (in ms) to scroll from one item to another. By default, this is 200ms. The list will scroll smoothly from one item to another as needed. Set it to zero to disable the smooth scrolling. The scroll movement can be further adjusted by selecting one of the available [tween](http://kodi.wiki/view/Tweeners) methods.
+diff --git a/xbmc/guilib/GUILabelControl.dox b/xbmc/guilib/GUILabelControl.dox
+index b728eb94e0d2..c66ae0029adb 100644
+--- a/xbmc/guilib/GUILabelControl.dox
++++ b/xbmc/guilib/GUILabelControl.dox
+@@ -85,9 +85,9 @@ important, as `xml` tags are case-sensitive.
+ | align         | Can be left, right, or center. Aligns the text within the given label <b>`<width>`</b>. Defaults to left
+ | aligny        | Can be top or center. Aligns the text within its given label <b>`<height>`</b>. Defaults to top
+ | scroll        | When true, the text will scroll if longer than the label's <b>`<width>`</b>. If false, the text will be truncated. Defaults to false.
+-| label         | Specifies the text which should be drawn. You should specify an entry from the strings.xml here (either the Kodi strings.xml or your skin's strings.xml file), however you may also hardcode a piece of text also if you wish, though of course it will not be localisable. You can use the full [label formatting syntax](http://kodi.wiki/view/Label_Formatting) and [you may also specify more than one piece of information here by using the $INFO and $LOCALIZE formats](http://kodi.wiki/view/Label_Parsing).
++| label         | Specifies the text which should be drawn. You should specify an entry from the strings.po here (either the Kodi strings.po or your skin's strings.po file), however you may also hardcode a piece of text also if you wish, though of course it will not be localisable. You can use the full [label formatting syntax](http://kodi.wiki/view/Label_Formatting) and [you may also specify more than one piece of information here by using the $INFO and $LOCALIZE formats](http://kodi.wiki/view/Label_Parsing).
+ | info          | Specifies the information that should be presented. Kodi will auto-fill in this info in place of the <b>`<label>`</b>. [See here for more information](http://kodi.wiki/view/InfoLabels).
+-| number        | Specifies a number that should be presented. This is just here to allow a skinner to use a number rather than a text label (as any number given to <b>`<label>`</b> will be used to lookup in strings.xml)
++| number        | Specifies a number that should be presented. This is just here to allow a skinner to use a number rather than a text label (as any number given to <b>`<label>`</b> will be used to lookup in strings.po)
+ | angle         | The angle the text should be rendered at, in degrees. A value of 0 is horizontal.
+ | haspath       | Specifies whether or not this label is filled with a path. Long paths are shortened by compressing the file path while keeping the actual filename full length.
+ | font          | Specifies the font to use from the font.xml file.
+diff --git a/xbmc/guilib/GUIListContainer.dox b/xbmc/guilib/GUIListContainer.dox
+index 6d8049e1562b..5e01df46dcfb 100644
+--- a/xbmc/guilib/GUIListContainer.dox
++++ b/xbmc/guilib/GUIListContainer.dox
+@@ -115,7 +115,7 @@ important, as `xml` tags are case-sensitive.
+ 
+ | Tag           | Description                                                   |
+ |--------------:|:--------------------------------------------------------------|
+-| viewtype      | The type of view. Choices are list, icon, wide, wrap, biglist, bigicon, bigwide, bigwrap, info and biginfo. The label attribute indicates the label that will be used in the "View As" control within the GUI. It is localizable via strings.xml. viewtype has no effect on the view itself. It is used by kodi when switching skin to automatically select a view with a similar layout. Skinners should try to set viewtype to describe the layout as best as possible.
++| viewtype      | The type of view. Choices are list, icon, wide, wrap, biglist, bigicon, bigwide, bigwrap, info and biginfo. The label attribute indicates the label that will be used in the "View As" control within the GUI. It is localizable via strings.po. viewtype has no effect on the view itself. It is used by kodi when switching skin to automatically select a view with a similar layout. Skinners should try to set viewtype to describe the layout as best as possible.
+ | orientation   | The orientation of the list. Defaults to vertical.
+ | pagecontrol   | Used to set the <b>`<id>`</b> of the page control used to control this list.
+ | scrolltime    | The time (in ms) to scroll from one item to another. By default, this is 200ms. The list will scroll smoothly from one item to another as needed. Set it to zero to disable the smooth scrolling. The scroll movement can be further adjusted by selecting one of the available [tween](http://kodi.wiki/view/Tweeners) methods.
+diff --git a/xbmc/guilib/GUIMessage.h b/xbmc/guilib/GUIMessage.h
+index 730c7ff749ba..b4ccac01fa90 100644
+--- a/xbmc/guilib/GUIMessage.h
++++ b/xbmc/guilib/GUIMessage.h
+@@ -367,7 +367,7 @@ class CGUIMessage final
+   void SetParam2(int param2);
+   void SetPointer(void* pointer);
+   void SetLabel(const std::string& strLabel);
+-  void SetLabel(int iString);               // for convenience - looks up in strings.xml
++  void SetLabel(int iString);               // for convenience - looks up in strings.po
+   const std::string& GetLabel() const;
+   void SetStringParam(const std::string &strParam);
+   void SetStringParams(const std::vector<std::string> &params);
+diff --git a/xbmc/guilib/GUIPanelContainer.dox b/xbmc/guilib/GUIPanelContainer.dox
+index 4ff05a0db0f2..1b36fd58ac84 100644
+--- a/xbmc/guilib/GUIPanelContainer.dox
++++ b/xbmc/guilib/GUIPanelContainer.dox
+@@ -104,7 +104,7 @@ important, as `xml` tags are case-sensitive.
+ 
+ | Tag           | Description                                                   |
+ |--------------:|:--------------------------------------------------------------|
+-| viewtype      | The type of view. Choices are list, icon, wide, wrap, biglist, bigicon, bigwide, bigwrap, info and biginfo. The label attribute indicates the label that will be used in the "View As" control within the GUI. It is localizable via strings.xml. viewtype has no effect on the view itself. It is used by kodi when switching skin to automatically select a view with a similar layout. Skinners should try to set viewtype to describe the layout as best as possible.
++| viewtype      | The type of view. Choices are list, icon, wide, wrap, biglist, bigicon, bigwide, bigwrap, info and biginfo. The label attribute indicates the label that will be used in the "View As" control within the GUI. It is localizable via strings.po. viewtype has no effect on the view itself. It is used by kodi when switching skin to automatically select a view with a similar layout. Skinners should try to set viewtype to describe the layout as best as possible.
+ | orientation   | The orientation of the panel. Defaults to vertical.
+ | pagecontrol   | Used to set the <b>`<id>`</b> of the page control used to control this panel.
+ | scrolltime    | The time (in ms) to scroll from one item to another. By default, this is 200ms. The panel will scroll smoothly from one item to another as needed. Set it to zero to disable the smooth scrolling. The scroll movement can be further adjusted by selecting one of the available [tween](http://kodi.wiki/view/Tweeners) methods.
+diff --git a/xbmc/guilib/GUIRadioButtonControl.dox b/xbmc/guilib/GUIRadioButtonControl.dox
+index 36388dd7ef92..d69eed27ae49 100644
+--- a/xbmc/guilib/GUIRadioButtonControl.dox
++++ b/xbmc/guilib/GUIRadioButtonControl.dox
+@@ -70,7 +70,7 @@ important, as `xml` tags are case-sensitive.
+ | textureradiooffnofocus  | Specifies the image file which should be displayed for the radio button portion when the button is off and unfocused.
+ | textureradiooff         | A shortcut to set both of the above textures to the same image file.
+ | textureradioondisabled  | Specifies the image file which should be displayed for the radio button portion when the button is off and disabled.
+-| label                   | The label used on the button. It can be a link into strings.xml, or an actual text label.
++| label                   | The label used on the button. It can be a link into strings.po, or an actual text label.
+ | label2                  | Optional. Will display an 'on' or 'off' label. Only available if you specify an empty radiowidth and radioheight.
+ | font                    | Font used for the button label. From fonts.xml.
+ | textcolor               | Color used for displaying the button label. In **AARRGGBB** hex format, or a name from the [colour theme](http://kodi.wiki/view/Colour_Themes).
+diff --git a/xbmc/guilib/GUISettingsSliderControl.dox b/xbmc/guilib/GUISettingsSliderControl.dox
+index 034a4276deb6..ea85da8a2ec3 100644
+--- a/xbmc/guilib/GUISettingsSliderControl.dox
++++ b/xbmc/guilib/GUISettingsSliderControl.dox
+@@ -60,7 +60,7 @@ important, as xml tags are case-sensitive.
+ | texturebg             | Specifies the image file which should be displayed in the background of the slider portion of the control. Will be positioned so that the right edge is <b>`<textoffsetx>`</b> away from the right edge of the <b>`<texturefocus>`</b> image, and centered vertically.
+ | textureslidernib      | Specifies the image file which should be displayed for the slider nib.
+ | textureslidernibfocus | Specifies the image file which should be displayed for the slider nib when it has focus.
+-| label                 | Either a numeric reference into strings.xml (for localization), or a string that will be shown on the left of the control.
++| label                 | Either a numeric reference into strings.po (for localization), or a string that will be shown on the left of the control.
+ | font                  | Font used for the controls label. From fonts.xml.
+ | textcolor             | Color used for displaying the label. In **AARRGGBB** hex format, or a name from the [colour theme](http://kodi.wiki/view/Colour_Themes).
+ | disabledcolor         | Color used for the label if the control is disabled. In **AARRGGBB** hex format, or a name from the [colour theme](http://kodi.wiki/view/Colour_Themes).
+diff --git a/xbmc/guilib/GUISpinControlEx.dox b/xbmc/guilib/GUISpinControlEx.dox
+index 4726db2ba7b9..a1ba4a02d653 100644
+--- a/xbmc/guilib/GUISpinControlEx.dox
++++ b/xbmc/guilib/GUISpinControlEx.dox
+@@ -73,7 +73,7 @@ important, as `xml` tags are case-sensitive.
+ | texturedown         | Specifies the image file which should be displayed for the down arrow when it is not focused. It is displayed to the right of the up arrow so that it's right edge is <b>`<textoffsetx>`</b> pixels away from the right edge of the control.
+ | texturedownfocus    | Specifies the image file which should be displayed for the down arrow when it has focus.
+ | texturedowndisabled | Specifies the image file which should be displayed for the up arrow when the button is disabled.
+-| label               | Either a numeric reference into strings.xml (for localization), or a string that will be shown on the left of the control.
++| label               | Either a numeric reference into strings.po (for localization), or a string that will be shown on the left of the control.
+ | font                | Font used for the controls label. From fonts.xml.
+ | textcolor           | Color used for displaying the label. In **AARRGGBB** hex format, or a name from the [colour theme](http://kodi.wiki/view/Colour_Themes).
+ | disabledcolor       | Color used for the label if the control is disabled. In **AARRGGBB** hex format, or a name from the [colour theme](http://kodi.wiki/view/Colour_Themes).
+diff --git a/xbmc/guilib/GUIToggleButtonControl.dox b/xbmc/guilib/GUIToggleButtonControl.dox
+index 69cf0f8e766c..0605d209f428 100644
+--- a/xbmc/guilib/GUIToggleButtonControl.dox
++++ b/xbmc/guilib/GUIToggleButtonControl.dox
+@@ -63,8 +63,8 @@ that each tag is lower case only. This is important, as xml tags are case-sensit
+ | alttexturefocus   | Specifies the image file which should be displayed when the toggle button is in it's selected state. This texture replaces the <b>`<texturefocus>`</b> texture when the toggle button is selected.
+ | alttexturenofocus | Specifies the image file which should be displayed when the button is in it's selected state but unfocused.
+ | usealttexture     | Specifies the conditions under which the Alternative Textures should be shown. Some toggle button controls are handled by Kodi internally, but any extra ones that the skinner has can be controlled using this tag. See here for more information.
+-| label             | The label used on the button. It can be a link into strings.xml, or an actual text label.
+-| altlabel          | The alternate label used on the button. It can be a link into strings.xml, or an actual text label.
++| label             | The label used on the button. It can be a link into strings.po, or an actual text label.
++| altlabel          | The alternate label used on the button. It can be a link into strings.po, or an actual text label.
+ | altclick          | The alternate action to perform when the button is pressed. Should be a built in function. See here for more information. You may have more than one <b>`<altclick>`</b> tag, and they'll be executed in sequence.
+ | font              | Font used for the button label. From fonts.xml.
+ | textcolor         | Color used for displaying the button label. In AARRGGBB hex format, or a name from the colour theme.
+diff --git a/xbmc/guilib/GUIWrappingListContainer.dox b/xbmc/guilib/GUIWrappingListContainer.dox
+index ed12e6839672..bcf877102537 100644
+--- a/xbmc/guilib/GUIWrappingListContainer.dox
++++ b/xbmc/guilib/GUIWrappingListContainer.dox
+@@ -119,7 +119,7 @@ important, as `xml` tags are case-sensitive.
+ 
+ | Tag           | Description                                                   |
+ |--------------:|:--------------------------------------------------------------|
+-| viewtype      | The type of view. Choices are list, icon, wide, wrap, biglist, bigicon, bigwide, bigwrap, info and biginfo. The label attribute indicates the label that will be used in the <i>"View As"</i> control within the GUI. It is localizable via strings.xml. viewtype has no effect on the view itself. It is used by kodi when switching skin to automatically select a view with a similar layout. Skinners should try to set _viewtype_ to describe the layout as best as possible.
++| viewtype      | The type of view. Choices are list, icon, wide, wrap, biglist, bigicon, bigwide, bigwrap, info and biginfo. The label attribute indicates the label that will be used in the <i>"View As"</i> control within the GUI. It is localizable via strings.po. viewtype has no effect on the view itself. It is used by kodi when switching skin to automatically select a view with a similar layout. Skinners should try to set _viewtype_ to describe the layout as best as possible.
+ | orientation   | The orientation of the list. Defaults to vertical.
+ | pagecontrol   | Used to set the <b>`<id>`</b> of the page control used to control this list.
+ | scrolltime    | The time (in ms) to scroll from one item to another. By default, this is 200ms. The list will scroll smoothly from one item to another as needed. Set it to zero to disable the smooth scrolling. The scroll movement can be further adjusted by selecting one of the available [tween](http://kodi.wiki/view/Tweeners) methods.
+diff --git a/xbmc/guilib/LocalizeStrings.cpp b/xbmc/guilib/LocalizeStrings.cpp
+index b0853234060d..63141ef01da2 100644
+--- a/xbmc/guilib/LocalizeStrings.cpp
++++ b/xbmc/guilib/LocalizeStrings.cpp
+@@ -18,50 +18,6 @@
+ #include "utils/StringUtils.h"
+ 
+ 
+-/*! \brief Tries to load ids and strings from a strings.xml file to the `strings` map..
+- * It should only be called from the LoadStr2Mem function to try a PO file first.
+- \param pathname The directory name, where we look for the strings file.
+- \param strings [out] The resulting strings map.
+- \param encoding Encoding of the strings.
+- \param offset An offset value to place strings from the id value.
+- \return false if no strings.xml file was loaded.
+- */
+-static bool LoadXML(const std::string &filename, std::map<uint32_t, LocStr>& strings,
+-    std::string &encoding, uint32_t offset = 0)
+-{
+-  CXBMCTinyXML xmlDoc;
+-  if (!xmlDoc.LoadFile(filename))
+-  {
+-    CLog::Log(LOGDEBUG, "unable to load %s: %s at line %d", filename.c_str(), xmlDoc.ErrorDesc(), xmlDoc.ErrorRow());
+-    return false;
+-  }
+-
+-  TiXmlElement* pRootElement = xmlDoc.RootElement();
+-  if (!pRootElement || pRootElement->NoChildren() ||
+-      pRootElement->ValueStr()!="strings")
+-  {
+-    CLog::Log(LOGERROR, "%s Doesn't contain <strings>", filename.c_str());
+-    return false;
+-  }
+-
+-  const auto originalSize = strings.size();
+-  const TiXmlElement *pChild = pRootElement->FirstChildElement("string");
+-  while (pChild)
+-  {
+-    // Load old style language file with id as attribute
+-    const char* attrId=pChild->Attribute("id");
+-    if (attrId && !pChild->NoChildren())
+-    {
+-      uint32_t id = atoi(attrId) + offset;
+-      if (strings.find(id) == strings.end())
+-        strings[id].strTranslated = pChild->FirstChild()->Value();
+-    }
+-    pChild = pChild->NextSiblingElement("string");
+-  }
+-  CLog::Log(LOGDEBUG, "LocalizeStrings: loaded %lu strings from file %s", strings.size() - originalSize, filename.c_str());
+-  return true;
+-}
+-
+ /*! \brief Tries to load ids and strings from a strings.po file to the `strings` map.
+  * It should only be called from the LoadStr2Mem function to have a fallback.
+  \param pathname The directory name, where we look for the strings file.
+@@ -127,13 +83,12 @@ static bool LoadPO(const std::string &filename, std::map<uint32_t, LocStr>& stri
+ }
+ 
+ /*! \brief Loads language ids and strings to memory map `strings`.
+- * It tries to load a strings.po file first. If doesn't exist, it loads a strings.xml file instead.
+  \param pathname The directory name, where we look for the strings file.
+  \param language We load the strings for this language. Fallback language is always English.
+  \param strings [out] The resulting strings map.
+  \param encoding Encoding of the strings. For PO files we only use utf-8.
+  \param offset An offset value to place strings from the id value.
+- \return false if no strings.po or strings.xml file was loaded.
++ \return false if no strings.po file was loaded.
+  */
+ static bool LoadStr2Mem(const std::string &pathname_in, const std::string &language,
+     std::map<uint32_t, LocStr>& strings,  std::string &encoding, uint32_t offset = 0 )
+@@ -155,10 +110,8 @@ static bool LoadStr2Mem(const std::string &pathname_in, const std::string &langu
+   }
+ 
+   bool useSourceLang = StringUtils::EqualsNoCase(language, LANGUAGE_DEFAULT) || StringUtils::EqualsNoCase(language, LANGUAGE_OLD_DEFAULT);
+-  if (LoadPO(URIUtils::AddFileToFolder(pathname, "strings.po"), strings, encoding, offset, useSourceLang))
+-    return true;
+ 
+-  return LoadXML(URIUtils::AddFileToFolder(pathname, "strings.xml"), strings, encoding, offset);
++  return LoadPO(URIUtils::AddFileToFolder(pathname, "strings.po"), strings, encoding, offset, useSourceLang);
+ }
+ 
+ static bool LoadWithFallback(const std::string& path, const std::string& language, std::map<uint32_t, LocStr>& strings)
+diff --git a/xbmc/interfaces/legacy/ModuleXbmc.h b/xbmc/interfaces/legacy/ModuleXbmc.h
+index 189752da1cd6..7e6e2c82acf1 100644
+--- a/xbmc/interfaces/legacy/ModuleXbmc.h
++++ b/xbmc/interfaces/legacy/ModuleXbmc.h
+@@ -247,7 +247,7 @@ namespace XBMCAddon
+     ///                             localize.
+     /// @return                     Localized 'unicode string'
+     ///
+-    /// @note See strings.xml in `\language\{yourlanguage}\` for which id
++    /// @note See strings.po in `\language\{yourlanguage}\` for which id
+     ///        you need for a string.
+     ///
+     ///
+diff --git a/xbmc/music/MusicDatabase.h b/xbmc/music/MusicDatabase.h
+index ed65526a94d1..bcd9e4ccc3f5 100644
+--- a/xbmc/music/MusicDatabase.h
++++ b/xbmc/music/MusicDatabase.h
+@@ -37,7 +37,7 @@ namespace dbiplus
+ #include <string>
+ 
+ // return codes of Cleaning up the Database
+-// numbers are strings from strings.xml
++// numbers are strings from strings.po
+ #define ERROR_OK     317
+ #define ERROR_CANCEL    0
+ #define ERROR_DATABASE    315
+diff --git a/xbmc/pictures/ExifParse.cpp b/xbmc/pictures/ExifParse.cpp
+index 5e55bb9b2a25..3fa6464f2cea 100644
+--- a/xbmc/pictures/ExifParse.cpp
++++ b/xbmc/pictures/ExifParse.cpp
+@@ -117,7 +117,7 @@ const unsigned int BytesPerFormat[NUM_FORMATS] = { 1,1,2,4,8,1,1,2,4,8,4,8 };
+ 
+ //--------------------------------------------------------------------------
+ // Internationalisation string IDs. The enum order must match that in the
+-// language file (e.g. 'language/English/strings.xml', and EXIF_PARSE_STRING_ID_BASE
++// language file (e.g. 'language/resource.language.en_gb/strings.po', and EXIF_PARSE_STRING_ID_BASE
+ // must match the ID of the first Exif string in that file.
+ #define EXIF_PARSE_STRING_ID_BASE       21800
+ enum {
+diff --git a/xbmc/weather/WeatherJob.cpp b/xbmc/weather/WeatherJob.cpp
+index 82d2afdcbe3c..ba9cbb0f4e13 100644
+--- a/xbmc/weather/WeatherJob.cpp
++++ b/xbmc/weather/WeatherJob.cpp
+@@ -132,7 +132,7 @@ void CWeatherJob::LoadLocalizedToken()
+   if (languageSetting != NULL)
+     language = languageSetting->GetDefault();
+ 
+-  // Try the strings PO file first
++  // Load the strings.po file
+   CPODocument PODoc;
+   if (PODoc.LoadFile(URIUtils::AddFileToFolder(CLangInfo::GetLanguagePath(language), "strings.po")))
+   {
+@@ -163,48 +163,6 @@ void CWeatherJob::LoadLocalizedToken()
+     CLog::Log(LOGDEBUG, "POParser: loaded %i weather tokens", counter);
+     return;
+   }
+-
+-  CLog::Log(LOGDEBUG,
+-            "Weather: no PO string file available, to load English tokens, "
+-            "fallback to strings.xml file");
+-
+-  // We load the tokens from the strings.xml file
+-  std::string strLanguagePath = URIUtils::AddFileToFolder(CLangInfo::GetLanguagePath(language), "strings.xml");
+-
+-  CXBMCTinyXML xmlDoc;
+-  if (!xmlDoc.LoadFile(strLanguagePath) || !xmlDoc.RootElement())
+-  {
+-    CLog::Log(LOGERROR, "Weather: unable to load %s: %s at line %d", strLanguagePath.c_str(), xmlDoc.ErrorDesc(), xmlDoc.ErrorRow());
+-    return;
+-  }
+-
+-  TiXmlElement* pRootElement = xmlDoc.RootElement();
+-  if (pRootElement->ValueStr() != "strings")
+-    return;
+-
+-  const TiXmlElement *pChild = pRootElement->FirstChildElement();
+-  while (pChild)
+-  {
+-    std::string strValue = pChild->ValueStr();
+-    if (strValue == "string")
+-    { // Load new style language file with id as attribute
+-      const char* attrId = pChild->Attribute("id");
+-      if (attrId && !pChild->NoChildren())
+-      {
+-        int id = atoi(attrId);
+-        if ((LOCALIZED_TOKEN_FIRSTID  <= id && id <= LOCALIZED_TOKEN_LASTID)  ||
+-            (LOCALIZED_TOKEN_FIRSTID2 <= id && id <= LOCALIZED_TOKEN_LASTID2) ||
+-            (LOCALIZED_TOKEN_FIRSTID3 <= id && id <= LOCALIZED_TOKEN_LASTID3) ||
+-            (LOCALIZED_TOKEN_FIRSTID4 <= id && id <= LOCALIZED_TOKEN_LASTID4))
+-        {
+-          std::string utf8Label(pChild->FirstChild()->ValueStr());
+-          if (!utf8Label.empty())
+-            m_localizedTokens.insert(make_pair(utf8Label, id));
+-        }
+-      }
+-    }
+-    pChild = pChild->NextSiblingElement();
+-  }
+ }
+ 
+ std::string CWeatherJob::ConstructPath(std::string in) // copy intended

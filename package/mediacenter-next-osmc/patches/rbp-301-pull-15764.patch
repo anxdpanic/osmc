@@ -1,0 +1,46 @@
+From 12a864be148e758ec42521bfaa7686b6ed307945 Mon Sep 17 00:00:00 2001
+From: enen92 <92enen@gmail.com>
+Date: Wed, 15 May 2019 11:52:53 +0100
+Subject: [PATCH] [DialogVideoInfo] do not reset the current listitem before
+ play
+
+---
+ xbmc/video/dialogs/GUIDialogVideoInfo.cpp | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
+
+diff --git a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+index 2ed2b5c7f310..dc2015aee54b 100644
+--- a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
++++ b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+@@ -627,27 +627,24 @@ void CGUIDialogVideoInfo::Play(bool resume)
+   {
+     std::string strPath = StringUtils::Format("videodb://movies/sets/%i/?setid=%i",m_movieItem->GetVideoInfoTag()->m_iDbId,m_movieItem->GetVideoInfoTag()->m_iDbId);
+     Close();
+-    CServiceBroker::GetGUI()->GetWindowManager().ActivateWindow(WINDOW_VIDEO_NAV,strPath);
++    CServiceBroker::GetGUI()->GetWindowManager().ActivateWindow(WINDOW_VIDEO_NAV, strPath);
+     return;
+   }
+ 
+-  CFileItem movie(*m_movieItem->GetVideoInfoTag());
+-  if (m_movieItem->GetVideoInfoTag()->m_strFileNameAndPath.empty())
+-    movie.SetPath(m_movieItem->GetPath());
+   CGUIWindowVideoNav* pWindow = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIWindowVideoNav>(WINDOW_VIDEO_NAV);
+   if (pWindow)
+   {
+     // close our dialog
+     Close(true);
+     if (resume)
+-      movie.m_lStartOffset = STARTOFFSET_RESUME;
+-    else if (!CGUIWindowVideoBase::ShowResumeMenu(movie))
++      m_movieItem->m_lStartOffset = STARTOFFSET_RESUME;
++    else if (!CGUIWindowVideoBase::ShowResumeMenu(*m_movieItem))
+     {
+       // The Resume dialog was closed without any choice
+       Open();
+       return;
+     }
+-    pWindow->PlayMovie(&movie);
++    pWindow->PlayMovie(m_movieItem.get());
+   }
+ }
+ 
