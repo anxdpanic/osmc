@@ -1,0 +1,65 @@
+From baf294cd537748f9eb7ef57cdd6f2852768b76dc Mon Sep 17 00:00:00 2001
+From: arnova <arnova@void.org>
+Date: Sun, 5 May 2019 09:52:04 +0200
+Subject: [PATCH 1/2] changed: Improve handling of internet filesystems
+ (http/https) on LANs
+
+---
+ xbmc/utils/URIUtils.cpp | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/xbmc/utils/URIUtils.cpp b/xbmc/utils/URIUtils.cpp
+index 3df997841cbc..96634dbbb99a 100644
+--- a/xbmc/utils/URIUtils.cpp
++++ b/xbmc/utils/URIUtils.cpp
+@@ -1005,6 +1005,14 @@ bool URIUtils::IsInternetStream(const CURL& url, bool bStrictCheck /* = false */
+       url.IsProtocol("sftp"))
+     return bStrictCheck;
+ 
++  if (url.IsProtocol("http") || url.IsProtocol("https"))
++  {
++    if (IsOnLAN(url.Get()))
++      return bStrictCheck;
++    else
++      return true;
++  }
++
+   std::string protocol = url.GetTranslatedProtocol();
+   if (CURL::IsProtocolEqual(protocol, "http")  || CURL::IsProtocolEqual(protocol, "https")  ||
+       CURL::IsProtocolEqual(protocol, "tcp")   || CURL::IsProtocolEqual(protocol, "udp")    ||
+
+From 5ad480823def2c07ed387df4627dac339c182ae5 Mon Sep 17 00:00:00 2001
+From: arnova <arnova@void.org>
+Date: Thu, 23 May 2019 19:14:28 +0200
+Subject: [PATCH 2/2] fixed: Test for URIUtils-IsInternetStream
+
+---
+ xbmc/utils/test/TestURIUtils.cpp | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/utils/test/TestURIUtils.cpp b/xbmc/utils/test/TestURIUtils.cpp
+index c96c8d31a1e9..87dfb581eda8 100644
+--- a/xbmc/utils/test/TestURIUtils.cpp
++++ b/xbmc/utils/test/TestURIUtils.cpp
+@@ -298,10 +298,19 @@ TEST_F(TestURIUtils, IsInRAR)
+ 
+ TEST_F(TestURIUtils, IsInternetStream)
+ {
+-  CURL url1("http://path/to/file");
+-  CURL url2("https://path/to/file");
++  CURL url1("http://internet.path/to/file");
++  CURL url2("https://internet.path/to/file");
++  CURL url3("davs://internet.path/to/file");
++  CURL url4("http://lan/to/file");
++  CURL url5("/path/to/file");
+   EXPECT_TRUE(URIUtils::IsInternetStream(url1));
+   EXPECT_TRUE(URIUtils::IsInternetStream(url2));
++  EXPECT_FALSE(URIUtils::IsInternetStream(url3));
++  EXPECT_TRUE(URIUtils::IsInternetStream(url3, true /* =strict */));
++  EXPECT_FALSE(URIUtils::IsInternetStream(url4));
++  EXPECT_TRUE(URIUtils::IsInternetStream(url4, true /* =strict */));
++  EXPECT_FALSE(URIUtils::IsInternetStream(url5));
++  EXPECT_FALSE(URIUtils::IsInternetStream(url5, true /* strict */));
+ }
+ 
+ TEST_F(TestURIUtils, IsInZIP)
