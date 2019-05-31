@@ -76,7 +76,7 @@ index 1b70b9d..9616967 100644
 +      av_free_packet(pPacket->pkt);
 +      delete pPacket->pkt;
 +    }
-+    else if (pPacket->pData) _aligned_free(pPacket->pData);
++    else if (pPacket->pData) KODI::MEMORY::AlignedFree(pPacket->pData);
 +
      if (pPacket->iSideDataElems)
      {
