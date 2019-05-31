@@ -70,7 +70,7 @@ index 1b70b9d..9616967 100644
    if (pPacket)
    {
 -    if (pPacket->pData)
--      KODI::MEMORY:AlignedFree(pPacket->pData);
+-      KODI::MEMORY::AlignedFree(pPacket->pData);
 +    if (pPacket->pkt)
 +    {
 +      av_free_packet(pPacket->pkt);
