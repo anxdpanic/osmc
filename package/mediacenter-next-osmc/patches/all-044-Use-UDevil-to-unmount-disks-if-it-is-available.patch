@@ -5,14 +5,14 @@ Subject: [PATCH] Use UDevil to unmount disks if it is available
 
 Signed-off-by: Sam Nazarko <email@samnazarko.co.uk>
 ---
- xbmc/platform/linux/PosixMountProvider.cpp   | 12 +++++++++++-
+ xbmc/platform/posix/PosixMountProvider.cpp   | 12 +++++++++++-
  xbmc/platform/linux/storage/UDevProvider.cpp | 12 +++++++++++-
  2 files changed, 22 insertions(+), 2 deletions(-)
 
-diff --git a/xbmc/platform/linux/PosixMountProvider.cpp b/xbmc/platform/linux/PosixMountProvider.cpp
+diff --git a/xbmc/platform/posix/PosixMountProvider.cpp b/xbmc/platform/posix/PosixMountProvider.cpp
 index c22d7f8..3f80bc7 100644
---- a/xbmc/platform/linux/PosixMountProvider.cpp
-+++ b/xbmc/platform/linux/PosixMountProvider.cpp
+--- a/xbmc/platform/posix/PosixMountProvider.cpp
++++ b/xbmc/platform/posix/PosixMountProvider.cpp
 @@ -123,7 +123,17 @@ bool CPosixMountProvider::Eject(const std::string& mountpath)
  #if !defined(TARGET_DARWIN_IOS)
    // just go ahead and try to umount the disk
