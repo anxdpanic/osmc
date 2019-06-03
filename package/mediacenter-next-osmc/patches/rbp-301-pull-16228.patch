@@ -1,0 +1,25 @@
+From d04b90f1f2f1ab0f857f2689120e588b48029b22 Mon Sep 17 00:00:00 2001
+From: arnova <arnova@void.org>
+Date: Sat, 1 Jun 2019 09:04:14 +0200
+Subject: [PATCH] changed: Increase buffer for Curl http response to 2k (fixes
+ #16179)
+
+---
+ xbmc/filesystem/CurlFile.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/filesystem/CurlFile.cpp b/xbmc/filesystem/CurlFile.cpp
+index 39511d5b5cd6..9748a399e0d0 100644
+--- a/xbmc/filesystem/CurlFile.cpp
++++ b/xbmc/filesystem/CurlFile.cpp
+@@ -1011,8 +1011,8 @@ bool CCurlFile::Open(const CURL& url)
+     std::string error;
+     if (m_httpresponse >= 400 && CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->CanLogComponent(LOGCURL))
+     {
+-      error.resize(256);
+-      ReadString(&error[0], 255);
++      error.resize(4096);
++      ReadString(&error[0], 4095);
+     }
+ 
+     CLog::Log(LOGERROR, "CCurlFile::Open failed with code %li for %s:\n%s", m_httpresponse, redactPath.c_str(), error.c_str());
