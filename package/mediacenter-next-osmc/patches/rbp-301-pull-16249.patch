@@ -1,0 +1,350 @@
+From 60f19f4a62a1364af63f21805d869c1dab4bc4b7 Mon Sep 17 00:00:00 2001
+From: Jim Carroll <jim@dontcallme.com>
+Date: Sun, 9 Jun 2019 17:03:42 -0400
+Subject: [PATCH 1/4] Require OpenSSL 1.0.2 in order to remove the need to
+ manage thread ids.
+
+---
+ CMakeLists.txt                |  2 +-
+ xbmc/utils/CryptThreading.cpp | 45 +++++++++++------------------------
+ xbmc/utils/CryptThreading.h   |  7 ++++++
+ 3 files changed, 22 insertions(+), 32 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 9d482301788c..2c061b25dffd 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -129,7 +129,7 @@ set(required_deps ASS
+                   Iconv
+                   LibDvd
+                   Lzo2
+-                  OpenSSL
++                  OpenSSL>=1.0.2
+                   PCRE
+                   RapidJSON
+                   Sqlite3
+diff --git a/xbmc/utils/CryptThreading.cpp b/xbmc/utils/CryptThreading.cpp
+index e604d6363b07..6234ff6e3227 100644
+--- a/xbmc/utils/CryptThreading.cpp
++++ b/xbmc/utils/CryptThreading.cpp
+@@ -7,17 +7,13 @@
+  */
+ 
+ #include "CryptThreading.h"
++#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
++
+ #include "threads/Thread.h"
+ #include "utils/log.h"
+ 
+-#include <openssl/crypto.h>
+-
+-//! @todo Remove support for OpenSSL <1.0 in v19
+-
+-#define KODI_OPENSSL_NEEDS_LOCK_CALLBACK (OPENSSL_VERSION_NUMBER < 0x10100000L)
+-#define KODI_OPENSSL_USE_THREADID (OPENSSL_VERSION_NUMBER >= 0x10000000L)
++#include <atomic>
+ 
+-#if KODI_OPENSSL_NEEDS_LOCK_CALLBACK
+ namespace
+ {
+ 
+@@ -34,48 +30,37 @@ void lock_callback(int mode, int type, const char* file, int line)
+     getlock(type)->unlock();
+ }
+ 
+-#if KODI_OPENSSL_USE_THREADID
+-void thread_id(CRYPTO_THREADID* tid)
+-{
+-  // C-style cast required due to vastly differing native ID return types
+-  CRYPTO_THREADID_set_numeric(tid, (unsigned long)CThread::GetCurrentThreadId());
++unsigned long GetCryptThreadId() {
++  static std::atomic<unsigned long> tidSequence{0};
++  static thread_local unsigned long tidTl{0};
++
++  if (tidTl == 0)
++    tidTl = ++tidSequence;
++  return tidTl;
+ }
+-#else
+-unsigned long thread_id()
++
++void thread_id(CRYPTO_THREADID* tid)
+ {
+   // C-style cast required due to vastly differing native ID return types
+-  return (unsigned long)CThread::GetCurrentThreadId();
++  CRYPTO_THREADID_set_numeric(tid, GetCryptThreadId());
+ }
+-#endif
+ 
+ }
+-#endif
+ 
+ CryptThreadingInitializer::CryptThreadingInitializer()
+ {
+-#if KODI_OPENSSL_NEEDS_LOCK_CALLBACK
+   // OpenSSL < 1.1 needs integration code to support multi-threading
+   // This is absolutely required for libcurl if it uses the OpenSSL backend
+   m_locks.resize(CRYPTO_num_locks());
+-#if KODI_OPENSSL_USE_THREADID
+   CRYPTO_THREADID_set_callback(thread_id);
+-#else
+-  CRYPTO_set_id_callback(thread_id);
+-#endif
+   CRYPTO_set_locking_callback(lock_callback);
+-#endif
+ }
+ 
+ CryptThreadingInitializer::~CryptThreadingInitializer()
+ {
+-#if KODI_OPENSSL_NEEDS_LOCK_CALLBACK
+   CSingleLock l(m_locksLock);
+-#if !KODI_OPENSSL_USE_THREADID
+-  CRYPTO_set_id_callback(nullptr);
+-#endif
+   CRYPTO_set_locking_callback(nullptr);
+   m_locks.clear();
+-#endif
+ }
+ 
+ CCriticalSection* CryptThreadingInitializer::GetLock(int index)
+@@ -90,6 +75,4 @@ CCriticalSection* CryptThreadingInitializer::GetLock(int index)
+   return curlock.get();
+ }
+ 
+-
+-
+-
++#endif
+diff --git a/xbmc/utils/CryptThreading.h b/xbmc/utils/CryptThreading.h
+index a400a6820d8a..3e091d717841 100644
+--- a/xbmc/utils/CryptThreading.h
++++ b/xbmc/utils/CryptThreading.h
+@@ -8,6 +8,11 @@
+ 
+ #pragma once
+ 
++#include <openssl/crypto.h>
++
++//! @todo - once we're at OpenSSL 1.1 this class and its .cpp file should be deleted.
++#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
++
+ #include <memory>
+ #include <vector>
+ #include "utils/GlobalsHandling.h"
+@@ -31,3 +36,5 @@ class CryptThreadingInitializer
+ 
+ XBMC_GLOBAL_REF(CryptThreadingInitializer,g_cryptThreadingInitializer);
+ #define g_cryptThreadingInitializer XBMC_GLOBAL_USE(CryptThreadingInitializer)
++
++#endif
+
+From 023f4837749b35fd2b94e70f390bea66f647bdfb Mon Sep 17 00:00:00 2001
+From: Jim Carroll <jim@dontcallme.com>
+Date: Sun, 9 Jun 2019 17:03:42 -0400
+Subject: [PATCH 2/4] Fix test that expects CryptThreadingInitializer to be
+ there even when OpenSSL >= 1.1.
+
+---
+ xbmc/utils/test/TestCryptThreading.cpp | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/xbmc/utils/test/TestCryptThreading.cpp b/xbmc/utils/test/TestCryptThreading.cpp
+index f9c47dbd0d8f..826d8883e17f 100644
+--- a/xbmc/utils/test/TestCryptThreading.cpp
++++ b/xbmc/utils/test/TestCryptThreading.cpp
+@@ -7,6 +7,7 @@
+  */
+ 
+ #include "utils/CryptThreading.h"
++#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
+ 
+ #include "gtest/gtest.h"
+ 
+@@ -15,3 +16,4 @@ TEST(TestCryptThreadingInitializer, General)
+   std::cout << "g_cryptThreadingInitializer address: " <<
+     testing::PrintToString(&g_cryptThreadingInitializer) << "\n";
+ }
++#endif
+
+From 8f1dea20c2349d8f8a0858017d7c40246993979b Mon Sep 17 00:00:00 2001
+From: Jim Carroll <jim@dontcallme.com>
+Date: Sun, 9 Jun 2019 17:03:42 -0400
+Subject: [PATCH 3/4] Add a test for CryptThreadingInitializer thread id
+ generation.
+
+---
+ xbmc/utils/CryptThreading.cpp          |  4 ++
+ xbmc/utils/CryptThreading.h            |  5 +++
+ xbmc/utils/test/TestCryptThreading.cpp | 60 ++++++++++++++++++++++++++
+ 3 files changed, 69 insertions(+)
+
+diff --git a/xbmc/utils/CryptThreading.cpp b/xbmc/utils/CryptThreading.cpp
+index 6234ff6e3227..bfb06348f97b 100644
+--- a/xbmc/utils/CryptThreading.cpp
++++ b/xbmc/utils/CryptThreading.cpp
+@@ -75,4 +75,8 @@ CCriticalSection* CryptThreadingInitializer::GetLock(int index)
+   return curlock.get();
+ }
+ 
++unsigned long CryptThreadingInitializer::GetCurrentCryptThreadId() {
++  return GetCryptThreadId();
++}
++
+ #endif
+diff --git a/xbmc/utils/CryptThreading.h b/xbmc/utils/CryptThreading.h
+index 3e091d717841..85ec0441202a 100644
+--- a/xbmc/utils/CryptThreading.h
++++ b/xbmc/utils/CryptThreading.h
+@@ -29,6 +29,11 @@ class CryptThreadingInitializer
+ 
+   CCriticalSection* GetLock(int index);
+ 
++  /**
++   * This is so testing can reach the thread id generation.
++   */
++  unsigned long GetCurrentCryptThreadId();
++
+ private:
+   CryptThreadingInitializer(const CryptThreadingInitializer &rhs) = delete;
+   CryptThreadingInitializer& operator=(const CryptThreadingInitializer&) = delete;
+diff --git a/xbmc/utils/test/TestCryptThreading.cpp b/xbmc/utils/test/TestCryptThreading.cpp
+index 826d8883e17f..b69011aec1ce 100644
+--- a/xbmc/utils/test/TestCryptThreading.cpp
++++ b/xbmc/utils/test/TestCryptThreading.cpp
+@@ -8,6 +8,12 @@
+ 
+ #include "utils/CryptThreading.h"
+ #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
++#include "threads/SingleLock.h"
++
++#include <atomic>
++#include <set>
++#include <thread>
++#include <vector>
+ 
+ #include "gtest/gtest.h"
+ 
+@@ -16,4 +22,58 @@ TEST(TestCryptThreadingInitializer, General)
+   std::cout << "g_cryptThreadingInitializer address: " <<
+     testing::PrintToString(&g_cryptThreadingInitializer) << "\n";
+ }
++
++#define PVTID_NUM_THREADS 10
++
++TEST(TestCryptThreadingInitializer, ProducesValidThreadIds)
++{
++  std::thread testThreads[PVTID_NUM_THREADS];
++
++  std::vector<unsigned long> gatheredIds;
++  CCriticalSection gatheredIdsMutex;
++
++  std::atomic<unsigned long> threadsWaiting{0};
++  std::atomic<bool> gate{false};
++
++  for (int i = 0; i < PVTID_NUM_THREADS; i++)
++  {
++    testThreads[i] = std::thread([&gatheredIds, &gatheredIdsMutex, &threadsWaiting, &gate]() {
++        threadsWaiting++;
++
++        while (!gate);
++
++        unsigned long myTid = g_cryptThreadingInitializer.GetCurrentCryptThreadId();
++
++        {
++          CSingleLock gatheredIdsLock(gatheredIdsMutex);
++          gatheredIds.push_back(myTid);
++        }
++      });        
++  }
++
++  gate = true;
++
++  for (int i = 0; i < PVTID_NUM_THREADS; i++)
++    // This is somewhat dangerous but C++ doesn't have a join with timeout or a way to check
++    // if a thread is still running.
++    testThreads[i].join();
++
++  // Verify that all of the thread id's are unique, and that there are 10 of them, and that none
++  // of them is zero
++  std::set<unsigned long> checkIds;
++  for (std::vector<unsigned long>::const_iterator i = gatheredIds.begin(); i != gatheredIds.end(); ++i)
++  {
++    unsigned long curId = *i;
++    // Thread ID isn't zero (since the sequence is pre-incremented and starts at 0)
++    ASSERT_TRUE(curId != 0);
++
++    // Make sure the ID isn't duplicated
++    ASSERT_TRUE(checkIds.find(curId) == checkIds.end());
++    checkIds.insert(curId);
++  }
++
++  // Make sure there's exactly PVTID_NUM_THREADS of them
++  ASSERT_EQ(PVTID_NUM_THREADS, gatheredIds.size());
++  ASSERT_EQ(PVTID_NUM_THREADS, checkIds.size());
++}
+ #endif
+
+From 918946ed81a5658e98384e30d73985fa96b2ee22 Mon Sep 17 00:00:00 2001
+From: Jim Carroll <jim@dontcallme.com>
+Date: Mon, 10 Jun 2019 08:55:45 -0400
+Subject: [PATCH 4/4] [cosmetic] Fix code style.
+
+---
+ xbmc/utils/CryptThreading.cpp          |  6 ++++--
+ xbmc/utils/test/TestCryptThreading.cpp | 16 ++++++++--------
+ 2 files changed, 12 insertions(+), 10 deletions(-)
+
+diff --git a/xbmc/utils/CryptThreading.cpp b/xbmc/utils/CryptThreading.cpp
+index bfb06348f97b..3484635b4927 100644
+--- a/xbmc/utils/CryptThreading.cpp
++++ b/xbmc/utils/CryptThreading.cpp
+@@ -30,7 +30,8 @@ void lock_callback(int mode, int type, const char* file, int line)
+     getlock(type)->unlock();
+ }
+ 
+-unsigned long GetCryptThreadId() {
++unsigned long GetCryptThreadId()
++{
+   static std::atomic<unsigned long> tidSequence{0};
+   static thread_local unsigned long tidTl{0};
+ 
+@@ -75,7 +76,8 @@ CCriticalSection* CryptThreadingInitializer::GetLock(int index)
+   return curlock.get();
+ }
+ 
+-unsigned long CryptThreadingInitializer::GetCurrentCryptThreadId() {
++unsigned long CryptThreadingInitializer::GetCurrentCryptThreadId()
++{
+   return GetCryptThreadId();
+ }
+ 
+diff --git a/xbmc/utils/test/TestCryptThreading.cpp b/xbmc/utils/test/TestCryptThreading.cpp
+index b69011aec1ce..cfbcc84ba68b 100644
+--- a/xbmc/utils/test/TestCryptThreading.cpp
++++ b/xbmc/utils/test/TestCryptThreading.cpp
+@@ -38,17 +38,17 @@ TEST(TestCryptThreadingInitializer, ProducesValidThreadIds)
+   for (int i = 0; i < PVTID_NUM_THREADS; i++)
+   {
+     testThreads[i] = std::thread([&gatheredIds, &gatheredIdsMutex, &threadsWaiting, &gate]() {
+-        threadsWaiting++;
++      threadsWaiting++;
+ 
+-        while (!gate);
++      while (!gate);
+ 
+-        unsigned long myTid = g_cryptThreadingInitializer.GetCurrentCryptThreadId();
++      unsigned long myTid = g_cryptThreadingInitializer.GetCurrentCryptThreadId();
+ 
+-        {
+-          CSingleLock gatheredIdsLock(gatheredIdsMutex);
+-          gatheredIds.push_back(myTid);
+-        }
+-      });        
++      {
++        CSingleLock gatheredIdsLock(gatheredIdsMutex);
++        gatheredIds.push_back(myTid);
++      }
++    });        
+   }
+ 
+   gate = true;
