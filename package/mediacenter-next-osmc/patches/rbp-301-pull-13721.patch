@@ -1,0 +1,1791 @@
+From 18fd8b02c86a4cc77b9567331c36bfe3561b7dec Mon Sep 17 00:00:00 2001
+From: Jim Carroll <jim@dontcallme.com>
+Date: Tue, 11 Jun 2019 07:10:52 -0400
+Subject: [PATCH 1/2] Move main thread implementation to std::thread to remove
+ as many platform specific functions as possible.
+
+---
+ xbmc/Application.cpp                          |   5 +-
+ xbmc/Application.h                            |   2 +-
+ xbmc/addons/AddonStatusHandler.cpp            |   2 +-
+ xbmc/cores/FFmpeg.cpp                         |   8 +-
+ .../VideoPlayer/DVDCodecs/Video/VAAPI.cpp     |   1 -
+ .../cores/VideoPlayer/DVDCodecs/Video/VAAPI.h |   1 -
+ .../VideoPlayer/DVDCodecs/Video/VDPAU.cpp     |   1 -
+ .../cores/VideoPlayer/DVDCodecs/Video/VDPAU.h |   1 -
+ xbmc/interfaces/python/XBPython.cpp           |   1 -
+ xbmc/interfaces/python/XBPython.h             |   1 -
+ xbmc/messaging/ApplicationMessenger.cpp       |   2 +-
+ xbmc/messaging/ApplicationMessenger.h         |   4 +-
+ xbmc/music/infoscanner/MusicInfoScraper.cpp   |   2 +-
+ xbmc/network/TCPServer.cpp                    |  15 +-
+ xbmc/network/UdpClient.cpp                    |   2 +-
+ xbmc/threads/CMakeLists.txt                   |   1 -
+ xbmc/threads/Condition.h                      |   3 +-
+ xbmc/threads/Lockables.h                      |   8 +-
+ xbmc/threads/SystemClock.h                    |   7 +
+ xbmc/threads/Thread.cpp                       | 264 +++++++++++-------
+ xbmc/threads/Thread.h                         |  66 +++--
+ xbmc/threads/ThreadImpl.h                     |  12 -
+ xbmc/threads/platform/README.platform         |  51 ----
+ xbmc/threads/platform/RecursiveMutex.h        |   1 -
+ xbmc/threads/platform/ThreadImpl.cpp          |   5 -
+ .../platform/darwin/ThreadSchedImpl.cpp       |  35 ---
+ .../platform/linux/ThreadSchedImpl.cpp        |  17 --
+ xbmc/threads/platform/pthreads/ThreadImpl.cpp | 234 +++++++---------
+ xbmc/threads/platform/pthreads/ThreadImpl.h   |  34 +--
+ xbmc/threads/platform/win/ThreadImpl.cpp      | 111 ++------
+ xbmc/threads/platform/win/ThreadImpl.h        |  15 +-
+ xbmc/threads/test/TestHelpers.h               |   4 +-
+ xbmc/utils/JSONVariantParser.cpp              |   4 +-
+ xbmc/utils/RssReader.cpp                      |   2 +-
+ xbmc/utils/log.cpp                            |   2 +-
+ xbmc/windowing/rpi/VideoSyncPi.cpp            |   8 +-
+ 36 files changed, 363 insertions(+), 569 deletions(-)
+ delete mode 100644 xbmc/threads/ThreadImpl.h
+ delete mode 100644 xbmc/threads/platform/README.platform
+ delete mode 100644 xbmc/threads/platform/darwin/ThreadSchedImpl.cpp
+ delete mode 100644 xbmc/threads/platform/linux/ThreadSchedImpl.cpp
+
+diff --git a/xbmc/Application.cpp b/xbmc/Application.cpp
+index dcd00a29e8ba..6262474d4002 100644
+--- a/xbmc/Application.cpp
++++ b/xbmc/Application.cpp
+@@ -217,7 +217,6 @@ using KODI::MESSAGING::HELPERS::DialogResponse;
+ 
+ #define MAX_FFWD_SPEED 5
+ 
+-//extern IDirectSoundRenderer* m_pAudioDecoder;
+ CApplication::CApplication(void)
+ :
+ #ifdef HAS_DVD_DRIVE
+@@ -937,7 +936,7 @@ void CApplication::StartServices()
+ #if !defined(TARGET_WINDOWS) && defined(HAS_DVD_DRIVE)
+   // Start Thread for DVD Mediatype detection
+   CLog::Log(LOGNOTICE, "start dvd mediatype detection");
+-  m_DetectDVDType.Create(false, THREAD_MINSTACKSIZE);
++  m_DetectDVDType.Create(false);
+ #endif
+ }
+ 
+@@ -4753,7 +4752,7 @@ bool CApplication::ProcessAndStartPlaylist(const std::string& strPlayList, CPlay
+ 
+ bool CApplication::IsCurrentThread() const
+ {
+-  return CThread::IsCurrentThread(m_threadID);
++  return m_threadID == CThread::GetCurrentThreadId();
+ }
+ 
+ void CApplication::SetRenderGUI(bool renderGUI)
+diff --git a/xbmc/Application.h b/xbmc/Application.h
+index 3f16a0f4a199..6ac253ec3404 100644
+--- a/xbmc/Application.h
++++ b/xbmc/Application.h
+@@ -427,7 +427,7 @@ friend class CAppInboundProtocol;
+   CFileItemPtr m_itemCurrentFile;
+ 
+   std::string m_prevMedia;
+-  ThreadIdentifier m_threadID = 0;       // application thread ID.  Used in applicationMessenger to know where we are firing a thread with delay from.
++  std::thread::id m_threadID;       // application thread ID.  Used in applicationMessenger to know where we are firing a thread with delay from.
+   bool m_bInitializing = true;
+   bool m_bPlatformDirectories = true;
+ 
+diff --git a/xbmc/addons/AddonStatusHandler.cpp b/xbmc/addons/AddonStatusHandler.cpp
+index d8d39b53129b..c558dd2ebe02 100644
+--- a/xbmc/addons/AddonStatusHandler.cpp
++++ b/xbmc/addons/AddonStatusHandler.cpp
+@@ -55,7 +55,7 @@ CAddonStatusHandler::CAddonStatusHandler(const std::string &addonID, ADDON_STATU
+   }
+   else
+   {
+-    Create(true, THREAD_MINSTACKSIZE);
++    Create(true);
+   }
+ }
+ 
+diff --git a/xbmc/cores/FFmpeg.cpp b/xbmc/cores/FFmpeg.cpp
+index a46841442c33..a585f6af57dd 100644
+--- a/xbmc/cores/FFmpeg.cpp
++++ b/xbmc/cores/FFmpeg.cpp
+@@ -43,7 +43,7 @@ void CFFmpegLog::ClearLogLevel()
+ }
+ 
+ static CCriticalSection m_logSection;
+-std::map<uintptr_t, std::string> g_logbuffer;
++std::map<const CThread*, std::string> g_logbuffer;
+ 
+ void ff_flush_avutil_log_buffers(void)
+ {
+@@ -51,7 +51,7 @@ void ff_flush_avutil_log_buffers(void)
+   /* Loop through the logbuffer list and remove any blank buffers
+      If the thread using the buffer is still active, it will just
+      add a new buffer next time it writes to the log */
+-  std::map<uintptr_t, std::string>::iterator it;
++  std::map<const CThread*, std::string>::iterator it;
+   for (it = g_logbuffer.begin(); it != g_logbuffer.end(); )
+     if ((*it).second.empty())
+       g_logbuffer.erase(it++);
+@@ -62,7 +62,7 @@ void ff_flush_avutil_log_buffers(void)
+ void ff_avutil_log(void* ptr, int level, const char* format, va_list va)
+ {
+   CSingleLock lock(m_logSection);
+-  uintptr_t threadId = (uintptr_t)CThread::GetCurrentThreadId();
++  const CThread* threadId = CThread::GetCurrentThread();
+   std::string &buffer = g_logbuffer[threadId];
+ 
+   AVClass* avc= ptr ? *(AVClass**)ptr : NULL;
+@@ -95,7 +95,7 @@ void ff_avutil_log(void* ptr, int level, const char* format, va_list va)
+   }
+ 
+   std::string message = StringUtils::FormatV(format, va);
+-  std::string prefix = StringUtils::Format("ffmpeg[%lX]: ", threadId);
++  std::string prefix = StringUtils::Format("ffmpeg[%pX]: ", static_cast<const void*>(threadId));
+   if (avc)
+   {
+     if (avc->item_name)
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/VAAPI.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/VAAPI.cpp
+index 0603897af0cb..f30c1f61b765 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/VAAPI.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/VAAPI.cpp
+@@ -558,7 +558,6 @@ bool CDecoder::Open(AVCodecContext* avctx, AVCodecContext* mainctx, const enum A
+   m_vaapiConfig.surfaceWidth = avctx->coded_width;
+   m_vaapiConfig.surfaceHeight = avctx->coded_height;
+   m_vaapiConfig.aspect = avctx->sample_aspect_ratio;
+-  m_decoderThread = CThread::GetCurrentThreadId();
+   m_DisplayState = VAAPI_OPEN;
+   m_vaapiConfigured = false;
+   m_presentPicture = nullptr;
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/VAAPI.h b/xbmc/cores/VideoPlayer/DVDCodecs/Video/VAAPI.h
+index 4ad6efda0db7..119b130a691e 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/VAAPI.h
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/VAAPI.h
+@@ -408,7 +408,6 @@ class CDecoder
+   CEvent m_DisplayEvent;
+   int m_ErrorCount;
+ 
+-  ThreadIdentifier m_decoderThread;
+   bool m_vaapiConfigured;
+   CVaapiConfig  m_vaapiConfig;
+   CVideoSurfaces m_videoSurfaces;
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/VDPAU.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/VDPAU.cpp
+index cb6a49cceef8..f11d515446f8 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/VDPAU.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/VDPAU.cpp
+@@ -531,7 +531,6 @@ bool CDecoder::Open(AVCodecContext* avctx, AVCodecContext* mainctx, const enum A
+   }
+   m_vdpauConfig.numRenderBuffers = 5;
+   m_vdpauConfig.timeOpened = CurrentHostCounter();
+-  m_decoderThread = CThread::GetCurrentThreadId();
+ 
+   if (!CVDPAUContext::EnsureContext(&m_vdpauConfig.context))
+     return false;
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/VDPAU.h b/xbmc/cores/VideoPlayer/DVDCodecs/Video/VDPAU.h
+index 957971c70f02..e7409683de14 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/VDPAU.h
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/VDPAU.h
+@@ -557,7 +557,6 @@ class CDecoder
+   CEvent m_DisplayEvent;
+   int m_ErrorCount;
+ 
+-  ThreadIdentifier m_decoderThread;
+   bool m_vdpauConfigured;
+   CVdpauConfig m_vdpauConfig;
+   CVideoSurfaces m_videoSurfaces;
+diff --git a/xbmc/interfaces/python/XBPython.cpp b/xbmc/interfaces/python/XBPython.cpp
+index 81e0d7c55e7d..ba503e8745a1 100644
+--- a/xbmc/interfaces/python/XBPython.cpp
++++ b/xbmc/interfaces/python/XBPython.cpp
+@@ -39,7 +39,6 @@ XBPython::XBPython()
+ {
+   m_bInitialized      = false;
+   m_mainThreadState   = NULL;
+-  m_ThreadId          = CThread::GetCurrentThreadId();
+   m_iDllScriptCounter = 0;
+   m_endtime           = 0;
+   m_pDll              = NULL;
+diff --git a/xbmc/interfaces/python/XBPython.h b/xbmc/interfaces/python/XBPython.h
+index 0c922fb71181..85f11919a6f0 100644
+--- a/xbmc/interfaces/python/XBPython.h
++++ b/xbmc/interfaces/python/XBPython.h
+@@ -108,7 +108,6 @@ class XBPython :
+   bool              FileExist(const char* strFile);
+ 
+   void*             m_mainThreadState;
+-  ThreadIdentifier  m_ThreadId;
+   bool              m_bInitialized;
+   int               m_iDllScriptCounter; // to keep track of the total scripts running that need the dll
+   unsigned int      m_endtime;
+diff --git a/xbmc/messaging/ApplicationMessenger.cpp b/xbmc/messaging/ApplicationMessenger.cpp
+index 96c7bb9bed23..da22fabf6810 100644
+--- a/xbmc/messaging/ApplicationMessenger.cpp
++++ b/xbmc/messaging/ApplicationMessenger.cpp
+@@ -99,7 +99,7 @@ int CApplicationMessenger::SendMsg(ThreadMessage&& message, bool wait)
+     message.result = std::make_shared<int>(-1);
+     // check that we're not being called from our application thread, else we'll be waiting
+     // forever!
+-    if (!CThread::IsCurrentThread(m_guiThreadId))
++    if (m_guiThreadId != CThread::GetCurrentThreadId())
+     {
+       message.waitEvent.reset(new CEvent(true));
+       waitEvent = message.waitEvent;
+diff --git a/xbmc/messaging/ApplicationMessenger.h b/xbmc/messaging/ApplicationMessenger.h
+index 09101f015735..31e2cda9a01d 100644
+--- a/xbmc/messaging/ApplicationMessenger.h
++++ b/xbmc/messaging/ApplicationMessenger.h
+@@ -400,7 +400,7 @@ class CApplicationMessenger
+    * CApplication to determine if marshaling is required
+    * \param thread The UI thread ID
+    */
+-  void SetGUIThread(ThreadIdentifier thread) { m_guiThreadId = thread; }
++  void SetGUIThread(const std::thread::id thread) { m_guiThreadId = thread; }
+ 
+   /*
+    * \brief Signals the shutdown of the application and message processing
+@@ -421,7 +421,7 @@ class CApplicationMessenger
+   std::queue<ThreadMessage*> m_vecWindowMessages; /*!< queue for UI messages */
+   std::map<int, IMessageTarget*> m_mapTargets; /*!< a map of registered receivers indexed on the message mask*/
+   CCriticalSection m_critSection;
+-  ThreadIdentifier m_guiThreadId{0};
++  std::thread::id m_guiThreadId;
+   bool m_bStop{ false };
+ };
+ }
+diff --git a/xbmc/music/infoscanner/MusicInfoScraper.cpp b/xbmc/music/infoscanner/MusicInfoScraper.cpp
+index f977955126fe..72bb7d4fab10 100644
+--- a/xbmc/music/infoscanner/MusicInfoScraper.cpp
++++ b/xbmc/music/infoscanner/MusicInfoScraper.cpp
+@@ -120,7 +120,7 @@ void CMusicInfoScraper::LoadArtistInfo()
+ 
+ bool CMusicInfoScraper::Completed()
+ {
+-  return WaitForThreadExit(10);
++  return Join(10);
+ }
+ 
+ bool CMusicInfoScraper::Succeeded()
+diff --git a/xbmc/network/TCPServer.cpp b/xbmc/network/TCPServer.cpp
+index fb63bc121733..6e1ab0751904 100644
+--- a/xbmc/network/TCPServer.cpp
++++ b/xbmc/network/TCPServer.cpp
+@@ -59,20 +59,7 @@ bool CTCPServer::StartServer(int port, bool nonlocal)
+   ServerInstance = new CTCPServer(port, nonlocal);
+   if (ServerInstance->Initialize())
+   {
+-    size_t thread_stacksize = 0;
+-#if defined(TARGET_DARWIN_TVOS)
+-    void *stack_addr;
+-    pthread_attr_t attr;
+-    pthread_attr_init(&attr);
+-    pthread_attr_getstack(&attr, &stack_addr, &thread_stacksize);
+-    pthread_attr_destroy(&attr);
+-    // double the stack size under tvos, not sure why yet
+-    // but it stoped crashing using Kodi json -> play video.
+-    // non-tvos will pass a value of zero which means 'system default'
+-    thread_stacksize *= 2;
+-  CLog::Log(LOGDEBUG, "CTCPServer: increasing thread stack to %zu", thread_stacksize);
+-#endif
+-    ServerInstance->Create(false, thread_stacksize);
++    ServerInstance->Create(false);
+     return true;
+   }
+   else
+diff --git a/xbmc/network/UdpClient.cpp b/xbmc/network/UdpClient.cpp
+index bd11d16416e0..8a1aa4684528 100644
+--- a/xbmc/network/UdpClient.cpp
++++ b/xbmc/network/UdpClient.cpp
+@@ -56,7 +56,7 @@ bool CUdpClient::Create(void)
+   ioctlsocket(client_socket, FIONBIO, &nonblocking);
+ 
+   CLog::Log(UDPCLIENT_DEBUG_LEVEL, "UDPCLIENT: Spawning listener thread...");
+-  CThread::Create(false, THREAD_MINSTACKSIZE);
++  CThread::Create(false);
+ 
+   CLog::Log(UDPCLIENT_DEBUG_LEVEL, "UDPCLIENT: Ready.");
+ 
+diff --git a/xbmc/threads/CMakeLists.txt b/xbmc/threads/CMakeLists.txt
+index e1cc5679c8a1..f3c6f62156cf 100644
+--- a/xbmc/threads/CMakeLists.txt
++++ b/xbmc/threads/CMakeLists.txt
+@@ -14,7 +14,6 @@ set(HEADERS Atomics.h
+             SingleLock.h
+             SystemClock.h
+             Thread.h
+-            ThreadImpl.h
+             Timer.h
+             platform/ThreadImpl.h)
+ 
+diff --git a/xbmc/threads/Condition.h b/xbmc/threads/Condition.h
+index b249f2babd92..14cc1b285fff 100644
+--- a/xbmc/threads/Condition.h
++++ b/xbmc/threads/Condition.h
+@@ -19,8 +19,7 @@ namespace XbmcThreads
+ 
+   /**
+    * This is a thin wrapper around std::condition_variable_any. It is subject
+-   *  to "spurious returns" as it is built on boost which is built on posix
+-   *  on many of our platforms.
++   *  to "spurious returns"
+    */
+   class ConditionVariable
+   {
+diff --git a/xbmc/threads/Lockables.h b/xbmc/threads/Lockables.h
+index 485bd3a8fb2a..333d330229b9 100644
+--- a/xbmc/threads/Lockables.h
++++ b/xbmc/threads/Lockables.h
+@@ -45,19 +45,13 @@ namespace XbmcThreads
+   public:
+     inline CountingLockable() = default;
+ 
+-    // boost::thread Lockable concept
++    // STL Lockable concept
+     inline void lock() { mutex.lock(); count++; }
+     inline bool try_lock() { return mutex.try_lock() ? count++, true : false; }
+     inline void unlock() { count--; mutex.unlock(); }
+ 
+     /**
+      * This implements the "exitable" behavior mentioned above.
+-     *
+-     * This can be used to ALMOST exit, but not quite, by passing
+-     *  the number of locks to leave. This is used in the windows
+-     *  ConditionVariable which requires that the lock be entered
+-     *  only once, and so it backs out ALMOST all the way, but
+-     *  leaves one still there.
+      */
+     inline unsigned int exit(unsigned int leave = 0)
+     {
+diff --git a/xbmc/threads/SystemClock.h b/xbmc/threads/SystemClock.h
+index 572a6cac5cea..d38f2326eb75 100644
+--- a/xbmc/threads/SystemClock.h
++++ b/xbmc/threads/SystemClock.h
+@@ -8,7 +8,9 @@
+ 
+ #pragma once
+ 
++#include <chrono>
+ #include <limits>
++#include <thread>
+ 
+ namespace XbmcThreads
+ {
+@@ -57,4 +59,9 @@ namespace XbmcThreads
+     inline unsigned int GetInitialTimeoutValue(void) const { return totalWaitTime; }
+     inline unsigned int GetStartTime(void) const { return startTime; }
+   };
++
++  inline void ThreadSleep(unsigned int millis)
++  {
++    std::this_thread::sleep_for(std::chrono::microseconds(millis));
++  }
+ }
+diff --git a/xbmc/threads/Thread.cpp b/xbmc/threads/Thread.cpp
+index 43d36b56ec22..e72fa4096095 100644
+--- a/xbmc/threads/Thread.cpp
++++ b/xbmc/threads/Thread.cpp
+@@ -8,19 +8,24 @@
+  *  See LICENSES/README.md for more information.
+  */
+ 
+-#include "threads/SystemClock.h"
++#define __STDC_FORMAT_MACROS
++
+ #include "Thread.h"
+ #include "IRunnable.h"
+-#include "threads/SingleLock.h"
++
+ #include "commons/Exception.h"
+-#include <stdlib.h>
++#include "threads/SingleLock.h"
++#include "threads/SystemClock.h"
+ #include "utils/log.h"
+ 
+-#define __STDC_FORMAT_MACROS
++#include <atomic>
+ #include <inttypes.h>
++#include <iostream>
++#include <stdlib.h>
+ 
+ static thread_local CThread* currentThread;
+ 
++// This is including .cpp code so should be after the other #includes
+ #include "threads/platform/ThreadImpl.cpp"
+ 
+ //////////////////////////////////////////////////////////////////////
+@@ -28,35 +33,17 @@ static thread_local CThread* currentThread;
+ //////////////////////////////////////////////////////////////////////
+ 
+ CThread::CThread(const char* ThreadName)
+-: m_StopEvent(true,true), m_TermEvent(true), m_StartEvent(true, true)
++:
++    m_bStop(false), m_StopEvent(true, true), m_StartEvent(true, true), m_pRunnable(nullptr)
+ {
+-  m_bStop = false;
+-
+-  m_bAutoDelete = false;
+-  m_ThreadId = 0;
+-  m_iLastTime = 0;
+-  m_iLastUsage = 0;
+-  m_fLastUsage = 0.0f;
+-
+-  m_pRunnable=NULL;
+-
+   if (ThreadName)
+     m_ThreadName = ThreadName;
+ }
+ 
+ CThread::CThread(IRunnable* pRunnable, const char* ThreadName)
+-: m_StopEvent(true, true), m_TermEvent(true), m_StartEvent(true, true)
++:
++    m_bStop(false), m_StopEvent(true, true), m_StartEvent(true, true), m_pRunnable(pRunnable)
+ {
+-  m_bStop = false;
+-
+-  m_bAutoDelete = false;
+-  m_ThreadId = 0;
+-  m_iLastTime = 0;
+-  m_iLastUsage = 0;
+-  m_fLastUsage = 0.0f;
+-
+-  m_pRunnable=pRunnable;
+-
+   if (ThreadName)
+     m_ThreadName = ThreadName;
+ }
+@@ -64,11 +51,16 @@ CThread::CThread(IRunnable* pRunnable, const char* ThreadName)
+ CThread::~CThread()
+ {
+   StopThread();
++  if (m_thread != nullptr)
++  {
++    m_thread->detach();
++    delete m_thread;
++  }
+ }
+ 
+-void CThread::Create(bool bAutoDelete, unsigned stacksize)
++void CThread::Create(bool bAutoDelete)
+ {
+-  if (m_ThreadId != 0)
++  if (m_thread != nullptr)
+   {
+     CLog::Log(LOGERROR, "%s - fatal error creating thread %s - old thread id not null", __FUNCTION__, m_ThreadName.c_str());
+     exit(1);
+@@ -79,61 +71,98 @@ void CThread::Create(bool bAutoDelete, unsigned stacksize)
+   m_bAutoDelete = bAutoDelete;
+   m_bStop = false;
+   m_StopEvent.Reset();
+-  m_TermEvent.Reset();
+   m_StartEvent.Reset();
+ 
+-  SpawnThread(stacksize);
+-}
+-
+-bool CThread::IsRunning() const
+-{
+-  return m_ThreadId ? true : false;
+-}
+-
+-THREADFUNC CThread::staticThread(void* data)
+-{
+-  CThread* pThread = static_cast<CThread*>(data);
+-  std::string name;
+-  ThreadIdentifier id;
+-  bool autodelete;
+-
+-  if (!pThread) {
+-    CLog::Log(LOGERROR,"%s, sanity failed. thread is NULL.",__FUNCTION__);
+-    return 1;
+-  }
+-
+-  name = pThread->m_ThreadName;
+-  id = GetDisplayThreadId(pThread->m_ThreadId);
+-  autodelete = pThread->m_bAutoDelete;
++  // lock?
++  //CSingleLock l(m_CriticalSection);
+ 
+-  pThread->SetThreadInfo();
++  std::promise<bool> prom;
++  m_future = prom.get_future();
+ 
+-  CLog::Log(LOGDEBUG,"Thread %s start, auto delete: %s", name.c_str(), (autodelete ? "true" : "false"));
+-
+-  currentThread = pThread;
+-  pThread->m_StartEvent.Set();
+-
+-  pThread->Action();
+-
+-  // lock during termination
+-  CSingleLock lock(pThread->m_CriticalSection);
+-
+-  pThread->m_ThreadId = 0;
+-  pThread->m_TermEvent.Set();
+-  pThread->TermHandler();
+-
+-  lock.Leave();
+-
+-  if (autodelete)
+   {
+-    CLog::Log(LOGDEBUG,"Thread %s %" PRIu64" terminating (autodelete)", name.c_str(), (uint64_t)id);
+-    delete pThread;
+-    pThread = NULL;
+-  }
+-  else
+-    CLog::Log(LOGDEBUG,"Thread %s %" PRIu64" terminating", name.c_str(), (uint64_t)id);
++    // The std::thread internals must be set prior to the lambda doing
++    //   any work. This will cause the lambda to wait until m_thread
++    //   is fully initialized. Interestingly, using a std::atomic doesn't
++    //   have the appropriate memory barrier behavior to accomplish the
++    //   same thing so a full system mutex needs to be used.
++    CSingleLock blockLambdaTillDone(m_CriticalSection);
++    m_thread = new std::thread([](CThread* pThread, std::promise<bool> promise)
++    {
++      try
++      {
++
++        {
++          // Wait for the pThread->m_thread internals to be set. Otherwise we could
++          // get to a place where we're reading, say, the thread id inside this
++          // lambda's call stack prior to the thread that kicked off this lambda
++          // having it set. Once this lock is released, the CThread::Create function
++          // that kicked this off is done so everything should be set.
++          CSingleLock waitForThreadInternalsToBeSet(pThread->m_CriticalSection);
++        }
++
++        // This is used in various helper methods like GetCurrentThread so it needs
++        // to be set before anything else is done.
++        currentThread = pThread;
++
++        std::string name;
++        bool autodelete;
++
++        if (pThread == nullptr)
++        {
++          CLog::Log(LOGERROR,"%s, sanity failed. thread is NULL.",__FUNCTION__);
++          promise.set_value(false);
++          return;
++        }
++
++        name = pThread->m_ThreadName;
++
++        std::stringstream ss;
++        ss << std::this_thread::get_id();
++        std::string id = ss.str();
++        autodelete = pThread->m_bAutoDelete;
++
++        pThread->SetThreadInfo();
++
++        CLog::Log(LOGDEBUG,"Thread %s start, auto delete: %s", name.c_str(), (autodelete ? "true" : "false"));
++
++        pThread->m_StartEvent.Set();
++
++        pThread->Action();
++
++        // lock during termination
++        {
++          CSingleLock lock(pThread->m_CriticalSection);
++          pThread->TermHandler();
++        }
++
++        if (autodelete)
++        {
++          CLog::Log(LOGDEBUG,"Thread %s %s terminating (autodelete)", name.c_str(), id.c_str());
++          delete pThread;
++          pThread = NULL;
++        }
++        else
++          CLog::Log(LOGDEBUG,"Thread %s %s terminating", name.c_str(), id.c_str());
++
++        promise.set_value(true);
++      }
++      catch (const std::exception& e)
++      {
++        CLog::Log(LOGDEBUG,"Thread Terminating with Exception: %s", e.what());
++      }
++      catch (...)
++      {
++        CLog::Log(LOGDEBUG,"Thread Terminating with Exception");
++      }
++    }, this, std::move(prom));
++  } // let the lambda proceed
++
++  m_StartEvent.Wait(); // wait for the thread just spawned to set its internals
++}
+ 
+-  return 0;
++bool CThread::IsRunning() const
++{
++  return m_thread != nullptr;
+ }
+ 
+ bool CThread::IsAutoDelete() const
+@@ -148,33 +177,29 @@ void CThread::StopThread(bool bWait /*= true*/)
+   m_bStop = true;
+   m_StopEvent.Set();
+   CSingleLock lock(m_CriticalSection);
+-  if (m_ThreadId && bWait && !IsCurrentThread(m_ThreadId))
++  std::thread* lthread = m_thread;
++  if (lthread != nullptr && bWait && !IsCurrentThread())
+   {
+-    // We will leave the critical Section before WaitingForThreadExit.
+-    // But we have to Reacquire it after the wait so that CThread::staticThread
+-    // does not get removed its thread->m_CriticalSection before it can unlock
+-    // it. As CThread::staticThread holds the lock already at this point when
+-    // sending the term signal, StopThread will synchronize so that CThread-Object
+-    // is not removed prior the staticThread is accessing its members
+-    CSingleExit exit(m_CriticalSection);
+-    WaitForThreadExit(0xFFFFFFFF);
++    lock.Leave();
++    if (!Join(0xFFFFFFFF)) // eh?
++      lthread->join();
++    m_thread = nullptr;
+   }
+ }
+ 
+-ThreadIdentifier CThread::ThreadId() const
+-{
+-  return m_ThreadId;
+-}
+-
+ void CThread::Process()
+ {
+-  if(m_pRunnable)
++  if (m_pRunnable)
+     m_pRunnable->Run();
+ }
+ 
+ bool CThread::IsCurrentThread() const
+ {
+-  return IsCurrentThread(ThreadId());
++  CThread* pThread = currentThread;
++  if (pThread != nullptr)
++    return pThread == this;
++  else
++    return false;
+ }
+ 
+ CThread* CThread::GetCurrentThread()
+@@ -182,12 +207,41 @@ CThread* CThread::GetCurrentThread()
+   return currentThread;
+ }
+ 
++void CThread::TermHandler()
++{
++}
++
+ void CThread::Sleep(unsigned int milliseconds)
+ {
+-  if(milliseconds > 10 && IsCurrentThread())
++  if (milliseconds > 10 && IsCurrentThread())
+     m_StopEvent.WaitMSec(milliseconds);
+   else
+-    XbmcThreads::ThreadSleep(milliseconds);
++    std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
++}
++
++bool CThread::Join(unsigned int milliseconds)
++{
++  CSingleLock l(m_CriticalSection);
++  std::thread* lthread = m_thread;
++  if (lthread != nullptr)
++  {
++    if (IsCurrentThread())
++      return false;
++
++    {
++      CSingleExit exit(m_CriticalSection); // don't hold the thread lock while we're waiting
++      std::future_status stat = m_future.wait_for(std::chrono::milliseconds(milliseconds));
++      if (stat != std::future_status::ready)
++        return false;
++    }
++
++    // it's possible it's already joined since we released the lock above.
++    if (lthread->joinable())
++      m_thread->join();
++    return true;
++  }
++  else
++    return false;
+ }
+ 
+ void CThread::Action()
+@@ -222,3 +276,23 @@ void CThread::Action()
+   }
+ }
+ 
++float CThread::GetRelativeUsage()
++{
++  unsigned int iTime = XbmcThreads::SystemClockMillis();
++  iTime *= 10000; // convert into 100ns tics
++
++  // only update every 1 second
++  if (iTime < m_iLastTime + 1000 * 10000)
++    return m_fLastUsage;
++
++  int64_t iUsage = GetAbsoluteUsage();
++
++  if (m_iLastUsage > 0 && m_iLastTime > 0)
++    m_fLastUsage = static_cast<float>(iUsage - m_iLastUsage) / static_cast<float>(iTime - m_iLastTime);
++
++  m_iLastUsage = iUsage;
++  m_iLastTime = iTime;
++
++  return m_fLastUsage;
++}
++
+diff --git a/xbmc/threads/Thread.h b/xbmc/threads/Thread.h
+index c9e584f973da..2baa2d6372e3 100644
+--- a/xbmc/threads/Thread.h
++++ b/xbmc/threads/Thread.h
+@@ -12,23 +12,21 @@
+ //
+ //////////////////////////////////////////////////////////////////////
+ 
+-#include <atomic>
+-#include <string>
+-#include <stdint.h>
+ #include "Event.h"
+-#include "threads/ThreadImpl.h"
+ 
++#include "threads/platform/ThreadImpl.h"
++
++#include <atomic>
++#include <future>
+ #ifdef TARGET_DARWIN
+ #include <mach/mach.h>
+ #endif
++#include <stdint.h>
++#include <string>
++#include <thread>
+ 
+ class IRunnable;
+ 
+-// minimum as mandated by XTL
+-#define THREAD_MINSTACKSIZE 0x10000
+-
+-namespace XbmcThreads { class ThreadSettings; }
+-
+ class CThread
+ {
+ protected:
+@@ -37,34 +35,40 @@ class CThread
+ public:
+   CThread(IRunnable* pRunnable, const char* ThreadName);
+   virtual ~CThread();
+-  void Create(bool bAutoDelete = false, unsigned stacksize = 0);
++  void Create(bool bAutoDelete = false);
+   void Sleep(unsigned int milliseconds);
+-  int GetSchedRRPriority(void);
+-  bool SetPrioritySched_RR(int iPriority);
+   bool IsAutoDelete() const;
+   virtual void StopThread(bool bWait = true);
+   bool IsRunning() const;
+ 
++  bool IsCurrentThread() const;
++  bool Join(unsigned int milliseconds);
++
++  inline static const std::thread::id GetCurrentThreadId()
++  {
++    return std::this_thread::get_id();
++  }
++
+   // -----------------------------------------------------------------------------------
+   // These are platform specific and can be found in ./platform/[platform]/ThreadImpl.cpp
+   // -----------------------------------------------------------------------------------
+-  bool IsCurrentThread() const;
+-  int GetMinPriority(void);
+-  int GetMaxPriority(void);
+-  int GetNormalPriority(void);
++  static int GetMinPriority(void);
++  static int GetMaxPriority(void);
++  static int GetNormalPriority(void);
++  static std::uintptr_t GetCurrentThreadNativeHandle();
++
++  // Get and set the thread's priority
+   int GetPriority(void);
+   bool SetPriority(const int iPriority);
+-  bool WaitForThreadExit(unsigned int milliseconds);
++
+   float GetRelativeUsage();  // returns the relative cpu usage of this thread since last call
+   int64_t GetAbsoluteUsage();
+   // -----------------------------------------------------------------------------------
+ 
+-  static bool IsCurrentThread(const ThreadIdentifier tid);
+-  static ThreadIdentifier GetCurrentThreadId();
+-  static ThreadIdentifier GetDisplayThreadId(const ThreadIdentifier tid);
+   static CThread* GetCurrentThread();
+ 
+   virtual void OnException(){} // signal termination handler
++
+ protected:
+   virtual void OnStartup(){};
+   virtual void OnExit(){};
+@@ -88,30 +92,30 @@ class CThread
+   }
+ 
+ private:
+-  static THREADFUNC staticThread(void *data);
+   void Action();
+ 
+   // -----------------------------------------------------------------------------------
+   // These are platform specific and can be found in ./platform/[platform]/ThreadImpl.cpp
+   // -----------------------------------------------------------------------------------
+-  ThreadIdentifier ThreadId() const;
+-  void SetThreadInfo();
++  void SetThreadInfo(); // called from the spawned thread
+   void TermHandler();
+   void SetSignalHandlers();
+-  void SpawnThread(unsigned stacksize);
+   // -----------------------------------------------------------------------------------
+ 
+-  ThreadIdentifier m_ThreadId;
+-  ThreadOpaque m_ThreadOpaque = {};
+-  bool m_bAutoDelete;
++  bool m_bAutoDelete = false;
+   CEvent m_StopEvent;
+-  CEvent m_TermEvent;
+   CEvent m_StartEvent;
+   CCriticalSection m_CriticalSection;
+   IRunnable* m_pRunnable;
+-  uint64_t m_iLastUsage;
+-  uint64_t m_iLastTime;
+-  float m_fLastUsage;
++
++  uint64_t m_iLastUsage = 0;
++  uint64_t m_iLastTime = 0;
++  float m_fLastUsage = 0.0f;
+ 
+   std::string m_ThreadName;
++  std::thread* m_thread = nullptr;
++  std::future<bool> m_future;
++
++  // Platform specific hangers-on
++  ThreadLwpId m_lwpId = 0;
+ };
+diff --git a/xbmc/threads/ThreadImpl.h b/xbmc/threads/ThreadImpl.h
+deleted file mode 100644
+index 492da13bc1c6..000000000000
+--- a/xbmc/threads/ThreadImpl.h
++++ /dev/null
+@@ -1,12 +0,0 @@
+-/*
+- *  Copyright (C) 2005-2018 Team Kodi
+- *  This file is part of Kodi - https://kodi.tv
+- *
+- *  SPDX-License-Identifier: GPL-2.0-or-later
+- *  See LICENSES/README.md for more information.
+- */
+-
+-#pragma once
+-
+-#include "threads/platform/ThreadImpl.h"
+-
+diff --git a/xbmc/threads/platform/README.platform b/xbmc/threads/platform/README.platform
+deleted file mode 100644
+index be9a087ca473..000000000000
+--- a/xbmc/threads/platform/README.platform
++++ /dev/null
+@@ -1,51 +0,0 @@
+-In order to port xbmc to an unsupported platform, the threading model
+-needs to replace the following classes:
+-
+--------------------------------------------------------------------------
+-CCriticalSection
+--------------------------------------------------------------------------
+-
+-CCriticalSection - must implement the "CountingLockable" concept:
+-   void lock();
+-   bool try_lock();
+-   void unlock();
+-   unsigned int exit();
+-   void restore(unsigned int);
+-
+-The "CountingLockable" concept implies a RECURSIVE Lockable.
+-
+-There is a "CountingLockable" template which can be used to facilitate this
+-implementation from something that implements the "Lockable" concept:
+-   void lock();
+-   bool try_lock();
+-   void unlock();
+-
+-using:
+-   class CCriticalSection : public CountingLockable<PlatformSpecificLocakable> {};
+-
+-
+--------------------------------------------------------------------------
+-ThreadLocal
+--------------------------------------------------------------------------
+-
+-ThreadLocal - must be a template<class T> that implements the "ThreadLocal" concept:
+-   void set(T* val);
+-   T* get();
+-
+-currently there is no need for a facility to define a cleanup function and if
+-destructors are automatically called by the underlying implementation this
+-behavior must be blocked (such is the case with boost).
+-
+--------------------------------------------------------------------------
+-ConditionVariable
+--------------------------------------------------------------------------
+-
+-ConditionVariable - must be implemented to handle a ConditionVariable concept:
+-
+-   template <class L> WaitResponse wait(L& lock);
+-   template <class L> WaitResponse wait(L& lock, int milliseconds);
+-   void notifyAll();
+-   void notify();
+-
+-where L is a typename template variable that must satisfy Lockable concept
+-defined above.
+diff --git a/xbmc/threads/platform/RecursiveMutex.h b/xbmc/threads/platform/RecursiveMutex.h
+index caf523e700e0..0b57b9baa145 100644
+--- a/xbmc/threads/platform/RecursiveMutex.h
++++ b/xbmc/threads/platform/RecursiveMutex.h
+@@ -14,7 +14,6 @@
+ #include <pthread.h>
+ namespace XbmcThreads
+ {
+-  // forward declare in preparation for the friend declaration
+   class CRecursiveMutex
+   {
+     pthread_mutex_t m_mutex;
+diff --git a/xbmc/threads/platform/ThreadImpl.cpp b/xbmc/threads/platform/ThreadImpl.cpp
+index f396181e9554..ffc1cd6fe0f6 100644
+--- a/xbmc/threads/platform/ThreadImpl.cpp
++++ b/xbmc/threads/platform/ThreadImpl.cpp
+@@ -8,11 +8,6 @@
+ 
+ #if (defined TARGET_POSIX)
+ #include "threads/platform/pthreads/ThreadImpl.cpp"
+-#if defined(TARGET_DARWIN_IOS)
+-#include "threads/platform/darwin/ThreadSchedImpl.cpp"
+-#else
+-#include "threads/platform/linux/ThreadSchedImpl.cpp"
+-#endif
+ #elif (defined TARGET_WINDOWS)
+ #include "threads/platform/win/ThreadImpl.cpp"
+ #endif
+diff --git a/xbmc/threads/platform/darwin/ThreadSchedImpl.cpp b/xbmc/threads/platform/darwin/ThreadSchedImpl.cpp
+deleted file mode 100644
+index 0952cbfe35f3..000000000000
+--- a/xbmc/threads/platform/darwin/ThreadSchedImpl.cpp
++++ /dev/null
+@@ -1,35 +0,0 @@
+-/*
+- *  Copyright (C) 2005-2018 Team Kodi
+- *  This file is part of Kodi - https://kodi.tv
+- *
+- *  SPDX-License-Identifier: GPL-2.0-or-later
+- *  See LICENSES/README.md for more information.
+- */
+-
+-int CThread::GetSchedRRPriority(void)
+-{
+-  return 96;
+-}
+-
+-bool CThread::SetPrioritySched_RR(int iPriority)
+-{
+-  // Changing to SCHED_RR is safe under OSX, you don't need elevated privileges and the
+-  // OSX scheduler will monitor SCHED_RR threads and drop to SCHED_OTHER if it detects
+-  // the thread running away. OSX automatically does this with the CoreAudio audio
+-  // device handler thread.
+-  int32_t result;
+-  thread_extended_policy_data_t theFixedPolicy;
+-
+-  // make thread fixed, set to 'true' for a non-fixed thread
+-  theFixedPolicy.timeshare = false;
+-  result = thread_policy_set(pthread_mach_thread_np(ThreadId()), THREAD_EXTENDED_POLICY,
+-    (thread_policy_t)&theFixedPolicy, THREAD_EXTENDED_POLICY_COUNT);
+-
+-  int policy;
+-  struct sched_param param;
+-  result = pthread_getschedparam(ThreadId(), &policy, &param );
+-  // change from default SCHED_OTHER to SCHED_RR
+-  policy = SCHED_RR;
+-  result = pthread_setschedparam(ThreadId(), policy, &param );
+-  return result == 0;
+-}
+diff --git a/xbmc/threads/platform/linux/ThreadSchedImpl.cpp b/xbmc/threads/platform/linux/ThreadSchedImpl.cpp
+deleted file mode 100644
+index 6586c488e2e6..000000000000
+--- a/xbmc/threads/platform/linux/ThreadSchedImpl.cpp
++++ /dev/null
+@@ -1,17 +0,0 @@
+-/*
+- *  Copyright (C) 2005-2018 Team Kodi
+- *  This file is part of Kodi - https://kodi.tv
+- *
+- *  SPDX-License-Identifier: GPL-2.0-or-later
+- *  See LICENSES/README.md for more information.
+- */
+-
+-int CThread::GetSchedRRPriority(void)
+-{
+-  return GetNormalPriority();
+-}
+-
+-bool CThread::SetPrioritySched_RR(int iPriority)
+-{
+-  return false;
+-}
+diff --git a/xbmc/threads/platform/pthreads/ThreadImpl.cpp b/xbmc/threads/platform/pthreads/ThreadImpl.cpp
+index 4ad675eb4a24..a6cf8048dab3 100644
+--- a/xbmc/threads/platform/pthreads/ThreadImpl.cpp
++++ b/xbmc/threads/platform/pthreads/ThreadImpl.cpp
+@@ -24,83 +24,99 @@
+ 
+ namespace XbmcThreads
+ {
+-  // ==========================================================
+-  static pthread_mutexattr_t recursiveAttr;
++// ==========================================================
++static pthread_mutexattr_t recursiveAttr;
+ 
+-  static bool setRecursiveAttr()
++static bool SetRecursiveAttr()
++{
++  static bool alreadyCalled = false; // initialized to 0 in the data segment prior to startup init code running
++  if (!alreadyCalled)
+   {
+-    static bool alreadyCalled = false; // initialized to 0 in the data segment prior to startup init code running
+-    if (!alreadyCalled)
+-    {
+-      pthread_mutexattr_init(&recursiveAttr);
+-      pthread_mutexattr_settype(&recursiveAttr,PTHREAD_MUTEX_RECURSIVE);
++    pthread_mutexattr_init(&recursiveAttr);
++    pthread_mutexattr_settype(&recursiveAttr, PTHREAD_MUTEX_RECURSIVE);
+ #if !defined(TARGET_ANDROID)
+-      pthread_mutexattr_setprotocol(&recursiveAttr,PTHREAD_PRIO_INHERIT);
++    pthread_mutexattr_setprotocol(&recursiveAttr, PTHREAD_PRIO_INHERIT);
+ #endif
+-      alreadyCalled = true;
+-    }
+-    return true; // note, we never call destroy.
++    alreadyCalled = true;
+   }
++  return true; // note, we never call destroy.
++}
+ 
+-  static bool recursiveAttrSet = setRecursiveAttr();
++static bool recursiveAttrSet = SetRecursiveAttr();
+ 
+-  pthread_mutexattr_t* CRecursiveMutex::getRecursiveAttr()
+-  {
+-    if (!recursiveAttrSet) // this is only possible in the single threaded startup code
+-      recursiveAttrSet = setRecursiveAttr();
+-    return &recursiveAttr;
+-  }
+-  // ==========================================================
+-}
+-void CThread::SpawnThread(unsigned stacksize)
++pthread_mutexattr_t* CRecursiveMutex::getRecursiveAttr()
+ {
+-  pthread_attr_t attr;
+-  pthread_attr_init(&attr);
+-#if !defined(TARGET_ANDROID) // http://code.google.com/p/android/issues/detail?id=7808
+-  if (stacksize > PTHREAD_STACK_MIN)
+-    pthread_attr_setstacksize(&attr, stacksize);
+-#endif
+-  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+-  if (pthread_create(&m_ThreadId, &attr, (void*(*)(void*))staticThread, this) != 0)
+-  {
+-    CLog::Log(LOGNOTICE, "%s - fatal error creating thread",__FUNCTION__);
+-  }
+-  pthread_attr_destroy(&attr);
++  if (!recursiveAttrSet) // this is only possible in the single threaded startup code
++    recursiveAttrSet = SetRecursiveAttr();
++  return &recursiveAttr;
++}
++// ==========================================================
+ }
+ 
+-void CThread::TermHandler() { }
+-
+-void CThread::SetThreadInfo()
++static pid_t GetCurrentThreadPid_()
+ {
+ #ifdef TARGET_FREEBSD
+-  m_ThreadOpaque.LwpId = pthread_getthreadid_np();
++  return pthread_getthreadid_np();
+ #elif defined(TARGET_ANDROID)
+-  m_ThreadOpaque.LwpId = gettid();
++  return gettid();
+ #else
+-  m_ThreadOpaque.LwpId = syscall(SYS_gettid);
+-#endif
+-
+-#if defined(TARGET_DARWIN)
+-  pthread_setname_np(m_ThreadName.c_str());
+-#elif defined(TARGET_LINUX) && defined(__GLIBC__)
+-  pthread_setname_np(m_ThreadId, m_ThreadName.c_str());
++  return syscall(SYS_gettid);
+ #endif
++}
+ 
+ #ifdef RLIMIT_NICE
++// We need to return what the best number than can be passed
++// to SetPriority is. It will basically be relative to the
++// the main thread's nice level, inverted (since "higher" priority
++// nice levels are actually lower numbers).
++static int GetUserMaxPriority(int maxPriority)
++{
++  // if we're root, then we can do anything. So we'll allow
++  // max priority.
++  if (geteuid() == 0)
++    return maxPriority;
++
+   // get user max prio
+   struct rlimit limit;
+-  int userMaxPrio;
+   if (getrlimit(RLIMIT_NICE, &limit) == 0)
+   {
+-    userMaxPrio = limit.rlim_cur - 20;
+-    if (userMaxPrio < 0)
+-      userMaxPrio = 0;
++    const int appNice = getpriority(PRIO_PROCESS, getpid());
++    const int rlimVal = limit.rlim_cur;
++
++    // according to the docs, limit.rlim_cur shouldn't be zero, yet, here we are.
++    // if a user has no entry in limits.conf rlim_cur is zero. In this case the best
++    //   nice value we can hope to achieve is '0' as a regular user
++    const int userBestNiceValue = (rlimVal == 0) ? 0 : (20 - rlimVal);
++
++    //          running the app with nice -n 10 ->
++    // e.g.         +10                 10    -     0   // default non-root user.
++    // e.g.         +30                 10    -     -20 // if root with rlimits set.
++    //          running the app default ->
++    // e.g.          0                  0    -     0   // default non-root user.
++    // e.g.         +20                 0    -     -20 // if root with rlimits set.
++    const int bestUserSetPriority = appNice - userBestNiceValue; // nice is inverted from prio.
++    return std::min(maxPriority, bestUserSetPriority); //
+   }
+   else
+-    userMaxPrio = 0;
++    // If we fail getting the limit for nice we just assume we can't raise the priority
++    return 0;
++}
++#endif
+ 
+-  if (geteuid() == 0)
+-    userMaxPrio = GetMaxPriority();
++void CThread::SetThreadInfo()
++{
++  m_lwpId = GetCurrentThreadPid_();
++
++#if defined(TARGET_DARWIN)
++  pthread_setname_np(m_ThreadName.c_str());
++#elif defined(TARGET_LINUX) && defined(__GLIBC__)
++  // mthread must be set by here.
++  pthread_setname_np(m_thread->native_handle(), m_ThreadName.c_str());
++#endif
++
++#ifdef RLIMIT_NICE
++  // get user max prio
++  int userMaxPrio = GetUserMaxPriority(GetMaxPriority());
+ 
+   // if the user does not have an entry in limits.conf the following
+   // call will fail
+@@ -108,31 +124,21 @@ void CThread::SetThreadInfo()
+   {
+     // start thread with nice level of application
+     int appNice = getpriority(PRIO_PROCESS, getpid());
+-    if (setpriority(PRIO_PROCESS, m_ThreadOpaque.LwpId, appNice) != 0)
++    if (setpriority(PRIO_PROCESS, m_lwpId, appNice) != 0)
+       CLog::Log(LOGERROR, "%s: error %s", __FUNCTION__, strerror(errno));
+   }
+ #endif
+ }
+ 
+-ThreadIdentifier CThread::GetCurrentThreadId()
+-{
+-  return pthread_self();
+-}
+-
+-ThreadIdentifier CThread::GetDisplayThreadId(const ThreadIdentifier tid)
++std::uintptr_t CThread::GetCurrentThreadNativeHandle()
+ {
+-#if defined(TARGET_ANDROID)
+-  return pthread_gettid_np(tid);
++#if defined(TARGET_DARWIN) || defined(TARGET_FREEBSD)
++  return reinterpret_cast<std::uintptr_t>(pthread_self());
+ #else
+-  return tid;
++  return pthread_self();
+ #endif
+ }
+ 
+-bool CThread::IsCurrentThread(const ThreadIdentifier tid)
+-{
+-  return pthread_equal(pthread_self(), tid);
+-}
+-
+ int CThread::GetMinPriority(void)
+ {
+   // one level lower than application
+@@ -155,50 +161,30 @@ bool CThread::SetPriority(const int iPriority)
+ {
+   bool bReturn = false;
+ 
+-  // wait until thread is running, it needs to get its lwp id
+-  m_StartEvent.Wait();
+-
+-  CSingleLock lock(m_CriticalSection);
++  CSingleLock lockIt(m_CriticalSection);
+ 
+-  // get min prio for SCHED_RR
+-  int minRR = GetMaxPriority() + 1;
++  pid_t tid = static_cast<pid_t>(m_lwpId);
+ 
+-  if (!m_ThreadId)
++  if (!tid)
+     bReturn = false;
+-  else if (iPriority >= minRR)
+-    bReturn = SetPrioritySched_RR(iPriority);
+ #ifdef RLIMIT_NICE
+   else
+   {
+-    // get user max prio
+-    struct rlimit limit;
+-    int userMaxPrio;
+-    if (getrlimit(RLIMIT_NICE, &limit) == 0)
+-    {
+-      userMaxPrio = limit.rlim_cur - 20;
+-      // is a user has no entry in limits.conf rlim_cur is zero
+-      if (userMaxPrio < 0)
+-        userMaxPrio = 0;
+-    }
+-    else
+-      userMaxPrio = 0;
+-
+-    if (geteuid() == 0)
+-      userMaxPrio = GetMaxPriority();
++    // get user max prio given max prio (will take the min)
++    int userMaxPrio = GetUserMaxPriority(GetMaxPriority());
+ 
+     // keep priority in bounds
+     int prio = iPriority;
+     if (prio >= GetMaxPriority())
+-      prio = std::min(GetMaxPriority(), userMaxPrio);
++      prio = userMaxPrio; // this is already the min of GetMaxPriority and what the user can set.
+     if (prio < GetMinPriority())
+       prio = GetMinPriority();
+ 
+     // nice level of application
+-    int appNice = getpriority(PRIO_PROCESS, getpid());
+-    if (prio)
+-      prio = prio > 0 ? appNice-1 : appNice+1;
++    const int appNice = getpriority(PRIO_PROCESS, getpid());
++    const int newNice = appNice - prio;
+ 
+-    if (setpriority(PRIO_PROCESS, m_ThreadOpaque.LwpId, prio) == 0)
++    if (setpriority(PRIO_PROCESS, m_lwpId, newNice) == 0)
+       bReturn = true;
+     else
+       CLog::Log(LOGERROR, "%s: error %s", __FUNCTION__, strerror(errno));
+@@ -212,39 +198,27 @@ int CThread::GetPriority()
+ {
+   int iReturn;
+ 
+-  // lwp id is valid after start signal has fired
+-  m_StartEvent.Wait();
+-
+-  CSingleLock lock(m_CriticalSection);
+-
+   int appNice = getpriority(PRIO_PROCESS, getpid());
+-  int prio = getpriority(PRIO_PROCESS, m_ThreadOpaque.LwpId);
++  int prio = getpriority(PRIO_PROCESS, m_lwpId);
+   iReturn = appNice - prio;
+ 
+   return iReturn;
+ }
+ 
+-bool CThread::WaitForThreadExit(unsigned int milliseconds)
+-{
+-  bool bReturn = m_TermEvent.WaitMSec(milliseconds);
+-
+-  return bReturn;
+-}
+-
+ int64_t CThread::GetAbsoluteUsage()
+ {
+   CSingleLock lock(m_CriticalSection);
+ 
+-  if (!m_ThreadId)
+-  return 0;
++  if (!m_thread)
++    return 0;
+ 
+   int64_t time = 0;
+ #ifdef TARGET_DARWIN
+   thread_basic_info threadInfo;
+   mach_msg_type_number_t threadInfoCount = THREAD_BASIC_INFO_COUNT;
+ 
+-  kern_return_t ret = thread_info(pthread_mach_thread_np(m_ThreadId),
+-    THREAD_BASIC_INFO, (thread_info_t)&threadInfo, &threadInfoCount);
++  kern_return_t ret = thread_info(pthread_mach_thread_np(static_cast<pthread_t>(m_thread->native_handle())),
++      THREAD_BASIC_INFO, (thread_info_t)&threadInfo, &threadInfoCount);
+ 
+   if (ret == KERN_SUCCESS)
+   {
+@@ -257,45 +231,27 @@ int64_t CThread::GetAbsoluteUsage()
+ 
+ #else
+   clockid_t clock;
+-  if (pthread_getcpuclockid(m_ThreadId, &clock) == 0)
++  if (pthread_getcpuclockid(static_cast<pthread_t>(m_thread->native_handle()), &clock) == 0)
+   {
+     struct timespec tp;
+     clock_gettime(clock, &tp);
+-    time = (int64_t)tp.tv_sec * 10000000 + tp.tv_nsec/100;
++    time = (int64_t) tp.tv_sec * 10000000 + tp.tv_nsec / 100;
+   }
+ #endif
+ 
+   return time;
+ }
+ 
+-float CThread::GetRelativeUsage()
+-{
+-  unsigned int iTime = XbmcThreads::SystemClockMillis();
+-  iTime *= 10000; // convert into 100ns tics
+-
+-  // only update every 1 second
+-  if( iTime < m_iLastTime + 1000*10000 ) return m_fLastUsage;
+-
+-  int64_t iUsage = GetAbsoluteUsage();
+-
+-  if (m_iLastUsage > 0 && m_iLastTime > 0)
+-    m_fLastUsage = (float)( iUsage - m_iLastUsage ) / (float)( iTime - m_iLastTime );
+-
+-  m_iLastUsage = iUsage;
+-  m_iLastTime = iTime;
+-
+-  return m_fLastUsage;
+-}
+-
+-void term_handler (int signum)
++void term_handler(int signum)
+ {
+-  CLog::Log(LOGERROR,"thread 0x%lx (%lu) got signal %d. calling OnException and terminating thread abnormally.", (long unsigned int)pthread_self(), (long unsigned int)pthread_self(), signum);
++  CLog::Log(LOGERROR, "thread 0x%lx (%lu) got signal %d. calling OnException and terminating thread abnormally.", (long unsigned int) pthread_self(),
++      (long unsigned int) pthread_self(), signum);
+   CThread* curThread = CThread::GetCurrentThread();
+   if (curThread)
+   {
+     curThread->StopThread(false);
+     curThread->OnException();
+-    if( curThread->IsAutoDelete() )
++    if (curThread->IsAutoDelete())
+       delete curThread;
+   }
+   pthread_exit(NULL);
+@@ -305,7 +261,7 @@ void CThread::SetSignalHandlers()
+ {
+   struct sigaction action;
+   action.sa_handler = term_handler;
+-  sigemptyset (&action.sa_mask);
++  sigemptyset(&action.sa_mask);
+   action.sa_flags = 0;
+   //sigaction (SIGABRT, &action, NULL);
+   //sigaction (SIGSEGV, &action, NULL);
+diff --git a/xbmc/threads/platform/pthreads/ThreadImpl.h b/xbmc/threads/platform/pthreads/ThreadImpl.h
+index 312f6ac544be..8bd282e81d59 100644
+--- a/xbmc/threads/platform/pthreads/ThreadImpl.h
++++ b/xbmc/threads/platform/pthreads/ThreadImpl.h
+@@ -8,30 +8,18 @@
+ 
+ #pragma once
+ 
+-#include <pthread.h>
++#include <sys/types.h>
+ #include <unistd.h>
+ 
+-const int THREAD_BASE_PRIORITY_LOWRT{15};
+-const int THREAD_BASE_PRIORITY_MAX{2};
+-const int THREAD_BASE_PRIORITY_MIN{-2};
+-const int THREAD_BASE_PRIORITY_IDLE{-15};
+-const int THREAD_PRIORITY_LOWEST{THREAD_BASE_PRIORITY_MIN};
+-const int THREAD_PRIORITY_BELOW_NORMAL{THREAD_PRIORITY_LOWEST + 1};
+-const int THREAD_PRIORITY_NORMAL{0};
+-const int THREAD_PRIORITY_HIGHEST{THREAD_BASE_PRIORITY_MAX};
+-const int THREAD_PRIORITY_ABOVE_NORMAL{THREAD_PRIORITY_HIGHEST - 1};
++constexpr int THREAD_BASE_PRIORITY_LOWRT{15};
++constexpr int THREAD_BASE_PRIORITY_MAX{2};
++constexpr int THREAD_BASE_PRIORITY_MIN{-2};
++constexpr int THREAD_BASE_PRIORITY_IDLE{-15};
++constexpr int THREAD_PRIORITY_LOWEST{THREAD_BASE_PRIORITY_MIN};
++constexpr int THREAD_PRIORITY_BELOW_NORMAL{THREAD_PRIORITY_LOWEST + 1};
++constexpr int THREAD_PRIORITY_NORMAL{0};
++constexpr int THREAD_PRIORITY_HIGHEST{THREAD_BASE_PRIORITY_MAX};
++constexpr int THREAD_PRIORITY_ABOVE_NORMAL{THREAD_PRIORITY_HIGHEST - 1};
+ 
+-struct threadOpaque
+-{
+-  pid_t LwpId;
+-};
+-
+-typedef pthread_t ThreadIdentifier;
+-typedef threadOpaque ThreadOpaque;
+-typedef int THREADFUNC;
+-
+-namespace XbmcThreads
+-{
+-  inline static void ThreadSleep(unsigned int millis) { usleep(millis*1000); }
+-}
++typedef pid_t ThreadLwpId;
+ 
+diff --git a/xbmc/threads/platform/win/ThreadImpl.cpp b/xbmc/threads/platform/win/ThreadImpl.cpp
+index c505f03fa6db..1cad2628caac 100644
+--- a/xbmc/threads/platform/win/ThreadImpl.cpp
++++ b/xbmc/threads/platform/win/ThreadImpl.cpp
+@@ -11,34 +11,12 @@
+ #include "platform/win32/WIN32Util.h"
+ #include "utils/log.h"
+ 
+-void CThread::SpawnThread(unsigned stacksize)
+-{
+-  // Create in the suspended state, so that no matter the thread priorities and scheduled order, the handle will be assigned
+-  // before the new thread exits.
+-  unsigned threadId;
+-  m_ThreadOpaque.handle = (HANDLE)_beginthreadex(NULL, stacksize, &staticThread, this, CREATE_SUSPENDED, &threadId);
+-  if (m_ThreadOpaque.handle == NULL)
+-  {
+-    CLog::Log(LOGERROR, "%s - fatal error %d creating thread", __FUNCTION__, GetLastError());
+-    return;
+-  }
+-  m_ThreadId = threadId;
+-
+-  if (ResumeThread(m_ThreadOpaque.handle) == -1)
+-    CLog::Log(LOGERROR, "%s - fatal error %d resuming thread", __FUNCTION__, GetLastError());
+-
+-}
+-
+-void CThread::TermHandler()
+-{
+-  CloseHandle(m_ThreadOpaque.handle);
+-  m_ThreadOpaque.handle = NULL;
+-}
+-
+ void CThread::SetThreadInfo()
+ {
+   const unsigned int MS_VC_EXCEPTION = 0x406d1388;
+ 
++  m_lwpId = m_thread->native_handle();
++
+ #pragma pack(push,8)
+   struct THREADNAME_INFO
+   {
+@@ -51,7 +29,7 @@ void CThread::SetThreadInfo()
+ 
+   info.dwType = 0x1000;
+   info.szName = m_ThreadName.c_str();
+-  info.dwThreadID = m_ThreadId;
++  info.dwThreadID = reinterpret_cast<std::uintptr_t>(m_lwpId);
+   info.dwFlags = 0;
+ 
+   __try
+@@ -65,19 +43,9 @@ void CThread::SetThreadInfo()
+   CWIN32Util::SetThreadLocalLocale(true); // avoid crashing with setlocale(), see https://connect.microsoft.com/VisualStudio/feedback/details/794122
+ }
+ 
+-ThreadIdentifier CThread::GetCurrentThreadId()
++std::uintptr_t CThread::GetCurrentThreadNativeHandle()
+ {
+-  return ::GetCurrentThreadId();
+-}
+-
+-ThreadIdentifier CThread::GetDisplayThreadId(const ThreadIdentifier tid)
+-{
+-  return tid;
+-}
+-
+-bool CThread::IsCurrentThread(const ThreadIdentifier tid)
+-{
+-  return (::GetCurrentThreadId() == tid);
++  return reinterpret_cast<std::uintptr_t>(::GetCurrentThread());
+ }
+ 
+ int CThread::GetMinPriority(void)
+@@ -95,20 +63,13 @@ int CThread::GetNormalPriority(void)
+   return(THREAD_PRIORITY_NORMAL);
+ }
+ 
+-int CThread::GetSchedRRPriority(void)
+-{
+-  return GetNormalPriority();
+-}
+-
+ bool CThread::SetPriority(const int iPriority)
+ {
+   bool bReturn = false;
+ 
+   CSingleLock lock(m_CriticalSection);
+-  if (m_ThreadOpaque.handle)
+-  {
+-    bReturn = SetThreadPriority(m_ThreadOpaque.handle, iPriority) == TRUE;
+-  }
++  if (m_thread)
++    bReturn = SetThreadPriority(m_lwpId, iPriority) == TRUE;
+ 
+   return bReturn;
+ }
+@@ -118,37 +79,11 @@ int CThread::GetPriority()
+   CSingleLock lock(m_CriticalSection);
+ 
+   int iReturn = THREAD_PRIORITY_NORMAL;
+-  if (m_ThreadOpaque.handle)
+-  {
+-    iReturn = GetThreadPriority(m_ThreadOpaque.handle);
+-  }
++  if (m_thread)
++    iReturn = GetThreadPriority(m_lwpId);
+   return iReturn;
+ }
+ 
+-bool CThread::WaitForThreadExit(unsigned int milliseconds)
+-{
+-  bool bReturn = true;
+-
+-  CSingleLock lock(m_CriticalSection);
+-  if (m_ThreadId && m_ThreadOpaque.handle != NULL)
+-  {
+-    // boost priority of thread we are waiting on to same as caller
+-    int callee = GetThreadPriority(m_ThreadOpaque.handle);
+-    int caller = GetThreadPriority(::GetCurrentThread());
+-    if(caller != THREAD_PRIORITY_ERROR_RETURN && caller > callee)
+-      SetThreadPriority(m_ThreadOpaque.handle, caller);
+-
+-    lock.Leave();
+-    bReturn = m_TermEvent.WaitMSec(milliseconds);
+-    lock.Enter();
+-
+-    // restore thread priority if thread hasn't exited
+-    if(callee != THREAD_PRIORITY_ERROR_RETURN && caller > callee && m_ThreadOpaque.handle)
+-      SetThreadPriority(m_ThreadOpaque.handle, callee);
+-  }
+-  return bReturn;
+-}
+-
+ int64_t CThread::GetAbsoluteUsage()
+ {
+ #ifdef TARGET_WINDOWS_STORE
+@@ -157,12 +92,17 @@ int64_t CThread::GetAbsoluteUsage()
+ #else
+   CSingleLock lock(m_CriticalSection);
+ 
+-  if (!m_ThreadOpaque.handle)
++  if (m_thread == nullptr)
++    return 0;
++
++  HANDLE tid = static_cast<HANDLE>(m_lwpId);
++
++  if (!tid)
+     return 0;
+ 
+   uint64_t time = 0;
+   FILETIME CreationTime, ExitTime, UserTime, KernelTime;
+-  if( GetThreadTimes(m_ThreadOpaque.handle, &CreationTime, &ExitTime, &KernelTime, &UserTime ) )
++  if( GetThreadTimes(tid, &CreationTime, &ExitTime, &KernelTime, &UserTime ) )
+   {
+     time = (((uint64_t)UserTime.dwHighDateTime) << 32) + ((uint64_t)UserTime.dwLowDateTime);
+     time += (((uint64_t)KernelTime.dwHighDateTime) << 32) + ((uint64_t)KernelTime.dwLowDateTime);
+@@ -171,25 +111,6 @@ int64_t CThread::GetAbsoluteUsage()
+ #endif
+ }
+ 
+-float CThread::GetRelativeUsage()
+-{
+-  unsigned int iTime = XbmcThreads::SystemClockMillis();
+-  iTime *= 10000; // convert into 100ns tics
+-
+-  // only update every 1 second
+-  if( iTime < m_iLastTime + 1000*10000 ) return m_fLastUsage;
+-
+-  int64_t iUsage = GetAbsoluteUsage();
+-
+-  if (m_iLastUsage > 0 && m_iLastTime > 0)
+-    m_fLastUsage = (float)( iUsage - m_iLastUsage ) / (float)( iTime - m_iLastTime );
+-
+-  m_iLastUsage = iUsage;
+-  m_iLastTime = iTime;
+-
+-  return m_fLastUsage;
+-}
+-
+ void CThread::SetSignalHandlers()
+ {
+ }
+diff --git a/xbmc/threads/platform/win/ThreadImpl.h b/xbmc/threads/platform/win/ThreadImpl.h
+index 052230119f60..e839af22c614 100644
+--- a/xbmc/threads/platform/win/ThreadImpl.h
++++ b/xbmc/threads/platform/win/ThreadImpl.h
+@@ -10,18 +10,5 @@
+ 
+ #include <windows.h>
+ 
+-
+-struct threadOpaque
+-{
+-  HANDLE handle;
+-};
+-
+-typedef DWORD ThreadIdentifier;
+-typedef threadOpaque ThreadOpaque;
+-#define THREADFUNC unsigned __stdcall
+-
+-namespace XbmcThreads
+-{
+-  inline static void ThreadSleep(unsigned int millis) { Sleep(millis); }
+-}
++typedef HANDLE ThreadLwpId;
+ 
+diff --git a/xbmc/threads/test/TestHelpers.h b/xbmc/threads/test/TestHelpers.h
+index c737499b0bdc..7f963873dfdb 100644
+--- a/xbmc/threads/test/TestHelpers.h
++++ b/xbmc/threads/test/TestHelpers.h
+@@ -75,12 +75,12 @@ class thread
+ 
+   void join()
+   {
+-    cthread->WaitForThreadExit((unsigned int)-1);
++    cthread->Join(static_cast<unsigned int>(-1));
+   }
+ 
+   bool timed_join(unsigned int millis)
+   {
+-    return cthread->WaitForThreadExit(millis);
++    return cthread->Join(millis);
+   }
+ };
+ 
+diff --git a/xbmc/utils/JSONVariantParser.cpp b/xbmc/utils/JSONVariantParser.cpp
+index 77731d4339f3..f003cdfb10c3 100644
+--- a/xbmc/utils/JSONVariantParser.cpp
++++ b/xbmc/utils/JSONVariantParser.cpp
+@@ -203,7 +203,9 @@ bool CJSONVariantParser::Parse(const char* json, CVariant& data)
+   rapidjson::StringStream stringStream(json);
+ 
+   CJSONVariantParserHandler handler(data);
+-  if (reader.Parse(stringStream, handler))
++  // use kParseIterativeFlag to eliminate possible stack overflow
++  // from json parsing via reentrant calls
++  if (reader.Parse<rapidjson::kParseIterativeFlag>(stringStream, handler))
+     return true;
+ 
+   return false;
+diff --git a/xbmc/utils/RssReader.cpp b/xbmc/utils/RssReader.cpp
+index 2506b75f63c4..6dffabf3fe0f 100644
+--- a/xbmc/utils/RssReader.cpp
++++ b/xbmc/utils/RssReader.cpp
+@@ -92,7 +92,7 @@ void CRssReader::AddToQueue(int iAdd)
+   {
+     StopThread();
+     m_bIsRunning = true;
+-    CThread::Create(false, THREAD_MINSTACKSIZE);
++    CThread::Create(false);
+   }
+ }
+ 
+diff --git a/xbmc/utils/log.cpp b/xbmc/utils/log.cpp
+index d163727bdd17..7392abecef14 100644
+--- a/xbmc/utils/log.cpp
++++ b/xbmc/utils/log.cpp
+@@ -206,7 +206,7 @@ bool CLog::WriteLogString(int logLevel, const std::string& logString)
+                                   minute,
+                                   second,
+                                   static_cast<int>(millisecond),
+-                                  (uint64_t)CThread::GetDisplayThreadId(CThread::GetCurrentThreadId()),
++                                  static_cast<uint64_t>(CThread::GetCurrentThreadNativeHandle()),
+                                   levelNames[logLevel]) + strData;
+ 
+   return g_logState.m_platform.WriteStringToLog(strData);
+diff --git a/xbmc/windowing/rpi/VideoSyncPi.cpp b/xbmc/windowing/rpi/VideoSyncPi.cpp
+index fd1252801176..3f2b6735596f 100644
+--- a/xbmc/windowing/rpi/VideoSyncPi.cpp
++++ b/xbmc/windowing/rpi/VideoSyncPi.cpp
+@@ -26,8 +26,12 @@ bool CVideoSyncPi::Setup(PUPDATECLOCK func)
+ 
+ void CVideoSyncPi::Run(CEvent& stopEvent)
+ {
+-  /* This shouldn't be very busy and timing is important so increase priority */
+-  CThread::GetCurrentThread()->SetPriority(CThread::GetCurrentThread()->GetPriority()+1);
++  CThread* thread = CThread::GetCurrentThread();
++  if (thread != nullptr)
++  {
++    /* This shouldn't be very busy and timing is important so increase priority */
++    thread->SetPriority(thread->GetPriority() + 1);
++  }
+ 
+   while (!stopEvent.Signaled() && !m_abort)
+   {
+
+From 47cb72efb3cacc2418116e5b500d59dd21272d86 Mon Sep 17 00:00:00 2001
+From: Jim Carroll <jim@dontcallme.com>
+Date: Sun, 16 Jun 2019 14:34:01 -0400
+Subject: [PATCH 2/2] Threads that end are now correctly marked as !IsRunning.
+
+---
+ xbmc/threads/Thread.cpp | 30 +++++++++++++++++++++++++-----
+ 1 file changed, 25 insertions(+), 5 deletions(-)
+
+diff --git a/xbmc/threads/Thread.cpp b/xbmc/threads/Thread.cpp
+index e72fa4096095..c784d37a4d33 100644
+--- a/xbmc/threads/Thread.cpp
++++ b/xbmc/threads/Thread.cpp
+@@ -62,8 +62,18 @@ void CThread::Create(bool bAutoDelete)
+ {
+   if (m_thread != nullptr)
+   {
+-    CLog::Log(LOGERROR, "%s - fatal error creating thread %s - old thread id not null", __FUNCTION__, m_ThreadName.c_str());
+-    exit(1);
++    // if the thread exited on it's own, without a call to StopThread, then we can get here
++    // incorrectly. We should be able to determine this by checking the promise.
++    std::future_status stat = m_future.wait_for(std::chrono::milliseconds(0));
++    // a status of 'ready' means the future contains the value so the thread has exited
++    // since the thread can't exit without setting the future.
++    if (stat == std::future_status::ready) // this is an indication the thread has exited.
++      StopThread(true);  // so let's just clean up
++    else
++    { // otherwise we have a problem.
++      CLog::Log(LOGERROR, "%s - fatal error creating thread %s - old thread id not null", __FUNCTION__, m_ThreadName.c_str());
++      exit(1);
++    }
+   }
+   m_iLastTime = XbmcThreads::SystemClockMillis() * 10000ULL;
+   m_iLastUsage = 0;
+@@ -143,8 +153,6 @@ void CThread::Create(bool bAutoDelete)
+         }
+         else
+           CLog::Log(LOGDEBUG,"Thread %s %s terminating", name.c_str(), id.c_str());
+-
+-        promise.set_value(true);
+       }
+       catch (const std::exception& e)
+       {
+@@ -154,6 +162,8 @@ void CThread::Create(bool bAutoDelete)
+       {
+         CLog::Log(LOGDEBUG,"Thread Terminating with Exception");
+       }
++
++      promise.set_value(true);
+     }, this, std::move(prom));
+   } // let the lambda proceed
+ 
+@@ -162,7 +172,17 @@ void CThread::Create(bool bAutoDelete)
+ 
+ bool CThread::IsRunning() const
+ {
+-  return m_thread != nullptr;
++  if (m_thread != nullptr) {
++    // it's possible that the thread exited on it's own without a call to StopThread. If so then
++    // the promise should be fulfilled.
++    std::future_status stat = m_future.wait_for(std::chrono::milliseconds(0));
++    // a status of 'ready' means the future contains the value so the thread has exited
++    // since the thread can't exit without setting the future.
++    if (stat == std::future_status::ready) // this is an indication the thread has exited.
++      return false;
++    return true; // otherwise the thread is still active.
++  } else
++    return false;
+ }
+ 
+ bool CThread::IsAutoDelete() const
