@@ -1,0 +1,23 @@
+From 177f6d7657adc90d2f3c89efec2b8a399f46c1bd Mon Sep 17 00:00:00 2001
+From: Memphiz <memphis@machzwo.de>
+Date: Tue, 25 Jun 2019 18:21:33 +0200
+Subject: [PATCH] [jenkins] - ensure to export DEVELOPER_DIR to override used
+ Xcode version - fixes binary addon build - credits to Rechi for this one
+
+---
+ tools/buildsteps/defaultenv | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/buildsteps/defaultenv b/tools/buildsteps/defaultenv
+index 3403427461aa..ae69113216f9 100644
+--- a/tools/buildsteps/defaultenv
++++ b/tools/buildsteps/defaultenv
+@@ -94,7 +94,7 @@ then
+ fi
+ 
+ # make osx environment aware of the selected xcode app
+-DEVELOPER_DIR=/Applications/$XCODE_APP/Contents/Developer
++export DEVELOPER_DIR=/Applications/$XCODE_APP/Contents/Developer
+ 
+ if [ "$Configuration" == "Default" ]
+ then
