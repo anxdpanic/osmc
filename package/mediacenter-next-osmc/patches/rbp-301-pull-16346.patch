@@ -1,0 +1,23 @@
+From abad44fe0727009798bd11fe57490858166ea140 Mon Sep 17 00:00:00 2001
+From: Craig Andrews <candrews@integralblue.com>
+Date: Wed, 3 Jul 2019 15:06:36 -0400
+Subject: [PATCH] [cmake] Use CORE_PLATFORM_NAME, not PLATFORM
+
+PLATFORM is no longer used.
+---
+ cmake/scripts/common/ArchSetup.cmake | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/cmake/scripts/common/ArchSetup.cmake b/cmake/scripts/common/ArchSetup.cmake
+index 07ce6d4aee5e..b487b6143dd6 100644
+--- a/cmake/scripts/common/ArchSetup.cmake
++++ b/cmake/scripts/common/ArchSetup.cmake
+@@ -95,7 +95,7 @@ endif()
+ include(${CMAKE_SOURCE_DIR}/cmake/scripts/${CORE_SYSTEM_NAME}/ArchSetup.cmake)
+ 
+ message(STATUS "Core system type: ${CORE_SYSTEM_NAME}")
+-message(STATUS "Platform: ${PLATFORM}")
++message(STATUS "Platform: ${CORE_PLATFORM_NAME}")
+ message(STATUS "CPU: ${CPU}, ARCH: ${ARCH}")
+ message(STATUS "Cross-Compiling: ${CMAKE_CROSSCOMPILING}")
+ message(STATUS "Execute build artefacts on host: ${CORE_HOST_IS_TARGET}")
