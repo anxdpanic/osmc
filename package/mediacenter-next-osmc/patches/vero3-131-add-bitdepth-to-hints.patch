@@ -35,14 +35,14 @@ index e3a7330..5fe1284 100644
  }
  
 
-@@ -1480,15 +1481,24 @@ CDemuxStream* CDVDDemuxFFmpeg::AddStream(int streamIdx)
+@@ -1524,12 +1524,21 @@ CDemuxStream* CDVDDemuxFFmpeg::AddStream(int streamIdx)
          if (pStream->codecpar->height)
            st->fAspect *= (double)pStream->codecpar->width / pStream->codecpar->height;
          st->iOrientation = 0;
 -        st->iBitsPerPixel = pStream->codecpar->bits_per_coded_sample;
          st->iBitRate = static_cast<int>(pStream->codecpar->bit_rate);
 
--        AVDictionaryEntry *rtag = av_dict_get(pStream->metadata, "rotate", NULL, 0);
+-        AVDictionaryEntry* rtag = av_dict_get(pStream->metadata, "rotate", NULL, 0);
 -        if (rtag)
 -          st->iOrientation = atoi(rtag->value);
 +          st->iBitsPerPixel = pStream->codec->bits_per_raw_sample;
@@ -59,12 +59,7 @@ index e3a7330..5fe1284 100644
 +          if (rtag) 
 +            st->iOrientation = atoi(rtag->value);
 
--        // detect stereoscopic mode
--        std::string stereoMode = GetStereoModeFromMetadata(pStream->metadata);
-+          // detect stereoscopic mode
-+          std::string stereoMode = GetStereoModeFromMetadata(pStream->metadata);
-           // check for metadata in file if detection in stream failed
-         if (stereoMode.empty())
-           stereoMode = GetStereoModeFromMetadata(m_pFormatContext->metadata);
+         // detect stereoscopic mode
+         std::string stereoMode = GetStereoModeFromMetadata(pStream->metadata);
 -- 
 2.16.4
