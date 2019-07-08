@@ -1,0 +1,267 @@
+From ff6fb5ab77f17fbd2a73c602e0e61b88ec5f8318 Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Mon, 1 Jul 2019 15:22:37 +0200
+Subject: [PATCH 1/2] [PVR] Guide window, Channels window: Accept channel group
+ path on window init.
+
+---
+ xbmc/pvr/channels/PVRChannelGroups.cpp    | 18 +++++++++++++++++-
+ xbmc/pvr/channels/PVRChannelGroups.h      | 13 ++++++++++---
+ xbmc/pvr/windows/GUIWindowPVRBase.cpp     | 15 ++++++++++++++-
+ xbmc/pvr/windows/GUIWindowPVRBase.h       |  1 +
+ xbmc/pvr/windows/GUIWindowPVRChannels.cpp |  5 +++++
+ xbmc/pvr/windows/GUIWindowPVRGuide.cpp    |  5 +++++
+ 6 files changed, 52 insertions(+), 5 deletions(-)
+
+diff --git a/xbmc/pvr/channels/PVRChannelGroups.cpp b/xbmc/pvr/channels/PVRChannelGroups.cpp
+index 1aa753a3fb3f..d5e2ccd400f8 100644
+--- a/xbmc/pvr/channels/PVRChannelGroups.cpp
++++ b/xbmc/pvr/channels/PVRChannelGroups.cpp
+@@ -130,7 +130,7 @@ std::shared_ptr<CPVRChannel> CPVRChannelGroups::GetByPath(const std::string& str
+   std::string strCheckPath;
+ 
+   CSingleLock lock(m_critSection);
+-  for (const auto& group: m_groups)
++  for (const auto& group : m_groups)
+   {
+     // check if the path matches
+     strCheckPath = group->GetPath();
+@@ -177,6 +177,22 @@ std::vector<CPVRChannelGroupPtr> CPVRChannelGroups::GetGroupsByChannel(const CPV
+   return groups;
+ }
+ 
++std::shared_ptr<CPVRChannelGroup> CPVRChannelGroups::GetGroupByPath(const std::string& strInPath) const
++{
++  // group paths returned by CPVRChannelGroup::GetPath() are always terminated by a "/"
++  std::string strPath = strInPath;
++  if (!strPath.empty() && strPath[strPath.size() - 1] != '/')
++    strPath += '/';
++
++  CSingleLock lock(m_critSection);
++  for (const auto& group : m_groups)
++  {
++    if (group->GetPath() == strPath)
++      return group;
++  }
++  return {};
++}
++
+ CPVRChannelGroupPtr CPVRChannelGroups::GetByName(const std::string &strName) const
+ {
+   CSingleLock lock(m_critSection);
+diff --git a/xbmc/pvr/channels/PVRChannelGroups.h b/xbmc/pvr/channels/PVRChannelGroups.h
+index 123c1ea045a6..b8221252deb4 100644
+--- a/xbmc/pvr/channels/PVRChannelGroups.h
++++ b/xbmc/pvr/channels/PVRChannelGroups.h
+@@ -65,14 +65,14 @@ namespace PVR
+     bool UpdateFromClient(const CPVRChannelGroup &group) { return Update(group, true); }
+ 
+     /*!
+-     * @brief Get a channel given it's path
++     * @brief Get a channel given its path
+      * @param strPath The path to the channel
+      * @return The channel, or nullptr if not found
+      */
+     std::shared_ptr<CPVRChannel> GetByPath(const std::string& strPath) const;
+ 
+     /*!
+-     * @brief Get a pointer to a channel group given it's ID.
++     * @brief Get a pointer to a channel group given its ID.
+      * @param iGroupId The ID of the group.
+      * @return The group or NULL if it wasn't found.
+      */
+@@ -87,7 +87,14 @@ namespace PVR
+     std::vector<CPVRChannelGroupPtr> GetGroupsByChannel(const CPVRChannelPtr &channel, bool bExcludeHidden = false) const;
+ 
+     /*!
+-     * @brief Get a group given it's name.
++     * @brief Get a channel group given its path
++     * @param strPath The path to the channel group
++     * @return The channel group, or nullptr if not found
++     */
++    std::shared_ptr<CPVRChannelGroup> GetGroupByPath(const std::string& strPath) const;
++
++    /*!
++     * @brief Get a group given its name.
+      * @param strName The name.
+      * @return The group or NULL if it wasn't found.
+      */
+diff --git a/xbmc/pvr/windows/GUIWindowPVRBase.cpp b/xbmc/pvr/windows/GUIWindowPVRBase.cpp
+index 0e702cc3dc7b..e578f5ec55af 100644
+--- a/xbmc/pvr/windows/GUIWindowPVRBase.cpp
++++ b/xbmc/pvr/windows/GUIWindowPVRBase.cpp
+@@ -389,7 +389,20 @@ bool CGUIWindowPVRBase::OpenChannelGroupSelectionDialog(void)
+ 
+ bool CGUIWindowPVRBase::InitChannelGroup()
+ {
+-  CPVRChannelGroupPtr group(CServiceBroker::GetPVRManager().GetPlayingGroup(m_bRadio));
++  std::shared_ptr<CPVRChannelGroup> group;
++  if (m_channelGroupPath.empty())
++  {
++    group = CServiceBroker::GetPVRManager().GetPlayingGroup(m_bRadio);
++  }
++  else
++  {
++    group = CServiceBroker::GetPVRManager().ChannelGroups()->Get(m_bRadio)->GetGroupByPath(m_channelGroupPath);
++    if (group)
++      CServiceBroker::GetPVRManager().SetPlayingGroup(group);
++    else
++      CLog::LogF(LOGERROR, "Found no %s channel group with path '%s'!", m_bRadio ? "radio" : "TV", m_vecItems->GetPath().c_str());
++  }
++
+   if (group)
+   {
+     CSingleLock lock(m_critSection);
+diff --git a/xbmc/pvr/windows/GUIWindowPVRBase.h b/xbmc/pvr/windows/GUIWindowPVRBase.h
+index 1aeee8e98c6d..2f969409a1bf 100644
+--- a/xbmc/pvr/windows/GUIWindowPVRBase.h
++++ b/xbmc/pvr/windows/GUIWindowPVRBase.h
+@@ -104,6 +104,7 @@ namespace PVR
+     void UnregisterObservers(void);
+ 
+     CCriticalSection m_critSection;
++    std::string m_channelGroupPath;
+     bool m_bRadio;
+     std::atomic_bool m_bUpdating = {false};
+ 
+diff --git a/xbmc/pvr/windows/GUIWindowPVRChannels.cpp b/xbmc/pvr/windows/GUIWindowPVRChannels.cpp
+index 74d1206afb71..3398fc5b3148 100644
+--- a/xbmc/pvr/windows/GUIWindowPVRChannels.cpp
++++ b/xbmc/pvr/windows/GUIWindowPVRChannels.cpp
+@@ -132,6 +132,11 @@ bool CGUIWindowPVRChannelsBase::OnMessage(CGUIMessage& message)
+   bool bReturn = false;
+   switch (message.GetMessage())
+   {
++    case GUI_MSG_WINDOW_INIT:
++      // if a path to a channel group is given we must init that group instead of last played/selected group
++      m_channelGroupPath = message.GetStringParam(0);
++      break;
++
+     case GUI_MSG_CLICKED:
+       if (message.GetSenderId() == m_viewControl.GetCurrentControl())
+       {
+diff --git a/xbmc/pvr/windows/GUIWindowPVRGuide.cpp b/xbmc/pvr/windows/GUIWindowPVRGuide.cpp
+index 75d1f60fd5e2..83b0a5e3474a 100644
+--- a/xbmc/pvr/windows/GUIWindowPVRGuide.cpp
++++ b/xbmc/pvr/windows/GUIWindowPVRGuide.cpp
+@@ -381,6 +381,11 @@ bool CGUIWindowPVRGuideBase::OnMessage(CGUIMessage& message)
+   bool bReturn = false;
+   switch (message.GetMessage())
+   {
++    case GUI_MSG_WINDOW_INIT:
++      // if a path to a channel group is given we must init that group instead of last played/selected group
++      m_channelGroupPath = message.GetStringParam(0);
++      break;
++
+     case GUI_MSG_CLICKED:
+     {
+       if (message.GetSenderId() == m_viewControl.GetCurrentControl())
+
+From 7ec01496c33d1f767de1e04fdaf58e05cfa12d35 Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Wed, 3 Jul 2019 23:13:00 +0200
+Subject: [PATCH 2/2] [Estuary] Add TV and radio channel groups home screen
+ widgets.
+
+---
+ addons/skin.estuary/xml/Home.xml          | 14 ++++++++++++++
+ addons/skin.estuary/xml/Includes_Home.xml | 11 ++++++++---
+ 2 files changed, 22 insertions(+), 3 deletions(-)
+
+diff --git a/addons/skin.estuary/xml/Home.xml b/addons/skin.estuary/xml/Home.xml
+index 6964c72db6cc..c18489dc77a2 100644
+--- a/addons/skin.estuary/xml/Home.xml
++++ b/addons/skin.estuary/xml/Home.xml
+@@ -423,6 +423,13 @@
+ 							<param name="label" value="$INFO[ListItem.ChannelName]"/>
+ 							<param name="label2" value="$INFO[ListItem.Title]$INFO[ListItem.EpisodeName, (,)]"/>
+ 						</include>
++						<include content="WidgetListChannels" condition="System.HasPVRAddon">
++							<param name="content_path" value="pvr://channels/tv"/>
++							<param name="widget_header" value="$LOCALIZE[19173]"/>
++							<param name="widget_target" value="tvguide"/>
++							<param name="list_id" value="12400"/>
++							<param name="item_treshold" value="1"/>
++						</include>
+ 					</control>
+ 					<include content="ImageWidget" condition="!System.HasPVRAddon">
+ 						<param name="text_label" value="$LOCALIZE[31143]" />
+@@ -496,6 +503,13 @@
+ 							<param name="label" value="$INFO[ListItem.ChannelName]"/>
+ 							<param name="label2" value="$INFO[ListItem.Title]$INFO[ListItem.EpisodeName, (,)]"/>
+ 						</include>
++						<include content="WidgetListChannels" condition="System.HasPVRAddon">
++							<param name="content_path" value="pvr://channels/radio"/>
++							<param name="widget_header" value="$LOCALIZE[19174]"/>
++							<param name="widget_target" value="radioguide"/>
++							<param name="list_id" value="13400"/>
++							<param name="item_treshold" value="1"/>
++						</include>
+ 					</control>
+ 					<include content="ImageWidget" condition="!System.HasPVRAddon">
+ 						<param name="text_label" value="$LOCALIZE[31143]" />
+diff --git a/addons/skin.estuary/xml/Includes_Home.xml b/addons/skin.estuary/xml/Includes_Home.xml
+index d841926582bc..8afda9b5314f 100644
+--- a/addons/skin.estuary/xml/Includes_Home.xml
++++ b/addons/skin.estuary/xml/Includes_Home.xml
+@@ -11,6 +11,7 @@
+ 	</include>
+ 	<include name="CategoryLabel">
+ 		<param name="visible">true</param>
++		<param name="item_treshold">0</param>
+ 		<definition>
+ 			<control type="label" id="$PARAM[list_id]666">
+ 				<left>55</left>
+@@ -20,7 +21,7 @@
+ 				<label>$PARAM[label]</label>
+ 				<shadowcolor>text_shadow</shadowcolor>
+ 				<visible>$PARAM[visible]</visible>
+-				<visible>Integer.IsGreater(Container($PARAM[list_id]).NumItems,0) | Container($PARAM[list_id]).IsUpdating</visible>
++				<visible>Integer.IsGreater(Container($PARAM[list_id]).NumItems,$PARAM[item_treshold]) | Container($PARAM[list_id]).IsUpdating</visible>
+ 			</control>
+ 		</definition>
+ 	</include>
+@@ -454,6 +455,7 @@
+ 		</content>
+ 	</include>
+ 	<include name="WidgetListChannels">
++		<param name="item_treshold">0</param>
+ 		<param name="item_limit">15</param>
+ 		<param name="icon">$INFO[ListItem.Icon]</param>
+ 		<param name="label">$INFO[ListItem.Label]</param>
+@@ -462,10 +464,12 @@
+ 			<include content="CategoryLabel">
+ 				<param name="label">$PARAM[widget_header]</param>
+ 				<param name="list_id" value="$PARAM[list_id]"/>
++				<param name="item_treshold" value="$PARAM[item_treshold]"/>
+ 			</include>
+ 			<include content="BusyListSpinner">
+ 				<param name="list_id" value="$PARAM[list_id]"/>
+ 				<param name="posy" value="200"/>
++				<param name="item_treshold" value="$PARAM[item_treshold]"/>
+ 			</include>
+ 			<control type="panel" id="$PARAM[list_id]">
+ 				<left>0</left>
+@@ -475,7 +479,7 @@
+ 				<include content="WidgetListCommon">
+ 					<param name="list_id" value="$PARAM[list_id]"/>
+ 				</include>
+-				<visible>Integer.IsGreater(Container($PARAM[list_id]).NumItems,0) | Container($PARAM[list_id]).IsUpdating</visible>
++				<visible>Integer.IsGreater(Container($PARAM[list_id]).NumItems,$PARAM[item_treshold]) | Container($PARAM[list_id]).IsUpdating</visible>
+ 				<itemlayout width="310" height="500">
+ 					<control type="group">
+ 						<left>70</left>
+@@ -910,11 +914,12 @@
+ 	<include name="BusyListSpinner">
+ 		<param name="posy">160</param>
+ 		<param name="visible">true</param>
++		<param name="item_treshold">0</param>
+ 		<definition>
+ 			<control type="group" id="$PARAM[list_id]599">
+ 				<height>160</height>
+ 				<left>180</left>
+-				<visible>Container($PARAM[list_id]).IsUpdating + !Integer.IsGreater(Container($PARAM[list_id]).NumItems,0)</visible>
++				<visible>Container($PARAM[list_id]).IsUpdating + !Integer.IsGreater(Container($PARAM[list_id]).NumItems,$PARAM[item_treshold])</visible>
+ 				<visible>$PARAM[visible]</visible>
+ 				<control type="image">
+ 					<top>$PARAM[posy]</top>
