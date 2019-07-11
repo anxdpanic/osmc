@@ -5135,9 +5135,9 @@ index a6fc4d7b0f..ff77b5dcb8 100644
 +#include "utils/ScreenshotAML.h"
 +#endif
 +
- #if defined(TARGET_WINDOWS)
- #include "rendering/dx/DeviceResources.h"
- #include <wrl/client.h>
+ #include "URL.h"
+ #include "Util.h"
+ #include "utils/JobManager.h"
 @@ -169,6 +173,11 @@ bool CScreenshotSurface::capture()
  
    delete [] surface;
