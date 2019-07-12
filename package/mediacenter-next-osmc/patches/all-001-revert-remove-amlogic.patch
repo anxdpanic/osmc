@@ -5135,7 +5135,7 @@ index a6fc4d7b0f..ff77b5dcb8 100644
 +#include "utils/ScreenshotAML.h"
 +#endif
 +
- #if defined(TARGET_WNDOWS)
+ #if defined(TARGET_WINDOWS)
  #include "rendering/dx/DeviceResources.h"
  #include <wrl/client.h>"
 @@ -169,6 +173,11 @@ bool CScreenshotSurface::capture()
