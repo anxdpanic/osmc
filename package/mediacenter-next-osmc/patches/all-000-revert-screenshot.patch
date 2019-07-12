@@ -79,9 +79,8 @@ index def422a19d..0000000000
 -
 -#include "ScreenshotSurfaceRBP.h"
 -
--#include "utils/Screenshot.h"
--
 -#include "platform/linux/RBP.h"
+-#include "utils/Screenshot.h"
 -
 -void CScreenshotSurfaceRBP::Register()
 -{
@@ -164,13 +163,13 @@ index 756bc6d098..0000000000
 -
 -#include "ScreenshotSurfaceWindows.h"
 -
--#include "ServiceBroker.h"
 -#include "guilib/GUIComponent.h"
 -#include "guilib/GUIWindowManager.h"
 -#include "rendering/dx/DeviceResources.h"
+-#include "ServiceBroker.h"
 -#include "threads/SingleLock.h"
--#include "utils/Screenshot.h"
 -#include "utils/log.h"
+-#include "utils/Screenshot.h"
 -#include "windowing/GraphicContext.h"
 -
 -#include <wrl/client.h>
@@ -322,16 +321,16 @@ index be0bd892dd..0000000000
 -
 -#include "ScreenshotSurfaceGL.h"
 -
--#include "ServiceBroker.h"
 -#include "guilib/GUIComponent.h"
 -#include "guilib/GUIWindowManager.h"
+-#include "ServiceBroker.h"
 -#include "threads/SingleLock.h"
 -#include "utils/Screenshot.h"
 -#include "windowing/GraphicContext.h"
 -
--#include <vector>
--
 -#include "system_gl.h"
+-
+-#include <vector>
 -
 -void CScreenshotSurfaceGL::Register()
 -{
@@ -437,16 +436,16 @@ index 7d7a9409c2..0000000000
 -
 -#include "ScreenshotSurfaceGLES.h"
 -
--#include "ServiceBroker.h"
 -#include "guilib/GUIComponent.h"
 -#include "guilib/GUIWindowManager.h"
+-#include "ServiceBroker.h"
 -#include "threads/SingleLock.h"
 -#include "utils/Screenshot.h"
 -#include "windowing/GraphicContext.h"
 -
--#include <vector>
--
 -#include "system_gl.h"
+-
+-#include <vector>
 -
 -void CScreenshotSurfaceGLES::Register()
 -{
