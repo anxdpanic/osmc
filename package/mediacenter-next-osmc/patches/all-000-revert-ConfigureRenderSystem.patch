@@ -1,0 +1,55 @@
+From d269d61e2c4ab0c44015d34f9e2e270a25e514b5 Mon Sep 17 00:00:00 2001
+From: Your Name <you@example.com>
+Date: Sat, 13 Jul 2019 10:17:45 +0100
+Subject: [PATCH] Revert RPProcessInfo: drop method ConfigureRenderSystem
+
+---
+ xbmc/cores/RetroPlayer/process/RPProcessInfo.h       | 8 ++++++++
+ xbmc/cores/RetroPlayer/rendering/RPRenderManager.cpp | 5 +++++
+ 2 files changed, 13 insertions(+)
+
+diff --git a/xbmc/cores/RetroPlayer/process/RPProcessInfo.h b/xbmc/cores/RetroPlayer/process/RPProcessInfo.h
+index e4f483f427..8f9fa2937f 100644
+--- a/xbmc/cores/RetroPlayer/process/RPProcessInfo.h
++++ b/xbmc/cores/RetroPlayer/process/RPProcessInfo.h
+@@ -139,6 +139,14 @@ namespace RETRO
+      */
+     SCALINGMETHOD GetDefaultScalingMethod() const { return m_defaultScalingMethod; }
+ 
++    /*!
++     * \brief Configure the render system
++     *
++     * \param format The pixel format of the video stream, or AV_PIX_FMT_NONE
++     *        if the stream has ended
++     */
++    virtual void ConfigureRenderSystem(AVPixelFormat format) { }
++
+     ///}
+ 
+     /// @name Player video info
+diff --git a/xbmc/cores/RetroPlayer/rendering/RPRenderManager.cpp b/xbmc/cores/RetroPlayer/rendering/RPRenderManager.cpp
+index 46a39b9bf0..873d6fd1f2 100644
+--- a/xbmc/cores/RetroPlayer/rendering/RPRenderManager.cpp
++++ b/xbmc/cores/RetroPlayer/rendering/RPRenderManager.cpp
+@@ -50,6 +50,9 @@ void CRPRenderManager::Deinitialize()
+ {
+   CLog::Log(LOGDEBUG, "RetroPlayer[RENDER]: Deinitializing render manager");
+ 
++  // Required to reset Amlogic chip to default state
++  m_processInfo.ConfigureRenderSystem(AV_PIX_FMT_NONE);
++
+   for (auto &pixelScaler : m_scalers)
+   {
+     if (pixelScaler.second != nullptr)
+@@ -226,6 +229,8 @@ void CRPRenderManager::FrameMove()
+ 
+     if (m_state == RENDER_STATE::CONFIGURING)
+     {
++      m_processInfo.ConfigureRenderSystem(m_format);
++
+       m_state = RENDER_STATE::CONFIGURED;
+ 
+       CLog::Log(LOGINFO, "RetroPlayer[RENDER]: Renderer configured on first frame");
+-- 
+2.17.1
+
