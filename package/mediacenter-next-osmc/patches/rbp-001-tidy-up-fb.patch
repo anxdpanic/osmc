@@ -18,9 +18,9 @@ index 116b3bf..0d7a889 100644
  #include "rendering/RenderSystem.h"
  #include <cassert>
 +#include <stdlib.h>
- #ifdef TARGET_POSIX
- #include "platform/linux/XTimeUtils.h"
- #endif
+
+ #ifndef __VIDEOCORE4__
+ #DEFINE __VIDEOCORE4__
 @@ -52,6 +53,20 @@ CRPIUtils::CRPIUtils()
  {
    m_DllBcmHost = new DllBcmHost;
