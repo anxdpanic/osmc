@@ -29,8 +29,8 @@ index 9c97aaac19..c61984a297 100644
      dir.hashType = CDigest::TypeFromString(hashStr);
      if (dir.hashType == CDigest::Type::MD5)
      {
--      CLog::Log(LOGWARNING, "Repository has MD5 hashes enabled - this hash function is broken and will only guard against unintentional data corruption");
-+      CLog::Log(LOGDEBUG, "Repository has MD5 hashes enabled - this hash function is broken and will only guard against unintentional data corruption");
+-      CLog::Log(LOGWARNING, "CRepository::{}: Repository has MD5 hashes enabled - this hash function is broken and will only guard against unintentional data corruption", __FUNCTION__);
++      CLog::Log(LOGDEBUG, "CRepository::{}: Repository has MD5 hashes enabled - this hash function is broken and will only guard against unintentional data corruption", __FUNCTION__);
      }
    }
  
