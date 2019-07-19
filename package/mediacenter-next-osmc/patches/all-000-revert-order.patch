@@ -3496,6 +3496,7 @@ index 846d756ba1..19eca090ba 100644
 +
  #include "addons/AddonBuilder.h"
  #include "addons/AddonManager.h"
+ #include "addons/addoninfo/AddonInfoBuilder.h"
  #include "dbwrappers/dataset.h"
  #include "filesystem/SpecialProtocol.h"
  #include "utils/JSONVariantParser.h"
