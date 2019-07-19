@@ -1,17 +1,17 @@
-From 0ef28bb6a6d85cb602760dd43f5120ebe603f049 Mon Sep 17 00:00:00 2001
+From f38e9becfb0b218ccacc456617d37a6b59dd17d1 Mon Sep 17 00:00:00 2001
 From: Greg McCarthy <greg@gjmccarthy.co.uk>
-Date: Mon, 23 Jan 2017 15:42:22 +0000
-Subject: [PATCH] Fix missing enties in patch
+Date: Fri, 19 Jul 2019 15:54:04 +0100
+Subject: [PATCH] Update all-009
 
 ---
  xbmc/addons/Addon.cpp | 15 ++++++++++++++-
  1 file changed, 14 insertions(+), 1 deletion(-)
 
 diff --git a/xbmc/addons/Addon.cpp b/xbmc/addons/Addon.cpp
-index 3b94e5a..0cd38dc 100644
+index 354b44643b..e92501487f 100644
 --- a/xbmc/addons/Addon.cpp
 +++ b/xbmc/addons/Addon.cpp
-@@ -30,6 +30,7 @@
+@@ -17,6 +17,7 @@
  #include "AddonManager.h"
  #include "addons/settings/AddonSettings.h"
  #include "filesystem/Directory.h"
@@ -19,11 +19,11 @@ index 3b94e5a..0cd38dc 100644
  #include "filesystem/File.h"
  #include "RepositoryUpdater.h"
  #include "settings/Settings.h"
-@@ -332,7 +333,19 @@ std::string CAddon::LibPath() const
- {
-   if (m_props.libname.empty())
-     return "";
--  return URIUtils::AddFileToFolder(m_addonInfo->Path(), libName()); 
+@@ -365,7 +366,19 @@ std::string CAddon::LibPath() const
+     if (libName.empty())
+       return "";
+   }
+-  return URIUtils::AddFileToFolder(m_addonInfo->Path(), libName);
 +
 +  std::string strLibPath = URIUtils::AddFileToFolder(m_addonInfo->Path(), libName());
 +
@@ -41,5 +41,5 @@ index 3b94e5a..0cd38dc 100644
  
  AddonVersion CAddon::GetDependencyVersion(const std::string &dependencyID) const
 -- 
-2.1.4
+2.16.4
 
