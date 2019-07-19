@@ -77,7 +77,7 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/addons/AddonBuilder.cpp                       |  7 +--
  xbmc/addons/AddonDatabase.cpp                      | 12 ++--
  xbmc/addons/AddonDatabase.h                        | 10 ++--
- xbmc/addons/AddonInfo.h                            |  3 +-
+ xbmc/addons/addoninfo/AddonInfo.h                  |  3 +-
  xbmc/addons/AddonInstaller.h                       |  8 +--
  xbmc/addons/AddonManager.cpp                       |  2 +-
  xbmc/addons/AddonStatusHandler.cpp                 | 11 ++--
@@ -3536,10 +3536,10 @@ index 1651b58d2d..c509deaede 100644
  class CAddonDatabase : public CDatabase
  {
  public:
-diff --git a/xbmc/addons/AddonInfo.h b/xbmc/addons/AddonInfo.h
+diff --git a/xbmc/addons/addoninfo/AddonInfo.h b/xbmc/addons/addoninfo/AddonInfo.h
 index 46e030a3a0..a476e422e9 100644
---- a/xbmc/addons/AddonInfo.h
-+++ b/xbmc/addons/AddonInfo.h
+--- a/xbmc/addons/addoninfo/AddonInfo.h
++++ b/xbmc/addons/addoninfo/AddonInfo.h
 @@ -8,9 +8,10 @@
  
  #pragma once
@@ -4524,7 +4524,7 @@ index dee7525c4d..1eff9c6b72 100644
  #include "AddonInstanceHandler.h"
  #include "BinaryAddonType.h"
 +
- #include "addons/AddonInfo.h"
+ #include "addons/addoninfo/AddonInfo.h"
  #include "threads/CriticalSection.h"
  
 diff --git a/xbmc/addons/binary-addons/BinaryAddonManager.cpp b/xbmc/addons/binary-addons/BinaryAddonManager.cpp
@@ -4573,7 +4573,7 @@ index bfd26725ec..ab11288084 100644
  
  #include "BinaryAddonExtensions.h"
 +
- #include "addons/AddonInfo.h"
+ #include "addons/addoninfo/AddonInfo.h"
  
 -#include <set>
  #include <string>
@@ -34000,7 +34000,7 @@ index 511f53f6ec..4a23a0d7b5 100644
  #pragma once
  
 -#include "addons/AddonEvents.h"
- #include "addons/AddonInfo.h"
+ #include "addons/addoninfo/AddonInfo.h"
 +#include "addons/AddonEvents.h"
  #include "settings/AdvancedSettings.h"
  
