@@ -3766,9 +3766,9 @@ index 932a610e76..556afe35d3 100644
 --- a/xbmc/addons/ContextMenuAddon.h
 +++ b/xbmc/addons/ContextMenuAddon.h
 @@ -8,14 +8,14 @@
- 
+
  #pragma once
- 
+
 -#include "Addon.h"
 -#include "ContextMenuItem.h"
 -
@@ -3776,13 +3776,13 @@ index 932a610e76..556afe35d3 100644
  #include <memory>
  #include <string>
  #include <vector>
- 
+
 +#include "Addon.h"
 +#include "ContextMenuItem.h"
 +
- typedef struct cp_cfg_element_t cp_cfg_element_t;
- 
- 
+ namespace ADDON
+ {
+   class CContextMenuAddon : public CAddon
 diff --git a/xbmc/addons/ContextMenus.cpp b/xbmc/addons/ContextMenus.cpp
 index 2e4ea07ed1..abea88650c 100644
 --- a/xbmc/addons/ContextMenus.cpp
