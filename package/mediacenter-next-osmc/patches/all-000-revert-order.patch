@@ -29585,10 +29585,10 @@ index 2186aaa83c..3a55634627 100644
  
  CPlatform* CPlatform::CreateInstance()
  {
-diff --git a/xbmc/platform/overrides/ios/PlatformDarwinIOS.cpp b/xbmc/platform/overrides/ios/PlatformDarwinIOS.cpp
+diff --git a/xbmc/platform/overrides/darwin_embedded/PlatformDarwinEmbedded.cpp b/xbmc/platform/overrides/darmin_embedded/PlatformDarwinEmbedded.cpp
 index 1fb3f50895..02590753c4 100644
---- a/xbmc/platform/overrides/ios/PlatformDarwinIOS.cpp
-+++ b/xbmc/platform/overrides/ios/PlatformDarwinIOS.cpp
+--- a/xbmc/platform/overrides/darwin_embedded/PlatformDarwinEmbedded.cpp
++++ b/xbmc/platform/overrides/darmin_embedded/PlatformDarwinEmbedded.cpp
 @@ -6,11 +6,9 @@
   *  See LICENSES/README.md for more information.
   */
