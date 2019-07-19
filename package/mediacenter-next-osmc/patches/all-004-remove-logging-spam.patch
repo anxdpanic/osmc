@@ -1,7 +1,7 @@
-From 394180905c1edc05aaeb4e6619c8e5bc65526784 Mon Sep 17 00:00:00 2001
+From c67a7f1358f71a84ea7977110ba6a39f9171c78f Mon Sep 17 00:00:00 2001
 From: Greg McCarthy <greg@gjmccarthy.co.uk>
-Date: Fri, 19 Jul 2019 15:19:04 +0100
-Subject: [PATCH] Update patch
+Date: Fri, 19 Jul 2019 15:23:13 +0100
+Subject: [PATCH] Update all-004
 
 ---
  xbmc/addons/Repository.cpp | 6 +++---
