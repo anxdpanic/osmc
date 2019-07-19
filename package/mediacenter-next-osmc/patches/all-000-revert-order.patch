@@ -4217,9 +4217,9 @@ index 2cc13b8b25..6f61a25a1b 100644
 +#include "utils/Digest.h"
 +#include "utils/ProgressJob.h"
 +
- struct cp_cfg_element_t;
- 
  namespace ADDON
+ {
+   class CRepository : public CAddon
 diff --git a/xbmc/addons/RepositoryUpdater.cpp b/xbmc/addons/RepositoryUpdater.cpp
 index fefabd9f33..c0ed40bad0 100644
 --- a/xbmc/addons/RepositoryUpdater.cpp
