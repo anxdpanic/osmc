@@ -3551,8 +3551,8 @@ index 46e030a3a0..a476e422e9 100644
 +#include "XBDateTime.h"
 +
  #include <map>
+ #include <memory>
  #include <string>
- #include <vector>
 diff --git a/xbmc/addons/AddonInstaller.h b/xbmc/addons/AddonInstaller.h
 index 533e87918b..1e0b56edc6 100644
 --- a/xbmc/addons/AddonInstaller.h
