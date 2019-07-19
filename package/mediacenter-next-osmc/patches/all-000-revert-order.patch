@@ -3541,18 +3541,17 @@ diff --git a/xbmc/addons/addoninfo/AddonInfo.h b/xbmc/addons/addoninfo/AddonInfo
 index 46e030a3a0..a476e422e9 100644
 --- a/xbmc/addons/addoninfo/AddonInfo.h
 +++ b/xbmc/addons/addoninfo/AddonInfo.h
-@@ -8,9 +8,11 @@
- 
+@@ -8,9 +8,9 @@
+
  #pragma once
- 
+
 -#include "XBDateTime.h"
  #include "addons/AddonVersion.h"
- #include "addons/addoninfo/AddonType.h" 
+ #include "addons/addoninfo/AddonType.h"
 +#include "XBDateTime.h"
-+
+
  #include <map>
  #include <memory>
- #include <string>
 diff --git a/xbmc/addons/AddonInstaller.h b/xbmc/addons/AddonInstaller.h
 index 533e87918b..1e0b56edc6 100644
 --- a/xbmc/addons/AddonInstaller.h
