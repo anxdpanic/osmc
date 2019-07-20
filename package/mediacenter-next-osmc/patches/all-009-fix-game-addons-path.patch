@@ -25,7 +25,7 @@ index 354b44643b..e92501487f 100644
    }
 -  return URIUtils::AddFileToFolder(m_addonInfo->Path(), libName);
 +
-+  std::string strLibPath = URIUtils::AddFileToFolder(m_addonInfo->Path(), libName());
++  std::string strLibPath = URIUtils::AddFileToFolder(m_addonInfo->Path(), libName);
 +
 +  // Check if add-on library has been installed to the binaries path instead
 +  std::string strSharePath = CSpecialProtocol::TranslatePath("special://xbmc/");
