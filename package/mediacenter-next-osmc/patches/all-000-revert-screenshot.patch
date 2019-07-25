@@ -953,13 +953,13 @@ index c6a9eeeafb..f077304de8 100644
 --- a/xbmc/windowing/ios/WinSystemIOS.mm
 +++ b/xbmc/windowing/ios/WinSystemIOS.mm
 @@ -18,7 +18,6 @@
- #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
- #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h"
- #include "cores/VideoPlayer/VideoRenderers/HwDecRender/RendererVTBGLES.h"
+ #include "guilib/DispResource.h"
+ #include "guilib/Texture.h"
+ #include "messaging/ApplicationMessenger.h"
 -#include "rendering/gles/ScreenshotSurfaceGLES.h"
- #include "utils/log.h"
- #include "filesystem/SpecialProtocol.h"
  #include "settings/DisplaySettings.h"
+ #include "settings/Settings.h"
+ #include "settings/SettingsComponent.h"
 @@ -149,7 +148,6 @@ bool CWinSystemIOS::CreateNewWindow(const std::string& name, bool fullScreen, RE
    VIDEOPLAYER::CProcessInfoIOS::Register();
    RETRO::CRPProcessInfoIOS::Register();
