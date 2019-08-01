@@ -1,0 +1,16 @@
+From 2e4a2be3214ca8c6c03ee1331dff6077b345419e Mon Sep 17 00:00:00 2001
+From: phunkyfish <rossknicholson@gmail.com>
+Date: Fri, 26 Jul 2019 10:50:23 +0100
+Subject: [PATCH] Update kodi-platform sha for PR29
+
+---
+ cmake/addons/depends/common/kodi-platform/kodi-platform.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/cmake/addons/depends/common/kodi-platform/kodi-platform.txt b/cmake/addons/depends/common/kodi-platform/kodi-platform.txt
+index de8cd225fe9d..e5f33f31cfed 100644
+--- a/cmake/addons/depends/common/kodi-platform/kodi-platform.txt
++++ b/cmake/addons/depends/common/kodi-platform/kodi-platform.txt
+@@ -1 +1 @@
+-kodi-platform https://github.com/xbmc/kodi-platform 915da086fa7b4ea72796052a04ed6de95501b95c
++kodi-platform https://github.com/xbmc/kodi-platform 809c5e9d711e378561440a896fcb7dbcd009eb3d
