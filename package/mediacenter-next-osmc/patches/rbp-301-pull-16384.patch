@@ -1,0 +1,49 @@
+From ca0d578a214b09b7f6bfab095da155a270aaa778 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Fri, 19 Jul 2019 13:01:24 +0200
+Subject: [PATCH] add ACTION_MOUSE_DRAG_END support
+
+This action is required on webbrowser addon to handle mouse drag and drop
+on website content.
+---
+ system/keymaps/mouse.xml                | 1 +
+ xbmc/input/actions/ActionIDs.h          | 1 +
+ xbmc/input/actions/ActionTranslator.cpp | 1 +
+ 3 files changed, 3 insertions(+)
+
+diff --git a/system/keymaps/mouse.xml b/system/keymaps/mouse.xml
+index 85b184d769ff..3bb3f4382675 100644
+--- a/system/keymaps/mouse.xml
++++ b/system/keymaps/mouse.xml
+@@ -38,6 +38,7 @@
+       <wheeldown>wheeldown</wheeldown>
+       <wheelup>wheelup</wheelup>
+       <mousedrag>mousedrag</mousedrag>
++      <mousedragend>mousedragend</mousedragend>
+       <mousemove>mousemove</mousemove>
+     </mouse>
+   </global>
+diff --git a/xbmc/input/actions/ActionIDs.h b/xbmc/input/actions/ActionIDs.h
+index 9fd9d800a1c5..2ca1a554aa06 100644
+--- a/xbmc/input/actions/ActionIDs.h
++++ b/xbmc/input/actions/ActionIDs.h
+@@ -132,6 +132,7 @@
+ #define ACTION_MOUSE_DRAG             106
+ #define ACTION_MOUSE_MOVE             107
+ #define ACTION_MOUSE_LONG_CLICK       108
++#define ACTION_MOUSE_DRAG_END         109
+ #define ACTION_MOUSE_END              109
+ 
+ #define ACTION_BACKSPACE          110
+diff --git a/xbmc/input/actions/ActionTranslator.cpp b/xbmc/input/actions/ActionTranslator.cpp
+index de8fb98b443c..9a9f624c9208 100644
+--- a/xbmc/input/actions/ActionTranslator.cpp
++++ b/xbmc/input/actions/ActionTranslator.cpp
+@@ -224,6 +224,7 @@ static const std::map<ActionName, ActionID> ActionMappings =
+     { "wheelup"                  , ACTION_MOUSE_WHEEL_UP },
+     { "wheeldown"                , ACTION_MOUSE_WHEEL_DOWN },
+     { "mousedrag"                , ACTION_MOUSE_DRAG },
++    { "mousedragend"             , ACTION_MOUSE_DRAG_END },
+     { "mousemove"                , ACTION_MOUSE_MOVE },
+ 
+     // Touch

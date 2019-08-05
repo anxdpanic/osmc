@@ -1,0 +1,75 @@
+From c8aa16ab9918be2aee13b405ccee7422edaa0506 Mon Sep 17 00:00:00 2001
+From: Jim Carroll <jim@dontcallme.com>
+Date: Sat, 3 Aug 2019 10:32:20 -0400
+Subject: [PATCH 1/2] Fix a race condition in posting the stream's tag
+ information to the GUI by moving the thread creation to after the condition
+ is satisfied.
+
+---
+ xbmc/filesystem/ShoutcastFile.cpp | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/xbmc/filesystem/ShoutcastFile.cpp b/xbmc/filesystem/ShoutcastFile.cpp
+index 58dac5eb6db5..c530494a09ce 100644
+--- a/xbmc/filesystem/ShoutcastFile.cpp
++++ b/xbmc/filesystem/ShoutcastFile.cpp
+@@ -79,7 +79,6 @@ bool CShoutcastFile::Open(const CURL& url)
+   m_buffer = new char[16*255];
+   m_tagPos = 1;
+   m_tagChange.Set();
+-  Create();
+ 
+   return result;
+ }
+@@ -178,16 +177,16 @@ void CShoutcastFile::ReadTruncated(char* buf2, int size)
+ int CShoutcastFile::IoControl(EIoControl control, void* payload)
+ {
+   if (control == IOCTRL_SET_CACHE)
++  {
+     m_cacheReader = (CFileCache*)payload;
++    Create();
++  }
+ 
+   return IFile::IoControl(control, payload);
+ }
+ 
+ void CShoutcastFile::Process()
+ {
+-  if (!m_cacheReader)
+-    return;
+-
+   while (!m_bStop)
+   {
+     if (m_tagChange.WaitMSec(500))
+
+From bbdf466778f1027988a879e666f7e6e884d0b1a4 Mon Sep 17 00:00:00 2001
+From: Jim Carroll <jim@dontcallme.com>
+Date: Sat, 3 Aug 2019 12:10:55 -0400
+Subject: [PATCH 2/2] Slightly more robust incase IOCtrl is called multiple
+ times.
+
+---
+ xbmc/filesystem/ShoutcastFile.cpp | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/xbmc/filesystem/ShoutcastFile.cpp b/xbmc/filesystem/ShoutcastFile.cpp
+index c530494a09ce..5a55174869ba 100644
+--- a/xbmc/filesystem/ShoutcastFile.cpp
++++ b/xbmc/filesystem/ShoutcastFile.cpp
+@@ -41,7 +41,6 @@ CShoutcastFile::CShoutcastFile() :
+ 
+ CShoutcastFile::~CShoutcastFile()
+ {
+-  StopThread();
+   Close();
+ }
+ 
+@@ -176,7 +175,7 @@ void CShoutcastFile::ReadTruncated(char* buf2, int size)
+ 
+ int CShoutcastFile::IoControl(EIoControl control, void* payload)
+ {
+-  if (control == IOCTRL_SET_CACHE)
++  if (control == IOCTRL_SET_CACHE && m_cacheReader == nullptr)
+   {
+     m_cacheReader = (CFileCache*)payload;
+     Create();

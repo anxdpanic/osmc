@@ -1,0 +1,29 @@
+From ab6793b83c9e8954db8a58902c75c8e9ad693939 Mon Sep 17 00:00:00 2001
+From: Palo Kisa <palo.kisa@gmail.com>
+Date: Wed, 31 Jul 2019 09:57:17 +0200
+Subject: [PATCH] [addons] Remove unneded dlfcn includes
+
+It is a remnant from old days and including of
+p8-platform/windows/dlfcn-win32.h prevents removal of p8-platform
+dependency for addons which doesn't need it (build failure on windows
+platform).
+---
+ xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_addon.h | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_addon.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_addon.h
+index 43e3022b1826..e8faafe8d3fc 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_addon.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_addon.h
+@@ -32,11 +32,6 @@ typedef intptr_t      ssize_t;
+ #define _SSIZE_T_DEFINED
+ #endif // !_SSIZE_T_DEFINED
+ 
+-#if defined(BUILD_KODI_ADDON)
+-#include "p8-platform/windows/dlfcn-win32.h"
+-#endif
+-#else // windows
+-#include <dlfcn.h>              // linux+osx
+ #endif
+ 
+ #ifdef LOG_DEBUG
