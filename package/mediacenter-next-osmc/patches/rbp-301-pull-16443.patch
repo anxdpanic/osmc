@@ -1,0 +1,33 @@
+From 871555b03bdea488453433a70def015491480fdf Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Mon, 5 Aug 2019 21:26:44 +0100
+Subject: [PATCH] [addons] fix repo addon install (<path> in addons.xml wasn't
+ checked)
+
+---
+ xbmc/addons/addoninfo/AddonInfoBuilder.cpp | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/xbmc/addons/addoninfo/AddonInfoBuilder.cpp b/xbmc/addons/addoninfo/AddonInfoBuilder.cpp
+index fd318a91fbf7..8b980be3d880 100644
+--- a/xbmc/addons/addoninfo/AddonInfoBuilder.cpp
++++ b/xbmc/addons/addoninfo/AddonInfoBuilder.cpp
+@@ -212,6 +212,18 @@ bool CAddonInfoBuilder::ParseXML(const AddonInfoPtr& addon, const TiXmlElement*
+ 
+     if (point == "kodi.addon.metadata" || point == "xbmc.addon.metadata")
+     {
++      /*
++       * Parse addon.xml "<path">...</path>" (special related to repository path),
++       * do first and if present override the default. Also set assetBasePath to
++       * find screenshots and icons.
++       */
++      element = child->FirstChildElement("path");
++      if (element && element->GetText() != nullptr && !repo.datadir.empty())
++      {
++        addon->m_path = URIUtils::AddFileToFolder(repo.datadir, element->GetText());
++        assetBasePath = URIUtils::GetDirectory(URIUtils::AddFileToFolder(repo.artdir, element->GetText()));
++      }
++
+       /*
+        * Parse addon.xml "<summary lang="..">...</summary>"
+        */
