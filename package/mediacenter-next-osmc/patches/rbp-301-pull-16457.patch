@@ -1,0 +1,36 @@
+From 4844f8b1a2fc972e6d066373cada11c323d5cbbf Mon Sep 17 00:00:00 2001
+From: enen92 <92enen@gmail.com>
+Date: Thu, 8 Aug 2019 15:09:02 +0100
+Subject: [PATCH] Fix typo in CDVD*CodecFFmpeg cryptosession log messages
+
+---
+ xbmc/cores/VideoPlayer/DVDCodecs/Audio/DVDAudioCodecFFmpeg.cpp | 2 +-
+ xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Audio/DVDAudioCodecFFmpeg.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Audio/DVDAudioCodecFFmpeg.cpp
+index 3ba52df4f7c2..c8a51cc3f6b8 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Audio/DVDAudioCodecFFmpeg.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Audio/DVDAudioCodecFFmpeg.cpp
+@@ -41,7 +41,7 @@ bool CDVDAudioCodecFFmpeg::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options
+ {
+   if (hints.cryptoSession)
+   {
+-    CLog::Log(LOGERROR,"CDVDAudioCodecFFmpeg::Open() CryptoSessions unsuppoted!");
++    CLog::Log(LOGERROR,"CDVDAudioCodecFFmpeg::Open() CryptoSessions unsupported!");
+     return false;
+   }
+ 
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp
+index 557fd7fd5115..c73079d536a8 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp
+@@ -317,7 +317,7 @@ bool CDVDVideoCodecFFmpeg::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options
+ {
+   if (hints.cryptoSession)
+   {
+-    CLog::Log(LOGERROR,"CDVDVideoCodecFFmpeg::Open() CryptoSessions unsuppoted!");
++    CLog::Log(LOGERROR,"CDVDVideoCodecFFmpeg::Open() CryptoSessions unsupported!");
+     return false;
+   }
+ 

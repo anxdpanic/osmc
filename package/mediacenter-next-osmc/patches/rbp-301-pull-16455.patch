@@ -1,0 +1,191 @@
+From 8c48d911fb0b473d955d30b340f32fbe6e6debe3 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Thu, 8 Aug 2019 08:53:34 +0200
+Subject: [PATCH 1/2] [addons] change ADDON_GLOBAL_VERSION_MAIN to 1.1.0 and
+ leave min by old 1.0.12
+
+This to bring backward compatibility.
+---
+ xbmc/addons/kodi-addon-dev-kit/include/kodi/General.h  | 2 +-
+ xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h | 8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/General.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/General.h
+index 8505788e53e6..6f7c8bb46b35 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/General.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/General.h
+@@ -58,9 +58,9 @@ typedef struct AddonToKodiFuncTable_kodi
+   void (*get_free_mem)(void* kodiBase, long* free, long* total, bool as_bytes);
+   int  (*get_global_idle_time)(void* kodiBase);
+   void (*kodi_version)(void* kodiBase, char** compile_name, int* major, int* minor, char** revision, char** tag, char** tagversion);
++  char* (*get_current_skin_id)(void* kodiBase);
+   bool (*get_keyboard_layout)(void* kodiBase, char** layout_name, int modifier_key, AddonKeyboardKeyTable* layout);
+   bool (*change_keyboard_layout)(void* kodiBase, char** layout_name);
+-  char* (*get_current_skin_id)(void* kodiBase);
+ } AddonToKodiFuncTable_kodi;
+ 
+ //==============================================================================
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
+index 4d33bd0bcb4d..eb25b4c0d15a 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
+@@ -30,8 +30,8 @@
+  * overview.
+  */
+ 
+-#define ADDON_GLOBAL_VERSION_MAIN                     "1.0.15"
+-#define ADDON_GLOBAL_VERSION_MAIN_MIN                 "1.0.15"
++#define ADDON_GLOBAL_VERSION_MAIN                     "1.1.0"
++#define ADDON_GLOBAL_VERSION_MAIN_MIN                 "1.0.12"
+ #define ADDON_GLOBAL_VERSION_MAIN_XML_ID              "kodi.binary.global.main"
+ #define ADDON_GLOBAL_VERSION_MAIN_DEPENDS             "AddonBase.h" \
+                                                       "xbmc_addon_dll.h" \
+@@ -50,8 +50,8 @@
+ #define ADDON_GLOBAL_VERSION_GUI_DEPENDS              "libKODI_guilib.h" \
+                                                       "gui/"
+ 
+-#define ADDON_GLOBAL_VERSION_AUDIOENGINE              "1.0.3"
+-#define ADDON_GLOBAL_VERSION_AUDIOENGINE_MIN          "1.0.3"
++#define ADDON_GLOBAL_VERSION_AUDIOENGINE              "1.0.2"
++#define ADDON_GLOBAL_VERSION_AUDIOENGINE_MIN          "1.0.2"
+ #define ADDON_GLOBAL_VERSION_AUDIOENGINE_XML_ID       "kodi.binary.global.audioengine"
+ #define ADDON_GLOBAL_VERSION_AUDIOENGINE_DEPENDS      "AudioEngine.h"
+ 
+
+From c1d1a3bee3ec8744d44a668823518f305eda03d5 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Thu, 8 Aug 2019 09:55:41 +0200
+Subject: [PATCH 2/2] [addons] sort binary general functions to match interface
+ table flow
+
+---
+ xbmc/addons/interfaces/General.cpp | 84 +++++++++++++++---------------
+ xbmc/addons/interfaces/General.h   |  2 +-
+ 2 files changed, 43 insertions(+), 43 deletions(-)
+
+diff --git a/xbmc/addons/interfaces/General.cpp b/xbmc/addons/interfaces/General.cpp
+index 125ae4d9befd..03ba71cf670c 100644
+--- a/xbmc/addons/interfaces/General.cpp
++++ b/xbmc/addons/interfaces/General.cpp
+@@ -55,10 +55,10 @@ void Interface_General::Init(AddonGlobalInterface* addonInterface)
+   addonInterface->toKodi->kodi->get_region = get_region;
+   addonInterface->toKodi->kodi->get_free_mem = get_free_mem;
+   addonInterface->toKodi->kodi->get_global_idle_time = get_global_idle_time;
++  addonInterface->toKodi->kodi->kodi_version = kodi_version;
+   addonInterface->toKodi->kodi->get_current_skin_id = get_current_skin_id;
+   addonInterface->toKodi->kodi->get_keyboard_layout = get_keyboard_layout;
+   addonInterface->toKodi->kodi->change_keyboard_layout = change_keyboard_layout;
+-  addonInterface->toKodi->kodi->kodi_version = kodi_version;
+ }
+ 
+ void Interface_General::DeInit(AddonGlobalInterface* addonInterface)
+@@ -409,6 +409,47 @@ int Interface_General::get_global_idle_time(void* kodiBase)
+   return g_application.GlobalIdleTime();
+ }
+ 
++void Interface_General::kodi_version(void* kodiBase, char** compile_name, int* major, int* minor, char** revision, char** tag, char** tagversion)
++{
++  CAddonDll* addon = static_cast<CAddonDll*>(kodiBase);
++  if (addon == nullptr || compile_name == nullptr || major == nullptr || minor == nullptr ||
++     revision == nullptr || tag == nullptr || tagversion == nullptr)
++  {
++    CLog::Log(LOGERROR,
++              "Interface_General::%s - invalid data (addon='%p', compile_name='%p', major='%p', "
++              "minor='%p', revision='%p', tag='%p', tagversion='%p')",
++              __FUNCTION__, kodiBase, static_cast<void*>(compile_name), static_cast<void*>(major),
++              static_cast<void*>(minor), static_cast<void*>(revision), static_cast<void*>(tag),
++              static_cast<void*>(tagversion));
++    return;
++  }
++    
++  *compile_name = strdup(CCompileInfo::GetAppName());
++  *major = CCompileInfo::GetMajor();
++  *minor = CCompileInfo::GetMinor();
++  *revision = strdup(CCompileInfo::GetSCMID());
++  std::string tagStr = CCompileInfo::GetSuffix();
++  if (StringUtils::StartsWithNoCase(tagStr, "alpha"))
++  {
++    *tag = strdup("alpha");
++    *tagversion = strdup(StringUtils::Mid(tagStr, 5).c_str());
++  }
++  else if (StringUtils::StartsWithNoCase(tagStr, "beta"))
++  {
++    *tag = strdup("beta");
++    *tagversion = strdup(StringUtils::Mid(tagStr, 4).c_str());
++  }
++  else if (StringUtils::StartsWithNoCase(tagStr, "rc"))
++  {
++    *tag = strdup("releasecandidate");
++    *tagversion = strdup(StringUtils::Mid(tagStr, 2).c_str());
++  }
++  else if (tagStr.empty())
++    *tag = strdup("stable");
++  else
++    *tag = strdup("prealpha");
++}
++
+ char* Interface_General::get_current_skin_id(void* kodiBase)
+ {
+   CAddonDll* addon = static_cast<CAddonDll*>(kodiBase);
+@@ -495,45 +536,4 @@ bool Interface_General::change_keyboard_layout(void* kodiBase, char** layout_nam
+   return true;
+ }
+ 
+-void Interface_General::kodi_version(void* kodiBase, char** compile_name, int* major, int* minor, char** revision, char** tag, char** tagversion)
+-{
+-  CAddonDll* addon = static_cast<CAddonDll*>(kodiBase);
+-  if (addon == nullptr || compile_name == nullptr || major == nullptr || minor == nullptr ||
+-     revision == nullptr || tag == nullptr || tagversion == nullptr)
+-  {
+-    CLog::Log(LOGERROR,
+-              "Interface_General::%s - invalid data (addon='%p', compile_name='%p', major='%p', "
+-              "minor='%p', revision='%p', tag='%p', tagversion='%p')",
+-              __FUNCTION__, kodiBase, static_cast<void*>(compile_name), static_cast<void*>(major),
+-              static_cast<void*>(minor), static_cast<void*>(revision), static_cast<void*>(tag),
+-              static_cast<void*>(tagversion));
+-    return;
+-  }
+-
+-  *compile_name = strdup(CCompileInfo::GetAppName());
+-  *major = CCompileInfo::GetMajor();
+-  *minor = CCompileInfo::GetMinor();
+-  *revision = strdup(CCompileInfo::GetSCMID());
+-  std::string tagStr = CCompileInfo::GetSuffix();
+-  if (StringUtils::StartsWithNoCase(tagStr, "alpha"))
+-  {
+-    *tag = strdup("alpha");
+-    *tagversion = strdup(StringUtils::Mid(tagStr, 5).c_str());
+-  }
+-  else if (StringUtils::StartsWithNoCase(tagStr, "beta"))
+-  {
+-    *tag = strdup("beta");
+-    *tagversion = strdup(StringUtils::Mid(tagStr, 4).c_str());
+-  }
+-  else if (StringUtils::StartsWithNoCase(tagStr, "rc"))
+-  {
+-    *tag = strdup("releasecandidate");
+-    *tagversion = strdup(StringUtils::Mid(tagStr, 2).c_str());
+-  }
+-  else if (tagStr.empty())
+-    *tag = strdup("stable");
+-  else
+-    *tag = strdup("prealpha");
+-}
+-
+ } /* namespace ADDON */
+diff --git a/xbmc/addons/interfaces/General.h b/xbmc/addons/interfaces/General.h
+index acc44b642e02..774827f6dcab 100644
+--- a/xbmc/addons/interfaces/General.h
++++ b/xbmc/addons/interfaces/General.h
+@@ -52,10 +52,10 @@ namespace ADDON
+     static char* get_region(void* kodiBase, const char* id);
+     static void get_free_mem(void* kodiInstance, long* free, long* total, bool as_bytes);
+     static int  get_global_idle_time(void* kodiBase);
++    static void kodi_version(void* kodiBase, char** compile_name, int* major, int* minor, char** revision, char** tag, char** tagversion);
+     static char* get_current_skin_id(void* kodiBase);
+     static bool change_keyboard_layout(void* kodiBase, char** layout_name);
+     static bool get_keyboard_layout(void* kodiBase, char** layout_name, int modifier_key, AddonKeyboardKeyTable* c_layout);
+-    static void kodi_version(void* kodiBase, char** compile_name, int* major, int* minor, char** revision, char** tag, char** tagversion);
+     //@}
+   };
+ 
