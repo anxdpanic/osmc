@@ -1765,7 +1765,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/windowing/ios/VideoSyncIos.h                  |  2 +-
  xbmc/windowing/ios/WinEventsIOS.mm                 |  8 +--
  xbmc/windowing/ios/WinSystemIOS.h                  |  8 +--
- xbmc/windowing/ios/WinSystemIOS.mm                 | 35 ++++++------
  xbmc/windowing/linux/OSScreenSaverFreedesktop.cpp  |  3 +-
  xbmc/windowing/linux/OSScreenSaverFreedesktop.h    |  4 +-
  xbmc/windowing/osx/OSScreenSaverOSX.h              |  4 +-
@@ -4514,72 +4513,6 @@ index ebf5c8e581..53b934f91c 100644
 -#include "utils/log.h"
  
  using namespace ADDON;
- 
-diff --git a/xbmc/addons/binary-addons/BinaryAddonBase.h b/xbmc/addons/binary-addons/BinaryAddonBase.h
-index dee7525c4d..1eff9c6b72 100644
---- a/xbmc/addons/binary-addons/BinaryAddonBase.h
-+++ b/xbmc/addons/binary-addons/BinaryAddonBase.h
-@@ -10,6 +10,7 @@
- 
- #include "AddonInstanceHandler.h"
- #include "BinaryAddonType.h"
-+
- #include "addons/addoninfo/AddonInfo.h"
- #include "threads/CriticalSection.h"
- 
-diff --git a/xbmc/addons/binary-addons/BinaryAddonManager.cpp b/xbmc/addons/binary-addons/BinaryAddonManager.cpp
-index 614f1919cd..75b31b0503 100644
---- a/xbmc/addons/binary-addons/BinaryAddonManager.cpp
-+++ b/xbmc/addons/binary-addons/BinaryAddonManager.cpp
-@@ -7,12 +7,12 @@
-  */
- 
- #include "BinaryAddonManager.h"
--
- #include "BinaryAddonBase.h"
-+
- #include "ServiceBroker.h"
- #include "addons/AddonManager.h"
--#include "filesystem/Directory.h"
- #include "filesystem/SpecialProtocol.h"
-+#include "filesystem/Directory.h"
- #include "threads/SingleLock.h"
- #include "utils/log.h"
- 
-diff --git a/xbmc/addons/binary-addons/BinaryAddonType.cpp b/xbmc/addons/binary-addons/BinaryAddonType.cpp
-index fa54780103..bb056e794f 100644
---- a/xbmc/addons/binary-addons/BinaryAddonType.cpp
-+++ b/xbmc/addons/binary-addons/BinaryAddonType.cpp
-@@ -7,11 +7,11 @@
-  */
- 
- #include "BinaryAddonType.h"
--
- #include "BinaryAddonBase.h"
-+
-+#include "utils/log.h"
- #include "utils/URIUtils.h"
- #include "utils/XMLUtils.h"
--#include "utils/log.h"
- 
- using namespace ADDON;
- 
-diff --git a/xbmc/addons/binary-addons/BinaryAddonType.h b/xbmc/addons/binary-addons/BinaryAddonType.h
-index bfd26725ec..ab11288084 100644
---- a/xbmc/addons/binary-addons/BinaryAddonType.h
-+++ b/xbmc/addons/binary-addons/BinaryAddonType.h
-@@ -9,10 +9,11 @@
- #pragma once
- 
- #include "BinaryAddonExtensions.h"
-+
- #include "addons/addoninfo/AddonInfo.h"
- 
--#include <set>
- #include <string>
-+#include <set>
- 
- class TiXmlElement;
  
 diff --git a/xbmc/addons/interfaces/Addon/AddonCallbacksAddon.cpp b/xbmc/addons/interfaces/Addon/AddonCallbacksAddon.cpp
 index 3b73e99380..3d53190878 100644
