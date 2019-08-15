@@ -1773,7 +1773,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/windowing/osx/WinEventsSDL.cpp                | 15 +++--
  xbmc/windowing/osx/WinEventsSDL.h                  |  4 +-
  xbmc/windowing/osx/WinSystemOSX.h                  |  8 +--
- xbmc/windowing/osx/WinSystemOSX.mm                 | 40 ++++++-------
  xbmc/windowing/osx/WinSystemOSXGL.mm               |  3 +-
  xbmc/windowing/rpi/RPIUtils.cpp                    | 16 +++---
  xbmc/windowing/rpi/RPIUtils.h                      |  4 +-
