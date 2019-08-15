@@ -38209,28 +38209,6 @@ index 43381da2bd..1b0a864d19 100644
  static CCriticalSection g_inputCond;
  
  static std::list<XBMC_Event> events;
-diff --git a/xbmc/windowing/ios/WinSystemIOS.h b/xbmc/windowing/ios/WinSystemIOS.h
-index 76d9f633ae..53827ef60d 100644
---- a/xbmc/windowing/ios/WinSystemIOS.h
-+++ b/xbmc/windowing/ios/WinSystemIOS.h
-@@ -8,13 +8,13 @@
- 
- #pragma once
- 
--#include "rendering/gles/RenderSystemGLES.h"
--#include "threads/CriticalSection.h"
--#include "windowing/WinSystem.h"
--
- #include <string>
- #include <vector>
- 
-+#include "windowing/WinSystem.h"
-+#include "rendering/gles/RenderSystemGLES.h"
-+#include "threads/CriticalSection.h"
-+
- class IDispResource;
- class CVideoSyncIos;
- struct CADisplayLinkWrapper;
 diff --git a/xbmc/windowing/linux/OSScreenSaverFreedesktop.cpp b/xbmc/windowing/linux/OSScreenSaverFreedesktop.cpp
 index 69ece88226..3d63898a0e 100644
 --- a/xbmc/windowing/linux/OSScreenSaverFreedesktop.cpp
