@@ -1,0 +1,31 @@
+From b2c0a8d10311d1ad191f0db3fb3e1015a89202f7 Mon Sep 17 00:00:00 2001
+From: Sylvain CECCHETTO <cecchetto.sylvain@me.com>
+Date: Tue, 13 Aug 2019 08:49:21 +0200
+Subject: [PATCH] Replace "computer" by "device" in setting help text
+
+---
+ addons/resource.language.en_gb/resources/strings.po | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index eda5521614a1..d945213969b8 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -17333,7 +17333,7 @@ msgctxt "#35170"
+ msgid "Press a key ({1:d})"
+ msgstr ""
+ 
+-#. Name of mouse connected to the computer
++#. Name of mouse connected to the device
+ #: xbmc/peripherals/bus/virtual/PeripheralBusApplication.cpp
+ msgctxt "#35171"
+ msgid "Mouse"
+@@ -19235,7 +19235,7 @@ msgstr ""
+ #. Description of setting with label #791 "Allow remote control from programs on this system"
+ #: system/settings/settings.xml
+ msgctxt "#36334"
+-msgid "Allow programs on this computer to control this application via the web interface or the JSON-RPC interface protocol."
++msgid "Allow programs on this device to control this application via the web interface or the JSON-RPC interface protocol."
+ msgstr ""
+ 
+ #. Description of setting with label #792 "Port"

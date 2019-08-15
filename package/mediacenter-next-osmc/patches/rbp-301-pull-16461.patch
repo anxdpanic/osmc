@@ -1,0 +1,19 @@
+From e23e78cf0c828c943d30d38dec1afc45629c5136 Mon Sep 17 00:00:00 2001
+From: fritsch <Peter.Fruehberger@gmail.com>
+Date: Fri, 9 Aug 2019 10:50:54 +0200
+Subject: [PATCH] FFmpeg: Bump to 4.0.4-Leia-18.4
+
+---
+ tools/depends/target/ffmpeg/FFMPEG-VERSION | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/depends/target/ffmpeg/FFMPEG-VERSION b/tools/depends/target/ffmpeg/FFMPEG-VERSION
+index d7883f0ee83a..620fe798de97 100644
+--- a/tools/depends/target/ffmpeg/FFMPEG-VERSION
++++ b/tools/depends/target/ffmpeg/FFMPEG-VERSION
+@@ -1,4 +1,4 @@
+ LIBNAME=ffmpeg
+ BASE_URL=https://github.com/xbmc/FFmpeg
+-VERSION=4.0.3-Leia-18.2
++VERSION=4.0.4-Leia-18.4
+ ARCHIVE=$(LIBNAME)-$(VERSION).tar.gz
