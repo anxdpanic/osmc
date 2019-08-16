@@ -1,0 +1,155 @@
+From bfbb115808974ad4aef0946bc40292b8d0fa6f66 Mon Sep 17 00:00:00 2001
+From: arnova <arnova@void.org>
+Date: Thu, 1 Aug 2019 15:12:06 +0200
+Subject: [PATCH 1/2] [addons] added: Support for file times in VFS addons
+
+[addons] updated: VFS (min) version to 2.1.0 / FILESYSTEM (min) version to 1.0.3
+---
+ xbmc/addons/VFSEntry.cpp                          |  2 +-
+ .../interfaces/Addon/AddonCallbacksAddon.cpp      |  1 +
+ .../kodi-addon-dev-kit/include/kodi/Filesystem.h  | 15 +++++++++------
+ .../include/kodi/addon-instance/VFS.h             |  2 ++
+ .../include/kodi/kodi_vfs_types.h                 |  2 +-
+ .../kodi-addon-dev-kit/include/kodi/versions.h    |  8 ++++----
+ 6 files changed, 18 insertions(+), 12 deletions(-)
+
+diff --git a/xbmc/addons/VFSEntry.cpp b/xbmc/addons/VFSEntry.cpp
+index b7f3b3610780..9d7b25c54357 100644
+--- a/xbmc/addons/VFSEntry.cpp
++++ b/xbmc/addons/VFSEntry.cpp
+@@ -345,7 +345,7 @@ static void VFSDirEntriesToCFileItemList(int num_entries,
+     item->SetLabel(entries[i].label);
+     item->SetPath(entries[i].path);
+     item->m_dwSize = entries[i].size;
+-    //item->m_dateTime = entries[i].mtime;
++    item->m_dateTime = entries[i].date_time;
+     item->m_bIsFolder = entries[i].folder;
+     if (entries[i].title)
+       item->m_strTitle = entries[i].title;
+diff --git a/xbmc/addons/interfaces/Addon/AddonCallbacksAddon.cpp b/xbmc/addons/interfaces/Addon/AddonCallbacksAddon.cpp
+index 3b73e99380c8..1a278f402a7a 100644
+--- a/xbmc/addons/interfaces/Addon/AddonCallbacksAddon.cpp
++++ b/xbmc/addons/interfaces/Addon/AddonCallbacksAddon.cpp
+@@ -612,6 +612,7 @@ static void CFileItemListToVFSDirEntries(VFSDirEntry* entries,
+     entries[i].path = strdup(items[i]->GetPath().c_str());
+     entries[i].size = items[i]->m_dwSize;
+     entries[i].folder = items[i]->m_bIsFolder;
++    items[i]->m_dateTime.GetAsTime(entries[i].date_time);
+   }
+ }
+ 
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/Filesystem.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/Filesystem.h
+index 3df6cec2d618..de73297d7171 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/Filesystem.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/Filesystem.h
+@@ -326,19 +326,22 @@ namespace vfs
+     /// @ingroup cpp_kodi_vfs_CDirEntry
+     /// @brief Constructor for VFS directory entry
+     ///
+-    /// @param[in] label   [opt] Name to use for entry
+-    /// @param[in] path    [opt] Used path of the entry
+-    /// @param[in] folder  [opt] If set entry used as folder
+-    /// @param[in] size    [opt] If used as file, his size defined there
++    /// @param[in] label    [opt] Name to use for entry
++    /// @param[in] path     [opt] Used path of the entry
++    /// @param[in] folder   [opt] If set entry used as folder
++    /// @param[in] size     [opt] If used as file, his size defined there
++    /// @param[in] dateTime [opt] Date time of the entry
+     ///
+     CDirEntry(const std::string& label = "",
+               const std::string& path = "",
+               bool folder = false,
+-              int64_t size = -1) :
++              int64_t size = -1,
++              time_t dateTime = 0):
+       m_label(label),
+       m_path(path),
+       m_folder(folder),
+-      m_size(size)
++      m_size(size),
++      m_dateTime(dateTime)
+     {
+     }
+     //----------------------------------------------------------------------------
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/VFS.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/VFS.h
+index 3bdc059db7a1..f38c64dbbed2 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/VFS.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/VFS.h
+@@ -519,6 +519,7 @@ namespace addon
+           entries[i].path = strdup(addonEntries[i].Path().c_str());
+           entries[i].folder = addonEntries[i].IsFolder();
+           entries[i].size = addonEntries[i].Size();
++          entries[i].date_time = addonEntries[i].DateTime();
+ 
+           entries[i].num_props = 0;
+           const std::map<std::string, std::string>& props = addonEntries[i].GetProperties();
+@@ -582,6 +583,7 @@ namespace addon
+           entries[i].path = strdup(addonEntries[i].Path().c_str());
+           entries[i].folder = addonEntries[i].IsFolder();
+           entries[i].size = addonEntries[i].Size();
++          entries[i].date_time = addonEntries[i].DateTime();
+ 
+           entries[i].num_props = 0;
+           const std::map<std::string, std::string>& props = addonEntries[i].GetProperties();
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_vfs_types.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_vfs_types.h
+index 233f68200a0a..f6aa07519aa5 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_vfs_types.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_vfs_types.h
+@@ -41,7 +41,7 @@ extern "C"
+     char* path;              //!< item path
+     int num_props;           //!< Number of properties attached to item
+     VFSProperty* properties; //!< Properties
+-    //FILETIME mtime;          //!< Mtime for file represented by item
++    time_t date_time;        //!< file creation date & time
+     bool folder;             //!< Item is a folder
+     uint64_t size;           //!< Size of file represented by item
+   };
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
+index 4ba563f68ca9..36a7a30e4cc3 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
+@@ -55,8 +55,8 @@
+ #define ADDON_GLOBAL_VERSION_AUDIOENGINE_XML_ID       "kodi.binary.global.audioengine"
+ #define ADDON_GLOBAL_VERSION_AUDIOENGINE_DEPENDS      "AudioEngine.h"
+ 
+-#define ADDON_GLOBAL_VERSION_FILESYSTEM               "1.0.2"
+-#define ADDON_GLOBAL_VERSION_FILESYSTEM_MIN           "1.0.2"
++#define ADDON_GLOBAL_VERSION_FILESYSTEM               "1.0.3"
++#define ADDON_GLOBAL_VERSION_FILESYSTEM_MIN           "1.0.3"
+ #define ADDON_GLOBAL_VERSION_FILESYSTEM_XML_ID        "kodi.binary.global.filesystem"
+ #define ADDON_GLOBAL_VERSION_FILESYSTEM_DEPENDS       "Filesystem.h"
+ 
+@@ -111,8 +111,8 @@
+ #define ADDON_INSTANCE_VERSION_SCREENSAVER_XML_ID     "kodi.binary.instance.screensaver"
+ #define ADDON_INSTANCE_VERSION_SCREENSAVER_DEPENDS    "addon-instance/Screensaver.h"
+ 
+-#define ADDON_INSTANCE_VERSION_VFS                    "2.0.0"
+-#define ADDON_INSTANCE_VERSION_VFS_MIN                "2.0.0"
++#define ADDON_INSTANCE_VERSION_VFS                    "2.1.0"
++#define ADDON_INSTANCE_VERSION_VFS_MIN                "2.1.0"
+ #define ADDON_INSTANCE_VERSION_VFS_XML_ID             "kodi.binary.instance.vfs"
+ #define ADDON_INSTANCE_VERSION_VFS_DEPENDS            "addon-instance/VFS.h"
+ 
+
+From bb0c49298d85239bd5a7e9bda7a80fc7b003340d Mon Sep 17 00:00:00 2001
+From: arnova <arnova@void.org>
+Date: Wed, 7 Aug 2019 08:47:26 +0200
+Subject: [PATCH 2/2] [addons] fixed: num_props should be unsigned
+
+---
+ xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_vfs_types.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_vfs_types.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_vfs_types.h
+index f6aa07519aa5..3ca9c5bfdd75 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_vfs_types.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_vfs_types.h
+@@ -39,7 +39,7 @@ extern "C"
+     char* label;             //!< item label
+     char* title;             //!< item title
+     char* path;              //!< item path
+-    int num_props;           //!< Number of properties attached to item
++    unsigned int num_props;  //!< Number of properties attached to item
+     VFSProperty* properties; //!< Properties
+     time_t date_time;        //!< file creation date & time
+     bool folder;             //!< Item is a folder

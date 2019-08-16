@@ -1,0 +1,239 @@
+From 280469e17be3ba8e43a5356a7801171b4e0b6acb Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Sat, 10 Aug 2019 09:54:48 +0200
+Subject: [PATCH 1/5] [guiinfo] Fix black screen for videos in slide shows on
+ systems that do not render video to a video layer.
+
+---
+ xbmc/guilib/guiinfo/PicturesGUIInfo.cpp | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/xbmc/guilib/guiinfo/PicturesGUIInfo.cpp b/xbmc/guilib/guiinfo/PicturesGUIInfo.cpp
+index c38b1c42c569..69905f20d03d 100644
+--- a/xbmc/guilib/guiinfo/PicturesGUIInfo.cpp
++++ b/xbmc/guilib/guiinfo/PicturesGUIInfo.cpp
+@@ -92,15 +92,20 @@ CPicturesGUIInfo::~CPicturesGUIInfo()
+ 
+ void CPicturesGUIInfo::SetCurrentSlide(CFileItem *item)
+ {
++  if (m_currentSlide && item && m_currentSlide->GetPath() == item->GetPath())
++    return;
++
+   if (item)
+   {
+-    CPictureInfoTag* tag = item->GetPictureInfoTag();  // creates item if not yet set, so no nullptr checks needed
+-    if (!tag->Loaded()) // If picture metadata has not been loaded yet, load it now
+-      tag->Load(item->GetPath());
+-
++    if (item->HasPictureInfoTag()) // Note: item may also be a video
++    {
++      CPictureInfoTag* tag = item->GetPictureInfoTag();
++      if (!tag->Loaded()) // If picture metadata has not been loaded yet, load it now
++        tag->Load(item->GetPath());
++    }
+     m_currentSlide.reset(new CFileItem(*item));
+   }
+-  else
++  else if (m_currentSlide)
+   {
+     m_currentSlide.reset();
+   }
+
+From fa87f64e059ec2cdeb181f5c873173eb36fd6d53 Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Sun, 11 Aug 2019 17:28:12 +0200
+Subject: [PATCH 2/5] [pictures] Fix black screen for videos in slide shows on
+ systems that do render video to a video layer.
+
+---
+ xbmc/pictures/GUIWindowSlideShow.cpp | 34 ++++++++++++++++++++++++----
+ xbmc/pictures/GUIWindowSlideShow.h   |  1 +
+ 2 files changed, 30 insertions(+), 5 deletions(-)
+
+diff --git a/xbmc/pictures/GUIWindowSlideShow.cpp b/xbmc/pictures/GUIWindowSlideShow.cpp
+index 4e8cac0b7415..d287ab38acd7 100644
+--- a/xbmc/pictures/GUIWindowSlideShow.cpp
++++ b/xbmc/pictures/GUIWindowSlideShow.cpp
+@@ -629,14 +629,30 @@ void CGUIWindowSlideShow::Render()
+   if (m_slides.empty())
+     return;
+ 
+-  CServiceBroker::GetWinSystem()->GetGfxContext().Clear(0xff000000);
++  CGraphicContext& gfxCtx = CServiceBroker::GetWinSystem()->GetGfxContext();
++  gfxCtx.Clear(0xff000000);
+ 
+   if (m_slides.at(m_iCurrentSlide)->IsVideo())
+   {
+-    CServiceBroker::GetWinSystem()->GetGfxContext().SetViewWindow(0, 0, m_coordsRes.iWidth, m_coordsRes.iHeight);
+-    CServiceBroker::GetWinSystem()->GetGfxContext().SetRenderingResolution(CServiceBroker::GetWinSystem()->GetGfxContext().GetVideoResolution(), false);
+-    g_application.GetAppPlayer().Render(true, 255);
+-    CServiceBroker::GetWinSystem()->GetGfxContext().SetRenderingResolution(m_coordsRes, m_needsScaling);
++    gfxCtx.SetViewWindow(0, 0, m_coordsRes.iWidth, m_coordsRes.iHeight);
++    gfxCtx.SetRenderingResolution(gfxCtx.GetVideoResolution(), false);
++
++    if (g_application.GetAppPlayer().IsRenderingVideoLayer())
++    {
++      const CRect old = gfxCtx.GetScissors();
++      CRect region = GetRenderRegion();
++      region.Intersect(old);
++      gfxCtx.SetScissors(region);
++      gfxCtx.Clear(0);
++      gfxCtx.SetScissors(old);
++    }
++    else
++    {
++      const UTILS::Color alpha = gfxCtx.MergeAlpha(0xff000000) >> 24;
++      g_application.GetAppPlayer().Render(false, alpha);
++    }
++
++    gfxCtx.SetRenderingResolution(m_coordsRes, m_needsScaling);
+   }
+   else
+   {
+@@ -651,6 +667,14 @@ void CGUIWindowSlideShow::Render()
+   CGUIWindow::Render();
+ }
+ 
++void CGUIWindowSlideShow::RenderEx()
++{
++  if (m_slides.at(m_iCurrentSlide)->IsVideo())
++    g_application.GetAppPlayer().Render(false, 255, false);
++
++  CGUIWindow::RenderEx();
++}
++
+ int CGUIWindowSlideShow::GetNextSlide()
+ {
+   if (m_slides.size() <= 1)
+diff --git a/xbmc/pictures/GUIWindowSlideShow.h b/xbmc/pictures/GUIWindowSlideShow.h
+index ff9ef403bf86..200dec7ae1bc 100644
+--- a/xbmc/pictures/GUIWindowSlideShow.h
++++ b/xbmc/pictures/GUIWindowSlideShow.h
+@@ -58,6 +58,7 @@ class CGUIWindowSlideShow : public CGUIDialog
+   EVENT_RESULT OnMouseEvent(const CPoint &point, const CMouseEvent &event) override;
+   bool OnAction(const CAction &action) override;
+   void Render() override;
++  void RenderEx() override;
+   void Process(unsigned int currentTime, CDirtyRegionList &regions) override;
+   void OnDeinitWindow(int nextWindowID) override;
+ 
+
+From 851a5ddbe1b876a8d4bf6ee8704cc8110082308d Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Sat, 10 Aug 2019 23:12:41 +0200
+Subject: [PATCH 3/5] [pictures] Fix previous video playing in the background
+ while displaying next picture in mixed picture/video slide shows when
+ skipping to next picture manually while a video is playing.
+
+---
+ xbmc/pictures/GUIWindowSlideShow.cpp | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/xbmc/pictures/GUIWindowSlideShow.cpp b/xbmc/pictures/GUIWindowSlideShow.cpp
+index d287ab38acd7..986b78d3ebf7 100644
+--- a/xbmc/pictures/GUIWindowSlideShow.cpp
++++ b/xbmc/pictures/GUIWindowSlideShow.cpp
+@@ -509,13 +509,9 @@ void CGUIWindowSlideShow::Process(unsigned int currentTime, CDirtyRegionList &re
+     }
+   }
+ 
+-  if (m_slides.at(m_iCurrentSlide)->IsVideo() &&
+-      m_iVideoSlide != m_iCurrentSlide)
+-  {
+-    if (!PlayVideo())
+-      return;
++  bool bPlayVideo = m_slides.at(m_iCurrentSlide)->IsVideo() && m_iVideoSlide != m_iCurrentSlide;
++  if (bPlayVideo)
+     bSlideShow = false;
+-  }
+ 
+   // render the current image
+   if (m_Image[m_iCurrentPic].IsLoaded())
+@@ -603,6 +599,8 @@ void CGUIWindowSlideShow::Process(unsigned int currentTime, CDirtyRegionList &re
+       }
+       m_iCurrentSlide = m_iNextSlide;
+       m_iNextSlide    = GetNextSlide();
++
++      bPlayVideo = m_slides.at(m_iCurrentSlide)->IsVideo() && m_iVideoSlide != m_iCurrentSlide;
+     }
+     AnnouncePlayerPlay(m_slides.at(m_iCurrentSlide));
+ 
+@@ -611,6 +609,9 @@ void CGUIWindowSlideShow::Process(unsigned int currentTime, CDirtyRegionList &re
+     m_fRotate = 0.0f;
+   }
+ 
++  if (bPlayVideo && !PlayVideo())
++      return;
++
+   if (m_Image[m_iCurrentPic].IsLoaded())
+     CServiceBroker::GetGUI()->GetInfoManager().GetInfoProviders().GetPicturesInfoProvider().SetCurrentSlide(m_slides.at(m_iCurrentSlide).get());
+ 
+
+From 0904f95cabbbe1d63fc328a8a58c06dddd96fc85 Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Sun, 11 Aug 2019 15:20:54 +0200
+Subject: [PATCH 4/5] [guiinfo] CPicturesGUIInfo: Fix LISTITEM_PICTURE_PATH.
+
+---
+ xbmc/guilib/guiinfo/PicturesGUIInfo.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/guilib/guiinfo/PicturesGUIInfo.cpp b/xbmc/guilib/guiinfo/PicturesGUIInfo.cpp
+index 69905f20d03d..000ea6f2a6d6 100644
+--- a/xbmc/guilib/guiinfo/PicturesGUIInfo.cpp
++++ b/xbmc/guilib/guiinfo/PicturesGUIInfo.cpp
+@@ -206,7 +206,7 @@ bool CPicturesGUIInfo::GetLabel(std::string& value, const CFileItem *item, int c
+     {
+       case LISTITEM_PICTURE_PATH:
+       {
+-        if (!item->IsZIP() || item->IsRAR() || item->IsCBZ() || item->IsCBR())
++        if (!(item->IsZIP() || item->IsRAR() || item->IsCBZ() || item->IsCBR()))
+         {
+           value = item->GetPath();
+           return true;
+
+From 8e4149f14dbe4d31c589ec19efd75b2891ed86e9 Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Sun, 11 Aug 2019 19:55:33 +0200
+Subject: [PATCH 5/5] [Estuary] PictureInfoDialog: Fix picture title and and
+ date when slideshow is active.
+
+---
+ addons/skin.estuary/xml/DialogPictureInfo.xml | 4 ++--
+ addons/skin.estuary/xml/Variables.xml         | 8 ++++++++
+ 2 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/addons/skin.estuary/xml/DialogPictureInfo.xml b/addons/skin.estuary/xml/DialogPictureInfo.xml
+index 92c2fe040585..2a6d20e2d07a 100644
+--- a/addons/skin.estuary/xml/DialogPictureInfo.xml
++++ b/addons/skin.estuary/xml/DialogPictureInfo.xml
+@@ -119,8 +119,8 @@
+ 			</control>
+ 		</control>
+ 		<include content="InfoDialogTopBarInfo">
+-			<param name="main_label" value="$INFO[ListItem.Label]" />
+-			<param name="sub_label" value="$INFO[ListItem.PictureDateTime]" />
++			<param name="main_label" value="$VAR[PictureInfoMainLabelVar]" />
++			<param name="sub_label" value="$VAR[PictureInfoSubLabelVar]" />
+ 		</include>
+ 		<include condition="Skin.HasSetting(touchmode)">TouchBackButton</include>
+ 	</controls>
+diff --git a/addons/skin.estuary/xml/Variables.xml b/addons/skin.estuary/xml/Variables.xml
+index a8082c6f3c3c..ab9bae788e96 100644
+--- a/addons/skin.estuary/xml/Variables.xml
++++ b/addons/skin.estuary/xml/Variables.xml
+@@ -275,6 +275,14 @@
+ 		<value condition="Control.HasFocus(8)">$INFO[ListItem.LastPlayed,$LOCALIZE[568]: ]</value>
+ 		<value condition="Control.HasFocus(6)">$INFO[ListItem.FileNameAndPath]</value>
+ 	</variable>
++	<variable name="PictureInfoMainLabelVar">
++		<value condition="Window.IsActive(Slideshow)">$INFO[SlideShow.Filename]</value>
++		<value>$INFO[ListItem.Label]</value>
++	</variable>
++	<variable name="PictureInfoSubLabelVar">
++		<value condition="Window.IsActive(Slideshow)">$INFO[SlideShow.EXIFtime]</value>
++		<value>$INFO[ListItem.PictureDateTime]</value>
++	</variable>
+ 	<variable name="NowPlayingBreadcrumbsVar">
+ 		<value condition="VideoPlayer.Content(livetv)">$INFO[VideoPlayer.Title]</value>
+ 		<value condition="VideoPlayer.Content(episodes) + !String.IsEmpty(Player.Art(tvshow.clearlogo))">$INFO[VideoPlayer.Season,[COLOR button_focus]S,[/COLOR]]$INFO[VideoPlayer.Episode,[COLOR button_focus]E,: [/COLOR]]$INFO[VideoPlayer.Title]</value>
