@@ -17349,18 +17349,6 @@ index 2eb0c66a5e..04e83d3ace 100644
  
  /*!
   \ingroup controls
-diff --git a/xbmc/guilib/GUIPanelContainer.cpp b/xbmc/guilib/GUIPanelContainer.cpp
-index 2d97f710e1..a738058e32 100644
---- a/xbmc/guilib/GUIPanelContainer.cpp
-+++ b/xbmc/guilib/GUIPanelContainer.cpp
-@@ -7,7 +7,6 @@
-  */
- 
- #include "GUIPanelContainer.h"
--
- #include "GUIListItemLayout.h"
- #include "GUIMessage.h"
- #include "guilib/guiinfo/GUIInfoLabels.h"
 diff --git a/xbmc/guilib/GUIProgressControl.cpp b/xbmc/guilib/GUIProgressControl.cpp
 index ab877f2369..4b60061d7a 100644
 --- a/xbmc/guilib/GUIProgressControl.cpp
