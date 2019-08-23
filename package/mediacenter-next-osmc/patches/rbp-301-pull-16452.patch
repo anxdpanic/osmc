@@ -1,0 +1,70 @@
+From 09b308249b11122fac06024bef94ccacd3b17c58 Mon Sep 17 00:00:00 2001
+From: arnova <arnova@void.org>
+Date: Thu, 8 Aug 2019 07:30:24 +0200
+Subject: [PATCH] [addons] added: Missing protocol member for VFSURL struct
+
+[addons] updated: VFS version to 2.2.0
+---
+ xbmc/addons/VFSEntry.cpp                                        | 2 ++
+ .../addons/kodi-addon-dev-kit/include/kodi/addon-instance/VFS.h | 1 +
+ xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_vfs_types.h    | 1 +
+ xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h          | 2 +-
+ 4 files changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/addons/VFSEntry.cpp b/xbmc/addons/VFSEntry.cpp
+index 9d7b25c54357..43f3b3e3bbee 100644
+--- a/xbmc/addons/VFSEntry.cpp
++++ b/xbmc/addons/VFSEntry.cpp
+@@ -116,6 +116,7 @@ class CVFSURLWrapper
+       m_strings.push_back(url2.GetPassWord());
+       m_strings.push_back(url2.GetRedacted());
+       m_strings.push_back(url2.GetShareName());
++      m_strings.push_back(url2.GetProtocol());
+ 
+       url.url = m_strings[0].c_str();
+       url.domain = m_strings[1].c_str();
+@@ -127,6 +128,7 @@ class CVFSURLWrapper
+       url.password = m_strings[6].c_str();
+       url.redacted = m_strings[7].c_str();
+       url.sharename = m_strings[8].c_str();
++      url.protocol = m_strings[9].c_str();
+     }
+ 
+     VFSURL url;
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/VFS.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/VFS.h
+index f38c64dbbed2..216d0a54c16e 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/VFS.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/VFS.h
+@@ -34,6 +34,7 @@ extern "C"
+     const char* password;
+     const char* redacted;
+     const char* sharename;
++    const char* protocol;
+   };
+ 
+   typedef struct VFSGetDirectoryCallbacks /* internal */
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_vfs_types.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_vfs_types.h
+index 3ca9c5bfdd75..c1843b0bd448 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_vfs_types.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_vfs_types.h
+@@ -58,6 +58,7 @@ extern "C"
+     const char* password;
+     const char* redacted;
+     const char* sharename;
++    const char* protocol;
+   };
+ 
+   struct VFSCallbacks
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
+index 4dc7a6958b3f..20699fd485c7 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
+@@ -111,7 +111,7 @@
+ #define ADDON_INSTANCE_VERSION_SCREENSAVER_XML_ID     "kodi.binary.instance.screensaver"
+ #define ADDON_INSTANCE_VERSION_SCREENSAVER_DEPENDS    "addon-instance/Screensaver.h"
+ 
+-#define ADDON_INSTANCE_VERSION_VFS                    "2.1.0"
++#define ADDON_INSTANCE_VERSION_VFS                    "2.2.0"
+ #define ADDON_INSTANCE_VERSION_VFS_MIN                "2.1.0"
+ #define ADDON_INSTANCE_VERSION_VFS_XML_ID             "kodi.binary.instance.vfs"
+ #define ADDON_INSTANCE_VERSION_VFS_DEPENDS            "addon-instance/VFS.h"

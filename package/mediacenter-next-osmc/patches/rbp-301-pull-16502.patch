@@ -1,0 +1,26 @@
+From 138394a46690c393a6493df6f6387f0f063adee0 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Fri, 16 Aug 2019 17:45:49 +0200
+Subject: [PATCH] [addons] add gui/gl/Shader.h to filesystem check (it open
+ files)
+
+If this header is used by addon, is also the VFS calls to Kodi used,
+to open needed shader files.
+---
+ xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
+index 4dc7a6958b3f..8e7ed89b7df0 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
+@@ -58,7 +58,8 @@
+ #define ADDON_GLOBAL_VERSION_FILESYSTEM               "1.0.3"
+ #define ADDON_GLOBAL_VERSION_FILESYSTEM_MIN           "1.0.3"
+ #define ADDON_GLOBAL_VERSION_FILESYSTEM_XML_ID        "kodi.binary.global.filesystem"
+-#define ADDON_GLOBAL_VERSION_FILESYSTEM_DEPENDS       "Filesystem.h"
++#define ADDON_GLOBAL_VERSION_FILESYSTEM_DEPENDS       "Filesystem.h" \
++                                                      "gui/gl/Shader.h"
+ 
+ #define ADDON_GLOBAL_VERSION_NETWORK                  "1.0.0"
+ #define ADDON_GLOBAL_VERSION_NETWORK_MIN              "1.0.0"

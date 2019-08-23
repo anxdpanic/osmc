@@ -1,0 +1,202 @@
+From cca5773bfa708504a63cc9c5cbbdd3809cbf314b Mon Sep 17 00:00:00 2001
+From: Rechi <Rechi@users.noreply.github.com>
+Date: Wed, 21 Aug 2019 10:16:14 +0200
+Subject: [PATCH 1/2] [buildsteps] fix pathChanged comment after 2876b9c0d6
+
+---
+ tools/buildsteps/android-arm64-v8a/prepare-xbmc | 2 +-
+ tools/buildsteps/android/prepare-xbmc           | 2 +-
+ tools/buildsteps/androidx86/prepare-xbmc        | 2 +-
+ tools/buildsteps/freebsd/prepare-xbmc           | 2 +-
+ tools/buildsteps/ios/prepare-xbmc               | 2 +-
+ tools/buildsteps/linux64-gbm/prepare-xbmc       | 2 +-
+ tools/buildsteps/linux64-wayland/prepare-xbmc   | 2 +-
+ tools/buildsteps/linux64/prepare-xbmc           | 2 +-
+ tools/buildsteps/osx64/prepare-xbmc             | 2 +-
+ tools/buildsteps/rbpi/prepare-xbmc              | 2 +-
+ 10 files changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/tools/buildsteps/android-arm64-v8a/prepare-xbmc b/tools/buildsteps/android-arm64-v8a/prepare-xbmc
+index 144ed52d88ba..29e374b102a4 100644
+--- a/tools/buildsteps/android-arm64-v8a/prepare-xbmc
++++ b/tools/buildsteps/android-arm64-v8a/prepare-xbmc
+@@ -4,6 +4,6 @@ XBMC_PLATFORM_DIR=android
+ 
+ #build binary addons before building xbmc...
+ #make sure that binary_addons don't clean the native tools
+-#here (e.x. on release builds where pathChanged always returns 1
++#here
+ BINARY_ADDONS_CLEAN_NATIVETOOLS="0"
+ . $WORKSPACE/tools/buildsteps/$XBMC_PLATFORM_DIR/make-binary-addons
+diff --git a/tools/buildsteps/android/prepare-xbmc b/tools/buildsteps/android/prepare-xbmc
+index 144ed52d88ba..29e374b102a4 100644
+--- a/tools/buildsteps/android/prepare-xbmc
++++ b/tools/buildsteps/android/prepare-xbmc
+@@ -4,6 +4,6 @@ XBMC_PLATFORM_DIR=android
+ 
+ #build binary addons before building xbmc...
+ #make sure that binary_addons don't clean the native tools
+-#here (e.x. on release builds where pathChanged always returns 1
++#here
+ BINARY_ADDONS_CLEAN_NATIVETOOLS="0"
+ . $WORKSPACE/tools/buildsteps/$XBMC_PLATFORM_DIR/make-binary-addons
+diff --git a/tools/buildsteps/androidx86/prepare-xbmc b/tools/buildsteps/androidx86/prepare-xbmc
+index 144ed52d88ba..29e374b102a4 100644
+--- a/tools/buildsteps/androidx86/prepare-xbmc
++++ b/tools/buildsteps/androidx86/prepare-xbmc
+@@ -4,6 +4,6 @@ XBMC_PLATFORM_DIR=android
+ 
+ #build binary addons before building xbmc...
+ #make sure that binary_addons don't clean the native tools
+-#here (e.x. on release builds where pathChanged always returns 1
++#here
+ BINARY_ADDONS_CLEAN_NATIVETOOLS="0"
+ . $WORKSPACE/tools/buildsteps/$XBMC_PLATFORM_DIR/make-binary-addons
+diff --git a/tools/buildsteps/freebsd/prepare-xbmc b/tools/buildsteps/freebsd/prepare-xbmc
+index e2dbcf6012a6..18f2cf8a00d6 100644
+--- a/tools/buildsteps/freebsd/prepare-xbmc
++++ b/tools/buildsteps/freebsd/prepare-xbmc
+@@ -4,6 +4,6 @@ XBMC_PLATFORM_DIR=freebsd
+ 
+ #build binary addons before building xbmc...
+ #make sure that binary_addons don't clean the native tools
+-#here (e.x. on release builds where pathChanged always returns 1
++#here
+ BINARY_ADDONS_CLEAN_NATIVETOOLS="0"
+ . $WORKSPACE/tools/buildsteps/$XBMC_PLATFORM_DIR/make-binary-addons
+diff --git a/tools/buildsteps/ios/prepare-xbmc b/tools/buildsteps/ios/prepare-xbmc
+index c408c67e7d91..d1dc25c43641 100755
+--- a/tools/buildsteps/ios/prepare-xbmc
++++ b/tools/buildsteps/ios/prepare-xbmc
+@@ -4,6 +4,6 @@ XBMC_PLATFORM_DIR=ios
+ 
+ #build binary addons before building xbmc...
+ #make sure that binary_addons don't clean the native tools
+-#here (e.x. on release builds where pathChanged always returns 1
++#here
+ BINARY_ADDONS_CLEAN_NATIVETOOLS="0"
+ . $WORKSPACE/tools/buildsteps/$XBMC_PLATFORM_DIR/make-binary-addons
+diff --git a/tools/buildsteps/linux64-gbm/prepare-xbmc b/tools/buildsteps/linux64-gbm/prepare-xbmc
+index 72d4f9af963e..4c17247ec353 100644
+--- a/tools/buildsteps/linux64-gbm/prepare-xbmc
++++ b/tools/buildsteps/linux64-gbm/prepare-xbmc
+@@ -4,6 +4,6 @@ XBMC_PLATFORM_DIR=linux64-gbm
+ 
+ #build binary addons before building xbmc...
+ #make sure that binary_addons don't clean the native tools
+-#here (e.x. on release builds where pathChanged always returns 1
++#here
+ BINARY_ADDONS_CLEAN_NATIVETOOLS="0"
+ . $WORKSPACE/tools/buildsteps/$XBMC_PLATFORM_DIR/make-binary-addons
+diff --git a/tools/buildsteps/linux64-wayland/prepare-xbmc b/tools/buildsteps/linux64-wayland/prepare-xbmc
+index 6d1dccb12749..db0e08469612 100755
+--- a/tools/buildsteps/linux64-wayland/prepare-xbmc
++++ b/tools/buildsteps/linux64-wayland/prepare-xbmc
+@@ -4,6 +4,6 @@ XBMC_PLATFORM_DIR=linux64-wayland
+ 
+ #build binary addons before building xbmc...
+ #make sure that binary_addons don't clean the native tools
+-#here (e.x. on release builds where pathChanged always returns 1
++#here
+ BINARY_ADDONS_CLEAN_NATIVETOOLS="0"
+ . $WORKSPACE/tools/buildsteps/$XBMC_PLATFORM_DIR/make-binary-addons
+diff --git a/tools/buildsteps/linux64/prepare-xbmc b/tools/buildsteps/linux64/prepare-xbmc
+index 71f0a1220697..c873106af232 100755
+--- a/tools/buildsteps/linux64/prepare-xbmc
++++ b/tools/buildsteps/linux64/prepare-xbmc
+@@ -4,6 +4,6 @@ XBMC_PLATFORM_DIR=linux64
+ 
+ #build binary addons before building xbmc...
+ #make sure that binary_addons don't clean the native tools
+-#here (e.x. on release builds where pathChanged always returns 1
++#here
+ BINARY_ADDONS_CLEAN_NATIVETOOLS="0"
+ . $WORKSPACE/tools/buildsteps/$XBMC_PLATFORM_DIR/make-binary-addons
+diff --git a/tools/buildsteps/osx64/prepare-xbmc b/tools/buildsteps/osx64/prepare-xbmc
+index 5ed09fa4b1b4..05b5ed327ba1 100755
+--- a/tools/buildsteps/osx64/prepare-xbmc
++++ b/tools/buildsteps/osx64/prepare-xbmc
+@@ -4,6 +4,6 @@ XBMC_PLATFORM_DIR=osx64
+ 
+ #build binary addons before building xbmc...
+ #make sure that binary_addons don't clean the native tools
+-#here (e.x. on release builds where pathChanged always returns 1
++#here
+ BINARY_ADDONS_CLEAN_NATIVETOOLS="0"
+ . $WORKSPACE/tools/buildsteps/$XBMC_PLATFORM_DIR/make-binary-addons
+diff --git a/tools/buildsteps/rbpi/prepare-xbmc b/tools/buildsteps/rbpi/prepare-xbmc
+index 65e79155dc7e..3957f5aab772 100755
+--- a/tools/buildsteps/rbpi/prepare-xbmc
++++ b/tools/buildsteps/rbpi/prepare-xbmc
+@@ -6,6 +6,6 @@ cd $WORKSPACE
+ 
+ #build binary addons before building xbmc...
+ #make sure that binary_addons don't clean the native tools
+-#here (e.x. on release builds where pathChanged always returns 1
++#here
+ BINARY_ADDONS_CLEAN_NATIVETOOLS="0"
+ . $WORKSPACE/tools/buildsteps/$XBMC_PLATFORM_DIR/make-binary-addons
+
+From 072f2b3dda384e16fc420875736155d769fb7c6f Mon Sep 17 00:00:00 2001
+From: Rechi <Rechi@users.noreply.github.com>
+Date: Wed, 21 Aug 2019 10:16:14 +0200
+Subject: [PATCH 2/2] [buildsteps] add tvOS binary add-ons
+
+---
+ tools/buildsteps/tvos/make-binary-addons | 30 ++++++++++++++++++++++++
+ tools/buildsteps/tvos/prepare-xbmc       |  9 +++++++
+ 2 files changed, 39 insertions(+)
+ create mode 100755 tools/buildsteps/tvos/make-binary-addons
+ create mode 100755 tools/buildsteps/tvos/prepare-xbmc
+
+diff --git a/tools/buildsteps/tvos/make-binary-addons b/tools/buildsteps/tvos/make-binary-addons
+new file mode 100755
+index 000000000000..ae6415458122
+--- /dev/null
++++ b/tools/buildsteps/tvos/make-binary-addons
+@@ -0,0 +1,30 @@
++WORKSPACE=${WORKSPACE:-$( cd $(dirname $0)/../../.. ; pwd -P )}
++XBMC_PLATFORM_DIR=tvos
++. $WORKSPACE/tools/buildsteps/defaultenv
++
++. $WORKSPACE/tools/buildsteps/$XBMC_PLATFORM_DIR/make-native-depends
++
++#clear the build failed file
++rm -f $WORKSPACE/cmake/$FAILED_BUILD_FILENAME
++
++ALL_BINARY_ADDONS_BUILT="1"
++#only build binary addons when requested by env/jenkins
++if [ "$BUILD_BINARY_ADDONS" == "true" ]
++then
++  for addon in $BINARY_ADDONS
++  do
++    echo "building $addon"
++    git clean -xffd $WORKSPACE/$BINARY_ADDONS_ROOT/$addon
++
++    INSTALL_PREFIX="../../../../../build/addons/"
++    cd $WORKSPACE/$BINARY_ADDONS_ROOT/$addon;make -j $BUILDTHREADS V=99 VERBOSE=1 INSTALL_PREFIX="$INSTALL_PREFIX"  || ALL_BINARY_ADDONS_BUILT="0"
++  done
++fi
++
++if [ "$ALL_BINARY_ADDONS_BUILT" == "1" ]
++then
++  tagSuccessFulBuild $WORKSPACE/cmake
++else
++  #mark the build failure in the filesystem but leave jenkins running
++  tagFailedBuild $WORKSPACE/cmake
++fi
+diff --git a/tools/buildsteps/tvos/prepare-xbmc b/tools/buildsteps/tvos/prepare-xbmc
+new file mode 100755
+index 000000000000..af48229b4475
+--- /dev/null
++++ b/tools/buildsteps/tvos/prepare-xbmc
+@@ -0,0 +1,9 @@
++WORKSPACE=${WORKSPACE:-$( cd $(dirname $0)/../../.. ; pwd -P )}
++XBMC_PLATFORM_DIR=tvos
++. $WORKSPACE/tools/buildsteps/defaultenv
++
++#build binary addons before building xbmc...
++#make sure that binary_addons don't clean the native tools
++#here
++BINARY_ADDONS_CLEAN_NATIVETOOLS="0"
++. $WORKSPACE/tools/buildsteps/$XBMC_PLATFORM_DIR/make-binary-addons

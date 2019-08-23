@@ -1,0 +1,157 @@
+From 0775d520a166e07322ffdd092d5c8e2758b1ddc2 Mon Sep 17 00:00:00 2001
+From: Rechi <Rechi@users.noreply.github.com>
+Date: Fri, 16 Aug 2019 21:56:22 +0200
+Subject: [PATCH] [python] add context manager support for xbmcvfs.File
+
+This makes xbmcvfs.File usable in with statements.
+
+with xbmcvfs.File(file) as file:
+  pass
+---
+ xbmc/interfaces/legacy/File.h | 70 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 70 insertions(+)
+
+diff --git a/xbmc/interfaces/legacy/File.h b/xbmc/interfaces/legacy/File.h
+index bf6e9c365cbb..cca2a166a0f5 100644
+--- a/xbmc/interfaces/legacy/File.h
++++ b/xbmc/interfaces/legacy/File.h
+@@ -38,6 +38,7 @@ namespace XBMCAddon
+     ///
+     ///
+     ///--------------------------------------------------------------------------
++    /// @python_v19 Added context manager support
+     ///
+     /// **Example:**
+     /// ~~~~~~~~~~~~~{.py}
+@@ -45,6 +46,14 @@ namespace XBMCAddon
+     /// f = xbmcvfs.File(file, 'w')
+     /// ..
+     /// ~~~~~~~~~~~~~
++    ///
++    /// **Example (v19 and up):**
++    /// ~~~~~~~~~~~~~{.py}
++    /// ..
++    /// with xbmcvfs.File(file, 'w') as f:
++    ///   ..
++    /// ..
++    /// ~~~~~~~~~~~~~
+     //
+     class File : public AddonClass
+     {
+@@ -61,6 +70,11 @@ namespace XBMCAddon
+ 
+       inline ~File() override { delete file; }
+ 
++#if !defined(DOXYGEN_SHOULD_USE_THIS)
++      inline File* __enter__() { return this; };
++      inline void __exit__() { close(); };
++#endif
++
+ #ifdef DOXYGEN_SHOULD_USE_THIS
+       ///
+       /// \ingroup python_file
+@@ -84,6 +98,14 @@ namespace XBMCAddon
+       /// ..
+       /// ~~~~~~~~~~~~~
+       ///
++      /// **Example (v19 and up):**
++      /// ~~~~~~~~~~~~~{.py}
++      /// ..
++      /// with xbmcvfs.File(file) as file:
++      ///   b = f.read()
++      /// ..
++      /// ~~~~~~~~~~~~~
++      ///
+       read(...);
+ #else
+       inline String read(unsigned long numBytes = 0)
+@@ -116,6 +138,14 @@ namespace XBMCAddon
+       /// ..
+       /// ~~~~~~~~~~~~~
+       ///
++      /// **Example (v19 and up):**
++      /// ~~~~~~~~~~~~~{.py}
++      /// ..
++      /// with xbmcvfs.File(file) as f:
++      ///   b = f.readBytes()
++      /// ..
++      /// ~~~~~~~~~~~~~
++      ///
+       readBytes(...);
+ #else
+       XbmcCommons::Buffer readBytes(unsigned long numBytes = 0);
+@@ -143,6 +173,14 @@ namespace XBMCAddon
+       /// ..
+       /// ~~~~~~~~~~~~~
+       ///
++      /// **Example (v19 and up):**
++      /// ~~~~~~~~~~~~~{.py}
++      /// ..
++      /// whith xbmcvfs.File(file, 'w') as f:
++      ///   result = f.write(buffer)
++      /// ..
++      /// ~~~~~~~~~~~~~
++      ///
+       write(...);
+ #else
+       bool write(XbmcCommons::Buffer& buffer);
+@@ -169,6 +207,14 @@ namespace XBMCAddon
+       /// ..
+       /// ~~~~~~~~~~~~~
+       ///
++      /// **Example (v19 and up):**
++      /// ~~~~~~~~~~~~~{.py}
++      /// ..
++      /// with xbmcvfs.File(file) as f:
++      ///   s = f.size()
++      /// ..
++      /// ~~~~~~~~~~~~~
++      ///
+       size();
+ #else
+       inline long long size() { DelayedCallGuard dg(languageHook); return file->GetLength(); }
+@@ -198,6 +244,14 @@ namespace XBMCAddon
+       /// ..
+       /// ~~~~~~~~~~~~~
+       ///
++      /// **Example (v19 and up):**
++      /// ~~~~~~~~~~~~~{.py}
++      /// ..
++      /// with xbmcvfs.File(file) as f:
++      ///   result = f.seek(8129, 0)
++      /// ..
++      /// ~~~~~~~~~~~~~
++      ///
+       seek(...);
+ #else
+       inline long long seek(long long seekBytes, int iWhence = SEEK_SET) { DelayedCallGuard dg(languageHook); return file->Seek(seekBytes,iWhence); }
+@@ -225,6 +279,14 @@ namespace XBMCAddon
+       /// ..
+       /// ~~~~~~~~~~~~~
+       ///
++      /// **Example (v19 and up):**
++      /// ~~~~~~~~~~~~~{.py}
++      /// ..
++      /// with xbmcvfs.File(file) as f:
++      ///   s = f.tell()
++      /// ..
++      /// ~~~~~~~~~~~~~
++      ///
+       tell();
+ #else
+       inline long long tell() { DelayedCallGuard dg(languageHook); return file->GetPosition(); }
+@@ -248,6 +310,14 @@ namespace XBMCAddon
+       /// ..
+       /// ~~~~~~~~~~~~~
+       ///
++      /// **Example (v19 and up):**
++      /// ~~~~~~~~~~~~~{.py}
++      /// ..
++      /// with xbmcvfs.File(file) as f:
++      ///   ..
++      /// ..
++      /// ~~~~~~~~~~~~~
++      ///
+       close();
+ #else
+       inline void close() { DelayedCallGuard dg(languageHook); file->Close(); }

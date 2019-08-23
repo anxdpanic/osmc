@@ -1,0 +1,90 @@
+From 7802683bcfb9b25b1b7d357eede56a18793df35a Mon Sep 17 00:00:00 2001
+From: DaveTBlake <oak99sky@yahoo.co.uk>
+Date: Sun, 18 Aug 2019 12:22:54 +0100
+Subject: [PATCH 1/2] Use item property to flag that FillLibraryArt has been
+ called. Now default icon is stored in item art map can not use empty() to
+ check that FillLibraryArt needs to be called art.
+
+---
+ xbmc/music/MusicThumbLoader.cpp | 3 ++-
+ xbmc/video/VideoThumbLoader.cpp | 3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/music/MusicThumbLoader.cpp b/xbmc/music/MusicThumbLoader.cpp
+index db40be59ea56..10ebb11b17eb 100644
+--- a/xbmc/music/MusicThumbLoader.cpp
++++ b/xbmc/music/MusicThumbLoader.cpp
+@@ -56,7 +56,7 @@ bool CMusicThumbLoader::LoadItemCached(CFileItem* pItem)
+   if (pItem->m_bIsShareOrDrive)
+     return false;
+ 
+-  if (pItem->HasMusicInfoTag() && !pItem->HasArt("thumb"))
++  if (pItem->HasMusicInfoTag() && !pItem->GetProperty("libraryartfilled").asBoolean())
+   {
+     if (FillLibraryArt(*pItem))
+       return true;
+@@ -322,6 +322,7 @@ bool CMusicThumbLoader::FillLibraryArt(CFileItem &item)
+     item.AppendArt(artmap);
+   }
+ 
++  item.SetProperty("libraryartfilled", true);
+   return artfound;
+ }
+ 
+diff --git a/xbmc/video/VideoThumbLoader.cpp b/xbmc/video/VideoThumbLoader.cpp
+index 48f611e32eda..c6bd5aa59011 100644
+--- a/xbmc/video/VideoThumbLoader.cpp
++++ b/xbmc/video/VideoThumbLoader.cpp
+@@ -318,7 +318,7 @@ bool CVideoThumbLoader::LoadItemCached(CFileItem* pItem)
+   }
+ 
+   // video db items normally have info in the database
+-  if (pItem->HasVideoInfoTag() && !pItem->HasArt("thumb"))
++  if (pItem->HasVideoInfoTag() && !pItem->GetProperty("libraryartfilled").asBoolean())
+   {
+     FillLibraryArt(*pItem);
+ 
+@@ -557,6 +557,7 @@ bool CVideoThumbLoader::FillLibraryArt(CFileItem &item)
+     }
+     m_videoDatabase->Close();
+   }
++  item.SetProperty("libraryartfilled", true);
+   return !item.GetArt().empty();
+ }
+ 
+
+From 9d009e4fe9ba7a91851c7a5babe53f3cd8ef2851 Mon Sep 17 00:00:00 2001
+From: DaveTBlake <oak99sky@yahoo.co.uk>
+Date: Sun, 18 Aug 2019 12:28:15 +0100
+Subject: [PATCH 2/2] [JSON] Patch bump for internal fix to get art for an item
+ now that art map stores the default icon. Use item property to check if
+ FillLibaryArt has already been called rather than look for empty map.
+
+---
+ xbmc/interfaces/json-rpc/FileItemHandler.cpp | 5 +++--
+ xbmc/interfaces/json-rpc/schema/version.txt  | 2 +-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/xbmc/interfaces/json-rpc/FileItemHandler.cpp b/xbmc/interfaces/json-rpc/FileItemHandler.cpp
+index 8141af8249b8..1359744c0951 100644
+--- a/xbmc/interfaces/json-rpc/FileItemHandler.cpp
++++ b/xbmc/interfaces/json-rpc/FileItemHandler.cpp
+@@ -95,8 +95,9 @@ bool CFileItemHandler::GetField(const std::string &field, const CVariant &info,
+ 
+     if (field == "art")
+     {
+-      if (thumbLoader != NULL && item->GetArt().size() <= 0 && !fetchedArt &&
+-        ((item->HasVideoInfoTag() && item->GetVideoInfoTag()->m_iDbId > -1) || (item->HasMusicInfoTag() && item->GetMusicInfoTag()->GetDatabaseId() > -1)))
++      if (thumbLoader && !item->GetProperty("libraryartfilled").asBoolean() && !fetchedArt &&
++          ((item->HasVideoInfoTag() && item->GetVideoInfoTag()->m_iDbId > -1) ||
++           (item->HasMusicInfoTag() && item->GetMusicInfoTag()->GetDatabaseId() > -1)))
+       {
+         thumbLoader->FillLibraryArt(*item);
+         fetchedArt = true;
+diff --git a/xbmc/interfaces/json-rpc/schema/version.txt b/xbmc/interfaces/json-rpc/schema/version.txt
+index a028c7d04305..55ea1409d766 100644
+--- a/xbmc/interfaces/json-rpc/schema/version.txt
++++ b/xbmc/interfaces/json-rpc/schema/version.txt
+@@ -1 +1 @@
+-JSONRPC_VERSION 10.5.0
++JSONRPC_VERSION 10.5.1
