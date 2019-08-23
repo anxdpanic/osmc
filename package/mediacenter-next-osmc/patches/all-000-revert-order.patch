@@ -36334,49 +36334,6 @@ index 19a5e004ed..6cb8dde8c9 100644
  
  #include <utility>
  
-diff --git a/xbmc/video/windows/GUIWindowVideoPlaylist.cpp b/xbmc/video/windows/GUIWindowVideoPlaylist.cpp
-index 42913a61d6..de47ad25bc 100644
---- a/xbmc/video/windows/GUIWindowVideoPlaylist.cpp
-+++ b/xbmc/video/windows/GUIWindowVideoPlaylist.cpp
-@@ -7,28 +7,27 @@
-  */
- 
- #include "GUIWindowVideoPlaylist.h"
--
-+#include "Util.h"
-+#include "playlists/PlayListM3U.h"
- #include "Application.h"
--#include "GUIUserMessages.h"
--#include "PartyModeManager.h"
- #include "PlayListPlayer.h"
-+#include "PartyModeManager.h"
- #include "ServiceBroker.h"
--#include "Util.h"
- #include "cores/playercorefactory/PlayerCoreFactory.h"
- #include "dialogs/GUIDialogSmartPlaylistEditor.h"
--#include "favourites/FavouritesService.h"
- #include "guilib/GUIComponent.h"
--#include "guilib/GUIKeyboardFactory.h"
- #include "guilib/GUIWindowManager.h"
--#include "guilib/LocalizeStrings.h"
--#include "input/Key.h"
--#include "playlists/PlayListM3U.h"
--#include "settings/MediaSettings.h"
-+#include "guilib/GUIKeyboardFactory.h"
-+#include "GUIUserMessages.h"
-+#include "favourites/FavouritesService.h"
- #include "settings/Settings.h"
- #include "settings/SettingsComponent.h"
-+#include "settings/MediaSettings.h"
-+#include "input/Key.h"
-+#include "guilib/LocalizeStrings.h"
-+#include "utils/log.h"
- #include "utils/URIUtils.h"
- #include "utils/Variant.h"
--#include "utils/log.h"
- 
- using namespace PLAYLIST;
- 
 diff --git a/xbmc/video/windows/VideoFileItemListModifier.cpp b/xbmc/video/windows/VideoFileItemListModifier.cpp
 index bd8a0c10b2..ba2c9a1285 100644
 --- a/xbmc/video/windows/VideoFileItemListModifier.cpp
