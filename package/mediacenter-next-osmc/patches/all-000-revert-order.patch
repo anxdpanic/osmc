@@ -2253,21 +2253,6 @@ index 3324b1506b..21e0e70578 100644
  namespace PVR
  {
    struct PVRContextMenuEvent;
-diff --git a/xbmc/ContextMenus.cpp b/xbmc/ContextMenus.cpp
-index 7421e1826d..f29ef960aa 100644
---- a/xbmc/ContextMenus.cpp
-+++ b/xbmc/ContextMenus.cpp
-@@ -6,9 +6,8 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
--#include "ContextMenus.h"
--
- #include "storage/MediaManager.h"
-+#include "ContextMenus.h"
- 
- 
- namespace CONTEXTMENU
 diff --git a/xbmc/CueDocument.cpp b/xbmc/CueDocument.cpp
 index 0f264e22ab..485020ef4a 100644
 --- a/xbmc/CueDocument.cpp
