@@ -28228,34 +28228,6 @@ index 8c09724d9f..56715bea9e 100644
  
  //#define OMX_DEBUG_EVENTS
  //#define OMX_DEBUG_EVENTHANDLER
-diff --git a/xbmc/platform/linux/RBP.cpp b/xbmc/platform/linux/RBP.cpp
-index e16bf4925e..9558e80afa 100644
---- a/xbmc/platform/linux/RBP.cpp
-+++ b/xbmc/platform/linux/RBP.cpp
-@@ -8,18 +8,18 @@
- 
- #include "RBP.h"
- 
-+#include <assert.h>
- #include "ServiceBroker.h"
--#include "cores/omxplayer/OMXImage.h"
--#include "rpi/rpi_user_vcsm.h"
- #include "settings/Settings.h"
- #include "settings/SettingsComponent.h"
--#include "utils/TimeUtils.h"
- #include "utils/log.h"
- 
--#include <assert.h>
--
-+#include "cores/omxplayer/OMXImage.h"
- #include <interface/mmal/mmal.h>
-+
- #include <sys/ioctl.h>
-+#include "rpi/rpi_user_vcsm.h"
-+#include "utils/TimeUtils.h"
- 
- #define MAJOR_NUM 100
- #define IOCTL_MBOX_PROPERTY _IOWR(MAJOR_NUM, 0, char *)
 diff --git a/xbmc/platform/linux/ScreenshotSurfaceRBP.cpp b/xbmc/platform/linux/ScreenshotSurfaceRBP.cpp
 index 2c9e0a3b66..def422a19d 100644
 --- a/xbmc/platform/linux/ScreenshotSurfaceRBP.cpp
