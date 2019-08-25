@@ -17,10 +17,10 @@ index 116b3bf..0d7a889 100644
  #include "platform/posix/XTimeUtils.h"
  #endif
 
-+#include <cassert>
++#include <stdlib.h>
+ #include <cassert>
  #include <math.h>
 
- #ifndef __VIDEOCORE4__
 @@ -52,6 +53,20 @@ CRPIUtils::CRPIUtils()
  {
    m_DllBcmHost = new DllBcmHost;
