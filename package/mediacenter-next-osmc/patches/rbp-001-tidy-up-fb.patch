@@ -14,13 +14,13 @@ index 116b3bf..0d7a889 100644
 --- a/xbmc/windowing/rpi/RPIUtils.cpp
 +++ b/xbmc/windowing/rpi/RPIUtils.cpp
 @@ -21,6 +21,7 @@
- #include "guilib/StereoscopicsManager.h"
- #include "rendering/RenderSystem.h"
- #include <cassert>
-+#include <stdlib.h>
+ #include "platform/posix/XTimeUtils.h"
+ #endif
+
++#include <cassert>
+ #include <math.h>
 
  #ifndef __VIDEOCORE4__
- #DEFINE __VIDEOCORE4__
 @@ -52,6 +53,20 @@ CRPIUtils::CRPIUtils()
  {
    m_DllBcmHost = new DllBcmHost;
