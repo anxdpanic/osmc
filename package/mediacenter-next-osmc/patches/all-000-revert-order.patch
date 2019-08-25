@@ -37683,39 +37683,6 @@ index 60fd280f8f..41f0269d82 100644
  namespace KODI
  {
  namespace WINDOWING
-diff --git a/xbmc/windowing/rpi/RPIUtils.cpp b/xbmc/windowing/rpi/RPIUtils.cpp
-index d93a450890..743a7fc246 100644
---- a/xbmc/windowing/rpi/RPIUtils.cpp
-+++ b/xbmc/windowing/rpi/RPIUtils.cpp
-@@ -8,21 +8,19 @@
- 
- #include "RPIUtils.h"
- 
-+#include <math.h>
- #include "ServiceBroker.h"
--#include "guilib/StereoscopicsManager.h"
-+#include "utils/log.h"
- #include "guilib/gui3d.h"
--#include "rendering/RenderSystem.h"
-+#include "platform/linux/DllBCM.h"
-+#include "platform/linux/RBP.h"
-+#include "utils/StringUtils.h"
- #include "settings/Settings.h"
- #include "settings/SettingsComponent.h"
--#include "utils/StringUtils.h"
--#include "utils/log.h"
- #include "windowing/GraphicContext.h"
--
--#include "platform/linux/DllBCM.h"
--#include "platform/linux/RBP.h"
--
-+#include "guilib/StereoscopicsManager.h"
-+#include "rendering/RenderSystem.h"
- #include <cassert>
--#include <math.h>
- 
- #ifndef __VIDEOCORE4__
- #define __VIDEOCORE4__
 diff --git a/xbmc/windowing/rpi/RPIUtils.h b/xbmc/windowing/rpi/RPIUtils.h
 index a90c22397c..e4f710920e 100644
 --- a/xbmc/windowing/rpi/RPIUtils.h
