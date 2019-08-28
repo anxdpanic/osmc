@@ -1,0 +1,1996 @@
+From 54ef6b3ed13fc2bc9c600a4e66cfb26d4ed6a940 Mon Sep 17 00:00:00 2001
+From: peak3d <pfau@peak3d.de>
+Date: Mon, 26 Aug 2019 09:21:15 +0200
+Subject: [PATCH 1/2] [Demux] Support static HDR metadata
+
+---
+ .../include/kodi/StreamCodec.h                |   6 +-
+ .../include/kodi/addon-instance/Inputstream.h | 744 +++++++++++-------
+ .../include/kodi/versions.h                   |   2 +-
+ .../DVDCodecs/Video/AddonVideoCodec.cpp       |  16 +
+ xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemux.h | 148 ++--
+ .../DVDDemuxers/DVDDemuxClient.cpp            |   9 +-
+ .../DVDInputStreams/InputStreamAddon.cpp      |  42 +
+ xbmc/cores/VideoPlayer/DVDStreamInfo.cpp      |  58 ++
+ xbmc/cores/VideoPlayer/DVDStreamInfo.h        |   6 +
+ 9 files changed, 653 insertions(+), 378 deletions(-)
+
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/StreamCodec.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/StreamCodec.h
+index 729cdc0d4a25..60091032f5b1 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/StreamCodec.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/StreamCodec.h
+@@ -18,5 +18,9 @@ enum STREAMCODEC_PROFILE
+   H264CodecProfileHigh,
+   H264CodecProfileHigh10,
+   H264CodecProfileHigh422,
+-  H264CodecProfileHigh444Predictive
++  H264CodecProfileHigh444Predictive,
++  VP9CodecProfile0 = 20,
++  VP9CodecProfile1,
++  VP9CodecProfile2,
++  VP9CodecProfile3,
+ };
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/Inputstream.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/Inputstream.h
+index 252edbf74e51..a6719a65adc0 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/Inputstream.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/Inputstream.h
+@@ -14,8 +14,8 @@
+  */
+ 
+ #include "../AddonBase.h"
+-#include "../StreamCrypto.h"
+ #include "../StreamCodec.h"
++#include "../StreamCrypto.h"
+ 
+ #ifdef BUILD_KODI_ADDON
+ #include "../DemuxPacket.h"
+@@ -23,16 +23,26 @@
+ #include "cores/VideoPlayer/Interface/Addon/DemuxPacket.h"
+ #endif
+ 
+-namespace kodi { namespace addon { class CInstanceInputStream; }}
++namespace kodi
++{
++namespace addon
++{
++class CInstanceInputStream;
++}
++} // namespace kodi
++
++//Increment this level always if you add features which can lead to compile failures in the addon
++#define INPUTSTREAM_VERSION_LEVEL 1
+ 
+-extern "C" {
++extern "C"
++{
+ 
+   /*!
+    * @brief InputStream add-on capabilities. All capabilities are set to "false" as default.
+    */
+   struct INPUTSTREAM_CAPABILITIES
+   {
+-    enum MASKTYPE: uint32_t
++    enum MASKTYPE : uint32_t
+     {
+       /// supports interface IDemux
+       SUPPORTS_IDEMUX = (1 << 0),
+@@ -50,7 +60,7 @@ extern "C" {
+       SUPPORTS_PAUSE = (1 << 4),
+ 
+       /// supports interface ITime
+-      SUPPORTS_ITIME = (1 << 5)
++      SUPPORTS_ITIME = (1 << 5),
+     };
+ 
+     /// set of supported capabilities
+@@ -64,17 +74,17 @@ extern "C" {
+   {
+     static const unsigned int MAX_INFO_COUNT = 8;
+ 
+-    const char *m_strURL;
++    const char* m_strURL;
+ 
+     unsigned int m_nCountInfoValues;
+     struct LISTITEMPROPERTY
+     {
+-      const char *m_strKey;
+-      const char *m_strValue;
++      const char* m_strKey;
++      const char* m_strValue;
+     } m_ListItemProperties[MAX_INFO_COUNT];
+ 
+-    const char *m_libFolder;
+-    const char *m_profileFolder;
++    const char* m_libFolder;
++    const char* m_profileFolder;
+   };
+ 
+   /*!
+@@ -87,6 +97,32 @@ extern "C" {
+     unsigned int m_streamIds[MAX_STREAM_COUNT];
+   };
+ 
++  /*!
++   * @brief MASTERING Metadata
++   */
++  struct INPUTSTREAM_MASTERING_METADATA
++  {
++    double primary_r_chromaticity_x;
++    double primary_r_chromaticity_y;
++    double primary_g_chromaticity_x;
++    double primary_g_chromaticity_y;
++    double primary_b_chromaticity_x;
++    double primary_b_chromaticity_y;
++    double white_point_chromaticity_x;
++    double white_point_chromaticity_y;
++    double luminance_max;
++    double luminance_min;
++  };
++
++  /*!
++  * @brief CONTENTLIGHT Metadata
++  */
++  struct INPUTSTREAM_CONTENTLIGHT_METADATA
++  {
++    uint64_t max_cll;
++    uint64_t max_fall;
++  };
++
+   /*!
+    * @brief stream properties
+    */
+@@ -98,7 +134,7 @@ extern "C" {
+       TYPE_VIDEO,
+       TYPE_AUDIO,
+       TYPE_SUBTITLE,
+-      TYPE_TELETEXT
++      TYPE_TELETEXT,
+     } m_streamType;
+ 
+     enum Codec_FEATURES : uint32_t
+@@ -118,65 +154,130 @@ extern "C" {
+       FLAG_KARAOKE = 0x0020,
+       FLAG_FORCED = 0x0040,
+       FLAG_HEARING_IMPAIRED = 0x0080,
+-      FLAG_VISUAL_IMPAIRED = 0x0100
++      FLAG_VISUAL_IMPAIRED = 0x0100,
+     };
+ 
+-    enum INPUTSTREAM_COLORSPACE
+-    {
+-      COLORSPACE_UNKNOWN,
+-      COLORSPACE_BT709,
+-      COLORSPACE_BT470M,
+-      COLORSPACE_BT470BG,
+-      COLORSPACE_SMPTE170M,
+-      COLORSPACE_SMPTE240M,
+-      COLORSPACE_FILM,
+-      COLORSPACE_BT2020,
+-      COLORSPACE_SMPTE428,
+-      COLORSPACE_SMPTEST428_1,
+-      COLORSPACE_SMPTE431,
+-      COLORSPACE_SMPTE432,
+-      COLORSPACE_JEDEC_P22
++    // Keep in sync with AVColorSpace
++    enum COLORSPACE
++    {
++      COLORSPACE_RGB = 0,
++      COLORSPACE_BT709 = 1,
++      COLORSPACE_UNSPECIFIED = 2,
++      COLORSPACE_UNKNOWN = COLORSPACE_UNSPECIFIED, // compatibility
++      COLORSPACE_RESERVED = 3,
++      COLORSPACE_FCC = 4,
++      COLORSPACE_BT470BG = 5,
++      COLORSPACE_SMPTE170M = 6,
++      COLORSPACE_SMPTE240M = 7,
++      COLORSPACE_YCGCO = 8,
++      COLORSPACE_YCOCG = COLORSPACE_YCGCO,
++      COLORSPACE_BT2020_NCL = 9,
++      COLORSPACE_BT2020_CL = 10,
++      COLORSPACE_SMPTE2085 = 11,
++      COLORSPACE_CHROMA_DERIVED_NCL = 12,
++      COLORSPACE_CHROMA_DERIVED_CL = 13,
++      COLORSPACE_ICTCP = 14,
++      COLORSPACE_MAX
++    };
++
++    // Keep in sync with AVColorPrimaries
++    enum COLORPRIMARIES : int32_t
++    {
++      COLORPRIMARY_RESERVED0 = 0,
++      COLORPRIMARY_BT709 = 1,
++      COLORPRIMARY_UNSPECIFIED = 2,
++      COLORPRIMARY_RESERVED = 3,
++      COLORPRIMARY_BT470M = 4,
++      COLORPRIMARY_BT470BG = 5,
++      COLORPRIMARY_SMPTE170M = 6,
++      COLORPRIMARY_SMPTE240M = 7,
++      COLORPRIMARY_FILM = 8,
++      COLORPRIMARY_BT2020 = 9,
++      COLORPRIMARY_SMPTE428 = 10,
++      COLORPRIMARY_SMPTEST428_1 = COLORPRIMARY_SMPTE428,
++      COLORPRIMARY_SMPTE431 = 11,
++      COLORPRIMARY_SMPTE432 = 12,
++      COLORPRIMARY_JEDEC_P22 = 22,
++      COLORPRIMARY_MAX
+     };
+ 
+-    enum INPUTSTREAM_COLORRANGE
++    // Keep in sync with AVColorRange
++    enum COLORRANGE
+     {
+       COLORRANGE_UNKNOWN,
+       COLORRANGE_LIMITED,
+-      COLORRANGE_FULLRANGE
++      COLORRANGE_FULLRANGE,
++      COLORRANGE_MAX
++    };
++
++    // keep in sync with AVColorTransferCharacteristic
++    enum COLORTRC : int32_t
++    {
++      COLORTRC_RESERVED0 = 0,
++      COLORTRC_BT709 = 1,
++      COLORTRC_UNSPECIFIED = 2,
++      COLORTRC_RESERVED = 3,
++      COLORTRC_GAMMA22 = 4,
++      COLORTRC_GAMMA28 = 5,
++      COLORTRC_SMPTE170M = 6,
++      COLORTRC_SMPTE240M = 7,
++      COLORTRC_LINEAR = 8,
++      COLORTRC_LOG = 9,
++      COLORTRC_LOG_SQRT = 10,
++      COLORTRC_IEC61966_2_4 = 11,
++      COLORTRC_BT1361_ECG = 12,
++      COLORTRC_IEC61966_2_1 = 13,
++      COLORTRC_BT2020_10 = 14,
++      COLORTRC_BT2020_12 = 15,
++      COLORTRC_SMPTE2084 = 16,
++      COLORTRC_SMPTEST2084 = COLORTRC_SMPTE2084,
++      COLORTRC_SMPTE428 = 17,
++      COLORTRC_SMPTEST428_1 = COLORTRC_SMPTE428,
++      COLORTRC_ARIB_STD_B67 = 18,
++      COLORTRC_MAX
+     };
+ 
+     uint32_t m_flags;
+ 
+-    char m_name[256];                    /*!< @brief (optinal) name of the stream, \0 for default handling */
+-    char m_codecName[32];                /*!< @brief (required) name of codec according to ffmpeg */
+-    char m_codecInternalName[32];        /*!< @brief (optional) internal name of codec (selectionstream info) */
+-    STREAMCODEC_PROFILE m_codecProfile;  /*!< @brief (optional) the profile of the codec */
+-    unsigned int m_pID;                  /*!< @brief (required) physical index */
++    char m_name[256]; /*!< @brief (optinal) name of the stream, \0 for default handling */
++    char m_codecName[32]; /*!< @brief (required) name of codec according to ffmpeg */
++    char m_codecInternalName
++        [32]; /*!< @brief (optional) internal name of codec (selectionstream info) */
++    STREAMCODEC_PROFILE m_codecProfile; /*!< @brief (optional) the profile of the codec */
++    unsigned int m_pID; /*!< @brief (required) physical index */
+ 
+-    const uint8_t *m_ExtraData;
++    const uint8_t* m_ExtraData;
+     unsigned int m_ExtraSize;
+ 
+-    char m_language[64];                 /*!< @brief RFC 5646 language code (empty string if undefined) */
++    char m_language[64]; /*!< @brief RFC 5646 language code (empty string if undefined) */
+ 
+-    unsigned int m_FpsScale;             /*!< @brief Scale of 1000 and a rate of 29970 will result in 29.97 fps */
++    unsigned int
++        m_FpsScale; /*!< @brief Scale of 1000 and a rate of 29970 will result in 29.97 fps */
+     unsigned int m_FpsRate;
+-    unsigned int m_Height;               /*!< @brief height of the stream reported by the demuxer */
+-    unsigned int m_Width;                /*!< @brief width of the stream reported by the demuxer */
+-    float m_Aspect;                      /*!< @brief display aspect of stream */
++    unsigned int m_Height; /*!< @brief height of the stream reported by the demuxer */
++    unsigned int m_Width; /*!< @brief width of the stream reported by the demuxer */
++    float m_Aspect; /*!< @brief display aspect of stream */
+ 
+ 
+-    unsigned int m_Channels;             /*!< @brief (required) amount of channels */
+-    unsigned int m_SampleRate;           /*!< @brief (required) sample rate */
+-    unsigned int m_BitRate;              /*!< @brief (required) bit rate */
+-    unsigned int m_BitsPerSample;        /*!< @brief (required) bits per sample */
++    unsigned int m_Channels; /*!< @brief (required) amount of channels */
++    unsigned int m_SampleRate; /*!< @brief (required) sample rate */
++    unsigned int m_BitRate; /*!< @brief (required) bit rate */
++    unsigned int m_BitsPerSample; /*!< @brief (required) bits per sample */
+     unsigned int m_BlockAlign;
+ 
+     CRYPTO_INFO m_cryptoInfo;
+ 
+     // new in API version 2.0.8
+-    unsigned int m_codecFourCC;          /*!< @brief Codec If available, the fourcc code codec */
+-    INPUTSTREAM_COLORSPACE m_colorSpace; /*!< @brief definition of colorspace */
+-    INPUTSTREAM_COLORRANGE m_colorRange; /*!< @brief color range if available */
++    unsigned int m_codecFourCC; /*!< @brief Codec If available, the fourcc code codec */
++    COLORSPACE m_colorSpace; /*!< @brief definition of colorspace */
++    COLORRANGE m_colorRange; /*!< @brief color range if available */
++
++    //new in API 2.0.9 / INPUTSTREAM_VERSION_LEVEL 1
++    COLORPRIMARIES m_colorPrimaries;
++    COLORTRC m_colorTransferCharacteristic;
++    INPUTSTREAM_MASTERING_METADATA* m_masteringMetadata; /*!< @brief mastering static Metadata */
++    INPUTSTREAM_CONTENTLIGHT_METADATA*
++        m_contentLightMetadata; /*!< @brief content light static Metadata */
+   };
+ 
+   struct INPUTSTREAM_TIMES
+@@ -202,7 +303,9 @@ extern "C" {
+   {
+     KODI_HANDLE kodiInstance;
+     DemuxPacket* (*allocate_demux_packet)(void* kodiInstance, int data_size);
+-    DemuxPacket* (*allocate_encrypted_demux_packet)(void* kodiInstance, unsigned int data_size, unsigned int encrypted_subsample_count);
++    DemuxPacket* (*allocate_encrypted_demux_packet)(void* kodiInstance,
++                                                    unsigned int data_size,
++                                                    unsigned int encrypted_subsample_count);
+     void (*free_demux_packet)(void* kodiInstance, DemuxPacket* packet);
+   } AddonToKodiFuncTable_InputStream;
+ 
+@@ -211,44 +314,57 @@ extern "C" {
+   {
+     kodi::addon::CInstanceInputStream* addonInstance;
+ 
+-    bool (__cdecl* open)(const AddonInstance_InputStream* instance, INPUTSTREAM* props);
+-    void (__cdecl* close)(const AddonInstance_InputStream* instance);
+-    const char* (__cdecl* get_path_list)(const AddonInstance_InputStream* instance);
+-    void (__cdecl* get_capabilities)(const AddonInstance_InputStream* instance, INPUTSTREAM_CAPABILITIES* capabilities);
++    bool(__cdecl* open)(const AddonInstance_InputStream* instance, INPUTSTREAM* props);
++    void(__cdecl* close)(const AddonInstance_InputStream* instance);
++    const char*(__cdecl* get_path_list)(const AddonInstance_InputStream* instance);
++    void(__cdecl* get_capabilities)(const AddonInstance_InputStream* instance,
++                                    INPUTSTREAM_CAPABILITIES* capabilities);
+ 
+     // IDemux
+-    struct INPUTSTREAM_IDS (__cdecl* get_stream_ids)(const AddonInstance_InputStream* instance);
+-    struct INPUTSTREAM_INFO (__cdecl* get_stream)(const AddonInstance_InputStream* instance, int streamid);
+-    void (__cdecl* enable_stream)(const AddonInstance_InputStream* instance, int streamid, bool enable);
++    struct INPUTSTREAM_IDS(__cdecl* get_stream_ids)(const AddonInstance_InputStream* instance);
++    struct INPUTSTREAM_INFO(__cdecl* get_stream)(const AddonInstance_InputStream* instance,
++                                                 int streamid);
++    void(__cdecl* enable_stream)(const AddonInstance_InputStream* instance,
++                                 int streamid,
++                                 bool enable);
+     bool(__cdecl* open_stream)(const AddonInstance_InputStream* instance, int streamid);
+-    void (__cdecl* demux_reset)(const AddonInstance_InputStream* instance);
+-    void (__cdecl* demux_abort)(const AddonInstance_InputStream* instance);
+-    void (__cdecl* demux_flush)(const AddonInstance_InputStream* instance);
+-    DemuxPacket* (__cdecl* demux_read)(const AddonInstance_InputStream* instance);
+-    bool (__cdecl* demux_seek_time)(const AddonInstance_InputStream* instance, double time, bool backwards, double* startpts);
+-    void (__cdecl* demux_set_speed)(const AddonInstance_InputStream* instance, int speed);
+-    void (__cdecl* set_video_resolution)(const AddonInstance_InputStream* instance, int width, int height);
++    void(__cdecl* demux_reset)(const AddonInstance_InputStream* instance);
++    void(__cdecl* demux_abort)(const AddonInstance_InputStream* instance);
++    void(__cdecl* demux_flush)(const AddonInstance_InputStream* instance);
++    DemuxPacket*(__cdecl* demux_read)(const AddonInstance_InputStream* instance);
++    bool(__cdecl* demux_seek_time)(const AddonInstance_InputStream* instance,
++                                   double time,
++                                   bool backwards,
++                                   double* startpts);
++    void(__cdecl* demux_set_speed)(const AddonInstance_InputStream* instance, int speed);
++    void(__cdecl* set_video_resolution)(const AddonInstance_InputStream* instance,
++                                        int width,
++                                        int height);
+ 
+     // IDisplayTime
+-    int (__cdecl* get_total_time)(const AddonInstance_InputStream* instance);
+-    int (__cdecl* get_time)(const AddonInstance_InputStream* instance);
++    int(__cdecl* get_total_time)(const AddonInstance_InputStream* instance);
++    int(__cdecl* get_time)(const AddonInstance_InputStream* instance);
+ 
+     // ITime
+-    bool(__cdecl* get_times)(const AddonInstance_InputStream* instance, INPUTSTREAM_TIMES *times);
++    bool(__cdecl* get_times)(const AddonInstance_InputStream* instance, INPUTSTREAM_TIMES* times);
+ 
+     // IPosTime
+-    bool (__cdecl* pos_time)(const AddonInstance_InputStream* instance, int ms);
++    bool(__cdecl* pos_time)(const AddonInstance_InputStream* instance, int ms);
+ 
+     // Seekable (mandatory)
+-    bool (__cdecl* can_pause_stream)(const AddonInstance_InputStream* instance);
+-    bool (__cdecl* can_seek_stream)(const AddonInstance_InputStream* instance);
+-
+-    int (__cdecl* read_stream)(const AddonInstance_InputStream* instance, uint8_t* buffer, unsigned int bufferSize);
+-    int64_t(__cdecl* seek_stream)(const AddonInstance_InputStream* instance, int64_t position, int whence);
+-    int64_t (__cdecl* position_stream)(const AddonInstance_InputStream* instance);
+-    int64_t (__cdecl* length_stream)(const AddonInstance_InputStream* instance);
+-    void (__cdecl* pause_stream)(const AddonInstance_InputStream* instance, double time);
+-    bool (__cdecl* is_real_time_stream)(const AddonInstance_InputStream* instance);
++    bool(__cdecl* can_pause_stream)(const AddonInstance_InputStream* instance);
++    bool(__cdecl* can_seek_stream)(const AddonInstance_InputStream* instance);
++
++    int(__cdecl* read_stream)(const AddonInstance_InputStream* instance,
++                              uint8_t* buffer,
++                              unsigned int bufferSize);
++    int64_t(__cdecl* seek_stream)(const AddonInstance_InputStream* instance,
++                                  int64_t position,
++                                  int whence);
++    int64_t(__cdecl* position_stream)(const AddonInstance_InputStream* instance);
++    int64_t(__cdecl* length_stream)(const AddonInstance_InputStream* instance);
++    void(__cdecl* pause_stream)(const AddonInstance_InputStream* instance, double time);
++    bool(__cdecl* is_real_time_stream)(const AddonInstance_InputStream* instance);
+   } KodiToAddonFuncTable_InputStream;
+ 
+   typedef struct AddonInstance_InputStream /* internal */
+@@ -265,90 +381,91 @@ namespace kodi
+ namespace addon
+ {
+ 
+-  class CInstanceInputStream : public IAddonInstance
++class CInstanceInputStream : public IAddonInstance
++{
++public:
++  explicit CInstanceInputStream(KODI_HANDLE instance)
++    : IAddonInstance(ADDON_INSTANCE_INPUTSTREAM)
+   {
+-  public:
+-    explicit CInstanceInputStream(KODI_HANDLE instance)
+-      : IAddonInstance(ADDON_INSTANCE_INPUTSTREAM)
+-    {
+-      if (CAddonBase::m_interface->globalSingleInstance != nullptr)
+-        throw std::logic_error("kodi::addon::CInstanceInputStream: Creation of multiple together with single instance way is not allowed!");
++    if (CAddonBase::m_interface->globalSingleInstance != nullptr)
++      throw std::logic_error("kodi::addon::CInstanceInputStream: Creation of multiple together "
++                             "with single instance way is not allowed!");
+ 
+-      SetAddonStruct(instance);
+-    }
++    SetAddonStruct(instance);
++  }
+ 
+-    ~CInstanceInputStream() override = default;
++  ~CInstanceInputStream() override = default;
+ 
+-    /*!
++  /*!
+      * Open a stream.
+      * @param props
+      * @return True if the stream has been opened successfully, false otherwise.
+      * @remarks
+      */
+-    virtual bool Open(INPUTSTREAM& props) = 0;
++  virtual bool Open(INPUTSTREAM& props) = 0;
+ 
+-    /*!
++  /*!
+      * Close an open stream.
+      * @remarks
+      */
+-    virtual void Close() = 0;
++  virtual void Close() = 0;
+ 
+-    /*!
++  /*!
+      * Get Capabilities of this addon.
+      * @param capabilities The add-on's capabilities.
+      * @remarks
+      */
+-    virtual void GetCapabilities(INPUTSTREAM_CAPABILITIES& capabilities) = 0;
++  virtual void GetCapabilities(INPUTSTREAM_CAPABILITIES& capabilities) = 0;
+ 
+-    /*!
++  /*!
+      * Get IDs of available streams
+      * @remarks
+      */
+-    virtual INPUTSTREAM_IDS GetStreamIds() = 0;
++  virtual INPUTSTREAM_IDS GetStreamIds() = 0;
+ 
+-    /*!
++  /*!
+      * Get stream properties of a stream.
+      * @param streamid unique id of stream
+      * @return struc of stream properties
+      * @remarks
+      */
+-    virtual INPUTSTREAM_INFO GetStream(int streamid) = 0;
++  virtual INPUTSTREAM_INFO GetStream(int streamid) = 0;
+ 
+-    /*!
++  /*!
+      * Enable or disable a stream.
+      * A disabled stream does not send demux packets
+      * @param streamid unique id of stream
+      * @param enable true for enable, false for disable
+      * @remarks
+      */
+-    virtual void EnableStream(int streamid, bool enable) = 0;
++  virtual void EnableStream(int streamid, bool enable) = 0;
+ 
+-    /*!
++  /*!
+     * Opens a stream for playback.
+     * @param streamid unique id of stream
+     * @remarks
+     */
+-    virtual bool OpenStream(int streamid) = 0;
++  virtual bool OpenStream(int streamid) = 0;
+ 
+-    /*!
++  /*!
+      * Reset the demultiplexer in the add-on.
+      * @remarks Required if bHandlesDemuxing is set to true.
+      */
+-    virtual void DemuxReset() { }
++  virtual void DemuxReset() {}
+ 
+-    /*!
++  /*!
+      * Abort the demultiplexer thread in the add-on.
+      * @remarks Required if bHandlesDemuxing is set to true.
+      */
+-    virtual void DemuxAbort() { }
++  virtual void DemuxAbort() {}
+ 
+-    /*!
++  /*!
+      * Flush all data that's currently in the demultiplexer buffer in the add-on.
+      * @remarks Required if bHandlesDemuxing is set to true.
+      */
+-    virtual void DemuxFlush() { }
++  virtual void DemuxFlush() {}
+ 
+-    /*!
++  /*!
+      * Read the next packet from the demultiplexer, if there is one.
+      * @return The next packet.
+      *         If there is no next packet, then the add-on should return the
+@@ -360,9 +477,9 @@ namespace addon
+      *         The add-on should return NULL if an error occured.
+      * @remarks Return NULL if this add-on won't provide this function.
+      */
+-    virtual DemuxPacket* DemuxRead() { return nullptr; }
++  virtual DemuxPacket* DemuxRead() { return nullptr; }
+ 
+-    /*!
++  /*!
+      * Notify the InputStream addon/demuxer that Kodi wishes to seek the stream by time
+      * Demuxer is required to set stream to an IDR frame
+      * @param time The absolute time since stream start
+@@ -371,314 +488,331 @@ namespace addon
+      * @return True if the seek operation was possible
+      * @remarks Optional, and only used if addon has its own demuxer.
+      */
+-    virtual bool DemuxSeekTime(double time, bool backwards, double &startpts) { return false; }
++  virtual bool DemuxSeekTime(double time, bool backwards, double& startpts) { return false; }
+ 
+-    /*!
++  /*!
+      * Notify the InputStream addon/demuxer that Kodi wishes to change playback speed
+      * @param speed The requested playback speed
+      * @remarks Optional, and only used if addon has its own demuxer.
+      */
+-    virtual void DemuxSetSpeed(int speed) { }
++  virtual void DemuxSetSpeed(int speed) {}
+ 
+-    /*!
++  /*!
+      * Sets desired width / height
+      * @param width / hight
+      */
+-    virtual void SetVideoResolution(int width, int height) { }
++  virtual void SetVideoResolution(int width, int height) {}
+ 
+-    /*!
++  /*!
+      * Totel time in ms
+      * @remarks
+      */
+-    virtual int GetTotalTime() { return -1; }
++  virtual int GetTotalTime() { return -1; }
+ 
+-    /*!
++  /*!
+      * Playing time in ms
+      * @remarks
+      */
+-    virtual int GetTime() { return -1; }
++  virtual int GetTime() { return -1; }
+ 
+-    /*!
++  /*!
+     * Get current timing values in PTS scale
+     * @remarks
+     */
+-    virtual bool GetTimes(INPUTSTREAM_TIMES &times) { return false; }
++  virtual bool GetTimes(INPUTSTREAM_TIMES& times) { return false; }
+ 
+-    /*!
++  /*!
+      * Positions inputstream to playing time given in ms
+      * @remarks
+      */
+-    virtual bool PosTime(int ms) { return false; }
++  virtual bool PosTime(int ms) { return false; }
+ 
+ 
+-    /*!
++  /*!
+      * Check if the backend support pausing the currently playing stream
+      * This will enable/disable the pause button in Kodi based on the return value
+      * @return false if the InputStream addon/backend does not support pausing, true if possible
+      */
+-    virtual bool CanPauseStream() { return false; }
++  virtual bool CanPauseStream() { return false; }
+ 
+-    /*!
++  /*!
+      * Check if the backend supports seeking for the currently playing stream
+      * This will enable/disable the rewind/forward buttons in Kodi based on the return value
+      * @return false if the InputStream addon/backend does not support seeking, true if possible
+      */
+-    virtual bool CanSeekStream() { return false; }
++  virtual bool CanSeekStream() { return false; }
+ 
+-    /*!
++  /*!
+      * Read from an open stream.
+      * @param buffer The buffer to store the data in.
+      * @param bufferSize The amount of bytes to read.
+      * @return The amount of bytes that were actually read from the stream.
+      * @remarks Return -1 if this add-on won't provide this function.
+      */
+-    virtual int ReadStream(uint8_t* buffer, unsigned int bufferSize) { return -1; }
++  virtual int ReadStream(uint8_t* buffer, unsigned int bufferSize) { return -1; }
+ 
+-    /*!
++  /*!
+      * Seek in a stream.
+      * @param position The position to seek to.
+      * @param whence ?
+      * @return The new position.
+      * @remarks Return -1 if this add-on won't provide this function.
+      */
+-    virtual int64_t SeekStream(int64_t position, int whence = SEEK_SET) { return -1; }
++  virtual int64_t SeekStream(int64_t position, int whence = SEEK_SET) { return -1; }
+ 
+-    /*!
++  /*!
+      * @return The position in the stream that's currently being read.
+      * @remarks Return -1 if this add-on won't provide this function.
+      */
+-    virtual int64_t PositionStream() { return -1; }
++  virtual int64_t PositionStream() { return -1; }
+ 
+-    /*!
++  /*!
+      * @return The total length of the stream that's currently being read.
+      * @remarks Return -1 if this add-on won't provide this function.
+      */
+-    virtual int64_t LengthStream() { return -1; }
++  virtual int64_t LengthStream() { return -1; }
+ 
+ 
+-    /*!
++  /*!
+      * @brief Notify the InputStream addon that Kodi (un)paused the currently playing stream
+      */
+-    virtual void PauseStream(double time) { }
++  virtual void PauseStream(double time) {}
+ 
+ 
+-    /*!
++  /*!
+      *  Check for real-time streaming
+      *  @return true if current stream is real-time
+      */
+-    virtual bool IsRealTimeStream() { return true; }
++  virtual bool IsRealTimeStream() { return true; }
+ 
+-    /*!
++  /*!
+      * @brief Allocate a demux packet. Free with FreeDemuxPacket
+      * @param dataSize The size of the data that will go into the packet
+      * @return The allocated packet
+      */
+-    DemuxPacket* AllocateDemuxPacket(int dataSize)
+-    {
+-      return m_instanceData->toKodi.allocate_demux_packet(m_instanceData->toKodi.kodiInstance, dataSize);
+-    }
++  DemuxPacket* AllocateDemuxPacket(int dataSize)
++  {
++    return m_instanceData->toKodi.allocate_demux_packet(m_instanceData->toKodi.kodiInstance,
++                                                        dataSize);
++  }
+ 
+-    /*!
++  /*!
+      * @brief Allocate a demux packet. Free with FreeDemuxPacket
+      * @param dataSize The size of the data that will go into the packet
+      * @return The allocated packet
+      */
+-    DemuxPacket* AllocateEncryptedDemuxPacket(int dataSize, unsigned int encryptedSubsampleCount)
+-    {
+-      return m_instanceData->toKodi.allocate_encrypted_demux_packet(m_instanceData->toKodi.kodiInstance, dataSize, encryptedSubsampleCount);
+-    }
++  DemuxPacket* AllocateEncryptedDemuxPacket(int dataSize, unsigned int encryptedSubsampleCount)
++  {
++    return m_instanceData->toKodi.allocate_encrypted_demux_packet(
++        m_instanceData->toKodi.kodiInstance, dataSize, encryptedSubsampleCount);
++  }
+ 
+-    /*!
++  /*!
+      * @brief Free a packet that was allocated with AllocateDemuxPacket
+      * @param packet The packet to free
+      */
+-    void FreeDemuxPacket(DemuxPacket* packet)
+-    {
+-      return m_instanceData->toKodi.free_demux_packet(m_instanceData->toKodi.kodiInstance, packet);
+-    }
++  void FreeDemuxPacket(DemuxPacket* packet)
++  {
++    return m_instanceData->toKodi.free_demux_packet(m_instanceData->toKodi.kodiInstance, packet);
++  }
+ 
+-  private:
+-    void SetAddonStruct(KODI_HANDLE instance)
+-    {
+-      if (instance == nullptr)
+-        throw std::logic_error("kodi::addon::CInstanceInputStream: Creation with empty addon structure not allowed, table must be given from Kodi!");
+-
+-      m_instanceData = static_cast<AddonInstance_InputStream*>(instance);
+-      m_instanceData->toAddon.addonInstance = this;
+-      m_instanceData->toAddon.open = ADDON_Open;
+-      m_instanceData->toAddon.close = ADDON_Close;
+-      m_instanceData->toAddon.get_capabilities = ADDON_GetCapabilities;
+-
+-      m_instanceData->toAddon.get_stream_ids = ADDON_GetStreamIds;
+-      m_instanceData->toAddon.get_stream = ADDON_GetStream;
+-      m_instanceData->toAddon.enable_stream = ADDON_EnableStream;
+-      m_instanceData->toAddon.open_stream = ADDON_OpenStream;
+-      m_instanceData->toAddon.demux_reset = ADDON_DemuxReset;
+-      m_instanceData->toAddon.demux_abort = ADDON_DemuxAbort;
+-      m_instanceData->toAddon.demux_flush = ADDON_DemuxFlush;
+-      m_instanceData->toAddon.demux_read = ADDON_DemuxRead;
+-      m_instanceData->toAddon.demux_seek_time = ADDON_DemuxSeekTime;
+-      m_instanceData->toAddon.demux_set_speed = ADDON_DemuxSetSpeed;
+-      m_instanceData->toAddon.set_video_resolution = ADDON_SetVideoResolution;
+-
+-      m_instanceData->toAddon.get_total_time = ADDON_GetTotalTime;
+-      m_instanceData->toAddon.get_time = ADDON_GetTime;
+-
+-      m_instanceData->toAddon.get_times = ADDON_GetTimes;
+-
+-      m_instanceData->toAddon.pos_time = ADDON_PosTime;
+-
+-      m_instanceData->toAddon.can_pause_stream = ADDON_CanPauseStream;
+-      m_instanceData->toAddon.can_seek_stream = ADDON_CanSeekStream;
+-
+-      m_instanceData->toAddon.read_stream = ADDON_ReadStream;
+-      m_instanceData->toAddon.seek_stream = ADDON_SeekStream;
+-      m_instanceData->toAddon.position_stream = ADDON_PositionStream;
+-      m_instanceData->toAddon.length_stream = ADDON_LengthStream;
+-      m_instanceData->toAddon.pause_stream = ADDON_PauseStream;
+-      m_instanceData->toAddon.is_real_time_stream = ADDON_IsRealTimeStream;
+-    }
+-
+-    inline static bool ADDON_Open(const AddonInstance_InputStream* instance, INPUTSTREAM* props)
+-    {
+-      return instance->toAddon.addonInstance->Open(*props);
+-    }
++private:
++  void SetAddonStruct(KODI_HANDLE instance)
++  {
++    if (instance == nullptr)
++      throw std::logic_error("kodi::addon::CInstanceInputStream: Creation with empty addon "
++                             "structure not allowed, table must be given from Kodi!");
++
++    m_instanceData = static_cast<AddonInstance_InputStream*>(instance);
++    m_instanceData->toAddon.addonInstance = this;
++    m_instanceData->toAddon.open = ADDON_Open;
++    m_instanceData->toAddon.close = ADDON_Close;
++    m_instanceData->toAddon.get_capabilities = ADDON_GetCapabilities;
++
++    m_instanceData->toAddon.get_stream_ids = ADDON_GetStreamIds;
++    m_instanceData->toAddon.get_stream = ADDON_GetStream;
++    m_instanceData->toAddon.enable_stream = ADDON_EnableStream;
++    m_instanceData->toAddon.open_stream = ADDON_OpenStream;
++    m_instanceData->toAddon.demux_reset = ADDON_DemuxReset;
++    m_instanceData->toAddon.demux_abort = ADDON_DemuxAbort;
++    m_instanceData->toAddon.demux_flush = ADDON_DemuxFlush;
++    m_instanceData->toAddon.demux_read = ADDON_DemuxRead;
++    m_instanceData->toAddon.demux_seek_time = ADDON_DemuxSeekTime;
++    m_instanceData->toAddon.demux_set_speed = ADDON_DemuxSetSpeed;
++    m_instanceData->toAddon.set_video_resolution = ADDON_SetVideoResolution;
++
++    m_instanceData->toAddon.get_total_time = ADDON_GetTotalTime;
++    m_instanceData->toAddon.get_time = ADDON_GetTime;
++
++    m_instanceData->toAddon.get_times = ADDON_GetTimes;
++
++    m_instanceData->toAddon.pos_time = ADDON_PosTime;
++
++    m_instanceData->toAddon.can_pause_stream = ADDON_CanPauseStream;
++    m_instanceData->toAddon.can_seek_stream = ADDON_CanSeekStream;
++
++    m_instanceData->toAddon.read_stream = ADDON_ReadStream;
++    m_instanceData->toAddon.seek_stream = ADDON_SeekStream;
++    m_instanceData->toAddon.position_stream = ADDON_PositionStream;
++    m_instanceData->toAddon.length_stream = ADDON_LengthStream;
++    m_instanceData->toAddon.pause_stream = ADDON_PauseStream;
++    m_instanceData->toAddon.is_real_time_stream = ADDON_IsRealTimeStream;
++  }
++
++  inline static bool ADDON_Open(const AddonInstance_InputStream* instance, INPUTSTREAM* props)
++  {
++    return instance->toAddon.addonInstance->Open(*props);
++  }
+ 
+-    inline static void ADDON_Close(const AddonInstance_InputStream* instance)
+-    {
+-      instance->toAddon.addonInstance->Close();
+-    }
++  inline static void ADDON_Close(const AddonInstance_InputStream* instance)
++  {
++    instance->toAddon.addonInstance->Close();
++  }
+ 
+-    inline static void ADDON_GetCapabilities(const AddonInstance_InputStream* instance, INPUTSTREAM_CAPABILITIES* capabilities)
+-    {
+-      instance->toAddon.addonInstance->GetCapabilities(*capabilities);
+-    }
++  inline static void ADDON_GetCapabilities(const AddonInstance_InputStream* instance,
++                                           INPUTSTREAM_CAPABILITIES* capabilities)
++  {
++    instance->toAddon.addonInstance->GetCapabilities(*capabilities);
++  }
+ 
+ 
+-    // IDemux
+-    inline static struct INPUTSTREAM_IDS ADDON_GetStreamIds(const AddonInstance_InputStream* instance)
+-    {
+-      return instance->toAddon.addonInstance->GetStreamIds();
+-    }
++  // IDemux
++  inline static struct INPUTSTREAM_IDS ADDON_GetStreamIds(const AddonInstance_InputStream* instance)
++  {
++    return instance->toAddon.addonInstance->GetStreamIds();
++  }
+ 
+-    inline static struct INPUTSTREAM_INFO ADDON_GetStream(const AddonInstance_InputStream* instance, int streamid)
+-    {
+-      return instance->toAddon.addonInstance->GetStream(streamid);
+-    }
++  inline static struct INPUTSTREAM_INFO ADDON_GetStream(const AddonInstance_InputStream* instance,
++                                                        int streamid)
++  {
++    return instance->toAddon.addonInstance->GetStream(streamid);
++  }
+ 
+-    inline static void ADDON_EnableStream(const AddonInstance_InputStream* instance, int streamid, bool enable)
+-    {
+-      instance->toAddon.addonInstance->EnableStream(streamid, enable);
+-    }
++  inline static void ADDON_EnableStream(const AddonInstance_InputStream* instance,
++                                        int streamid,
++                                        bool enable)
++  {
++    instance->toAddon.addonInstance->EnableStream(streamid, enable);
++  }
+ 
+-    inline static bool ADDON_OpenStream(const AddonInstance_InputStream* instance, int streamid)
+-    {
+-      return instance->toAddon.addonInstance->OpenStream(streamid);
+-    }
++  inline static bool ADDON_OpenStream(const AddonInstance_InputStream* instance, int streamid)
++  {
++    return instance->toAddon.addonInstance->OpenStream(streamid);
++  }
+ 
+-    inline static void ADDON_DemuxReset(const AddonInstance_InputStream* instance)
+-    {
+-      instance->toAddon.addonInstance->DemuxReset();
+-    }
++  inline static void ADDON_DemuxReset(const AddonInstance_InputStream* instance)
++  {
++    instance->toAddon.addonInstance->DemuxReset();
++  }
+ 
+-    inline static void ADDON_DemuxAbort(const AddonInstance_InputStream* instance)
+-    {
+-      instance->toAddon.addonInstance->DemuxAbort();
+-    }
++  inline static void ADDON_DemuxAbort(const AddonInstance_InputStream* instance)
++  {
++    instance->toAddon.addonInstance->DemuxAbort();
++  }
+ 
+-    inline static void ADDON_DemuxFlush(const AddonInstance_InputStream* instance)
+-    {
+-      instance->toAddon.addonInstance->DemuxFlush();
+-    }
++  inline static void ADDON_DemuxFlush(const AddonInstance_InputStream* instance)
++  {
++    instance->toAddon.addonInstance->DemuxFlush();
++  }
+ 
+-    inline static DemuxPacket* ADDON_DemuxRead(const AddonInstance_InputStream* instance)
+-    {
+-      return instance->toAddon.addonInstance->DemuxRead();
+-    }
++  inline static DemuxPacket* ADDON_DemuxRead(const AddonInstance_InputStream* instance)
++  {
++    return instance->toAddon.addonInstance->DemuxRead();
++  }
+ 
+-    inline static bool ADDON_DemuxSeekTime(const AddonInstance_InputStream* instance, double time, bool backwards, double *startpts)
+-    {
+-      return instance->toAddon.addonInstance->DemuxSeekTime(time, backwards, *startpts);
+-    }
++  inline static bool ADDON_DemuxSeekTime(const AddonInstance_InputStream* instance,
++                                         double time,
++                                         bool backwards,
++                                         double* startpts)
++  {
++    return instance->toAddon.addonInstance->DemuxSeekTime(time, backwards, *startpts);
++  }
+ 
+-    inline static void ADDON_DemuxSetSpeed(const AddonInstance_InputStream* instance, int speed)
+-    {
+-      instance->toAddon.addonInstance->DemuxSetSpeed(speed);
+-    }
++  inline static void ADDON_DemuxSetSpeed(const AddonInstance_InputStream* instance, int speed)
++  {
++    instance->toAddon.addonInstance->DemuxSetSpeed(speed);
++  }
+ 
+-    inline static void ADDON_SetVideoResolution(const AddonInstance_InputStream* instance, int width, int height)
+-    {
+-      instance->toAddon.addonInstance->SetVideoResolution(width, height);
+-    }
++  inline static void ADDON_SetVideoResolution(const AddonInstance_InputStream* instance,
++                                              int width,
++                                              int height)
++  {
++    instance->toAddon.addonInstance->SetVideoResolution(width, height);
++  }
+ 
+ 
+-    // IDisplayTime
+-    inline static int ADDON_GetTotalTime(const AddonInstance_InputStream* instance)
+-    {
+-      return instance->toAddon.addonInstance->GetTotalTime();
+-    }
++  // IDisplayTime
++  inline static int ADDON_GetTotalTime(const AddonInstance_InputStream* instance)
++  {
++    return instance->toAddon.addonInstance->GetTotalTime();
++  }
+ 
+-    inline static int ADDON_GetTime(const AddonInstance_InputStream* instance)
+-    {
+-      return instance->toAddon.addonInstance->GetTime();
+-    }
++  inline static int ADDON_GetTime(const AddonInstance_InputStream* instance)
++  {
++    return instance->toAddon.addonInstance->GetTime();
++  }
+ 
+-    // ITime
+-    inline static bool ADDON_GetTimes(const AddonInstance_InputStream* instance, INPUTSTREAM_TIMES *times)
+-    {
+-      return instance->toAddon.addonInstance->GetTimes(*times);
+-    }
++  // ITime
++  inline static bool ADDON_GetTimes(const AddonInstance_InputStream* instance,
++                                    INPUTSTREAM_TIMES* times)
++  {
++    return instance->toAddon.addonInstance->GetTimes(*times);
++  }
+ 
+-    // IPosTime
+-    inline static bool ADDON_PosTime(const AddonInstance_InputStream* instance, int ms)
+-    {
+-      return instance->toAddon.addonInstance->PosTime(ms);
+-    }
++  // IPosTime
++  inline static bool ADDON_PosTime(const AddonInstance_InputStream* instance, int ms)
++  {
++    return instance->toAddon.addonInstance->PosTime(ms);
++  }
+ 
+-    // Seekable (mandatory)
+-    inline static bool ADDON_CanPauseStream(const AddonInstance_InputStream* instance)
+-    {
+-      return instance->toAddon.addonInstance->CanPauseStream();
+-    }
++  // Seekable (mandatory)
++  inline static bool ADDON_CanPauseStream(const AddonInstance_InputStream* instance)
++  {
++    return instance->toAddon.addonInstance->CanPauseStream();
++  }
+ 
+-    inline static bool ADDON_CanSeekStream(const AddonInstance_InputStream* instance)
+-    {
+-      return instance->toAddon.addonInstance->CanSeekStream();
+-    }
++  inline static bool ADDON_CanSeekStream(const AddonInstance_InputStream* instance)
++  {
++    return instance->toAddon.addonInstance->CanSeekStream();
++  }
+ 
+ 
+-    inline static int ADDON_ReadStream(const AddonInstance_InputStream* instance, uint8_t* buffer, unsigned int bufferSize)
+-    {
+-      return instance->toAddon.addonInstance->ReadStream(buffer, bufferSize);
+-    }
++  inline static int ADDON_ReadStream(const AddonInstance_InputStream* instance,
++                                     uint8_t* buffer,
++                                     unsigned int bufferSize)
++  {
++    return instance->toAddon.addonInstance->ReadStream(buffer, bufferSize);
++  }
+ 
+-    inline static int64_t ADDON_SeekStream(const AddonInstance_InputStream* instance, int64_t position, int whence)
+-    {
+-      return instance->toAddon.addonInstance->SeekStream(position, whence);
+-    }
++  inline static int64_t ADDON_SeekStream(const AddonInstance_InputStream* instance,
++                                         int64_t position,
++                                         int whence)
++  {
++    return instance->toAddon.addonInstance->SeekStream(position, whence);
++  }
+ 
+-    inline static int64_t ADDON_PositionStream(const AddonInstance_InputStream* instance)
+-    {
+-      return instance->toAddon.addonInstance->PositionStream();
+-    }
++  inline static int64_t ADDON_PositionStream(const AddonInstance_InputStream* instance)
++  {
++    return instance->toAddon.addonInstance->PositionStream();
++  }
+ 
+-    inline static int64_t ADDON_LengthStream(const AddonInstance_InputStream* instance)
+-    {
+-      return instance->toAddon.addonInstance->LengthStream();
+-    }
++  inline static int64_t ADDON_LengthStream(const AddonInstance_InputStream* instance)
++  {
++    return instance->toAddon.addonInstance->LengthStream();
++  }
+ 
+-    inline static void ADDON_PauseStream(const AddonInstance_InputStream* instance, double time)
+-    {
+-      instance->toAddon.addonInstance->PauseStream(time);
+-    }
++  inline static void ADDON_PauseStream(const AddonInstance_InputStream* instance, double time)
++  {
++    instance->toAddon.addonInstance->PauseStream(time);
++  }
+ 
+-    inline static bool ADDON_IsRealTimeStream(const AddonInstance_InputStream* instance)
+-    {
+-      return instance->toAddon.addonInstance->IsRealTimeStream();
+-    }
++  inline static bool ADDON_IsRealTimeStream(const AddonInstance_InputStream* instance)
++  {
++    return instance->toAddon.addonInstance->IsRealTimeStream();
++  }
+ 
+-    AddonInstance_InputStream* m_instanceData;
+-  };
++  AddonInstance_InputStream* m_instanceData;
++};
+ 
+ } /* namespace addon */
+ } /* namespace kodi */
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
+index 189075ffd901..768d61974ab4 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
+@@ -88,7 +88,7 @@
+ #define ADDON_INSTANCE_VERSION_IMAGEDECODER_XML_ID    "kodi.binary.instance.imagedecoder"
+ #define ADDON_INSTANCE_VERSION_IMAGEDECODER_DEPENDS   "addon-instance/ImageDecoder.h"
+ 
+-#define ADDON_INSTANCE_VERSION_INPUTSTREAM            "2.0.8"
++#define ADDON_INSTANCE_VERSION_INPUTSTREAM            "2.0.9"
+ #define ADDON_INSTANCE_VERSION_INPUTSTREAM_MIN        "2.0.7"
+ #define ADDON_INSTANCE_VERSION_INPUTSTREAM_XML_ID     "kodi.binary.instance.inputstream"
+ #define ADDON_INSTANCE_VERSION_INPUTSTREAM_DEPENDS    "addon-instance/Inputstream.h"
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/AddonVideoCodec.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/AddonVideoCodec.cpp
+index f2fb4888dd1d..9e31bf246024 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/AddonVideoCodec.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/AddonVideoCodec.cpp
+@@ -86,6 +86,22 @@ bool CAddonVideoCodec::CopyToInitData(VIDEOCODEC_INITDATA &initData, CDVDStreamI
+     break;
+   case AV_CODEC_ID_VP9:
+     initData.codec = VIDEOCODEC_INITDATA::CodecVp9;
++    switch (hints.profile)
++    {
++    case FF_PROFILE_UNKNOWN:
++      initData.codecProfile = STREAMCODEC_PROFILE::CodecProfileUnknown;
++      break;
++    case FF_PROFILE_VP9_0:
++      initData.codecProfile = STREAMCODEC_PROFILE::VP9CodecProfile0;
++    case FF_PROFILE_VP9_1:
++      initData.codecProfile = STREAMCODEC_PROFILE::VP9CodecProfile1;
++    case FF_PROFILE_VP9_2:
++      initData.codecProfile = STREAMCODEC_PROFILE::VP9CodecProfile2;
++    case FF_PROFILE_VP9_3:
++      initData.codecProfile = STREAMCODEC_PROFILE::VP9CodecProfile3;
++    default:
++      return false;
++    }
+     break;
+   default:
+     return false;
+diff --git a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemux.h b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemux.h
+index 65803dc868e6..df8c0727a5bb 100644
+--- a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemux.h
++++ b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemux.h
+@@ -8,27 +8,31 @@
+ 
+ #pragma once
+ 
++#include "Interface/StreamInfo.h"
++
++#include <memory>
+ #include <string>
+ #include <vector>
+-#include <memory>
+-#include "Interface/StreamInfo.h"
+ 
+ struct DemuxPacket;
+ struct DemuxCryptoSession;
+ 
+ class CDVDInputStream;
+ 
+-namespace ADDON {
+-  class IAddonProvider;
++namespace ADDON
++{
++class IAddonProvider;
+ }
+ 
+ #ifndef __GNUC__
+ #pragma warning(push)
+-#pragma warning(disable:4244)
++#pragma warning(disable : 4244)
+ #endif
+ 
+-extern "C" {
++extern "C"
++{
+ #include <libavcodec/avcodec.h>
++#include <libavutil/mastering_display_metadata.h>
+ }
+ 
+ #ifndef __GNUC__
+@@ -37,25 +41,26 @@ extern "C" {
+ 
+ enum StreamType
+ {
+-  STREAM_NONE = 0,// if unknown
+-  STREAM_AUDIO,   // audio stream
+-  STREAM_VIDEO,   // video stream
+-  STREAM_DATA,    // data stream
+-  STREAM_SUBTITLE,// subtitle stream
++  STREAM_NONE = 0, // if unknown
++  STREAM_AUDIO, // audio stream
++  STREAM_VIDEO, // video stream
++  STREAM_DATA, // data stream
++  STREAM_SUBTITLE, // subtitle stream
+   STREAM_TELETEXT, // Teletext data stream
+   STREAM_RADIO_RDS // Radio RDS data stream
+ };
+ 
+-enum StreamSource {
+-  STREAM_SOURCE_NONE          = 0x000,
+-  STREAM_SOURCE_DEMUX         = 0x100,
+-  STREAM_SOURCE_NAV           = 0x200,
+-  STREAM_SOURCE_DEMUX_SUB     = 0x300,
+-  STREAM_SOURCE_TEXT          = 0x400,
+-  STREAM_SOURCE_VIDEOMUX      = 0x500
++enum StreamSource
++{
++  STREAM_SOURCE_NONE = 0x000,
++  STREAM_SOURCE_DEMUX = 0x100,
++  STREAM_SOURCE_NAV = 0x200,
++  STREAM_SOURCE_DEMUX_SUB = 0x300,
++  STREAM_SOURCE_TEXT = 0x400,
++  STREAM_SOURCE_VIDEOMUX = 0x500
+ };
+ 
+-#define STREAM_SOURCE_MASK(a) ((a) & 0xf00)
++#define STREAM_SOURCE_MASK(a) ((a)&0xf00)
+ 
+ /*
+  * CDemuxStream
+@@ -84,26 +89,23 @@ class CDemuxStream
+     flags = StreamFlags::FLAG_NONE;
+   }
+ 
+-  virtual ~CDemuxStream()
+-  {
+-    delete [] ExtraData;
+-  }
++  virtual ~CDemuxStream() { delete[] ExtraData; }
+ 
+   virtual std::string GetStreamName();
+ 
+-  int uniqueId;          // unique stream id
++  int uniqueId; // unique stream id
+   int dvdNavId;
+   int64_t demuxerId; // id of the associated demuxer
+   AVCodecID codec;
+   unsigned int codec_fourcc; // if available
+   int profile; // encoder profile of the stream reported by the decoder. used to qualify hw decoders.
+-  int level;   // encoder level of the stream reported by the decoder. used to qualify hw decoders.
++  int level; // encoder level of the stream reported by the decoder. used to qualify hw decoders.
+   StreamType type;
+   int source;
+ 
+   int iDuration; // in mseconds
+   void* pPrivate; // private pointer for the demuxer
+-  uint8_t*     ExtraData; // extra data for codec to use
++  uint8_t* ExtraData; // extra data for codec to use
+   unsigned int ExtraSize; // size of extra data
+ 
+   StreamFlags flags;
+@@ -113,7 +115,7 @@ class CDemuxStream
+   std::string name;
+   std::string codecName;
+ 
+-  int  changes; // increment on change which player may need to know about
++  int changes; // increment on change which player may need to know about
+ 
+   std::shared_ptr<DemuxCryptoSession> cryptoSession;
+   std::shared_ptr<ADDON::IAddonProvider> externalInterfaces;
+@@ -122,41 +124,37 @@ class CDemuxStream
+ class CDemuxStreamVideo : public CDemuxStream
+ {
+ public:
+-  CDemuxStreamVideo() : CDemuxStream()
+-  {
+-    iFpsScale = 0;
+-    iFpsRate = 0;
+-    iHeight = 0;
+-    iWidth = 0;
+-    fAspect = 0.0;
+-    bVFR = false;
+-    bPTSInvalid = false;
+-    bForcedAspect = false;
+-    type = STREAM_VIDEO;
+-    iOrientation = 0;
+-    iBitsPerPixel = 0;
+-    iBitRate = 0;
+-  }
++  CDemuxStreamVideo() { type = STREAM_VIDEO; };
+ 
+   ~CDemuxStreamVideo() override = default;
+-  int iFpsScale; // scale of 1000 and a rate of 29970 will result in 29.97 fps
+-  int iFpsRate;
+-  int iHeight; // height of the stream reported by the demuxer
+-  int iWidth; // width of the stream reported by the demuxer
+-  double fAspect; // display aspect of stream
+-  bool bVFR;  // variable framerate
+-  bool bPTSInvalid; // pts cannot be trusted (avi's).
+-  bool bForcedAspect; // aspect is forced from container
+-  int iOrientation; // orientation of the video in degrees counter clockwise
+-  int iBitsPerPixel;
+-  int iBitRate;
++  int iFpsScale = 0; // scale of 1000 and a rate of 29970 will result in 29.97 fps
++  int iFpsRate = 0;
++  int iHeight = 0; // height of the stream reported by the demuxer
++  int iWidth = 0; // width of the stream reported by the demuxer
++  double fAspect = 0; // display aspect of stream
++  bool bVFR = false; // variable framerate
++  bool bPTSInvalid = false; // pts cannot be trusted (avi's).
++  bool bForcedAspect = false; // aspect is forced from container
++  int iOrientation = 0; // orientation of the video in degrees counter clockwise
++  int iBitsPerPixel = 0;
++  int iBitRate = 0;
++
++  AVColorSpace colorSpace = AVCOL_SPC_UNSPECIFIED;
++  AVColorRange colorRange = AVCOL_RANGE_UNSPECIFIED;
++  AVColorPrimaries colorPrimaries = AVCOL_PRI_UNSPECIFIED;
++  AVColorTransferCharacteristic colorTransferCharacteristic = AVCOL_TRC_UNSPECIFIED;
++
++  std::shared_ptr<AVMasteringDisplayMetadata> masteringMetaData;
++  std::shared_ptr<AVContentLightMetadata> contentLightMetaData;
++
+   std::string stereo_mode; // expected stereo mode
+ };
+ 
+ class CDemuxStreamAudio : public CDemuxStream
+ {
+ public:
+-  CDemuxStreamAudio() : CDemuxStream()
++  CDemuxStreamAudio()
++    : CDemuxStream()
+   {
+     iChannels = 0;
+     iSampleRate = 0;
+@@ -183,7 +181,8 @@ class CDemuxStreamAudio : public CDemuxStream
+ class CDemuxStreamSubtitle : public CDemuxStream
+ {
+ public:
+-  CDemuxStreamSubtitle() : CDemuxStream()
++  CDemuxStreamSubtitle()
++    : CDemuxStream()
+   {
+     type = STREAM_SUBTITLE;
+   }
+@@ -192,7 +191,8 @@ class CDemuxStreamSubtitle : public CDemuxStream
+ class CDemuxStreamTeletext : public CDemuxStream
+ {
+ public:
+-  CDemuxStreamTeletext() : CDemuxStream()
++  CDemuxStreamTeletext()
++    : CDemuxStream()
+   {
+     type = STREAM_TELETEXT;
+   }
+@@ -201,7 +201,8 @@ class CDemuxStreamTeletext : public CDemuxStream
+ class CDemuxStreamRadioRDS : public CDemuxStream
+ {
+ public:
+-  CDemuxStreamRadioRDS() : CDemuxStream()
++  CDemuxStreamRadioRDS()
++    : CDemuxStream()
+   {
+     type = STREAM_RADIO_RDS;
+   }
+@@ -210,8 +211,10 @@ class CDemuxStreamRadioRDS : public CDemuxStream
+ class CDVDDemux
+ {
+ public:
+-
+-  CDVDDemux() : m_demuxerId(NewGuid()) {}
++  CDVDDemux()
++    : m_demuxerId(NewGuid())
++  {
++  }
+   virtual ~CDVDDemux() = default;
+ 
+ 
+@@ -224,7 +227,7 @@ class CDVDDemux
+    * Aborts any internal reading that might be stalling main thread
+    * NOTICE - this can be called from another thread
+    */
+-  virtual void Abort() { }
++  virtual void Abort() {}
+ 
+   /*
+    * Flush the demuxer, if any data is kept in buffers, this should be freed now
+@@ -263,24 +266,24 @@ class CDVDDemux
+    * \param strChapterName[out] Name of chapter
+    * \param chapterIdx -1 for current chapter, else a chapter index
+    */
+-  virtual void GetChapterName(std::string& strChapterName, int chapterIdx=-1) {}
++  virtual void GetChapterName(std::string& strChapterName, int chapterIdx = -1) {}
+ 
+   /*
+    * Get the position of a chapter
+    * \param chapterIdx -1 for current chapter, else a chapter index
+    */
+-  virtual int64_t GetChapterPos(int chapterIdx=-1) { return 0; }
++  virtual int64_t GetChapterPos(int chapterIdx = -1) { return 0; }
+ 
+   /*
+    * Set the playspeed, if demuxer can handle different
+    * speeds of playback
+    */
+-  virtual void SetSpeed(int iSpeed) { }
++  virtual void SetSpeed(int iSpeed) {}
+ 
+   /*
+    * Let demuxer know if we want to fill demux queue
+    */
+-  virtual void FillBuffer(bool mode) { }
++  virtual void FillBuffer(bool mode) {}
+ 
+   /*
+    * returns the total time in msec
+@@ -290,7 +293,10 @@ class CDVDDemux
+   /*
+    * returns the stream or NULL on error
+    */
+-  virtual CDemuxStream* GetStream(int64_t demuxerId, int iStreamId) const { return GetStream(iStreamId); };
++  virtual CDemuxStream* GetStream(int64_t demuxerId, int iStreamId) const
++  {
++    return GetStream(iStreamId);
++  };
+ 
+   virtual std::vector<CDemuxStream*> GetStreams() const = 0;
+ 
+@@ -322,7 +328,10 @@ class CDVDDemux
+   /*
+    * return a user-presentable codec name of the given stream
+    */
+-  virtual std::string GetStreamCodecName(int64_t demuxerId, int iStreamId) { return GetStreamCodecName(iStreamId); };
++  virtual std::string GetStreamCodecName(int64_t demuxerId, int iStreamId)
++  {
++    return GetStreamCodecName(iStreamId);
++  };
+ 
+   /*
+    * enable / disable demux stream
+@@ -338,7 +347,7 @@ class CDVDDemux
+    * sets desired width / height for video stream
+    * adaptive demuxers like DASH can use this to choose best fitting video stream
+    */
+-  virtual void SetVideoResolution(int width, int height) {};
++  virtual void SetVideoResolution(int width, int height){};
+ 
+   /*
+   * return the id of the demuxer
+@@ -346,8 +355,8 @@ class CDVDDemux
+   int64_t GetDemuxerId() { return m_demuxerId; };
+ 
+ protected:
+-  virtual void EnableStream(int id, bool enable) {};
+-  virtual void OpenStream(int id) {};
++  virtual void EnableStream(int id, bool enable){};
++  virtual void OpenStream(int id){};
+   virtual CDemuxStream* GetStream(int iStreamId) const = 0;
+   virtual std::string GetStreamCodecName(int iStreamId) { return ""; };
+ 
+@@ -356,7 +365,6 @@ class CDVDDemux
+   int64_t m_demuxerId;
+ 
+ private:
+-
+   int64_t NewGuid()
+   {
+     static int64_t guid = 0;
+diff --git a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxClient.cpp b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxClient.cpp
+index 59c97289f518..534b64bdc954 100644
+--- a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxClient.cpp
++++ b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxClient.cpp
+@@ -437,6 +437,13 @@ void CDVDDemuxClient::SetStreamProps(CDemuxStream *stream, std::map<int, std::sh
+       for (unsigned int j=0; j<source->ExtraSize; j++)
+         streamVideo->ExtraData[j] = source->ExtraData[j];
+     }
++    streamVideo->colorPrimaries = source->colorPrimaries;
++    streamVideo->colorRange = source->colorRange;
++    streamVideo->colorSpace = source->colorSpace;
++    streamVideo->colorTransferCharacteristic = source->colorTransferCharacteristic;
++    streamVideo->masteringMetaData = source->masteringMetaData;
++    streamVideo->contentLightMetaData = source->contentLightMetaData;
++
+     streamVideo->m_parser_split = true;
+     streamVideo->changes++;
+     map[stream->uniqueId] = streamVideo;
+@@ -529,7 +536,7 @@ void CDVDDemuxClient::SetStreamProps(CDemuxStream *stream, std::map<int, std::sh
+ 
+   // only update profile / level if we create a new stream
+   // existing streams may be corrected by ParsePacket
+-  if (!currentStream)
++  if (!currentStream || !CodecHasExtraData(stream->codec))
+   {
+     toStream->profile = stream->profile;
+     toStream->level = stream->level;
+diff --git a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.cpp b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.cpp
+index f535bf475177..a80e7eabc7bf 100644
+--- a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.cpp
++++ b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.cpp
+@@ -356,6 +356,40 @@ CDemuxStream* CInputStreamAddon::GetStream(int streamId) const
+     videoStream->fAspect = stream.m_Aspect;
+     videoStream->iBitRate = stream.m_BitRate;
+     videoStream->profile = ConvertVideoCodecProfile(stream.m_codecProfile);
++
++    if (GetAddonBase()->Version() >= AddonVersion("2.0.8"))
++    {
++      videoStream->colorSpace = static_cast<AVColorSpace>(stream.m_colorSpace);
++      videoStream->colorRange = static_cast<AVColorRange>(stream.m_colorRange);
++    }
++    if (GetAddonBase()->Version() >= AddonVersion("2.0.9"))
++    {
++      videoStream->colorPrimaries = static_cast<AVColorPrimaries>(stream.m_colorPrimaries);
++      videoStream->colorTransferCharacteristic = static_cast<AVColorTransferCharacteristic>(stream.m_colorTransferCharacteristic);
++
++      if (stream.m_masteringMetadata)
++      {
++        videoStream->masteringMetaData = std::shared_ptr<AVMasteringDisplayMetadata>(new AVMasteringDisplayMetadata);
++        videoStream->masteringMetaData->display_primaries[0][0] = av_d2q(stream.m_masteringMetadata->primary_r_chromaticity_x, INT_MAX);
++        videoStream->masteringMetaData->display_primaries[0][1] = av_d2q(stream.m_masteringMetadata->primary_r_chromaticity_y, INT_MAX);
++        videoStream->masteringMetaData->display_primaries[1][0] = av_d2q(stream.m_masteringMetadata->primary_g_chromaticity_x, INT_MAX);
++        videoStream->masteringMetaData->display_primaries[1][1] = av_d2q(stream.m_masteringMetadata->primary_g_chromaticity_y, INT_MAX);
++        videoStream->masteringMetaData->display_primaries[2][0] = av_d2q(stream.m_masteringMetadata->primary_b_chromaticity_x, INT_MAX);
++        videoStream->masteringMetaData->display_primaries[2][1] = av_d2q(stream.m_masteringMetadata->primary_b_chromaticity_y, INT_MAX);
++        videoStream->masteringMetaData->white_point[0] = av_d2q(stream.m_masteringMetadata->white_point_chromaticity_x, INT_MAX);
++        videoStream->masteringMetaData->white_point[1] = av_d2q(stream.m_masteringMetadata->white_point_chromaticity_y, INT_MAX);
++        videoStream->masteringMetaData->min_luminance = av_d2q(stream.m_masteringMetadata->luminance_min, INT_MAX);
++        videoStream->masteringMetaData->max_luminance = av_d2q(stream.m_masteringMetadata->luminance_max, INT_MAX);
++        videoStream->masteringMetaData->has_luminance = videoStream->masteringMetaData->has_primaries = 1;
++      }
++
++      if (stream.m_contentLightMetadata)
++      {
++        videoStream->contentLightMetaData = std::shared_ptr<AVContentLightMetadata>(new AVContentLightMetadata);
++        videoStream->contentLightMetaData->MaxCLL = stream.m_contentLightMetadata->max_cll;
++        videoStream->contentLightMetaData->MaxFALL = stream.m_contentLightMetadata->max_fall;
++      }
++    }
+     demuxStream = videoStream;
+   }
+   else if (stream.m_streamType == INPUTSTREAM_INFO::TYPE_SUBTITLE)
+@@ -496,6 +530,14 @@ int CInputStreamAddon::ConvertVideoCodecProfile(STREAMCODEC_PROFILE profile)
+     return FF_PROFILE_H264_HIGH_422;
+   case H264CodecProfileHigh444Predictive:
+     return FF_PROFILE_H264_HIGH_444_PREDICTIVE;
++  case VP9CodecProfile0:
++    return FF_PROFILE_VP9_0;
++  case VP9CodecProfile1:
++    return FF_PROFILE_VP9_1;
++  case VP9CodecProfile2:
++    return FF_PROFILE_VP9_2;
++  case VP9CodecProfile3:
++    return FF_PROFILE_VP9_3;
+   default:
+     return FF_PROFILE_UNKNOWN;
+   }
+diff --git a/xbmc/cores/VideoPlayer/DVDStreamInfo.cpp b/xbmc/cores/VideoPlayer/DVDStreamInfo.cpp
+index f1679dde4a43..e05fd321a999 100644
+--- a/xbmc/cores/VideoPlayer/DVDStreamInfo.cpp
++++ b/xbmc/cores/VideoPlayer/DVDStreamInfo.cpp
+@@ -55,6 +55,12 @@ void CDVDStreamInfo::Clear()
+   ptsinvalid = false;
+   forced_aspect = false;
+   bitsperpixel = 0;
++  colorSpace = AVCOL_SPC_UNSPECIFIED;
++  colorRange = AVCOL_RANGE_UNSPECIFIED;
++  colorPrimaries = AVCOL_PRI_UNSPECIFIED;
++  colorTransferCharacteristic = AVCOL_TRC_UNSPECIFIED;
++  masteringMetadata = nullptr;
++  contentLightMetadata = nullptr;
+   stereo_mode.clear();
+ 
+   channels   = 0;
+@@ -98,8 +104,48 @@ bool CDVDStreamInfo::Equal(const CDVDStreamInfo& right, bool withextradata)
+   ||  forced_aspect != right.forced_aspect
+   ||  bitsperpixel != right.bitsperpixel
+   ||  vfr      != right.vfr
++  ||  colorSpace != right.colorSpace
++  ||  colorRange != right.colorRange
++  ||  colorPrimaries != right.colorPrimaries
++  ||  colorTransferCharacteristic != right.colorTransferCharacteristic
+   ||  stereo_mode != right.stereo_mode ) return false;
+ 
++  if (masteringMetadata && right.masteringMetadata)
++  {
++    if (masteringMetadata->has_luminance != right.masteringMetadata->has_luminance
++      || masteringMetadata->has_primaries != right.masteringMetadata->has_primaries)
++      return false;
++
++    if (masteringMetadata->has_primaries)
++    {
++      for (unsigned int i(0); i < 3; ++i)
++        for (unsigned int j(0); j < 2; ++j)
++          if (av_cmp_q(masteringMetadata->display_primaries[i][j], right.masteringMetadata->display_primaries[i][j]))
++            return false;
++      for (unsigned int i(0); i < 2; ++i)
++        if (av_cmp_q(masteringMetadata->white_point[i], right.masteringMetadata->white_point[i]))
++          return false;
++    }
++
++    if (masteringMetadata->has_luminance)
++    {
++      if (av_cmp_q(masteringMetadata->min_luminance, right.masteringMetadata->min_luminance)
++      || av_cmp_q(masteringMetadata->max_luminance, right.masteringMetadata->max_luminance))
++        return false;
++    }
++  }
++  else if (masteringMetadata || right.masteringMetadata)
++    return false;
++
++  if (contentLightMetadata && right.contentLightMetadata)
++  {
++    if (contentLightMetadata->MaxCLL != right.contentLightMetadata->MaxCLL
++    || contentLightMetadata->MaxFALL != right.contentLightMetadata->MaxFALL)
++      return false;
++  }
++  else if (contentLightMetadata || right.contentLightMetadata)
++    return false;
++
+   // AUDIO
+   if( channels      != right.channels
+   ||  samplerate    != right.samplerate
+@@ -175,6 +221,12 @@ void CDVDStreamInfo::Assign(const CDVDStreamInfo& right, bool withextradata)
+   bitsperpixel = right.bitsperpixel;
+   vfr = right.vfr;
+   codecOptions = right.codecOptions;
++  colorSpace = right.colorSpace;
++  colorRange = right.colorRange;
++  colorPrimaries = right.colorPrimaries;
++  colorTransferCharacteristic = right.colorTransferCharacteristic;
++  masteringMetadata = right.masteringMetadata;
++  contentLightMetadata = right.contentLightMetadata;
+   stereo_mode = right.stereo_mode;
+ 
+   // AUDIO
+@@ -236,6 +288,12 @@ void CDVDStreamInfo::Assign(const CDemuxStream& right, bool withextradata)
+     forced_aspect = stream->bForcedAspect;
+     orientation = stream->iOrientation;
+     bitsperpixel = stream->iBitsPerPixel;
++    colorSpace = stream->colorSpace;
++    colorRange = stream->colorRange;
++    colorPrimaries = stream->colorPrimaries;
++    colorTransferCharacteristic = stream->colorTransferCharacteristic;
++    masteringMetadata = stream->masteringMetaData;
++    contentLightMetadata = stream->contentLightMetaData;
+     stereo_mode = stream->stereo_mode;
+   }
+   else if (right.type == STREAM_SUBTITLE)
+diff --git a/xbmc/cores/VideoPlayer/DVDStreamInfo.h b/xbmc/cores/VideoPlayer/DVDStreamInfo.h
+index aed2b3078dc8..ad32bcd88b41 100644
+--- a/xbmc/cores/VideoPlayer/DVDStreamInfo.h
++++ b/xbmc/cores/VideoPlayer/DVDStreamInfo.h
+@@ -59,6 +59,12 @@ class CDVDStreamInfo
+   bool forced_aspect; // aspect is forced from container
+   int orientation; // orientation of the video in degrees counter clockwise
+   int bitsperpixel;
++  AVColorSpace colorSpace;
++  AVColorRange colorRange;
++  AVColorPrimaries colorPrimaries;
++  AVColorTransferCharacteristic colorTransferCharacteristic;
++  std::shared_ptr<AVMasteringDisplayMetadata> masteringMetadata;
++  std::shared_ptr<AVContentLightMetadata> contentLightMetadata;
+   std::string stereo_mode; // stereoscopic 3d mode
+ 
+   // AUDIO
+
+From 7fce5743a0184bb7cae37c0d01d7298e1fb68cee Mon Sep 17 00:00:00 2001
+From: peak3d <pfau@peak3d.de>
+Date: Mon, 26 Aug 2019 09:22:33 +0200
+Subject: [PATCH 2/2] [Android] Implement HDR static metadata
+
+---
+ .../Video/DVDVideoCodecAndroidMediaCodec.cpp  |  96 ++++++++++--
+ .../Video/DVDVideoCodecAndroidMediaCodec.h    | 137 ++++++++++--------
+ 2 files changed, 153 insertions(+), 80 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp
+index 7a637197a087..a7a3ca5ca6f5 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp
+@@ -52,13 +52,17 @@
+ #include "system.h"
+ 
+ 
+-#define XMEDIAFORMAT_KEY_ROTATION "rotation-degrees"
+-#define XMEDIAFORMAT_KEY_SLICE "slice-height"
+-#define XMEDIAFORMAT_KEY_CROP_LEFT "crop-left"
+-#define XMEDIAFORMAT_KEY_CROP_RIGHT "crop-right"
+-#define XMEDIAFORMAT_KEY_CROP_TOP "crop-top"
+-#define XMEDIAFORMAT_KEY_CROP_BOTTOM "crop-bottom"
+-#define XMEDIAFORMAT_KEY_TUNNELED_PLAYBACK "feature-tunneled-playback"
++static const char* XMEDIAFORMAT_KEY_ROTATION = "rotation-degrees";
++static const char* XMEDIAFORMAT_KEY_SLICE = "slice-height";
++static const char* XMEDIAFORMAT_KEY_CROP_LEFT = "crop-left";
++static const char* XMEDIAFORMAT_KEY_CROP_RIGHT = "crop-right";
++static const char* XMEDIAFORMAT_KEY_CROP_TOP = "crop-top";
++static const char* XMEDIAFORMAT_KEY_CROP_BOTTOM = "crop-bottom";
++static const char* XMEDIAFORMAT_KEY_TUNNELED_PLAYBACK = "feature-tunneled-playback";
++static const char* XMEDIAFORMAT_KEY_COLOR_STANDARD = "color-standard";
++static const char* XMEDIAFORMAT_KEY_COLOR_RANGE = "color-range";
++static const char* XMEDIAFORMAT_KEY_COLOR_TRANSFER = "color-transfer";
++static const char* XMEDIAFORMAT_KEY_HDR_STATIC_INFO = "hdr-static-info";
+ 
+ using namespace KODI::MESSAGING;
+ 
+@@ -391,6 +395,9 @@ bool CDVDVideoCodecAndroidMediaCodec::Open(CDVDStreamInfo &hints, CDVDCodecOptio
+            !CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_VIDEOPLAYER_USEMEDIACODECSURFACE))
+     goto FAIL;
+ 
++  CLog::Log(LOGDEBUG, "CDVDVideoCodecAndroidMediaCodec::Open hints: Width %d x Height %d, Fpsrate %d / Fpsscale %d, CodecID %d, Level %d, Profile %d, PTS_invalid %d, Tag %d, Extradata-Size: %d\n",
++    hints.width, hints.height, hints.fpsrate, hints.fpsscale, hints.codec, hints.level, hints.profile, hints.ptsinvalid, hints.codec_tag, hints.extrasize);
++
+   m_render_surface = CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_VIDEOPLAYER_USEMEDIACODECSURFACE);
+   m_state = MEDIACODEC_STATE_UNINITIALIZED;
+   m_noPictureLoop = 0;
+@@ -400,15 +407,6 @@ bool CDVDVideoCodecAndroidMediaCodec::Open(CDVDStreamInfo &hints, CDVDCodecOptio
+   m_dtsShift = DVD_NOPTS_VALUE;
+   m_useDTSforPTS = false;
+ 
+-  CLog::Log(LOGDEBUG, LOGVIDEO, "CDVDVideoCodecAndroidMediaCodec::Open hints: fpsrate %d / fpsscale %d\n", m_hints.fpsrate, m_hints.fpsscale);
+-  CLog::Log(LOGDEBUG, LOGVIDEO, "CDVDVideoCodecAndroidMediaCodec::Open hints: CodecID %d \n", m_hints.codec);
+-  CLog::Log(LOGDEBUG, LOGVIDEO, "CDVDVideoCodecAndroidMediaCodec::Open hints: StreamType %d \n", m_hints.type);
+-  CLog::Log(LOGDEBUG, LOGVIDEO, "CDVDVideoCodecAndroidMediaCodec::Open hints: Level %d \n", m_hints.level);
+-  CLog::Log(LOGDEBUG, LOGVIDEO, "CDVDVideoCodecAndroidMediaCodec::Open hints: Profile %d \n", m_hints.profile);
+-  CLog::Log(LOGDEBUG, LOGVIDEO, "CDVDVideoCodecAndroidMediaCodec::Open hints: PTS_invalid %d \n", m_hints.ptsinvalid);
+-  CLog::Log(LOGDEBUG, LOGVIDEO, "CDVDVideoCodecAndroidMediaCodec::Open hints: Tag %d \n", m_hints.codec_tag);
+-  CLog::Log(LOGDEBUG, LOGVIDEO, "CDVDVideoCodecAndroidMediaCodec::Open hints: %dx%d \n", m_hints.width,  m_hints.height);
+-
+   switch(m_hints.codec)
+   {
+     case AV_CODEC_ID_MPEG2VIDEO:
+@@ -1103,6 +1101,30 @@ void CDVDVideoCodecAndroidMediaCodec::InjectExtraData(AMediaFormat* mediaformat)
+     AMediaFormat_setBuffer(mediaformat, "csd-0", src_ptr, size);
+   }
+ }
++std::vector<uint8_t> CDVDVideoCodecAndroidMediaCodec::GetHDRStaticMetadata()
++{
++  std::vector<uint8_t> metadata;
++  if (m_hints.masteringMetadata && m_hints.contentLightMetadata)
++  {
++    static const double MAX_CHROMATICITY = 5000;
++    metadata.resize(25);
++    metadata[0] = 0;
++    short* data = reinterpret_cast<short*>(&metadata[1]);
++    data[0] = static_cast<short>(av_q2d(m_hints.masteringMetadata->display_primaries[0][0]) * MAX_CHROMATICITY + 0.5);
++    data[1] = static_cast<short>(av_q2d(m_hints.masteringMetadata->display_primaries[1][1]) * MAX_CHROMATICITY + 0.5);
++    data[2] = static_cast<short>(av_q2d(m_hints.masteringMetadata->display_primaries[1][0]) * MAX_CHROMATICITY + 0.5);
++    data[3] = static_cast<short>(av_q2d(m_hints.masteringMetadata->display_primaries[2][1]) * MAX_CHROMATICITY + 0.5);
++    data[4] = static_cast<short>(av_q2d(m_hints.masteringMetadata->display_primaries[2][0]) * MAX_CHROMATICITY + 0.5);
++    data[5] = static_cast<short>(av_q2d(m_hints.masteringMetadata->display_primaries[0][1]) * MAX_CHROMATICITY + 0.5);
++    data[6] = static_cast<short>(av_q2d(m_hints.masteringMetadata->white_point[0]) * MAX_CHROMATICITY + 0.5);
++    data[7] = static_cast<short>(av_q2d(m_hints.masteringMetadata->white_point[1]) * MAX_CHROMATICITY + 0.5);
++    data[8] = static_cast<short>(av_q2d(m_hints.masteringMetadata->max_luminance) + 0.5);
++    data[9] = static_cast<short>(av_q2d(m_hints.masteringMetadata->min_luminance) + 0.5);
++    data[10] = static_cast<short>(m_hints.contentLightMetadata->MaxCLL);
++    data[11] = static_cast<short>(m_hints.contentLightMetadata->MaxFALL);
++  }
++  return metadata;
++}
+ 
+ bool CDVDVideoCodecAndroidMediaCodec::ConfigureMediaCodec(void)
+ {
+@@ -1121,6 +1143,48 @@ bool CDVDVideoCodecAndroidMediaCodec::ConfigureMediaCodec(void)
+     AMediaFormat_setInt32(mediaformat, XMEDIAFORMAT_KEY_TUNNELED_PLAYBACK, 0);
+   }
+ 
++  if (CJNIBase::GetSDKVersion() >= 24)
++  {
++    if (m_hints.colorRange != AVCOL_RANGE_UNSPECIFIED)
++      AMediaFormat_setInt32(mediaformat, XMEDIAFORMAT_KEY_COLOR_RANGE, m_hints.colorRange);
++
++    if (m_hints.colorPrimaries != AVCOL_PRI_UNSPECIFIED)
++    {
++      switch (m_hints.colorPrimaries)
++      {
++      case AVCOL_PRI_BT709:
++        AMediaFormat_setInt32(mediaformat, XMEDIAFORMAT_KEY_COLOR_STANDARD, 1);
++        break;
++      case AVCOL_PRI_BT2020:
++        AMediaFormat_setInt32(mediaformat, XMEDIAFORMAT_KEY_COLOR_STANDARD, 6);
++        break;
++      default:; // do nothing
++      }
++    }
++
++    if (m_hints.colorTransferCharacteristic != AVCOL_TRC_UNSPECIFIED)
++    {
++      switch (m_hints.colorTransferCharacteristic)
++      {
++      case AVCOL_TRC_LINEAR:
++        AMediaFormat_setInt32(mediaformat, XMEDIAFORMAT_KEY_COLOR_TRANSFER, 1); // COLOR_TRANSFER_LINEAR
++        break;
++      case AVCOL_TRC_SMPTE170M:
++        AMediaFormat_setInt32(mediaformat, XMEDIAFORMAT_KEY_COLOR_TRANSFER, 3); // COLOR_TRANSFER_SDR_VIDEO
++        break;
++      case AVCOL_TRC_SMPTE2084:
++        AMediaFormat_setInt32(mediaformat, XMEDIAFORMAT_KEY_COLOR_TRANSFER, 6); // COLOR_TRANSFER_ST2084
++        break;
++      case AVCOL_TRC_ARIB_STD_B67:
++        AMediaFormat_setInt32(mediaformat, XMEDIAFORMAT_KEY_COLOR_TRANSFER, 7); // COLOR_TRANSFER_HLG
++        break;
++      default:; // do nothing
++      }
++    }
++    std::vector<uint8_t> hdr_static_data = GetHDRStaticMetadata();
++    if (!hdr_static_data.empty())
++      AMediaFormat_setBuffer(mediaformat, XMEDIAFORMAT_KEY_HDR_STATIC_INFO, hdr_static_data.data(), hdr_static_data.size());
++  }
+ 
+   // handle codec extradata
+   InjectExtraData(mediaformat);
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.h b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.h
+index 39fee530d3db..944fa805dc43 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.h
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.h
+@@ -40,21 +40,23 @@ struct DemuxCryptoInfo;
+ struct mpeg2_sequence;
+ 
+ 
+-typedef struct amc_demux {
+-  uint8_t  *pData;
+-  int       iSize;
+-  double    dts;
+-  double    pts;
++typedef struct amc_demux
++{
++  uint8_t* pData;
++  int iSize;
++  double dts;
++  double pts;
+ } amc_demux;
+ 
+ struct CMediaCodec
+ {
+-  CMediaCodec(const char *name);
++  CMediaCodec(const char* name);
+   virtual ~CMediaCodec();
+ 
+-  AMediaCodec *codec() const { return m_codec; };
++  AMediaCodec* codec() const { return m_codec; };
++
+ private:
+-  AMediaCodec *m_codec;
++  AMediaCodec* m_codec;
+ };
+ 
+ class CMediaCodecVideoBufferPool;
+@@ -62,29 +64,33 @@ class CMediaCodecVideoBufferPool;
+ class CMediaCodecVideoBuffer : public CVideoBuffer
+ {
+ public:
+-  CMediaCodecVideoBuffer(int id) : CVideoBuffer(id) {};
+-  virtual ~CMediaCodecVideoBuffer() {};
++  CMediaCodecVideoBuffer(int id)
++    : CVideoBuffer(id){};
++  virtual ~CMediaCodecVideoBuffer(){};
+ 
+-  void Set(int internalId, int textureId,
+-   std::shared_ptr<CJNISurfaceTexture> surfaceTexture,
+-   std::shared_ptr<CDVDMediaCodecOnFrameAvailable> frameAvailable,
+-   std::shared_ptr<CJNIXBMCVideoView> videoView);
++  void Set(int internalId,
++           int textureId,
++           std::shared_ptr<CJNISurfaceTexture> surfaceTexture,
++           std::shared_ptr<CDVDMediaCodecOnFrameAvailable> frameAvailable,
++           std::shared_ptr<CJNIXBMCVideoView> videoView);
+ 
+   // meat and potatoes
+-  bool                WaitForFrame(int millis);
++  bool WaitForFrame(int millis);
+   // MediaCodec related
+-  void                ReleaseOutputBuffer(bool render, int64_t displayTime, CMediaCodecVideoBufferPool* pool = nullptr);
++  void ReleaseOutputBuffer(bool render,
++                           int64_t displayTime,
++                           CMediaCodecVideoBufferPool* pool = nullptr);
+   // SurfaceTexture released
+-  int                 GetBufferId() const;
+-  int                 GetTextureId() const;
+-  void                GetTransformMatrix(float *textureMatrix);
+-  void                UpdateTexImage();
+-  void                RenderUpdate(const CRect &DestRect, int64_t displayTime);
+-  bool                HasSurfaceTexture() const { return m_surfacetexture.operator bool(); };
++  int GetBufferId() const;
++  int GetTextureId() const;
++  void GetTransformMatrix(float* textureMatrix);
++  void UpdateTexImage();
++  void RenderUpdate(const CRect& DestRect, int64_t displayTime);
++  bool HasSurfaceTexture() const { return m_surfacetexture.operator bool(); };
+ 
+ private:
+-  int                 m_bufferId = -1;
+-  unsigned int        m_textureId = 0;
++  int m_bufferId = -1;
++  unsigned int m_textureId = 0;
+   // shared_ptr bits, shared between
+   // CDVDVideoCodecAndroidMediaCodec and LinuxRenderGLES.
+   std::shared_ptr<CJNISurfaceTexture> m_surfacetexture;
+@@ -95,7 +101,8 @@ class CMediaCodecVideoBuffer : public CVideoBuffer
+ class CMediaCodecVideoBufferPool : public IVideoBufferPool
+ {
+ public:
+-  CMediaCodecVideoBufferPool(std::shared_ptr<CMediaCodec> mediaCodec) : m_codec(mediaCodec) {};
++  CMediaCodecVideoBufferPool(std::shared_ptr<CMediaCodec> mediaCodec)
++    : m_codec(mediaCodec){};
+ 
+   virtual ~CMediaCodecVideoBufferPool();
+ 
+@@ -107,7 +114,8 @@ class CMediaCodecVideoBufferPool : public IVideoBufferPool
+   void ReleaseMediaCodecBuffers();
+ 
+ private:
+-  CCriticalSection m_criticalSection;;
++  CCriticalSection m_criticalSection;
++  ;
+   std::shared_ptr<CMediaCodec> m_codec;
+ 
+   std::vector<CMediaCodecVideoBuffer*> m_videoBuffers;
+@@ -117,55 +125,56 @@ class CMediaCodecVideoBufferPool : public IVideoBufferPool
+ class CDVDVideoCodecAndroidMediaCodec : public CDVDVideoCodec, public CJNISurfaceHolderCallback
+ {
+ public:
+-  CDVDVideoCodecAndroidMediaCodec(CProcessInfo &processInfo, bool surface_render = false);
++  CDVDVideoCodecAndroidMediaCodec(CProcessInfo& processInfo, bool surface_render = false);
+   virtual ~CDVDVideoCodecAndroidMediaCodec();
+ 
+   // registration
+-  static CDVDVideoCodec* Create(CProcessInfo &processInfo);
++  static CDVDVideoCodec* Create(CProcessInfo& processInfo);
+   static bool Register();
+ 
+   // required overrides
+-  virtual bool Open(CDVDStreamInfo &hints, CDVDCodecOptions &options) override;
+-  virtual bool AddData(const DemuxPacket &packet) override;
++  virtual bool Open(CDVDStreamInfo& hints, CDVDCodecOptions& options) override;
++  virtual bool AddData(const DemuxPacket& packet) override;
+   virtual void Reset() override;
+-  virtual bool Reconfigure(CDVDStreamInfo &hints) override;
++  virtual bool Reconfigure(CDVDStreamInfo& hints) override;
+   virtual VCReturn GetPicture(VideoPicture* pVideoPicture) override;
+   virtual const char* GetName() override { return m_formatname.c_str(); };
+   virtual void SetCodecControl(int flags) override;
+   virtual unsigned GetAllowedReferences() override;
+ 
+ protected:
+-  void            Dispose();
+-  void            FlushInternal(void);
+-  void            SignalEndOfStream();
+-  void            InjectExtraData(AMediaFormat* mediaformat);
+-  bool            ConfigureMediaCodec(void);
+-  int             GetOutputPicture(void);
+-  void            ConfigureOutputFormat(AMediaFormat* mediaformat);
+-  void            UpdateFpsDuration();
++  void Dispose();
++  void FlushInternal(void);
++  void SignalEndOfStream();
++  void InjectExtraData(AMediaFormat* mediaformat);
++  std::vector<uint8_t> GetHDRStaticMetadata();
++  bool ConfigureMediaCodec(void);
++  int GetOutputPicture(void);
++  void ConfigureOutputFormat(AMediaFormat* mediaformat);
++  void UpdateFpsDuration();
+ 
+   // surface handling functions
+-  static void     CallbackInitSurfaceTexture(void*);
+-  void            InitSurfaceTexture(void);
+-  void            ReleaseSurfaceTexture(void);
+-
+-  CDVDStreamInfo  m_hints;
+-  std::string     m_mime;
+-  std::string     m_codecname;
+-  int             m_colorFormat;
+-  std::string     m_formatname;
+-  bool            m_opened;
+-  int             m_codecControlFlags;
+-  int             m_state;
+-  int             m_noPictureLoop;
++  static void CallbackInitSurfaceTexture(void*);
++  void InitSurfaceTexture(void);
++  void ReleaseSurfaceTexture(void);
++
++  CDVDStreamInfo m_hints;
++  std::string m_mime;
++  std::string m_codecname;
++  int m_colorFormat;
++  std::string m_formatname;
++  bool m_opened;
++  int m_codecControlFlags;
++  int m_state;
++  int m_noPictureLoop;
+ 
+   std::shared_ptr<CJNIXBMCVideoView> m_jnivideoview;
+-  CJNISurface*    m_jnisurface;
+-  CJNISurface     m_jnivideosurface;
+-  AMediaCrypto   *m_crypto;
+-  unsigned int    m_textureId;
++  CJNISurface* m_jnisurface;
++  CJNISurface m_jnivideosurface;
++  AMediaCrypto* m_crypto;
++  unsigned int m_textureId;
+   std::shared_ptr<CMediaCodec> m_codec;
+-  ANativeWindow*  m_surface;
++  ANativeWindow* m_surface;
+   std::shared_ptr<CJNISurfaceTexture> m_surfaceTexture;
+   std::shared_ptr<CDVDMediaCodecOnFrameAvailable> m_frameAvailable;
+ 
+@@ -179,15 +188,15 @@ class CDVDVideoCodecAndroidMediaCodec : public CDVDVideoCodec, public CJNISurfac
+ 
+   static std::atomic<bool> m_InstanceGuard;
+ 
+-  CBitstreamConverter *m_bitstream;
++  CBitstreamConverter* m_bitstream;
+   VideoPicture m_videobuffer;
+ 
+-  int             m_indexInputBuffer;
+-  bool            m_render_surface;
+-  mpeg2_sequence  *m_mpeg2_sequence;
+-  int             m_src_offset[4];
+-  int             m_src_stride[4];
+-  bool            m_useDTSforPTS;
++  int m_indexInputBuffer;
++  bool m_render_surface;
++  mpeg2_sequence* m_mpeg2_sequence;
++  int m_src_offset[4];
++  int m_src_stride[4];
++  bool m_useDTSforPTS;
+ 
+   // CJNISurfaceHolderCallback interface
+ public:
