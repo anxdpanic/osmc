@@ -1061,7 +1061,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/interfaces/python/swig.cpp                    |  5 +-
  xbmc/interfaces/python/swig.h                      | 11 ++--
  xbmc/listproviders/DirectoryProvider.cpp           | 17 +++---
- xbmc/listproviders/DirectoryProvider.h             | 11 ++--
  xbmc/listproviders/IListProvider.cpp               |  5 +-
  xbmc/listproviders/IListProvider.h                 |  2 +-
  xbmc/listproviders/MultiProvider.cpp               |  3 +-
@@ -22771,32 +22770,6 @@ index 628ab56340..c036ea1eda 100644
  namespace PythonBindings
  {
    /**
-diff --git a/xbmc/listproviders/DirectoryProvider.h b/xbmc/listproviders/DirectoryProvider.h
-index 6b3283a7e6..4a381ad818 100644
---- a/xbmc/listproviders/DirectoryProvider.h
-+++ b/xbmc/listproviders/DirectoryProvider.h
-@@ -8,16 +8,15 @@
- 
- #pragma once
- 
--#include "IListProvider.h"
-+#include <string>
-+#include <vector>
- #include "addons/AddonEvents.h"
-+#include "IListProvider.h"
- #include "favourites/FavouritesService.h"
- #include "guilib/GUIStaticItem.h"
--#include "interfaces/IAnnouncer.h"
--#include "threads/CriticalSection.h"
- #include "utils/Job.h"
--
--#include <string>
--#include <vector>
-+#include "threads/CriticalSection.h"
-+#include "interfaces/IAnnouncer.h"
- 
- class TiXmlElement;
- class CVariant;
 diff --git a/xbmc/listproviders/IListProvider.cpp b/xbmc/listproviders/IListProvider.cpp
 index 09148c0a60..0feea732ad 100644
 --- a/xbmc/listproviders/IListProvider.cpp
