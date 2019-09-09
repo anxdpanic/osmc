@@ -37073,25 +37073,6 @@ index 23eac63de1..34068c2363 100644
  #include <EGL/egl.h>
  
  class CDecoderFilterManager;
-diff --git a/xbmc/windowing/android/WinSystemAndroidGLESContext.cpp b/xbmc/windowing/android/WinSystemAndroidGLESContext.cpp
-index 29590b9482..755c94ed0e 100644
---- a/xbmc/windowing/android/WinSystemAndroidGLESContext.cpp
-+++ b/xbmc/windowing/android/WinSystemAndroidGLESContext.cpp
-@@ -6,12 +6,10 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
--#include "WinSystemAndroidGLESContext.h"
--
- #include "VideoSyncAndroid.h"
--#include "threads/SingleLock.h"
-+#include "WinSystemAndroidGLESContext.h"
- #include "utils/log.h"
--
-+#include "threads/SingleLock.h"
- #include "platform/android/activity/XBMCApp.h"
- 
- std::unique_ptr<CWinSystemBase> CWinSystemBase::CreateWinSystem()
 diff --git a/xbmc/windowing/android/WinSystemAndroidGLESContext.h b/xbmc/windowing/android/WinSystemAndroidGLESContext.h
 index 7194217b1a..f674e3dcd9 100644
 --- a/xbmc/windowing/android/WinSystemAndroidGLESContext.h
