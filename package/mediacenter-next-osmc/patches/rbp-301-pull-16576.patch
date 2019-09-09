@@ -1,0 +1,22 @@
+From 9684b6babb4023b3100049a9004aaf1fbda94503 Mon Sep 17 00:00:00 2001
+From: Arne Morten Kvarving <spiff@kodi.tv>
+Date: Fri, 6 Sep 2019 08:38:14 +0200
+Subject: [PATCH] added: include .m4v in video tag reader
+
+---
+ xbmc/video/tags/VideoInfoTagLoaderFactory.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/video/tags/VideoInfoTagLoaderFactory.cpp b/xbmc/video/tags/VideoInfoTagLoaderFactory.cpp
+index 8b868fdad36c..476072433286 100644
+--- a/xbmc/video/tags/VideoInfoTagLoaderFactory.cpp
++++ b/xbmc/video/tags/VideoInfoTagLoaderFactory.cpp
+@@ -38,7 +38,7 @@ IVideoInfoTagLoader* CVideoInfoTagLoaderFactory::CreateLoader(const CFileItem& i
+   delete nfo;
+ 
+   if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_MYVIDEOS_USETAGS) &&
+-      (item.IsType(".mkv") || item.IsType(".mp4") || item.IsType(".avi")))
++      (item.IsType(".mkv") || item.IsType(".mp4") || item.IsType(".avi") || item.IsType(".m4v")))
+   {
+     CVideoTagLoaderFFmpeg* ff = new CVideoTagLoaderFFmpeg(item, info, lookInFolder);
+     if (ff->HasInfo())
