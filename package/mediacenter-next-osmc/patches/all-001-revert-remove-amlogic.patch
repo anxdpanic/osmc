@@ -543,7 +543,7 @@ index 0053e67d41..9c8d7dd361 100644
 @@ -72,13 +72,15 @@ ifeq ($(OS),linux)
    DEPENDS += alsa-lib
    ALSA_LIB = alsa-lib
-   CROSSGUID_DEPS = libuuid
+   LIBUUID = libuuid
 -  ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),raspberry-pi gbm))
 +  ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),raspberry-pi aml gbm))
      DEPENDS += libxkbcommon libinput libudev libevdev mtdev
