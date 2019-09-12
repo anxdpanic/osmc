@@ -1,0 +1,126 @@
+From bdd71fa488c4ffd4108b28824c0478a4a2da1b20 Mon Sep 17 00:00:00 2001
+From: Rechi <Rechi@users.noreply.github.com>
+Date: Tue, 10 Sep 2019 23:33:08 +0200
+Subject: [PATCH] [depends] bump fontconfig to 2.13.1
+
+---
+ tools/depends/target/Makefile                         |  8 ++++----
+ tools/depends/target/fontconfig/01-disable-test.patch | 11 +++++++++++
+ tools/depends/target/fontconfig/Makefile              |  7 +++----
+ tools/depends/target/fontconfig/lconv.patch           |  4 ++--
+ 4 files changed, 20 insertions(+), 10 deletions(-)
+ create mode 100644 tools/depends/target/fontconfig/01-disable-test.patch
+
+diff --git a/tools/depends/target/Makefile b/tools/depends/target/Makefile
+index 3e9e71c71228..7c626b2276ff 100644
+--- a/tools/depends/target/Makefile
++++ b/tools/depends/target/Makefile
+@@ -43,7 +43,7 @@ ifeq ($(OS),android)
+   EXCLUDED_DEPENDS = libcec libusb
+   DEPENDS += dummy-libxbmc libuuid libandroidjni
+   PYMODULE_DEPS = dummy-libxbmc
+-  CROSSGUID_DEPS = libuuid
++  LIBUUID = libuuid
+ endif
+ 
+ DEPENDS := $(filter-out $(EXCLUDED_DEPENDS),$(DEPENDS))
+@@ -71,7 +71,7 @@ ifeq ($(OS),linux)
+   endif
+   DEPENDS += alsa-lib
+   ALSA_LIB = alsa-lib
+-  CROSSGUID_DEPS = libuuid
++  LIBUUID = libuuid
+   ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),raspberry-pi gbm))
+     DEPENDS += libxkbcommon libinput libudev libevdev mtdev
+   endif
+@@ -87,7 +87,7 @@ all: .installed-$(PLATFORM)
+ 
+ gettext: $(ICONV)
+ libgcrypt: libgpg-error
+-fontconfig: freetype2 expat $(ICONV)
++fontconfig: freetype2 expat $(ICONV) $(LIBUUID)
+ curl: openssl nghttp2
+ libass: fontconfig fribidi libpng freetype2 expat $(ICONV)
+ libmicrohttpd: gnutls libgcrypt libgpg-error
+@@ -108,7 +108,7 @@ pythonmodule-setuptools: $(PYMODULE_DEPS) python27
+ libxslt: libgcrypt libxml2
+ ffmpeg: $(ICONV) $(ZLIB) bzip2 $(FFMPEG_DEPENDS)
+ libcec: p8-platform
+-crossguid: $(CROSSGUID_DEPS)
++crossguid: $(LIBUUID)
+ libdvdnav: libdvdread
+ libdvdread: libdvdcss
+ wayland: expat libffi
+diff --git a/tools/depends/target/fontconfig/01-disable-test.patch b/tools/depends/target/fontconfig/01-disable-test.patch
+new file mode 100644
+index 000000000000..f3c6cfe3c186
+--- /dev/null
++++ b/tools/depends/target/fontconfig/01-disable-test.patch
+@@ -0,0 +1,11 @@
++--- a/Makefile.am
+++++ b/Makefile.am
++@@ -24,7 +24,7 @@
++ SUBDIRS=fontconfig fc-case fc-lang src \
++ 	fc-cache fc-cat fc-conflist fc-list fc-match \
++ 	fc-pattern fc-query fc-scan fc-validate conf.d \
++-	its po po-conf test
+++	its po po-conf
++ if ENABLE_DOCS
++ SUBDIRS += doc
++ endif
+diff --git a/tools/depends/target/fontconfig/Makefile b/tools/depends/target/fontconfig/Makefile
+index 8c78399c08a4..9cc0ec27dbad 100644
+--- a/tools/depends/target/fontconfig/Makefile
++++ b/tools/depends/target/fontconfig/Makefile
+@@ -1,15 +1,14 @@
+ include ../../Makefile.include
+-DEPS= ../../Makefile.include lconv.patch fix-aarch64_atomics.patch Makefile
++DEPS= ../../Makefile.include 01-disable-test.patch lconv.patch fix-aarch64_atomics.patch Makefile
+ 
+ # lib name, version
+ LIBNAME=fontconfig
+-VERSION=2.12.4
++VERSION=2.13.1
+ SOURCE=$(LIBNAME)-$(VERSION)
+ ARCHIVE=$(SOURCE).tar.bz2
+ 
+ # configuration settings
+ CONFIGURE=./configure --prefix=$(PREFIX) \
+-  --with-freetype-config=$(PREFIX)/bin/freetype-config \
+   --disable-libxml2 --disable-docs --with-arch=$(PLATFORM) --disable-shared
+ 
+ LIBDYLIB=$(PLATFORM)/src/.libs/lib$(LIBNAME).a
+@@ -22,6 +21,7 @@ $(TARBALLS_LOCATION)/$(ARCHIVE):
+ $(PLATFORM): $(TARBALLS_LOCATION)/$(ARCHIVE) $(DEPS)
+ 	rm -rf $(PLATFORM)/*; mkdir -p $(PLATFORM)
+ 	cd $(PLATFORM); $(ARCHIVE_TOOL) $(ARCHIVE_TOOL_FLAGS) $(TARBALLS_LOCATION)/$(ARCHIVE)
++	cd $(PLATFORM); patch -p1 -i ../01-disable-test.patch
+ 	cd $(PLATFORM); patch -p1 -i ../lconv.patch
+ 	cd $(PLATFORM); patch -p1 -i ../fix-aarch64_atomics.patch
+ 	cd $(PLATFORM); $(AUTORECONF) -vif
+@@ -40,4 +40,3 @@ clean:
+ 
+ distclean::
+ 	rm -rf $(PLATFORM) .installed-$(PLATFORM)
+-
+diff --git a/tools/depends/target/fontconfig/lconv.patch b/tools/depends/target/fontconfig/lconv.patch
+index 4635b1b17c37..2b2661937374 100644
+--- a/tools/depends/target/fontconfig/lconv.patch
++++ b/tools/depends/target/fontconfig/lconv.patch
+@@ -1,6 +1,6 @@
+ --- a/src/fcxml.c
+ +++ b/src/fcxml.c
+-@@ -1352,6 +1352,7 @@
++@@ -1330,6 +1330,7 @@
+  static double
+  FcStrtod (char *s, char **end)
+  {
+@@ -8,7 +8,7 @@
+  #ifndef __BIONIC__
+      struct lconv    *locale_data;
+  #endif
+-@@ -1409,6 +1410,7 @@
++@@ -1387,6 +1388,7 @@
+      else
+  	v = strtod (s, end);
+      return v;

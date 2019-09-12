@@ -1,0 +1,38 @@
+From c64700fae7bdf56fd791176b3fd2e8c34ccafe41 Mon Sep 17 00:00:00 2001
+From: arnova <arnova@void.org>
+Date: Sun, 1 Sep 2019 09:21:19 +0200
+Subject: [PATCH] changed: Clear resume bookmarks also when marking as
+ unwatched
+
+---
+ xbmc/video/jobs/VideoLibraryMarkWatchedJob.cpp | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/xbmc/video/jobs/VideoLibraryMarkWatchedJob.cpp b/xbmc/video/jobs/VideoLibraryMarkWatchedJob.cpp
+index bcb892cf68a3..a20837ac9906 100644
+--- a/xbmc/video/jobs/VideoLibraryMarkWatchedJob.cpp
++++ b/xbmc/video/jobs/VideoLibraryMarkWatchedJob.cpp
+@@ -89,15 +89,16 @@ bool CVideoLibraryMarkWatchedJob::Work(CVideoDatabase &db)
+   for (std::vector<CFileItemPtr>::const_iterator iter = markItems.begin(); iter != markItems.end(); ++iter)
+   {
+     CFileItemPtr item = *iter;
+-    if (m_mark)
+-    {
+-      std::string path(item->GetPath());
+-      if (item->HasVideoInfoTag() && !item->GetVideoInfoTag()->GetPath().empty())
+-        path = item->GetVideoInfoTag()->GetPath();
+ 
+-      db.ClearBookMarksOfFile(path, CBookmark::RESUME);
++    std::string path(item->GetPath());
++    if (item->HasVideoInfoTag() && !item->GetVideoInfoTag()->GetPath().empty())
++      path = item->GetVideoInfoTag()->GetPath();
++
++    // With both mark as watched and unwatched we want the resume bookmarks to be reset
++    db.ClearBookMarksOfFile(path, CBookmark::RESUME);
++
++    if (m_mark)
+       db.IncrementPlayCount(*item);
+-    }
+     else
+       db.SetPlayCount(*item, 0);
+   }

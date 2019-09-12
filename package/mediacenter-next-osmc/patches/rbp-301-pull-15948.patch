@@ -1,0 +1,23 @@
+From 371a75d0919e1aa4bb4d681d5fb3f722588a9cb2 Mon Sep 17 00:00:00 2001
+From: peak3d <pfau@peak3d.de>
+Date: Sun, 21 Apr 2019 13:19:27 +0200
+Subject: [PATCH] [Android] activate keyframe search
+
+---
+ .../DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp         | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp
+index 70a565b43886..620e34317349 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp
+@@ -963,6 +963,9 @@ void CDVDVideoCodecAndroidMediaCodec::Reset()
+     m_videobuffer.pts = DVD_NOPTS_VALUE;
+ 
+     m_indexInputBuffer = -1;
++
++    if (m_bitstream)
++      m_bitstream->ResetStartDecode();
+   }
+ }
+ 

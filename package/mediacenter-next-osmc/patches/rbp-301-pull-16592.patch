@@ -1,0 +1,22 @@
+From 21d74374335bd17041fec19e56203ac3f2ce02e9 Mon Sep 17 00:00:00 2001
+From: peak3d <pfau@peak3d.de>
+Date: Mon, 9 Sep 2019 17:26:36 +0200
+Subject: [PATCH] [Settings] Fix typo (s)
+
+---
+ addons/resource.language.en_gb/resources/strings.po | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index 77beba8a530a..1347dd015d0c 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -19061,7 +19061,7 @@ msgstr ""
+ #. Description of setting with label #13436 "Use display HDR capabilities"
+ #: system/settings/settings.xml
+ msgctxt "#36299"
+-msgid "Switch display into HDR mode if media with HDR information is played.\nIf disabled, HDR information are applied using kodi's internal HDR path"
++msgid "Switch display into HDR mode if media with HDR information is played.\nIf disabled, HDR information are applied using Kodi's internal HDR path."
+ msgstr ""
+ 
+ #empty strings from id 36300 to 36301
