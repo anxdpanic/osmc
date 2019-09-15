@@ -1,0 +1,146 @@
+From 67bd9f2b819079ec74a5841e6c6c38efd0be2730 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?P=C3=A4r=20Bj=C3=B6rklund?= <per.bjorklund@gmail.com>
+Date: Sun, 8 Sep 2019 14:03:45 +0200
+Subject: [PATCH] Don't modify jsonschemadefinition during checks
+
+Bump API patch version
+---
+ xbmc/interfaces/json-rpc/JSONRPC.cpp          |  2 +
+ .../json-rpc/JSONServiceDescription.cpp       | 43 ++++++++++++++++---
+ .../json-rpc/JSONServiceDescription.h         |  5 ++-
+ xbmc/interfaces/json-rpc/schema/version.txt   |  2 +-
+ 4 files changed, 42 insertions(+), 10 deletions(-)
+
+diff --git a/xbmc/interfaces/json-rpc/JSONRPC.cpp b/xbmc/interfaces/json-rpc/JSONRPC.cpp
+index d597ffd69109..121a0f1cf53c 100644
+--- a/xbmc/interfaces/json-rpc/JSONRPC.cpp
++++ b/xbmc/interfaces/json-rpc/JSONRPC.cpp
+@@ -101,6 +101,8 @@ void CJSONRPC::Initialize()
+   for (unsigned int index = 0; index < size; index++)
+     CJSONServiceDescription::AddNotification(JSONRPC_SERVICE_NOTIFICATIONS[index]);
+ 
++  CJSONServiceDescription::ResolveReferences();
++
+   m_initialized = true;
+   CLog::Log(LOGINFO, "JSONRPC v%s: Successfully initialized", CJSONServiceDescription::GetVersion());
+ }
+diff --git a/xbmc/interfaces/json-rpc/JSONServiceDescription.cpp b/xbmc/interfaces/json-rpc/JSONServiceDescription.cpp
+index 1b367f052898..97a9d91c597c 100644
+--- a/xbmc/interfaces/json-rpc/JSONServiceDescription.cpp
++++ b/xbmc/interfaces/json-rpc/JSONServiceDescription.cpp
+@@ -629,16 +629,15 @@ bool JSONSchemaTypeDefinition::Parse(const CVariant &value, bool isParameter /*
+   return true;
+ }
+ 
+-JSONRPC_STATUS JSONSchemaTypeDefinition::Check(const CVariant &value, CVariant &outputValue, CVariant &errorData)
++JSONRPC_STATUS JSONSchemaTypeDefinition::Check(const CVariant& value,
++                                               CVariant& outputValue,
++                                               CVariant& errorData) const
+ {
+   if (!name.empty())
+     errorData["name"] = name;
+   SchemaValueTypeToJson(type, errorData["type"]);
+   std::string errorMessage;
+ 
+-  if (referencedType != NULL && !referencedTypeSet)
+-    Set(referencedType);
+-
+   // Let's check the type of the provided parameter
+   if (!IsType(value, type))
+   {
+@@ -1135,9 +1134,31 @@ void JSONSchemaTypeDefinition::Print(bool isParameter, bool isGlobal, bool print
+   }
+ }
+ 
+-void JSONSchemaTypeDefinition::Set(const JSONSchemaTypeDefinitionPtr typeDefinition)
++void JSONSchemaTypeDefinition::ResolveReference()
+ {
+-  if (typeDefinition.get() == NULL)
++  // Check and set the reference type before recursing
++  // to guard against cycles
++  if (referencedTypeSet)
++    return;
++
++  referencedTypeSet = true;
++
++  // Take care of all nested types
++  for (auto it : extends)
++    it->ResolveReference();
++  for (auto it : unionTypes)
++    it->ResolveReference();
++  for (auto it : items)
++    it->ResolveReference();
++  for (auto it : additionalItems)
++    it->ResolveReference();
++  for (auto it : properties)
++    it.second->ResolveReference();
++
++  if (additionalProperties)
++    additionalProperties->ResolveReference();
++
++  if (referencedType == nullptr)
+     return;
+ 
+   std::string origName = name;
+@@ -1147,7 +1168,7 @@ void JSONSchemaTypeDefinition::Set(const JSONSchemaTypeDefinitionPtr typeDefinit
+   JSONSchemaTypeDefinitionPtr referencedTypeDef = referencedType;
+ 
+   // set all the values from the given type definition
+-  *this = *typeDefinition;
++  *this = *referencedType;
+ 
+   // restore the original values
+   if (!origName.empty())
+@@ -1165,6 +1186,8 @@ void JSONSchemaTypeDefinition::Set(const JSONSchemaTypeDefinitionPtr typeDefinit
+   if (referencedTypeDef.get() != NULL)
+     referencedType = referencedTypeDef;
+ 
++  // This will have been overwritten by the copy of the reference
++  // type so we need to set it again
+   referencedTypeSet = true;
+ }
+ 
+@@ -1384,6 +1407,12 @@ JSONRPC_STATUS JsonRpcMethod::checkParameter(const CVariant &requestParameters,
+   return OK;
+ }
+ 
++void CJSONServiceDescription::ResolveReferences()
++{
++  for (auto it : m_types)
++    it.second->ResolveReference();
++}
++
+ void CJSONServiceDescription::Cleanup()
+ {
+   // reset all of the static data
+diff --git a/xbmc/interfaces/json-rpc/JSONServiceDescription.h b/xbmc/interfaces/json-rpc/JSONServiceDescription.h
+index cb4965c13f94..8997898c0d29 100644
+--- a/xbmc/interfaces/json-rpc/JSONServiceDescription.h
++++ b/xbmc/interfaces/json-rpc/JSONServiceDescription.h
+@@ -37,9 +37,9 @@ namespace JSONRPC
+     JSONSchemaTypeDefinition();
+ 
+     bool Parse(const CVariant &value, bool isParameter = false);
+-    JSONRPC_STATUS Check(const CVariant &value, CVariant &outputValue, CVariant &errorData);
++    JSONRPC_STATUS Check(const CVariant& value, CVariant& outputValue, CVariant& errorData) const;
+     void Print(bool isParameter, bool isGlobal, bool printDefault, bool printDescriptions, CVariant &output) const;
+-    void Set(const JSONSchemaTypeDefinitionPtr typeDefinition);
++    void ResolveReference();
+ 
+     std::string missingReference;
+ 
+@@ -382,6 +382,7 @@ namespace JSONRPC
+ 
+     static JSONSchemaTypeDefinitionPtr GetType(const std::string &identification);
+ 
++    static void ResolveReferences();
+     static void Cleanup();
+ 
+   private:
+diff --git a/xbmc/interfaces/json-rpc/schema/version.txt b/xbmc/interfaces/json-rpc/schema/version.txt
+index 55ea1409d766..ecdcf23c6380 100644
+--- a/xbmc/interfaces/json-rpc/schema/version.txt
++++ b/xbmc/interfaces/json-rpc/schema/version.txt
+@@ -1 +1 @@
+-JSONRPC_VERSION 10.5.1
++JSONRPC_VERSION 10.5.2
