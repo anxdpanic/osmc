@@ -1,0 +1,1519 @@
+From 8a324776cb096bde0a33f229081cf0f5873ad2c1 Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Mon, 16 Sep 2019 21:02:50 +0200
+Subject: [PATCH] [PVR] Cleanup: Replace Observer/Observable with
+ EventSource/EventStream.
+
+---
+ xbmc/GUIInfoManager.cpp                      |  3 -
+ xbmc/GUIInfoManager.h                        |  3 +-
+ xbmc/pvr/PVRGUIInfo.cpp                      |  9 +--
+ xbmc/pvr/PVRGUIInfo.h                        | 11 +++-
+ xbmc/pvr/PVRManager.cpp                      | 62 ++++++++------------
+ xbmc/pvr/PVRManager.h                        | 26 ++++++--
+ xbmc/pvr/channels/PVRChannel.cpp             | 14 -----
+ xbmc/pvr/channels/PVRChannel.h               | 15 ++---
+ xbmc/pvr/channels/PVRChannelGroup.cpp        |  5 +-
+ xbmc/pvr/channels/PVRChannelGroup.h          | 14 +++--
+ xbmc/pvr/dialogs/GUIDialogPVRChannelsOSD.cpp | 25 ++++----
+ xbmc/pvr/dialogs/GUIDialogPVRChannelsOSD.h   | 12 ++--
+ xbmc/pvr/epg/Epg.cpp                         | 16 ++---
+ xbmc/pvr/epg/Epg.h                           | 15 ++++-
+ xbmc/pvr/epg/EpgContainer.cpp                | 59 +++++--------------
+ xbmc/pvr/epg/EpgContainer.h                  | 19 ++++--
+ xbmc/pvr/recordings/PVRRecordings.cpp        |  2 -
+ xbmc/pvr/timers/PVRTimers.cpp                | 22 +++----
+ xbmc/pvr/timers/PVRTimers.h                  | 10 +++-
+ xbmc/pvr/windows/GUIWindowPVRBase.cpp        | 31 ++++++----
+ xbmc/pvr/windows/GUIWindowPVRBase.h          | 13 +++-
+ xbmc/pvr/windows/GUIWindowPVRChannels.cpp    | 35 +++++------
+ xbmc/pvr/windows/GUIWindowPVRGuide.cpp       | 51 ++++++++--------
+ xbmc/pvr/windows/GUIWindowPVRGuide.h         |  5 +-
+ xbmc/pvr/windows/GUIWindowPVRRecordings.cpp  | 32 +++++-----
+ xbmc/pvr/windows/GUIWindowPVRTimersBase.cpp  | 31 +++++-----
+ xbmc/utils/Observer.h                        | 15 -----
+ 27 files changed, 265 insertions(+), 290 deletions(-)
+
+diff --git a/xbmc/GUIInfoManager.cpp b/xbmc/GUIInfoManager.cpp
+index 5f0fac8fdb57..a1a150094c28 100644
+--- a/xbmc/GUIInfoManager.cpp
++++ b/xbmc/GUIInfoManager.cpp
+@@ -9639,9 +9639,6 @@ void CGUIInfoManager::SetCurrentItem(const CFileItem &item)
+ 
+   m_infoProviders.InitCurrentItem(m_currentFile);
+ 
+-  SetChanged();
+-  NotifyObservers(ObservableMessageCurrentItem);
+-  // @todo this should be handled by one of the observers above and forwarded
+   CServiceBroker::GetAnnouncementManager()->Announce(ANNOUNCEMENT::Info, "xbmc", "OnChanged");
+ }
+ 
+diff --git a/xbmc/GUIInfoManager.h b/xbmc/GUIInfoManager.h
+index 8216518c9653..7e73e07aea99 100644
+--- a/xbmc/GUIInfoManager.h
++++ b/xbmc/GUIInfoManager.h
+@@ -13,7 +13,6 @@
+ #include "interfaces/info/SkinVariable.h"
+ #include "messaging/IMessageTarget.h"
+ #include "threads/CriticalSection.h"
+-#include "utils/Observer.h"
+ 
+ #include <map>
+ #include <memory>
+@@ -51,7 +50,7 @@ namespace MUSIC_INFO
+  \ingroup strings
+  \brief
+  */
+-class CGUIInfoManager : public Observable, public KODI::MESSAGING::IMessageTarget
++class CGUIInfoManager : public KODI::MESSAGING::IMessageTarget
+ {
+ public:
+   CGUIInfoManager(void);
+diff --git a/xbmc/pvr/PVRGUIInfo.cpp b/xbmc/pvr/PVRGUIInfo.cpp
+index e88920eee6b0..ff940861ae18 100644
+--- a/xbmc/pvr/PVRGUIInfo.cpp
++++ b/xbmc/pvr/PVRGUIInfo.cpp
+@@ -115,7 +115,7 @@ void CPVRGUIInfo::Start(void)
+ void CPVRGUIInfo::Stop(void)
+ {
+   StopThread();
+-  CServiceBroker::GetPVRManager().UnregisterObserver(this);
++  CServiceBroker::GetPVRManager().Events().Unsubscribe(this);
+ 
+   CGUIComponent* gui = CServiceBroker::GetGUI();
+   if (gui)
+@@ -125,9 +125,9 @@ void CPVRGUIInfo::Stop(void)
+   }
+ }
+ 
+-void CPVRGUIInfo::Notify(const Observable &obs, const ObservableMessage msg)
++void CPVRGUIInfo::Notify(const PVREvent& event)
+ {
+-  if (msg == ObservableMessageTimers || msg == ObservableMessageTimersReset)
++  if (event == PVREvent::Timers || event == PVREvent::TimersInvalidated)
+     UpdateTimersCache();
+ }
+ 
+@@ -137,7 +137,7 @@ void CPVRGUIInfo::Process(void)
+   int toggleInterval = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_iPVRInfoToggleInterval / 1000;
+ 
+   /* updated on request */
+-  CServiceBroker::GetPVRManager().RegisterObserver(this);
++  CServiceBroker::GetPVRManager().Events().Subscribe(this, &CPVRGUIInfo::Notify);
+   UpdateTimersCache();
+ 
+   /* update the backend cache once initially */
+@@ -273,6 +273,7 @@ void CPVRGUIInfo::UpdateTimeshiftData(void)
+ 
+ bool CPVRGUIInfo::InitCurrentItem(CFileItem *item)
+ {
++  CServiceBroker::GetPVRManager().PublishEvent(PVREvent::CurrentItem);
+   return false;
+ }
+ 
+diff --git a/xbmc/pvr/PVRGUIInfo.h b/xbmc/pvr/PVRGUIInfo.h
+index b61343d46109..01a41d7cf317 100644
+--- a/xbmc/pvr/PVRGUIInfo.h
++++ b/xbmc/pvr/PVRGUIInfo.h
+@@ -15,7 +15,6 @@
+ #include "pvr/addons/PVRClients.h"
+ #include "threads/CriticalSection.h"
+ #include "threads/Thread.h"
+-#include "utils/Observer.h"
+ 
+ #include <atomic>
+ #include <string>
+@@ -36,7 +35,9 @@ namespace GUIINFO
+ 
+ namespace PVR
+ {
+-  class CPVRGUIInfo : public KODI::GUILIB::GUIINFO::CGUIInfoProvider, private CThread, private Observer
++  enum class PVREvent;
++
++  class CPVRGUIInfo : public KODI::GUILIB::GUIINFO::CGUIInfoProvider, private CThread
+   {
+   public:
+     CPVRGUIInfo(void);
+@@ -45,7 +46,11 @@ namespace PVR
+     void Start(void);
+     void Stop(void);
+ 
+-    void Notify(const Observable &obs, const ObservableMessage msg) override;
++    /*!
++     * @brief CEventStream callback for PVR events.
++     * @param event The event.
++     */
++    void Notify(const PVREvent& event);
+ 
+     // KODI::GUILIB::GUIINFO::IGUIInfoProvider implementation
+     bool InitCurrentItem(CFileItem *item) override;
+diff --git a/xbmc/pvr/PVRManager.cpp b/xbmc/pvr/PVRManager.cpp
+index d61a8ec99fef..319a4ab74548 100644
+--- a/xbmc/pvr/PVRManager.cpp
++++ b/xbmc/pvr/PVRManager.cpp
+@@ -370,48 +370,40 @@ CPVRManager::ManagerState CPVRManager::GetState(void) const
+ 
+ void CPVRManager::SetState(CPVRManager::ManagerState state)
+ {
+-  ObservableMessage observableMsg(ObservableMessageNone);
+-
+   {
+     CSingleLock lock(m_managerStateMutex);
+     if (m_managerState == state)
+       return;
+ 
+     m_managerState = state;
+-
+-    PVREvent event;
+-    switch (state)
+-    {
+-      case ManagerStateError:
+-        event = PVREvent::ManagerError;
+-        break;
+-      case ManagerStateStopped:
+-        event = PVREvent::ManagerStopped;
+-        observableMsg = ObservableMessageManagerStopped;
+-        break;
+-      case ManagerStateStarting:
+-        event = PVREvent::ManagerStarting;
+-        break;
+-      case ManagerStateStopping:
+-        event = PVREvent::ManagerStopped;
+-        break;
+-      case ManagerStateInterrupted:
+-        event = PVREvent::ManagerInterrupted;
+-        break;
+-      case ManagerStateStarted:
+-        event = PVREvent::ManagerStarted;
+-        break;
+-      default:
+-        return;
+-    }
+-    m_events.Publish(event);
+   }
+ 
+-  if (observableMsg != ObservableMessageNone)
++  PVREvent event;
++  switch (state)
+   {
+-    SetChanged();
+-    NotifyObservers(observableMsg);
++    case ManagerStateError:
++      event = PVREvent::ManagerError;
++      break;
++    case ManagerStateStopped:
++      event = PVREvent::ManagerStopped;
++      break;
++    case ManagerStateStarting:
++      event = PVREvent::ManagerStarting;
++      break;
++    case ManagerStateStopping:
++      event = PVREvent::ManagerStopped;
++      break;
++    case ManagerStateInterrupted:
++      event = PVREvent::ManagerInterrupted;
++      break;
++    case ManagerStateStarted:
++      event = PVREvent::ManagerStarted;
++      break;
++    default:
++      return;
+   }
++
++  PublishEvent(event);
+ }
+ 
+ void CPVRManager::PublishEvent(PVREvent event)
+@@ -564,8 +556,7 @@ bool CPVRManager::LoadComponents(CPVRGUIProgressHandler* progressHandler)
+   if (!m_channelGroups->Load() || !IsInitialising())
+     return false;
+ 
+-  SetChanged();
+-  NotifyObservers(ObservableMessageChannelGroupsLoaded);
++  PublishEvent(PVREvent::ChannelGroupsLoaded);
+ 
+   /* get timers from the backends */
+   if (progressHandler)
+@@ -884,8 +875,7 @@ void CPVRManager::OnPlaybackStopped(const CFileItemPtr item)
+       UpdateLastWatched(m_playingChannel, CDateTime::GetUTCDateTime());
+     }
+ 
+-    SetChanged();
+-    NotifyObservers(ObservableMessageChannelPlaybackStopped);
++    PublishEvent(PVREvent::ChannelPlaybackStopped);
+ 
+     m_playingChannel.reset();
+     m_playingClientId = -1;
+diff --git a/xbmc/pvr/PVRManager.h b/xbmc/pvr/PVRManager.h
+index 187c04968d2d..8918ca7c848b 100644
+--- a/xbmc/pvr/PVRManager.h
++++ b/xbmc/pvr/PVRManager.h
+@@ -18,7 +18,6 @@
+ #include "threads/Event.h"
+ #include "threads/Thread.h"
+ #include "utils/EventStream.h"
+-#include "utils/Observer.h"
+ 
+ #include <memory>
+ #include <string>
+@@ -44,15 +43,32 @@ namespace PVR
+     ManagerInterrupted,
+     ManagerStarted,
+ 
++    // Channel events
++    ChannelPlaybackStopped,
++
++    // Channel group events
++    ChannelGroup,
++    ChannelGroupInvalidated,
++    ChannelGroupsInvalidated,
++    ChannelGroupsLoaded,
++
+     // Recording events
+     RecordingsInvalidated,
+ 
+     // Timer events
+-    TimersInvalidated,
+     AnnounceReminder,
++    Timers,
++    TimersInvalidated,
+ 
+-    // Channel events
+-    ChannelGroupsInvalidated,
++    // EPG events
++    Epg,
++    EpgActiveItem,
++    EpgContainer,
++    EpgItemUpdate,
++    EpgUpdatePending,
++
++    // Item events
++    CurrentItem,
+   };
+ 
+   class CPVRManagerJobQueue
+@@ -75,7 +91,7 @@ namespace PVR
+     bool m_bStopped = true;
+   };
+ 
+-  class CPVRManager : private CThread, public Observable, public ANNOUNCEMENT::IAnnouncer
++  class CPVRManager : private CThread, public ANNOUNCEMENT::IAnnouncer
+   {
+   public:
+     /*!
+diff --git a/xbmc/pvr/channels/PVRChannel.cpp b/xbmc/pvr/channels/PVRChannel.cpp
+index 9d0fb069fa9f..5c3c89c42d1a 100644
+--- a/xbmc/pvr/channels/PVRChannel.cpp
++++ b/xbmc/pvr/channels/PVRChannel.cpp
+@@ -171,7 +171,6 @@ bool CPVRChannel::UpdateFromClient(const CPVRChannelPtr &channel)
+     m_bHasArchive             = channel->HasArchive();
+ 
+     UpdateEncryptionName();
+-    SetChanged();
+   }
+ 
+   // only update the channel name and icon if the user hasn't changed them manually
+@@ -216,7 +215,6 @@ bool CPVRChannel::SetChannelID(int iChannelId)
+     if (epg)
+       epg->GetChannelData()->SetChannelId(m_iChannelId);
+ 
+-    SetChanged();
+     m_bChanged = true;
+     return true;
+   }
+@@ -246,7 +244,6 @@ bool CPVRChannel::SetHidden(bool bIsHidden)
+       epg->GetChannelData()->SetEPGEnabled(m_bEPGEnabled);
+     }
+ 
+-    SetChanged();
+     m_bChanged = true;
+     return true;
+   }
+@@ -266,7 +263,6 @@ bool CPVRChannel::SetLocked(bool bIsLocked)
+     if (epg)
+       epg->GetChannelData()->SetLocked(m_bIsLocked);
+ 
+-    SetChanged();
+     m_bChanged = true;
+     return true;
+   }
+@@ -303,7 +299,6 @@ bool CPVRChannel::SetIconPath(const std::string &strIconPath, bool bIsUserSetIco
+     if (epg)
+       epg->GetChannelData()->SetIconPath(m_strIconPath);
+ 
+-    SetChanged();
+     m_bChanged = true;
+     m_bIsUserSetIcon = bIsUserSetIcon && !m_strIconPath.empty();
+     return true;
+@@ -337,9 +332,7 @@ bool CPVRChannel::SetChannelName(const std::string &strChannelName, bool bIsUser
+     if (epg)
+       epg->GetChannelData()->SetChannelName(m_strChannelName);
+ 
+-    SetChanged();
+     m_bChanged = true;
+-
+     return true;
+   }
+ 
+@@ -382,7 +375,6 @@ bool CPVRChannel::SetClientID(int iClientId)
+   if (m_iClientId != iClientId)
+   {
+     m_iClientId = iClientId;
+-    SetChanged();
+     m_bChanged = true;
+     return true;
+   }
+@@ -398,10 +390,7 @@ void CPVRChannel::UpdatePath(const std::string& channelGroup)
+     CSingleLock lock(m_critSection);
+     const std::string strFileNameAndPath = CPVRChannelsPath(m_bIsRadio, channelGroup, client->ID(), m_iUniqueId);
+     if (m_strFileNameAndPath != strFileNameAndPath)
+-    {
+       m_strFileNameAndPath = strFileNameAndPath;
+-      SetChanged();
+-    }
+   }
+ }
+ 
+@@ -580,7 +569,6 @@ bool CPVRChannel::SetEPGEnabled(bool bEPGEnabled)
+     if (epg)
+       epg->GetChannelData()->SetEPGEnabled(m_bEPGEnabled);
+ 
+-    SetChanged();
+     m_bChanged = true;
+ 
+     /* clear the previous EPG entries if needed */
+@@ -602,7 +590,6 @@ bool CPVRChannel::SetEPGScraper(const std::string &strScraper)
+     bool bCleanEPG = !m_strEPGScraper.empty() || strScraper.empty();
+ 
+     m_strEPGScraper = StringUtils::Format("%s", strScraper.c_str());
+-    SetChanged();
+     m_bChanged = true;
+ 
+     /* clear the previous EPG entries if needed */
+@@ -781,7 +768,6 @@ void CPVRChannel::SetEpgID(int iEpgId)
+   {
+     m_iEpgId = iEpgId;
+     m_epg.reset();
+-    SetChanged();
+     m_bChanged = true;
+   }
+ }
+diff --git a/xbmc/pvr/channels/PVRChannel.h b/xbmc/pvr/channels/PVRChannel.h
+index 5991efd51306..2e8cb208f9af 100644
+--- a/xbmc/pvr/channels/PVRChannel.h
++++ b/xbmc/pvr/channels/PVRChannel.h
+@@ -14,7 +14,6 @@
+ #include "threads/CriticalSection.h"
+ #include "utils/ISerializable.h"
+ #include "utils/ISortable.h"
+-#include "utils/Observer.h"
+ 
+ #include <memory>
+ #include <string>
+@@ -27,23 +26,16 @@ namespace PVR
+   class CPVREpgInfoTag;
+   class CPVRRadioRDSInfoTag;
+ 
+-  /** PVR Channel class */
+-  class CPVRChannel : public Observable,
+-                      public ISerializable,
+-                      public ISortable
++  class CPVRChannel : public ISerializable, public ISortable
+   {
+     friend class CPVRDatabase;
+ 
+   public:
+-    /*! @brief Create a new channel */
+     explicit CPVRChannel(bool bRadio = false);
+     CPVRChannel(const PVR_CHANNEL &channel, unsigned int iClientId);
+ 
+-  private:
+-    CPVRChannel(const CPVRChannel &tag) = delete;
+-    CPVRChannel &operator=(const CPVRChannel &channel) = delete;
++    virtual ~CPVRChannel() = default;
+ 
+-  public:
+     bool operator ==(const CPVRChannel &right) const;
+     bool operator !=(const CPVRChannel &right) const;
+ 
+@@ -430,6 +422,9 @@ namespace PVR
+ 
+     //@}
+   private:
++    CPVRChannel(const CPVRChannel& tag) = delete;
++    CPVRChannel& operator=(const CPVRChannel& channel) = delete;
++
+     /*!
+      * @brief Update the encryption name after SetEncryptionSystem() has been called.
+      */
+diff --git a/xbmc/pvr/channels/PVRChannelGroup.cpp b/xbmc/pvr/channels/PVRChannelGroup.cpp
+index bf283f4441a8..2dcfec6c1604 100644
+--- a/xbmc/pvr/channels/PVRChannelGroup.cpp
++++ b/xbmc/pvr/channels/PVRChannelGroup.cpp
+@@ -568,10 +568,7 @@ bool CPVRChannelGroup::UpdateGroupEntries(const CPVRChannelGroup& channels, std:
+ 
+     bReturn = Persist();
+ 
+-    SetChanged();
+-
+-    lock.Leave();
+-    NotifyObservers(HasNewChannels() || bRemoved || bRenumbered ? ObservableMessageChannelGroupReset : ObservableMessageChannelGroup);
++    m_events.Publish(HasNewChannels() || bRemoved || bRenumbered ? PVREvent::ChannelGroupInvalidated : PVREvent::ChannelGroup);
+   }
+   else
+   {
+diff --git a/xbmc/pvr/channels/PVRChannelGroup.h b/xbmc/pvr/channels/PVRChannelGroup.h
+index d127184824f3..5c3acee37527 100644
+--- a/xbmc/pvr/channels/PVRChannelGroup.h
++++ b/xbmc/pvr/channels/PVRChannelGroup.h
+@@ -13,7 +13,7 @@
+ #include "pvr/channels/PVRChannelNumber.h"
+ #include "pvr/channels/PVRChannelsPath.h"
+ #include "settings/lib/ISettingCallback.h"
+-#include "utils/Observer.h"
++#include "utils/EventStream.h"
+ 
+ #include <map>
+ #include <memory>
+@@ -29,6 +29,8 @@ namespace PVR
+ #define PVR_GROUP_TYPE_INTERNAL     1
+ #define PVR_GROUP_TYPE_USER_DEFINED 2
+ 
++  enum class PVREvent;
++
+   struct PVRChannelGroupMember
+   {
+     PVRChannelGroupMember() = default;
+@@ -51,9 +53,7 @@ namespace PVR
+     EPG_LAST_DATE = 1
+   };
+ 
+-  /** A group of channels */
+-  class CPVRChannelGroup : public Observable,
+-                           public ISettingCallback
++  class CPVRChannelGroup : public ISettingCallback
+   {
+     friend class CPVRChannelGroupInternal;
+     friend class CPVRDatabase;
+@@ -88,6 +88,11 @@ namespace PVR
+      */
+     static PVRChannelGroupMember EmptyMember;
+ 
++    /*!
++     * @brief Query the events available for CEventStream
++     */
++    CEventStream<PVREvent>& Events() { return m_events; }
++
+     /*!
+      * @brief Load the channels from the database.
+      * @param channelsToRemove Returns the channels to be removed from all groups, if any
+@@ -520,6 +525,7 @@ namespace PVR
+     mutable CCriticalSection m_critSection;
+     std::vector<int> m_failedClientsForChannels;
+     std::vector<int> m_failedClientsForChannelGroupMembers;
++    CEventSource<PVREvent> m_events;
+ 
+   private:
+     CDateTime GetEPGDate(EpgDateType epgDateType) const;
+diff --git a/xbmc/pvr/dialogs/GUIDialogPVRChannelsOSD.cpp b/xbmc/pvr/dialogs/GUIDialogPVRChannelsOSD.cpp
+index e7e1eff11ed7..1438b20d2218 100644
+--- a/xbmc/pvr/dialogs/GUIDialogPVRChannelsOSD.cpp
++++ b/xbmc/pvr/dialogs/GUIDialogPVRChannelsOSD.cpp
+@@ -42,25 +42,27 @@ CGUIDialogPVRChannelsOSD::CGUIDialogPVRChannelsOSD()
+ 
+ CGUIDialogPVRChannelsOSD::~CGUIDialogPVRChannelsOSD()
+ {
+-  CServiceBroker::GetGUI()->GetInfoManager().UnregisterObserver(this);
+-  CServiceBroker::GetPVRManager().EpgContainer().UnregisterObserver(this);
++  CServiceBroker::GetPVRManager().Events().Unsubscribe(this);
++  CServiceBroker::GetPVRManager().EpgContainer().Events().Unsubscribe(this);
+ }
+ 
+ bool CGUIDialogPVRChannelsOSD::OnMessage(CGUIMessage& message)
+ {
+   if (message.GetMessage() == GUI_MSG_REFRESH_LIST)
+   {
+-    switch (message.GetParam1())
++    switch (static_cast<PVREvent>(message.GetParam1()))
+     {
+-      case ObservableMessageCurrentItem:
++      case PVREvent::CurrentItem:
+         m_viewControl.SetItems(*m_vecItems);
+         return true;
+-      case ObservableMessageEpg:
+-      case ObservableMessageEpgContainer:
+-      case ObservableMessageEpgActiveItem:
++
++      case PVREvent::Epg:
++      case PVREvent::EpgContainer:
++      case PVREvent::EpgActiveItem:
+         if (IsActive())
+           SetInvalid();
+         return true;
++
+       default:
+         break;
+     }
+@@ -161,10 +163,9 @@ bool CGUIDialogPVRChannelsOSD::OnAction(const CAction &action)
+ 
+ void CGUIDialogPVRChannelsOSD::Update()
+ {
+-  CServiceBroker::GetGUI()->GetInfoManager().RegisterObserver(this);
+-
+   CPVRManager& pvrMgr = CServiceBroker::GetPVRManager();
+-  pvrMgr.EpgContainer().RegisterObserver(this);
++  pvrMgr.Events().Subscribe(this, &CGUIDialogPVRChannelsOSD::Notify);
++  pvrMgr.EpgContainer().Events().Subscribe(this, &CGUIDialogPVRChannelsOSD::Notify);
+ 
+   const CPVRChannelPtr channel = pvrMgr.GetPlayingChannel();
+   if (channel)
+@@ -237,9 +238,9 @@ void CGUIDialogPVRChannelsOSD::GotoChannel(int item)
+   CServiceBroker::GetPVRManager().GUIActions()->SwitchToChannel(itemptr, true /* bCheckResume */);
+ }
+ 
+-void CGUIDialogPVRChannelsOSD::Notify(const Observable &obs, const ObservableMessage msg)
++void CGUIDialogPVRChannelsOSD::Notify(const PVREvent& event)
+ {
+-  const CGUIMessage m(GUI_MSG_REFRESH_LIST, GetID(), 0, msg);
++  const CGUIMessage m(GUI_MSG_REFRESH_LIST, GetID(), 0, static_cast<int>(event));
+   CApplicationMessenger::GetInstance().SendGUIMessage(m);
+ }
+ 
+diff --git a/xbmc/pvr/dialogs/GUIDialogPVRChannelsOSD.h b/xbmc/pvr/dialogs/GUIDialogPVRChannelsOSD.h
+index 862495a5a9aa..218697d86257 100644
+--- a/xbmc/pvr/dialogs/GUIDialogPVRChannelsOSD.h
++++ b/xbmc/pvr/dialogs/GUIDialogPVRChannelsOSD.h
+@@ -12,14 +12,15 @@
+ #include "pvr/PVRTypes.h"
+ #include "pvr/dialogs/GUIDialogPVRItemsViewBase.h"
+ #include "threads/SystemClock.h"
+-#include "utils/Observer.h"
+ 
+ #include <map>
+ #include <string>
+ 
+ namespace PVR
+ {
+-  class CGUIDialogPVRChannelsOSD : public CGUIDialogPVRItemsViewBase, public Observer, public CPVRChannelNumberInputHandler
++  enum class PVREvent;
++
++  class CGUIDialogPVRChannelsOSD : public CGUIDialogPVRItemsViewBase, public CPVRChannelNumberInputHandler
+   {
+   public:
+     CGUIDialogPVRChannelsOSD(void);
+@@ -27,8 +28,11 @@ namespace PVR
+     bool OnMessage(CGUIMessage& message) override;
+     bool OnAction(const CAction &action) override;
+ 
+-    // Observer implementation
+-    void Notify(const Observable &obs, const ObservableMessage msg) override;
++    /*!
++     * @brief CEventStream callback for PVR events.
++     * @param event The event.
++     */
++    void Notify(const PVREvent& event);
+ 
+     // CPVRChannelNumberInputHandler implementation
+     void GetChannelNumbers(std::vector<std::string>& channelNumbers) override;
+diff --git a/xbmc/pvr/epg/Epg.cpp b/xbmc/pvr/epg/Epg.cpp
+index cb95b5213c8a..ac3256707886 100644
+--- a/xbmc/pvr/epg/Epg.cpp
++++ b/xbmc/pvr/epg/Epg.cpp
+@@ -57,8 +57,7 @@ void CPVREpg::ForceUpdate(void)
+     m_bUpdatePending = true;
+   }
+ 
+-  SetChanged(true);
+-  NotifyObservers(ObservableMessageEpgUpdatePending);
++  m_events.Publish(PVREvent::EpgUpdatePending);
+ }
+ 
+ bool CPVREpg::HasValidEntries(void) const
+@@ -193,7 +192,7 @@ bool CPVREpg::CheckPlayingEvent(void)
+   bool bTagRemoved = !newTag && previousTag;
+   if (bTagChanged || bTagRemoved)
+   {
+-    NotifyObservers(ObservableMessageEpgActiveItem);
++    m_events.Publish(PVREvent::EpgActiveItem);
+     return true;
+   }
+   return false;
+@@ -320,11 +319,7 @@ bool CPVREpg::UpdateEntries(const CPVREpg &epg, bool bStoreInDb /* = true */)
+   m_lastScanTime = CDateTime::GetUTCDateTime();
+   m_bUpdateLastScanTime = true;
+ 
+-  SetChanged(true);
+-
+-  lock.Leave();
+-  NotifyObservers(ObservableMessageEpg);
+-
++  m_events.Publish(PVREvent::Epg);
+   return true;
+ }
+ 
+@@ -414,10 +409,7 @@ bool CPVREpg::UpdateEntry(const CPVREpgInfoTagPtr &tag, EPG_EVENT_STATE newState
+   }
+ 
+   if (bRet && bNotify)
+-  {
+-    SetChanged();
+-    NotifyObservers(ObservableMessageEpgItemUpdate);
+-  }
++    m_events.Publish(PVREvent::EpgItemUpdate);
+ 
+   return bRet;
+ }
+diff --git a/xbmc/pvr/epg/Epg.h b/xbmc/pvr/epg/Epg.h
+index bcc18dbf4fd7..37eec8cbebba 100644
+--- a/xbmc/pvr/epg/Epg.h
++++ b/xbmc/pvr/epg/Epg.h
+@@ -12,7 +12,7 @@
+ #include "addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h"
+ #include "pvr/PVRTypes.h"
+ #include "threads/CriticalSection.h"
+-#include "utils/Observer.h"
++#include "utils/EventStream.h"
+ 
+ #include <map>
+ #include <memory>
+@@ -21,11 +21,13 @@
+ 
+ namespace PVR
+ {
++  enum class PVREvent;
++
+   class CPVREpgChannelData;
+   class CPVREpgDatabase;
+   class CPVREpgInfoTag;
+ 
+-  class CPVREpg : public Observable
++  class CPVREpg
+   {
+     friend class CPVREpgDatabase;
+ 
+@@ -50,7 +52,7 @@ namespace PVR
+     /*!
+      * @brief Destroy this EPG instance.
+      */
+-    ~CPVREpg(void) override;
++    virtual ~CPVREpg();
+ 
+     /*!
+      * @brief Load all entries for this table from the given database.
+@@ -245,6 +247,11 @@ namespace PVR
+      */
+     bool IsValid(void) const;
+ 
++    /*!
++     * @brief Query the events available for CEventStream
++     */
++    CEventStream<PVREvent>& Events() { return m_events; }
++
+   private:
+     CPVREpg(void) = delete;
+     CPVREpg(const CPVREpg&) = delete;
+@@ -312,5 +319,7 @@ namespace PVR
+     bool                                m_bUpdateLastScanTime = false;
+ 
+     std::shared_ptr<CPVREpgChannelData> m_channelData;
++
++    CEventSource<PVREvent> m_events;
+   };
+ }
+diff --git a/xbmc/pvr/epg/EpgContainer.cpp b/xbmc/pvr/epg/EpgContainer.cpp
+index 635230ee71b2..67e270fc8ceb 100644
+--- a/xbmc/pvr/epg/EpgContainer.cpp
++++ b/xbmc/pvr/epg/EpgContainer.cpp
+@@ -144,7 +144,7 @@ void CPVREpgContainer::Clear()
+     CSingleLock lock(m_critSection);
+     /* clear all epg tables and remove pointers to epg tables on channels */
+     for (const auto &epgEntry : m_epgIdToEpgMap)
+-      epgEntry.second->UnregisterObserver(this);
++      epgEntry.second->Events().Unsubscribe(this);
+ 
+     m_epgIdToEpgMap.clear();
+     m_channelUidToEpgMap.clear();
+@@ -155,12 +155,7 @@ void CPVREpgContainer::Clear()
+     m_bUpdateNotificationPending = false;
+   }
+ 
+-  SetChanged();
+-
+-  {
+-    CSingleExit ex(m_critSection);
+-    NotifyObservers(ObservableMessageEpgContainer);
+-  }
++  m_events.Publish(PVREvent::EpgContainer);
+ 
+   if (bThreadRunning)
+     Start(true);
+@@ -237,24 +232,22 @@ void CPVREpgContainer::Stop(void)
+   m_bStarted = false;
+ }
+ 
+-void CPVREpgContainer::Notify(const Observable &obs, const ObservableMessage msg)
++void CPVREpgContainer::Notify(const PVREvent& event)
+ {
+-  if (msg == ObservableMessageEpgItemUpdate)
++  if (event == PVREvent::EpgItemUpdate)
+   {
+     // there can be many of these notifications during short time period. Thus, announce async and not every event.
+     CSingleLock lock(m_critSection);
+     m_bUpdateNotificationPending = true;
+     return;
+   }
+-  else if (msg == ObservableMessageEpgUpdatePending)
++  else if (event == PVREvent::EpgUpdatePending)
+   {
+     SetHasPendingUpdates(true);
+     return;
+   }
+ 
+-  SetChanged();
+-  CSingleExit ex(m_critSection);
+-  NotifyObservers(msg);
++  m_events.Publish(event);
+ }
+ 
+ void CPVREpgContainer::LoadFromDB(void)
+@@ -413,10 +406,7 @@ void CPVREpgContainer::Process(void)
+       if (m_bUpdateNotificationPending)
+       {
+         m_bUpdateNotificationPending = false;
+-        SetChanged();
+-
+-        CSingleExit ex(m_critSection);
+-        NotifyObservers(ObservableMessageEpg);
++        m_events.Publish(PVREvent::Epg);
+       }
+     }
+ 
+@@ -519,22 +509,12 @@ void CPVREpgContainer::InsertFromDB(const CPVREpgPtr &newEpg)
+ {
+   // table might already have been created when pvr channels were loaded
+   CPVREpgPtr epg = GetById(newEpg->EpgID());
+-  if (epg)
+-  {
+-    if (epg->Name() != newEpg->Name() || epg->ScraperName() != newEpg->ScraperName())
+-    {
+-      // current table data differs from the info in the db
+-      epg->SetChanged();
+-      SetChanged();
+-    }
+-  }
+-  else
++  if (!epg)
+   {
+     // create a new epg table
+     epg = newEpg;
+     m_epgIdToEpgMap.insert({epg->EpgID(), epg});
+-    SetChanged();
+-    epg->RegisterObserver(this);
++    epg->Events().Subscribe(this, &CPVREpgContainer::Notify);
+   }
+ }
+ 
+@@ -558,8 +538,7 @@ CPVREpgPtr CPVREpgContainer::CreateChannelEpg(int iEpgId, const std::string& str
+     CSingleLock lock(m_critSection);
+     m_epgIdToEpgMap.insert({iEpgId, epg});
+     m_channelUidToEpgMap.insert({{channelData->ClientId(), channelData->UniqueClientChannelId()}, epg});
+-    SetChanged();
+-    epg->RegisterObserver(this);
++    epg->Events().Subscribe(this, &CPVREpgContainer::Notify);
+   }
+   else if (epg->ChannelID() == -1)
+   {
+@@ -574,8 +553,7 @@ CPVREpgPtr CPVREpgContainer::CreateChannelEpg(int iEpgId, const std::string& str
+     CDateTime::GetCurrentDateTime().GetAsUTCDateTime().GetAsTime(m_iNextEpgUpdate);
+   }
+ 
+-  CSingleExit ex(m_critSection);
+-  NotifyObservers(ObservableMessageEpgContainer);
++  m_events.Publish(PVREvent::EpgContainer);
+ 
+   return epg;
+ }
+@@ -618,7 +596,7 @@ bool CPVREpgContainer::DeleteEpg(const CPVREpgPtr &epg, bool bDeleteFromDatabase
+   if (bDeleteFromDatabase && UseDatabase())
+     m_database->Delete(*epgEntry->second);
+ 
+-  epgEntry->second->UnregisterObserver(this);
++  epgEntry->second->Events().Unsubscribe(this);
+   m_epgIdToEpgMap.erase(epgEntry);
+ 
+   return true;
+@@ -742,11 +720,7 @@ bool CPVREpgContainer::UpdateEPG(bool bOnlyPending /* = false */)
+ 
+   /* notify observers */
+   if (iUpdatedTables > 0)
+-  {
+-    SetChanged();
+-    CSingleExit ex(m_critSection);
+-    NotifyObservers(ObservableMessageEpgContainer);
+-  }
++    m_events.Publish(PVREvent::EpgContainer);
+ 
+   CSingleLock lock(m_critSection);
+   m_bIsUpdating = false;
+@@ -826,11 +800,8 @@ bool CPVREpgContainer::CheckPlayingEvents(void)
+   }
+ 
+   if (bFoundChanges)
+-  {
+-    SetChanged();
+-    CSingleExit ex(m_critSection);
+-    NotifyObservers(ObservableMessageEpgActiveItem);
+-  }
++    m_events.Publish(PVREvent::EpgActiveItem);
++
+   return bReturn;
+ }
+ 
+diff --git a/xbmc/pvr/epg/EpgContainer.h b/xbmc/pvr/epg/EpgContainer.h
+index b21cd2877527..822b97129d74 100644
+--- a/xbmc/pvr/epg/EpgContainer.h
++++ b/xbmc/pvr/epg/EpgContainer.h
+@@ -15,7 +15,7 @@
+ #include "threads/CriticalSection.h"
+ #include "threads/Event.h"
+ #include "threads/Thread.h"
+-#include "utils/Observer.h"
++#include "utils/EventStream.h"
+ 
+ #include <list>
+ #include <map>
+@@ -33,7 +33,9 @@ namespace PVR
+   class CPVREpgDatabase;
+   class CPVREpgInfoTag;
+ 
+-  class CPVREpgContainer : public Observer, public Observable, private CThread
++  enum class PVREvent;
++
++  class CPVREpgContainer : private CThread
+   {
+     friend class CPVREpgDatabase;
+ 
+@@ -54,6 +56,11 @@ namespace PVR
+      */
+     CPVREpgDatabasePtr GetEpgDatabase() const;
+ 
++    /*!
++     * @brief Query the events available for CEventStream
++     */
++    CEventStream<PVREvent>& Events() { return m_events; }
++
+     /*!
+      * @brief Start the EPG update thread.
+      * @param bAsync Should the EPG container starts asynchronously
+@@ -85,11 +92,10 @@ namespace PVR
+     bool DeleteEpg(const CPVREpgPtr &epg, bool bDeleteFromDatabase = false);
+ 
+     /*!
+-     * @brief Process a notification from an observable.
+-     * @param obs The observable that sent the update.
+-     * @param msg The update message.
++     * @brief CEventStream callback for PVR events.
++     * @param event The event.
+      */
+-    void Notify(const Observable &obs, const ObservableMessage msg) override;
++    void Notify(const PVREvent& event);
+ 
+     /*!
+      * @brief Create the EPg for a given channel.
+@@ -282,5 +288,6 @@ namespace PVR
+ 
+     bool m_bUpdateNotificationPending = false; /*!< true while an epg updated notification to observers is pending. */
+     CPVRSettings m_settings;
++    CEventSource<PVREvent> m_events;
+   };
+ }
+diff --git a/xbmc/pvr/recordings/PVRRecordings.cpp b/xbmc/pvr/recordings/PVRRecordings.cpp
+index eb506e5055de..8cb5cdcad49b 100644
+--- a/xbmc/pvr/recordings/PVRRecordings.cpp
++++ b/xbmc/pvr/recordings/PVRRecordings.cpp
+@@ -73,8 +73,6 @@ void CPVRRecordings::Update(void)
+   m_bIsUpdating = false;
+   lock.Leave();
+ 
+-  CServiceBroker::GetPVRManager().SetChanged();
+-  CServiceBroker::GetPVRManager().NotifyObservers(ObservableMessageRecordings);
+   CServiceBroker::GetPVRManager().PublishEvent(PVREvent::RecordingsInvalidated);
+ }
+ 
+diff --git a/xbmc/pvr/timers/PVRTimers.cpp b/xbmc/pvr/timers/PVRTimers.cpp
+index e9998a99b942..95056fc4576b 100644
+--- a/xbmc/pvr/timers/PVRTimers.cpp
++++ b/xbmc/pvr/timers/PVRTimers.cpp
+@@ -104,7 +104,7 @@ bool CPVRTimers::Load(void)
+ 
+   Update(); // update from clients
+ 
+-  CServiceBroker::GetPVRManager().EpgContainer().RegisterObserver(this);
++  CServiceBroker::GetPVRManager().EpgContainer().Events().Subscribe(this, &CPVRTimers::Notify);
+   Create();
+ 
+   return bReturn;
+@@ -113,7 +113,7 @@ bool CPVRTimers::Load(void)
+ void CPVRTimers::Unload()
+ {
+   StopThread();
+-  CServiceBroker::GetPVRManager().EpgContainer().UnregisterObserver(this);
++  CServiceBroker::GetPVRManager().EpgContainer().Events().Unsubscribe(this);
+ 
+   // remove all tags
+   CSingleLock lock(m_critSection);
+@@ -1222,15 +1222,15 @@ CPVRTimerInfoTagPtr CPVRTimers::GetTimerRule(const CPVRTimerInfoTagPtr &timer) c
+   return CPVRTimerInfoTagPtr();
+ }
+ 
+-void CPVRTimers::Notify(const Observable &obs, const ObservableMessage msg)
++void CPVRTimers::Notify(const PVREvent& event)
+ {
+-  switch (msg)
++  switch (static_cast<PVREvent>(event))
+   {
+-    case ObservableMessageEpgContainer:
++    case PVREvent::EpgContainer:
+       CServiceBroker::GetPVRManager().TriggerTimersUpdate();
+       break;
+-    case ObservableMessageEpg:
+-    case ObservableMessageEpgItemUpdate:
++    case PVREvent::Epg:
++    case PVREvent::EpgItemUpdate:
+     {
+       CSingleLock lock(m_critSection);
+       m_bReminderRulesUpdatePending = true;
+@@ -1329,11 +1329,5 @@ CPVRTimerInfoTagPtr CPVRTimers::GetById(unsigned int iTimerId) const
+ 
+ void CPVRTimers::NotifyTimersEvent(bool bAddedOrDeleted /* = true */)
+ {
+-  CServiceBroker::GetPVRManager().SetChanged();
+-  CServiceBroker::GetPVRManager().NotifyObservers(bAddedOrDeleted
+-                                                  ? ObservableMessageTimersReset
+-                                                  : ObservableMessageTimers);
+-
+-  if (bAddedOrDeleted)
+-    CServiceBroker::GetPVRManager().PublishEvent(PVREvent::TimersInvalidated);
++  CServiceBroker::GetPVRManager().PublishEvent(bAddedOrDeleted ? PVREvent::TimersInvalidated : PVREvent::Timers);
+ }
+diff --git a/xbmc/pvr/timers/PVRTimers.h b/xbmc/pvr/timers/PVRTimers.h
+index 3e23d29e2e51..b3cd774a4a02 100644
+--- a/xbmc/pvr/timers/PVRTimers.h
++++ b/xbmc/pvr/timers/PVRTimers.h
+@@ -12,7 +12,6 @@
+ #include "pvr/PVRSettings.h"
+ #include "pvr/PVRTypes.h"
+ #include "threads/Thread.h"
+-#include "utils/Observer.h"
+ 
+ #include <map>
+ #include <memory>
+@@ -22,6 +21,7 @@
+ namespace PVR
+ {
+   enum class TimerOperationResult;
++  enum class PVREvent;
+ 
+   class CPVRTimerInfoTag;
+   class CPVRTimersPath;
+@@ -61,7 +61,7 @@ namespace PVR
+     MapTags m_tags;
+   };
+ 
+-  class CPVRTimers : public CPVRTimersContainer, public Observer, private CThread
++  class CPVRTimers : public CPVRTimersContainer, private CThread
+   {
+   public:
+     CPVRTimers(void);
+@@ -249,7 +249,11 @@ namespace PVR
+      */
+     void UpdateChannels(void);
+ 
+-    void Notify(const Observable &obs, const ObservableMessage msg) override;
++    /*!
++     * @brief CEventStream callback for PVR events.
++     * @param event The event.
++     */
++   void Notify(const PVREvent& event);
+ 
+     /*!
+      * @brief Get a timer tag given it's unique ID
+diff --git a/xbmc/pvr/windows/GUIWindowPVRBase.cpp b/xbmc/pvr/windows/GUIWindowPVRBase.cpp
+index e578f5ec55af..f832f19261fa 100644
+--- a/xbmc/pvr/windows/GUIWindowPVRBase.cpp
++++ b/xbmc/pvr/windows/GUIWindowPVRBase.cpp
+@@ -145,11 +145,11 @@ void CGUIWindowPVRBase::UpdateSelectedItemPath()
+ 
+ void CGUIWindowPVRBase::RegisterObservers(void)
+ {
+-  CServiceBroker::GetPVRManager().RegisterObserver(this);
++  CServiceBroker::GetPVRManager().Events().Subscribe(this, &CGUIWindowPVRBase::Notify);
+ 
+   CSingleLock lock(m_critSection);
+   if (m_channelGroup)
+-    m_channelGroup->RegisterObserver(this);
++    m_channelGroup->Events().Subscribe(this, &CGUIWindowPVRBase::Notify);
+ };
+ 
+ void CGUIWindowPVRBase::UnregisterObservers(void)
+@@ -157,19 +157,25 @@ void CGUIWindowPVRBase::UnregisterObservers(void)
+   {
+     CSingleLock lock(m_critSection);
+     if (m_channelGroup)
+-      m_channelGroup->UnregisterObserver(this);
++      m_channelGroup->Events().Unsubscribe(this);
+   }
+-  CServiceBroker::GetPVRManager().UnregisterObserver(this);
++  CServiceBroker::GetPVRManager().Events().Unsubscribe(this);
+ };
+ 
+-void CGUIWindowPVRBase::Notify(const Observable &obs, const ObservableMessage msg)
++void CGUIWindowPVRBase::Notify(const PVREvent& event)
+ {
+-  if (msg == ObservableMessageManagerStopped)
++  // call virtual event handler function
++  NotifyEvent(event);
++}
++
++void CGUIWindowPVRBase::NotifyEvent(const PVREvent& event)
++{
++  if (event == PVREvent::ManagerStopped)
+     ClearData();
+ 
+   if (m_active)
+   {
+-    CGUIMessage m(GUI_MSG_REFRESH_LIST, GetID(), 0, msg);
++    CGUIMessage m(GUI_MSG_REFRESH_LIST, GetID(), 0, static_cast<int>(event));
+     CApplicationMessenger::GetInstance().SendGUIMessage(m);
+   }
+ }
+@@ -288,9 +294,9 @@ bool CGUIWindowPVRBase::OnMessage(CGUIMessage& message)
+ 
+     case GUI_MSG_REFRESH_LIST:
+     {
+-      switch (message.GetParam1())
++      switch (static_cast<PVREvent>(message.GetParam1()))
+       {
+-        case ObservableMessageChannelGroupsLoaded:
++        case PVREvent::ChannelGroupsLoaded:
+         {
+           // late init
+           InitChannelGroup();
+@@ -302,6 +308,9 @@ bool CGUIWindowPVRBase::OnMessage(CGUIMessage& message)
+           m_viewControl.SetFocused();
+           break;
+         }
++
++        default:
++          break;
+       }
+       if (IsActive())
+       {
+@@ -435,10 +444,10 @@ void CGUIWindowPVRBase::SetChannelGroup(CPVRChannelGroupPtr &&group, bool bUpdat
+     if (m_channelGroup != group)
+     {
+       if (m_channelGroup)
+-        m_channelGroup->UnregisterObserver(this);
++        m_channelGroup->Events().Unsubscribe(this);
+       m_channelGroup = std::move(group);
+       // we need to register the window to receive changes from the new group
+-      m_channelGroup->RegisterObserver(this);
++      m_channelGroup->Events().Subscribe(this, &CGUIWindowPVRBase::Notify);
+       if (bUpdate)
+         updateChannelGroup = m_channelGroup;
+     }
+diff --git a/xbmc/pvr/windows/GUIWindowPVRBase.h b/xbmc/pvr/windows/GUIWindowPVRBase.h
+index 2f969409a1bf..05fe019c48bf 100644
+--- a/xbmc/pvr/windows/GUIWindowPVRBase.h
++++ b/xbmc/pvr/windows/GUIWindowPVRBase.h
+@@ -11,7 +11,6 @@
+ #include "pvr/PVRTypes.h"
+ #include "threads/CriticalSection.h"
+ #include "threads/SystemClock.h"
+-#include "utils/Observer.h"
+ #include "windows/GUIMediaWindow.h"
+ 
+ #include <atomic>
+@@ -38,6 +37,8 @@ class CGUIDialogProgressBarHandle;
+ 
+ namespace PVR
+ {
++  enum class PVREvent;
++
+   enum EPGSelectAction
+   {
+     EPG_SELECT_ACTION_CONTEXT_MENU   = 0,
+@@ -50,7 +51,7 @@ namespace PVR
+ 
+   class CGUIPVRChannelGroupsSelector;
+ 
+-  class CGUIWindowPVRBase : public CGUIMediaWindow, public Observer
++  class CGUIWindowPVRBase : public CGUIMediaWindow
+   {
+   public:
+     ~CGUIWindowPVRBase(void) override;
+@@ -62,10 +63,16 @@ namespace PVR
+     void UpdateButtons(void) override;
+     bool OnAction(const CAction &action) override;
+     bool OnBack(int actionID) override;
+-    void Notify(const Observable &obs, const ObservableMessage msg) override;
+     void SetInvalid() override;
+     bool CanBeActivated() const override;
+ 
++    /*!
++     * @brief CEventStream callback for PVR events.
++     * @param event The event.
++     */
++    void Notify(const PVREvent& event);
++    virtual void NotifyEvent(const PVREvent& event);
++
+     /*!
+      * @brief Refresh window content.
+      * @return true, if refresh succeeded, false otherwise.
+diff --git a/xbmc/pvr/windows/GUIWindowPVRChannels.cpp b/xbmc/pvr/windows/GUIWindowPVRChannels.cpp
+index 372045a6f7d3..a4f1cf305c95 100644
+--- a/xbmc/pvr/windows/GUIWindowPVRChannels.cpp
++++ b/xbmc/pvr/windows/GUIWindowPVRChannels.cpp
+@@ -44,14 +44,12 @@ CGUIWindowPVRChannelsBase::CGUIWindowPVRChannelsBase(bool bRadio, int id, const
+   CGUIWindowPVRBase(bRadio, id, xmlFile),
+   m_bShowHiddenChannels(false)
+ {
+-  CServiceBroker::GetPVRManager().EpgContainer().RegisterObserver(this);
+-  CServiceBroker::GetGUI()->GetInfoManager().RegisterObserver(this);
++  CServiceBroker::GetPVRManager().EpgContainer().Events().Subscribe(static_cast<CGUIWindowPVRBase*>(this), &CGUIWindowPVRBase::Notify);
+ }
+ 
+ CGUIWindowPVRChannelsBase::~CGUIWindowPVRChannelsBase()
+ {
+-  CServiceBroker::GetGUI()->GetInfoManager().UnregisterObserver(this);
+-  CServiceBroker::GetPVRManager().EpgContainer().UnregisterObserver(this);
++  CServiceBroker::GetPVRManager().EpgContainer().Events().Unsubscribe(this);
+ }
+ 
+ void CGUIWindowPVRChannelsBase::GetContextButtons(int itemNumber, CContextButtons &buttons)
+@@ -200,27 +198,30 @@ bool CGUIWindowPVRChannelsBase::OnMessage(CGUIMessage& message)
+         bReturn = true;
+       }
+       break;
++
+     case GUI_MSG_REFRESH_LIST:
+-      switch(message.GetParam1())
++    {
++      switch (static_cast<PVREvent>(message.GetParam1()))
+       {
+-        case ObservableMessageChannelGroup:
+-        case ObservableMessageTimers:
+-        case ObservableMessageEpg:
+-        case ObservableMessageEpgContainer:
+-        case ObservableMessageEpgActiveItem:
+-        case ObservableMessageCurrentItem:
+-        case ObservableMessageRecordings:
+-        {
++        case PVREvent::ChannelGroup:
++        case PVREvent::CurrentItem:
++        case PVREvent::Epg:
++        case PVREvent::EpgActiveItem:
++        case PVREvent::EpgContainer:
++        case PVREvent::RecordingsInvalidated:
++        case PVREvent::Timers:
+           SetInvalid();
+           break;
+-        }
+-        case ObservableMessageChannelGroupReset:
+-        {
++
++        case PVREvent::ChannelGroupInvalidated:
+           Refresh(true);
+           break;
+-        }
++
++        default:
++          break;
+       }
+       break;
++    }
+   }
+ 
+   return bReturn || CGUIWindowPVRBase::OnMessage(message);
+diff --git a/xbmc/pvr/windows/GUIWindowPVRGuide.cpp b/xbmc/pvr/windows/GUIWindowPVRGuide.cpp
+index b6f86c004372..d5035569ca6c 100644
+--- a/xbmc/pvr/windows/GUIWindowPVRGuide.cpp
++++ b/xbmc/pvr/windows/GUIWindowPVRGuide.cpp
+@@ -50,12 +50,12 @@ CGUIWindowPVRGuideBase::CGUIWindowPVRGuideBase(bool bRadio, int id, const std::s
+ {
+   m_bRefreshTimelineItems = false;
+   m_bSyncRefreshTimelineItems = false;
+-  CServiceBroker::GetPVRManager().EpgContainer().RegisterObserver(this);
++  CServiceBroker::GetPVRManager().EpgContainer().Events().Subscribe(static_cast<CGUIWindowPVRBase*>(this), &CGUIWindowPVRBase::Notify);
+ }
+ 
+ CGUIWindowPVRGuideBase::~CGUIWindowPVRGuideBase()
+ {
+-  CServiceBroker::GetPVRManager().EpgContainer().UnregisterObserver(this);
++  CServiceBroker::GetPVRManager().EpgContainer().Events().Unsubscribe(this);
+ 
+   m_bRefreshTimelineItems = false;
+   m_bSyncRefreshTimelineItems = false;
+@@ -136,18 +136,18 @@ void CGUIWindowPVRGuideBase::StopRefreshTimelineItemsThread()
+     m_refreshTimelineItemsThread->Stop();
+ }
+ 
+-void CGUIWindowPVRGuideBase::Notify(const Observable &obs, const ObservableMessage msg)
++void CGUIWindowPVRGuideBase::NotifyEvent(const PVREvent& event)
+ {
+-  if (msg == ObservableMessageEpg ||
+-      msg == ObservableMessageEpgContainer ||
+-      msg == ObservableMessageChannelGroupReset ||
+-      msg == ObservableMessageChannelGroup)
++  if (event == PVREvent::Epg ||
++      event == PVREvent::EpgContainer ||
++      event == PVREvent::ChannelGroupInvalidated ||
++      event == PVREvent::ChannelGroup)
+   {
+     m_bRefreshTimelineItems = true;
+     // no base class call => do async refresh
+     return;
+   }
+-  else if (msg == ObservableMessageChannelPlaybackStopped)
++  else if (event == PVREvent::ChannelPlaybackStopped)
+   {
+     if (m_guiState && m_guiState->GetSortMethod().sortBy == SortByLastPlayed)
+     {
+@@ -157,7 +157,7 @@ void CGUIWindowPVRGuideBase::Notify(const Observable &obs, const ObservableMessa
+   }
+ 
+   // do sync refresh if dirty
+-  CGUIWindowPVRBase::Notify(obs, msg);
++  CGUIWindowPVRBase::NotifyEvent(event);
+ }
+ 
+ void CGUIWindowPVRGuideBase::SetInvalid()
+@@ -558,32 +558,33 @@ bool CGUIWindowPVRGuideBase::OnMessage(CGUIMessage& message)
+       break;
+     }
+     case GUI_MSG_REFRESH_LIST:
+-      switch(message.GetParam1())
++    {
++      switch (static_cast<PVREvent>(message.GetParam1()))
+       {
+-        case ObservableMessageChannelGroupsLoaded:
+-        {
++        case PVREvent::ChannelGroupsLoaded:
+           // late init
+           InitChannelGroup();
+           InitEpgGridControl();
+           break;
+-        }
+-        case ObservableMessageChannelGroupReset:
+-        case ObservableMessageChannelGroup:
+-        case ObservableMessageEpg:
+-        case ObservableMessageEpgContainer:
+-        case ObservableMessageChannelPlaybackStopped:
+-        {
++
++        case PVREvent::ChannelGroup:
++        case PVREvent::ChannelGroupInvalidated:
++        case PVREvent::ChannelPlaybackStopped:
++        case PVREvent::Epg:
++        case PVREvent::EpgContainer:
+           Refresh(true);
+           break;
+-        }
+-        case ObservableMessageTimersReset:
+-        case ObservableMessageTimers:
+-        {
++
++        case PVREvent::Timers:
++        case PVREvent::TimersInvalidated:
+           SetInvalid();
+           break;
+-        }
++
++        default:
++          break;
+       }
+       break;
++    }
+   }
+ 
+   return bReturn || CGUIWindowPVRBase::OnMessage(message);
+@@ -811,7 +812,7 @@ void CPVRRefreshTimelineItemsThread::Process()
+ 
+     if (m_pGuideWindow->RefreshTimelineItems() && !m_bStop)
+     {
+-      CGUIMessage m(GUI_MSG_REFRESH_LIST, m_pGuideWindow->GetID(), 0, ObservableMessageEpg);
++      CGUIMessage m(GUI_MSG_REFRESH_LIST, m_pGuideWindow->GetID(), 0, static_cast<int>(PVREvent::Epg));
+       KODI::MESSAGING::CApplicationMessenger::GetInstance().SendGUIMessage(m);
+     }
+ 
+diff --git a/xbmc/pvr/windows/GUIWindowPVRGuide.h b/xbmc/pvr/windows/GUIWindowPVRGuide.h
+index a08ccce4042b..3836a95c8388 100644
+--- a/xbmc/pvr/windows/GUIWindowPVRGuide.h
++++ b/xbmc/pvr/windows/GUIWindowPVRGuide.h
+@@ -22,6 +22,8 @@ class CGUIMessage;
+ 
+ namespace PVR
+ {
++  enum class PVREvent;
++
+   class CGUIEPGGridContainer;
+   class CPVRRefreshTimelineItemsThread;
+ 
+@@ -38,10 +40,11 @@ namespace PVR
+     void GetContextButtons(int itemNumber, CContextButtons &buttons) override;
+     bool OnContextButton(int itemNumber, CONTEXT_BUTTON button) override;
+     void UpdateButtons(void) override;
+-    void Notify(const Observable &obs, const ObservableMessage msg) override;
+     void SetInvalid() override;
+     bool Update(const std::string &strDirectory, bool updateFilterPath = true) override;
+ 
++    void NotifyEvent(const PVREvent& event) override;
++
+     bool RefreshTimelineItems();
+ 
+     // CPVRChannelNumberInputHandler implementation
+diff --git a/xbmc/pvr/windows/GUIWindowPVRRecordings.cpp b/xbmc/pvr/windows/GUIWindowPVRRecordings.cpp
+index 59db9ef8f5b4..0278118ed904 100644
+--- a/xbmc/pvr/windows/GUIWindowPVRRecordings.cpp
++++ b/xbmc/pvr/windows/GUIWindowPVRRecordings.cpp
+@@ -42,13 +42,9 @@ CGUIWindowPVRRecordingsBase::CGUIWindowPVRRecordingsBase(bool bRadio, int id, co
+     CSettings::SETTING_MYVIDEOS_SELECTACTION
+   })
+ {
+-  CServiceBroker::GetGUI()->GetInfoManager().RegisterObserver(this);
+ }
+ 
+-CGUIWindowPVRRecordingsBase::~CGUIWindowPVRRecordingsBase()
+-{
+-  CServiceBroker::GetGUI()->GetInfoManager().UnregisterObserver(this);
+-}
++CGUIWindowPVRRecordingsBase::~CGUIWindowPVRRecordingsBase() = default;
+ 
+ void CGUIWindowPVRRecordingsBase::OnWindowLoaded()
+ {
+@@ -297,25 +293,27 @@ bool CGUIWindowPVRRecordingsBase::OnMessage(CGUIMessage &message)
+       }
+       break;
+     case GUI_MSG_REFRESH_LIST:
+-      switch(message.GetParam1())
++    {
++      switch (static_cast<PVREvent>(message.GetParam1()))
+       {
+-        case ObservableMessageTimers:
+-        case ObservableMessageEpg:
+-        case ObservableMessageEpgContainer:
+-        case ObservableMessageEpgActiveItem:
+-        case ObservableMessageCurrentItem:
+-        {
++        case PVREvent::CurrentItem:
++        case PVREvent::Epg:
++        case PVREvent::EpgActiveItem:
++        case PVREvent::EpgContainer:
++        case PVREvent::Timers:
+           SetInvalid();
+           break;
+-        }
+-        case ObservableMessageRecordings:
+-        case ObservableMessageTimersReset:
+-        {
++
++        case PVREvent::RecordingsInvalidated:
++        case PVREvent::TimersInvalidated:
+           Refresh(true);
+           break;
+-        }
++
++        default:
++          break;
+       }
+       break;
++    }
+   }
+ 
+   return bReturn || CGUIWindowPVRBase::OnMessage(message);
+diff --git a/xbmc/pvr/windows/GUIWindowPVRTimersBase.cpp b/xbmc/pvr/windows/GUIWindowPVRTimersBase.cpp
+index 9ada9a6921c0..fdb0afd46739 100644
+--- a/xbmc/pvr/windows/GUIWindowPVRTimersBase.cpp
++++ b/xbmc/pvr/windows/GUIWindowPVRTimersBase.cpp
+@@ -31,13 +31,9 @@ using namespace PVR;
+ CGUIWindowPVRTimersBase::CGUIWindowPVRTimersBase(bool bRadio, int id, const std::string &xmlFile) :
+   CGUIWindowPVRBase(bRadio, id, xmlFile)
+ {
+-  CServiceBroker::GetGUI()->GetInfoManager().RegisterObserver(this);
+ }
+ 
+-CGUIWindowPVRTimersBase::~CGUIWindowPVRTimersBase()
+-{
+-  CServiceBroker::GetGUI()->GetInfoManager().UnregisterObserver(this);
+-}
++CGUIWindowPVRTimersBase::~CGUIWindowPVRTimersBase() = default;
+ 
+ bool CGUIWindowPVRTimersBase::OnAction(const CAction &action)
+ {
+@@ -146,23 +142,26 @@ bool CGUIWindowPVRTimersBase::OnMessage(CGUIMessage &message)
+       }
+       break;
+     case GUI_MSG_REFRESH_LIST:
+-      switch(message.GetParam1())
++    {
++      switch (static_cast<PVREvent>(message.GetParam1()))
+       {
+-        case ObservableMessageTimers:
+-        case ObservableMessageEpg:
+-        case ObservableMessageEpgContainer:
+-        case ObservableMessageEpgActiveItem:
+-        case ObservableMessageCurrentItem:
+-        {
++        case PVREvent::CurrentItem:
++        case PVREvent::Epg:
++        case PVREvent::EpgActiveItem:
++        case PVREvent::EpgContainer:
++        case PVREvent::Timers:
+           SetInvalid();
+           break;
+-        }
+-        case ObservableMessageTimersReset:
+-        {
++
++        case PVREvent::TimersInvalidated:
+           Refresh(true);
+           break;
+-        }
++
++        default:
++          break;
+       }
++      break;
++    }
+   }
+ 
+   return bReturn || CGUIWindowPVRBase::OnMessage(message);
+diff --git a/xbmc/utils/Observer.h b/xbmc/utils/Observer.h
+index 419e79e14c25..feb201a13b07 100644
+--- a/xbmc/utils/Observer.h
++++ b/xbmc/utils/Observer.h
+@@ -19,24 +19,9 @@ class ObservableMessageJob;
+ typedef enum
+ {
+   ObservableMessageNone,
+-  ObservableMessageCurrentItem,
+-  ObservableMessageAddons,
+-  ObservableMessageEpg,
+-  ObservableMessageEpgContainer,
+-  ObservableMessageEpgActiveItem,
+-  ObservableMessageEpgItemUpdate,
+-  ObservableMessageEpgUpdatePending,
+-  ObservableMessageChannelGroup,
+-  ObservableMessageChannelGroupReset,
+-  ObservableMessageTimers,
+-  ObservableMessageTimersReset,
+-  ObservableMessageRecordings,
+   ObservableMessagePeripheralsChanged,
+-  ObservableMessageChannelGroupsLoaded,
+-  ObservableMessageManagerStopped,
+   ObservableMessageSettingsChanged,
+   ObservableMessageButtonMapsChanged,
+-  ObservableMessageChannelPlaybackStopped,
+ } ObservableMessage;
+ 
+ class Observer

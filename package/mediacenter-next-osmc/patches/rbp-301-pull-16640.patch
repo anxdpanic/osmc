@@ -1,0 +1,53 @@
+From 2c2df3601647a0c825cd6e8ae996147d4237ec61 Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Wed, 18 Sep 2019 17:45:04 +0200
+Subject: [PATCH 1/2] [PVR] CPVREpgInfoTag: Fix 'first aired' value. Respect
+ that this attribute is optional.
+
+---
+ xbmc/pvr/epg/EpgInfoTag.cpp | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/pvr/epg/EpgInfoTag.cpp b/xbmc/pvr/epg/EpgInfoTag.cpp
+index 656a662d8c47..a65e9f6daab6 100644
+--- a/xbmc/pvr/epg/EpgInfoTag.cpp
++++ b/xbmc/pvr/epg/EpgInfoTag.cpp
+@@ -59,10 +59,13 @@ CPVREpgInfoTag::CPVREpgInfoTag(const EPG_TAG& data, int iClientId, const std::sh
+   m_iYear(data.iYear),
+   m_startTime(data.startTime + CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_iPVRTimeCorrection),
+   m_endTime(data.endTime + CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_iPVRTimeCorrection),
+-  m_firstAired(data.firstAired + CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_iPVRTimeCorrection),
+   m_iFlags(data.iFlags),
+   m_iEpgID(iEpgID)
+ {
++  // firstAired is optional, so check if supported before assigning it
++  if (data.firstAired > 0)
++    m_firstAired = time_t(data.firstAired + CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_iPVRTimeCorrection);
++
+   if (channelData)
+   {
+     m_channelData = channelData;
+
+From a50afa4b1e834e3781312711df4da58744c4ae06 Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Wed, 18 Sep 2019 17:46:01 +0200
+Subject: [PATCH 2/2] [Estuary] DialogPVRInfo: Add support for 'first aired'
+ and 'rating'.
+
+---
+ addons/skin.estuary/xml/DialogPVRInfo.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/addons/skin.estuary/xml/DialogPVRInfo.xml b/addons/skin.estuary/xml/DialogPVRInfo.xml
+index 3ddaef0d1ac4..9f3fe7e1f60a 100644
+--- a/addons/skin.estuary/xml/DialogPVRInfo.xml
++++ b/addons/skin.estuary/xml/DialogPVRInfo.xml
+@@ -49,7 +49,7 @@
+ 					<width>1050</width>
+ 					<height>425</height>
+ 					<align>justify</align>
+-					<label>$INFO[ListItem.ChannelName,[B],[/B][CR]]$INFO[ListItem.Date,[COLOR grey]$LOCALIZE[552]:[/COLOR] ,[CR]]$INFO[ListItem.Duration,[COLOR grey]$LOCALIZE[180]:[/COLOR] ,[CR]]$VAR[ExpirationDateTimeLabel]$INFO[ListItem.Genre,[COLOR grey]$LOCALIZE[515]:[/COLOR] ,[CR]]$INFO[ListItem.Writer,[COLOR grey]$LOCALIZE[20417]:[/COLOR] ,[CR]]$INFO[ListItem.Director,[COLOR grey]$LOCALIZE[20339]:[/COLOR] ,[CR]]$INFO[ListItem.Cast,[COLOR grey]$LOCALIZE[206]:[/COLOR] ,[CR]][CR]$INFO[ListItem.Plot]</label>
++					<label>$INFO[ListItem.ChannelName,[B],[/B][CR]]$INFO[ListItem.Date,[COLOR grey]$LOCALIZE[552]:[/COLOR] ,[CR]]$INFO[ListItem.Duration,[COLOR grey]$LOCALIZE[180]:[/COLOR] ,[CR]]$INFO[ListItem.Premiered,[COLOR grey]$LOCALIZE[20416]:[/COLOR] ,[CR]]$INFO[ListItem.Rating,[COLOR grey]$LOCALIZE[563]:[/COLOR] ,[CR]]$VAR[ExpirationDateTimeLabel]$INFO[ListItem.Genre,[COLOR grey]$LOCALIZE[515]:[/COLOR] ,[CR]]$INFO[ListItem.Writer,[COLOR grey]$LOCALIZE[20417]:[/COLOR] ,[CR]]$INFO[ListItem.Director,[COLOR grey]$LOCALIZE[20339]:[/COLOR] ,[CR]]$INFO[ListItem.Cast,[COLOR grey]$LOCALIZE[206]:[/COLOR] ,[CR]][CR]$INFO[ListItem.Plot]</label>
+ 					<autoscroll time="3000" delay="4000" repeat="5000">Skin.HasSetting(AutoScroll)</autoscroll>
+ 				</control>
+ 				<control type="grouplist" id="9000">
