@@ -574,7 +574,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/filesystem/MultiPathDirectory.cpp             | 13 ++---
  xbmc/filesystem/MultiPathDirectory.h               |  4 +-
  xbmc/filesystem/MultiPathFile.cpp                  |  3 +-
- xbmc/filesystem/MusicDatabaseDirectory.cpp         | 13 ++---
  .../DirectoryNodeAlbumCompilations.cpp             |  1 -
  .../DirectoryNodeAlbumCompilationsSongs.cpp        |  1 -
  .../DirectoryNodeAlbumRecentlyAddedSong.cpp        |  1 -
@@ -13297,35 +13296,6 @@ index 1f1bf96c86..a8c9dc10f3 100644
  
  using namespace XFILE;
  
-diff --git a/xbmc/filesystem/MusicDatabaseDirectory.cpp b/xbmc/filesystem/MusicDatabaseDirectory.cpp
-index 6fb0d377e0..15a81bc7fb 100644
---- a/xbmc/filesystem/MusicDatabaseDirectory.cpp
-+++ b/xbmc/filesystem/MusicDatabaseDirectory.cpp
-@@ -7,18 +7,17 @@
-  */
- 
- #include "MusicDatabaseDirectory.h"
--
--#include "FileItem.h"
-+#include "utils/URIUtils.h"
- #include "MusicDatabaseDirectory/QueryParams.h"
--#include "ServiceBroker.h"
--#include "filesystem/File.h"
--#include "guilib/LocalizeStrings.h"
--#include "guilib/TextureManager.h"
- #include "music/MusicDatabase.h"
-+#include "filesystem/File.h"
-+#include "FileItem.h"
- #include "utils/Crc32.h"
-+#include "ServiceBroker.h"
-+#include "guilib/TextureManager.h"
-+#include "guilib/LocalizeStrings.h"
- #include "utils/LegacyPathTranslation.h"
- #include "utils/StringUtils.h"
--#include "utils/URIUtils.h"
- 
- using namespace XFILE;
- using namespace MUSICDATABASEDIRECTORY;
 diff --git a/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeAlbumCompilations.cpp b/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeAlbumCompilations.cpp
 index 9d01dd1774..97ede3c3ad 100644
 --- a/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeAlbumCompilations.cpp
