@@ -13295,18 +13295,6 @@ index 1f1bf96c86..a8c9dc10f3 100644
  
  using namespace XFILE;
  
-diff --git a/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeAlbumCompilationsSongs.cpp b/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeAlbumCompilationsSongs.cpp
-index 86fe665c48..3dd51379b1 100644
---- a/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeAlbumCompilationsSongs.cpp
-+++ b/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeAlbumCompilationsSongs.cpp
-@@ -7,7 +7,6 @@
-  */
- 
- #include "DirectoryNodeAlbumCompilationsSongs.h"
--
- #include "QueryParams.h"
- #include "music/MusicDatabase.h"
- 
 diff --git a/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeAlbumRecentlyAddedSong.cpp b/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeAlbumRecentlyAddedSong.cpp
 index 8c8d786461..4ff9f90332 100644
 --- a/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeAlbumRecentlyAddedSong.cpp
