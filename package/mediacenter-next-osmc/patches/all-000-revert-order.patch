@@ -574,7 +574,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/filesystem/MultiPathDirectory.cpp             | 13 ++---
  xbmc/filesystem/MultiPathDirectory.h               |  4 +-
  xbmc/filesystem/MultiPathFile.cpp                  |  3 +-
- .../DirectoryNodeAlbumCompilations.cpp             |  1 -
  .../DirectoryNodeAlbumCompilationsSongs.cpp        |  1 -
  .../DirectoryNodeAlbumRecentlyAddedSong.cpp        |  1 -
  .../DirectoryNodeAlbumRecentlyPlayedSong.cpp       |  1 -
@@ -13296,18 +13295,6 @@ index 1f1bf96c86..a8c9dc10f3 100644
  
  using namespace XFILE;
  
-diff --git a/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeAlbumCompilations.cpp b/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeAlbumCompilations.cpp
-index 9d01dd1774..97ede3c3ad 100644
---- a/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeAlbumCompilations.cpp
-+++ b/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeAlbumCompilations.cpp
-@@ -7,7 +7,6 @@
-  */
- 
- #include "DirectoryNodeAlbumCompilations.h"
--
- #include "QueryParams.h"
- #include "guilib/LocalizeStrings.h"
- #include "music/MusicDatabase.h"
 diff --git a/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeAlbumCompilationsSongs.cpp b/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeAlbumCompilationsSongs.cpp
 index 86fe665c48..3dd51379b1 100644
 --- a/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeAlbumCompilationsSongs.cpp
