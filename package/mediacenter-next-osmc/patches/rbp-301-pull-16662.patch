@@ -1,0 +1,28 @@
+From f730f90faa188b279da49b955f2a994897be7fde Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Mon, 23 Sep 2019 13:54:36 +0200
+Subject: [PATCH] [cmake] give CMAKE_SYSTEM_NAME and CMAKE_SYSTEM_VERSION also
+ to normal Win
+
+The Angle need minimal 10.0.16299.0, but e.g. AppVeyor have a older as
+default. The newer are present and already used on addon itself. Only
+the depends not become it.
+---
+ cmake/scripts/common/HandleDepends.cmake | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/cmake/scripts/common/HandleDepends.cmake b/cmake/scripts/common/HandleDepends.cmake
+index f4fe6e2fe86c..6354010165ed 100644
+--- a/cmake/scripts/common/HandleDepends.cmake
++++ b/cmake/scripts/common/HandleDepends.cmake
+@@ -68,8 +68,8 @@ function(add_addon_depends addon searchpath)
+                        -DCORE_SYSTEM_NAME=${CORE_SYSTEM_NAME}
+                        -DENABLE_STATIC=1
+                        -DBUILD_SHARED_LIBS=0)
+-        # windows store args
+-        if (CMAKE_SYSTEM_NAME STREQUAL WindowsStore)
++        # windows args
++        if (CMAKE_SYSTEM_NAME STREQUAL WindowsStore OR CMAKE_SYSTEM_NAME STREQUAL Windows)
+           list(APPEND BUILD_ARGS -DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
+                                  -DCMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION})
+         endif()

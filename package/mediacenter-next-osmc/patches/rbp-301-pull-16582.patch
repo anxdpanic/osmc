@@ -1,0 +1,38 @@
+From 6df9ddf5795d902e9d7a3a2b3e51b2130f1d9f08 Mon Sep 17 00:00:00 2001
+From: Andrey Filipenkov <decapitator@ukr.net>
+Date: Sat, 7 Sep 2019 20:44:34 +0300
+Subject: [PATCH] [ios] fix broken touch input after closing keyboard on iOS 13
+
+---
+ xbmc/platform/darwin/ios-common/IOSKeyboardView.mm | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
+
+diff --git a/xbmc/platform/darwin/ios-common/IOSKeyboardView.mm b/xbmc/platform/darwin/ios-common/IOSKeyboardView.mm
+index 0eb8964dea89..84d69325b194 100644
+--- a/xbmc/platform/darwin/ios-common/IOSKeyboardView.mm
++++ b/xbmc/platform/darwin/ios-common/IOSKeyboardView.mm
+@@ -239,18 +239,17 @@ - (void) doDeactivate:(NSDictionary *)dict
+   // give back the control to whoever
+   [_textField resignFirstResponder];
+ 
+-  // always called in the mainloop context
+-  // detach the keyboard view from our main controller
+-  [g_xbmcController deactivateKeyboard:self];
++  // delay closing view until text field finishes resigning first responder
++  dispatch_async(dispatch_get_main_queue(), ^{
++    // always called in the mainloop context
++    // detach the keyboard view from our main controller
++    [g_xbmcController deactivateKeyboard:self];
+ 
+-  // until keyboard did hide, we let the calling thread break loop
+-  if (0 == _keyboardIsShowing)
+-  {
+     // no more notification we want to receive.
+     [[NSNotificationCenter defaultCenter] removeObserver: self];
+ 
+     keyboardFinishedEvent.Set();
+-  }
++  });
+ }
+ 
+ - (void) deactivate
