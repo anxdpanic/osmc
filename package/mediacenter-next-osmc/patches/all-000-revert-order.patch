@@ -575,7 +575,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/filesystem/MultiPathDirectory.h               |  4 +-
  xbmc/filesystem/MultiPathFile.cpp                  |  3 +-
  xbmc/filesystem/MusicDatabaseDirectory.cpp         | 13 ++---
- .../MusicDatabaseDirectory/DirectoryNode.cpp       | 27 +++++----
  .../MusicDatabaseDirectory/DirectoryNodeAlbum.cpp  |  1 -
  .../DirectoryNodeAlbumCompilations.cpp             |  1 -
  .../DirectoryNodeAlbumCompilationsSongs.cpp        |  1 -
@@ -627,7 +626,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/filesystem/UPnPDirectory.cpp                  | 17 +++---
  xbmc/filesystem/UPnPFile.cpp                       |  3 +-
  xbmc/filesystem/VideoDatabaseDirectory.cpp         | 11 ++--
- .../VideoDatabaseDirectory/DirectoryNode.cpp       | 27 +++++----
  .../VideoDatabaseDirectory/DirectoryNode.h         |  1 -
  .../DirectoryNodeEpisodes.cpp                      |  1 -
  .../DirectoryNodeGrouped.cpp                       |  1 -
@@ -13329,55 +13327,6 @@ index 6fb0d377e0..15a81bc7fb 100644
  
  using namespace XFILE;
  using namespace MUSICDATABASEDIRECTORY;
-diff --git a/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNode.cpp b/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNode.cpp
-index 73224c89fe..b38254820e 100644
---- a/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNode.cpp
-+++ b/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNode.cpp
-@@ -7,31 +7,30 @@
-  */
- 
- #include "DirectoryNode.h"
--
-+#include "utils/URIUtils.h"
-+#include "QueryParams.h"
-+#include "DirectoryNodeRoot.h"
-+#include "DirectoryNodeOverview.h"
-+#include "DirectoryNodeGrouped.h"
-+#include "DirectoryNodeArtist.h"
- #include "DirectoryNodeAlbum.h"
--#include "DirectoryNodeAlbumCompilations.h"
--#include "DirectoryNodeAlbumCompilationsSongs.h"
-+#include "DirectoryNodeSong.h"
- #include "DirectoryNodeAlbumRecentlyAdded.h"
- #include "DirectoryNodeAlbumRecentlyAddedSong.h"
- #include "DirectoryNodeAlbumRecentlyPlayed.h"
- #include "DirectoryNodeAlbumRecentlyPlayedSong.h"
-+#include "DirectoryNodeTop100.h"
-+#include "DirectoryNodeSongTop100.h"
- #include "DirectoryNodeAlbumTop100.h"
- #include "DirectoryNodeAlbumTop100Song.h"
--#include "DirectoryNodeArtist.h"
--#include "DirectoryNodeGrouped.h"
--#include "DirectoryNodeOverview.h"
--#include "DirectoryNodeRoot.h"
--#include "DirectoryNodeSingles.h"
--#include "DirectoryNodeSong.h"
--#include "DirectoryNodeSongTop100.h"
--#include "DirectoryNodeTop100.h"
-+#include "DirectoryNodeAlbumCompilations.h"
-+#include "DirectoryNodeAlbumCompilationsSongs.h"
- #include "DirectoryNodeYearAlbum.h"
- #include "DirectoryNodeYearSong.h"
--#include "FileItem.h"
--#include "QueryParams.h"
-+#include "DirectoryNodeSingles.h"
- #include "URL.h"
-+#include "FileItem.h"
- #include "utils/StringUtils.h"
--#include "utils/URIUtils.h"
- 
- using namespace XFILE::MUSICDATABASEDIRECTORY;
- 
 diff --git a/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeAlbum.cpp b/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeAlbum.cpp
 index f422318bc9..f73646a8dd 100644
 --- a/xbmc/filesystem/MusicDatabaseDirectory/DirectoryNodeAlbum.cpp
@@ -14279,51 +14228,6 @@ index 0d04c4ea07..d6c345b353 100644
  
  using namespace XFILE;
  using namespace VIDEODATABASEDIRECTORY;
-diff --git a/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNode.cpp b/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNode.cpp
-index e5f95683da..33ecb41112 100644
---- a/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNode.cpp
-+++ b/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNode.cpp
-@@ -7,27 +7,26 @@
-  */
- 
- #include "DirectoryNode.h"
--
--#include "DirectoryNodeEpisodes.h"
-+#include "utils/URIUtils.h"
-+#include "QueryParams.h"
-+#include "DirectoryNodeRoot.h"
-+#include "DirectoryNodeOverview.h"
- #include "DirectoryNodeGrouped.h"
--#include "DirectoryNodeInProgressTvShows.h"
-+#include "DirectoryNodeTitleMovies.h"
-+#include "DirectoryNodeTitleTvShows.h"
- #include "DirectoryNodeMoviesOverview.h"
--#include "DirectoryNodeMusicVideosOverview.h"
--#include "DirectoryNodeOverview.h"
--#include "DirectoryNodeRecentlyAddedEpisodes.h"
-+#include "DirectoryNodeTvShowsOverview.h"
-+#include "DirectoryNodeSeasons.h"
-+#include "DirectoryNodeEpisodes.h"
-+#include "DirectoryNodeInProgressTvShows.h"
- #include "DirectoryNodeRecentlyAddedMovies.h"
-+#include "DirectoryNodeRecentlyAddedEpisodes.h"
-+#include "DirectoryNodeMusicVideosOverview.h"
- #include "DirectoryNodeRecentlyAddedMusicVideos.h"
--#include "DirectoryNodeRoot.h"
--#include "DirectoryNodeSeasons.h"
--#include "DirectoryNodeTitleMovies.h"
- #include "DirectoryNodeTitleMusicVideos.h"
--#include "DirectoryNodeTitleTvShows.h"
--#include "DirectoryNodeTvShowsOverview.h"
--#include "FileItem.h"
--#include "QueryParams.h"
- #include "URL.h"
-+#include "FileItem.h"
- #include "utils/StringUtils.h"
--#include "utils/URIUtils.h"
- 
- using namespace XFILE::VIDEODATABASEDIRECTORY;
- 
 diff --git a/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNode.h b/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNode.h
 index 07e22054ba..2fbeeba1a5 100644
 --- a/xbmc/filesystem/VideoDatabaseDirectory/DirectoryNode.h
