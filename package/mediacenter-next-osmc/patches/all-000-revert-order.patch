@@ -2488,41 +2488,6 @@ index 2bc5760780..568df70165 100644
  
  using namespace KODI;
  using namespace XFILE;
-diff --git a/xbmc/FileItem.h b/xbmc/FileItem.h
-index 98fa458046..36d269d5d0 100644
---- a/xbmc/FileItem.h
-+++ b/xbmc/FileItem.h
-@@ -13,22 +13,22 @@
-  \brief
-  */
- 
--#include "LockType.h"
--#include "XBDateTime.h"
-+#include <map>
-+#include <memory>
-+#include <string>
-+#include <utility>
-+#include <vector>
-+
- #include "addons/IAddon.h"
- #include "guilib/GUIListItem.h"
-+#include "LockType.h"
- #include "pvr/PVRTypes.h"
- #include "threads/CriticalSection.h"
- #include "utils/IArchivable.h"
- #include "utils/ISerializable.h"
- #include "utils/ISortable.h"
- #include "utils/SortUtils.h"
--
--#include <map>
--#include <memory>
--#include <string>
--#include <utility>
--#include <vector>
-+#include "XBDateTime.h"
- 
- namespace MUSIC_INFO
- {
 diff --git a/xbmc/FileItemListModification.cpp b/xbmc/FileItemListModification.cpp
 index 8496ee9136..02cf21a5c4 100644
 --- a/xbmc/FileItemListModification.cpp
@@ -9634,28 +9599,6 @@ index 97869907b8..d0d7a1cd22 100644
  using namespace XFILE;
  using namespace PVR;
  using namespace KODI::MESSAGING;
-diff --git a/xbmc/cores/VideoPlayer/VideoPlayerRadioRDS.h b/xbmc/cores/VideoPlayer/VideoPlayerRadioRDS.h
-index d24f025290..28d23cd827 100644
---- a/xbmc/cores/VideoPlayer/VideoPlayerRadioRDS.h
-+++ b/xbmc/cores/VideoPlayer/VideoPlayerRadioRDS.h
-@@ -8,14 +8,14 @@
- 
- #pragma once
- 
-+#include <deque>
-+
-+#include "IVideoPlayer.h"
- #include "DVDMessageQueue.h"
- #include "FileItem.h"
--#include "IVideoPlayer.h"
- #include "threads/Thread.h"
- #include "utils/Stopwatch.h"
- 
--#include <deque>
--
- class CDVDStreamInfo;
- 
- /// --- CDVDRadioRDSData ------------------------------------------------------------
 diff --git a/xbmc/cores/VideoPlayer/VideoPlayerSubtitle.cpp b/xbmc/cores/VideoPlayer/VideoPlayerSubtitle.cpp
 index bdb2f718ad..d98e42e2e6 100644
 --- a/xbmc/cores/VideoPlayer/VideoPlayerSubtitle.cpp
@@ -21117,19 +21060,6 @@ index 433a07990a..d99661c746 100644
  
  using namespace JSONRPC;
  using namespace PLAYLIST;
-diff --git a/xbmc/interfaces/json-rpc/PlayerOperations.h b/xbmc/interfaces/json-rpc/PlayerOperations.h
-index 0959b439f5..ecb2bb59f5 100644
---- a/xbmc/interfaces/json-rpc/PlayerOperations.h
-+++ b/xbmc/interfaces/json-rpc/PlayerOperations.h
-@@ -8,8 +8,8 @@
- 
- #pragma once
- 
--#include "FileItemHandler.h"
- #include "JSONRPC.h"
-+#include "FileItemHandler.h"
- #include "pvr/PVRTypes.h"
- 
  #include <string>
 diff --git a/xbmc/interfaces/json-rpc/PlaylistOperations.cpp b/xbmc/interfaces/json-rpc/PlaylistOperations.cpp
 index b34bd4daf7..54a0ccbe2a 100644
@@ -21603,21 +21533,6 @@ index f93330e9c2..8f251b2081 100644
  #include "pvr/channels/PVRChannel.h"
  #include "utils/StringUtils.h"
  
-diff --git a/xbmc/interfaces/legacy/InfoTagRadioRDS.h b/xbmc/interfaces/legacy/InfoTagRadioRDS.h
-index 18f9e0fd1b..b79c8e8612 100644
---- a/xbmc/interfaces/legacy/InfoTagRadioRDS.h
-+++ b/xbmc/interfaces/legacy/InfoTagRadioRDS.h
-@@ -8,9 +8,9 @@
- 
- #pragma once
- 
--#include "AddonClass.h"
- #include "pvr/PVRTypes.h"
- #include "pvr/channels/PVRRadioRDSInfoTag.h"
-+#include "AddonClass.h"
- 
- namespace XBMCAddon
- {
 diff --git a/xbmc/interfaces/legacy/InfoTagVideo.cpp b/xbmc/interfaces/legacy/InfoTagVideo.cpp
 index 6690596ba0..1b56deeed0 100644
 --- a/xbmc/interfaces/legacy/InfoTagVideo.cpp
