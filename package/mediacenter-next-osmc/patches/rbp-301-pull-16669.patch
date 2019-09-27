@@ -1,0 +1,1798 @@
+From eecc6665f34e8445d7b1f548b8be6fd74167fb54 Mon Sep 17 00:00:00 2001
+From: Rechi <Rechi@users.noreply.github.com>
+Date: Thu, 26 Sep 2019 13:46:08 +0100
+Subject: [PATCH] [modernize] use-equals-default
+
+---
+ .../Clients/OSXRemote/xbmcclientwrapper.mm    |  2 +-
+ tools/EventClients/lib/c++/xbmcclient.h       | 22 +++++++------------
+ xbmc/AppParamParser.cpp                       |  4 +---
+ xbmc/ApplicationPlayer.cpp                    |  5 -----
+ xbmc/ApplicationPlayer.h                      |  2 +-
+ xbmc/ApplicationStackHelper.cpp               |  4 ----
+ xbmc/ApplicationStackHelper.h                 |  2 +-
+ xbmc/ServiceManager.cpp                       |  4 +---
+ xbmc/addons/AddonVersion.h                    |  8 +------
+ .../kodi/addon-instance/PeripheralUtils.h     |  4 +---
+ xbmc/commons/Buffer.h                         |  3 +--
+ xbmc/commons/Exception.h                      |  2 +-
+ .../Engines/ActiveAE/ActiveAEBuffer.cpp       |  4 ----
+ .../Engines/ActiveAE/ActiveAEBuffer.h         |  2 +-
+ .../cores/AudioEngine/Sinks/AESinkDARWINIOS.h |  2 +-
+ .../AudioEngine/Sinks/AESinkDARWINIOS.mm      |  4 ----
+ .../Sinks/osx/AEDeviceEnumerationOSX.h        |  2 +-
+ xbmc/cores/AudioEngine/Utils/AEAudioFormat.h  | 12 +---------
+ .../cores/RetroPlayer/buffers/IRenderBuffer.h |  2 +-
+ .../DVDCodecs/Overlay/DVDOverlayText.h        |  6 +----
+ .../Video/DVDVideoCodecAndroidMediaCodec.h    |  2 +-
+ .../Process/android/ProcessInfoAndroid.cpp    |  4 ----
+ .../Process/android/ProcessInfoAndroid.h      |  2 +-
+ .../Process/gbm/ProcessInfoGBM.cpp            |  4 ----
+ .../VideoPlayer/Process/gbm/ProcessInfoGBM.h  |  2 +-
+ .../VideoRenderers/ColorManager.cpp           |  6 +++--
+ .../HwDecRender/RendererVTBGL.cpp             |  4 ----
+ .../HwDecRender/RendererVTBGL.h               |  2 +-
+ .../VideoRenderers/HwDecRender/VaapiEGL.cpp   |  4 ----
+ .../VideoRenderers/HwDecRender/VaapiEGL.h     |  2 +-
+ xbmc/dbwrappers/qry_dat.h                     |  4 +---
+ xbmc/filesystem/test/TestZipFile.cpp          | 18 +--------------
+ .../controllers/types/ControllerGrid.cpp      | 10 ---------
+ xbmc/games/controllers/types/ControllerGrid.h |  4 ++--
+ xbmc/guilib/GUITexture.cpp                    | 11 ----------
+ xbmc/guilib/GUITexture.h                      |  2 +-
+ xbmc/guilib/XBTF.cpp                          |  6 -----
+ xbmc/guilib/XBTF.h                            |  2 +-
+ xbmc/guilib/guiinfo/PicturesGUIInfo.cpp       |  8 ++-----
+ xbmc/guilib/guiinfo/PlayerGUIInfo.cpp         |  4 +---
+ xbmc/input/ButtonTranslator.cpp               |  8 -------
+ xbmc/input/ButtonTranslator.h                 |  4 ++--
+ xbmc/input/IRTranslator.cpp                   |  4 ----
+ xbmc/input/IRTranslator.h                     |  2 +-
+ xbmc/input/JoystickMapper.cpp                 |  4 ----
+ xbmc/input/JoystickMapper.h                   |  2 +-
+ xbmc/interfaces/legacy/Dialog.h               |  3 +--
+ xbmc/interfaces/legacy/Exception.h            |  4 ++--
+ xbmc/interfaces/legacy/Tuple.h                |  2 +-
+ xbmc/interfaces/legacy/WindowInterceptor.h    |  6 +++--
+ xbmc/media/drm/CryptoSession.h                |  2 +-
+ xbmc/messaging/ThreadMessage.h                | 13 +----------
+ .../android/activity/AndroidJoyStick.h        |  4 ++--
+ xbmc/platform/android/activity/AndroidKey.h   |  4 ++--
+ .../android/activity/AndroidMouse.cpp         |  4 ----
+ xbmc/platform/android/activity/AndroidMouse.h |  2 +-
+ .../android/activity/DllGraphicBuffer.h       |  2 +-
+ xbmc/platform/android/activity/JNIXBMCFile.h  |  2 +-
+ .../android/activity/JNIXBMCJsonHandler.h     |  2 +-
+ .../android/activity/JNIXBMCMainView.cpp      |  4 ----
+ .../android/activity/JNIXBMCMainView.h        |  2 +-
+ .../android/activity/JNIXBMCVideoView.cpp     |  4 ----
+ .../android/activity/JNIXBMCVideoView.h       |  2 +-
+ .../android/filesystem/APKDirectory.h         |  8 +++----
+ xbmc/platform/android/filesystem/APKFile.cpp  |  4 ----
+ xbmc/platform/android/filesystem/APKFile.h    |  2 +-
+ .../filesystem/AndroidAppDirectory.cpp        |  8 -------
+ .../android/filesystem/AndroidAppDirectory.h  |  4 ++--
+ .../powermanagement/AndroidPowerSyscall.cpp   |  6 -----
+ .../powermanagement/AndroidPowerSyscall.h     |  4 ++--
+ .../android/storage/AndroidStorageProvider.h  |  2 +-
+ xbmc/platform/darwin/PlatformDarwin.cpp       | 10 ---------
+ xbmc/platform/darwin/PlatformDarwin.h         |  4 ++--
+ .../darwin/ios-common/AnnounceReceiver.h      |  2 +-
+ .../darwin/storage/DarwinStorageProvider.h    |  2 +-
+ .../overrides/android/PlatformAndroid.cpp     | 10 ---------
+ .../overrides/android/PlatformAndroid.h       |  4 ++--
+ xbmc/profiles/ProfileManager.cpp              |  4 +---
+ xbmc/pvr/PVRGUIInfo.cpp                       |  4 ----
+ xbmc/pvr/PVRGUIInfo.h                         |  2 +-
+ xbmc/pvr/timers/PVRTimers.cpp                 |  4 ----
+ xbmc/pvr/timers/PVRTimers.h                   |  2 +-
+ xbmc/pvr/windows/GUIWindowPVRSearch.cpp       |  4 +---
+ xbmc/rendering/gles/RenderSystemGLES.cpp      |  4 ----
+ xbmc/rendering/gles/RenderSystemGLES.h        |  2 +-
+ xbmc/utils/ActorProtocol.h                    |  4 ++--
+ xbmc/utils/Digest.h                           |  3 +--
+ xbmc/utils/EGLUtils.cpp                       |  4 ----
+ xbmc/utils/EGLUtils.h                         |  2 +-
+ xbmc/utils/test/TestJobManager.cpp            |  4 +---
+ xbmc/utils/test/TestLabelFormatter.cpp        | 14 +-----------
+ xbmc/windowing/android/AndroidUtils.cpp       |  4 ----
+ xbmc/windowing/android/AndroidUtils.h         |  2 +-
+ xbmc/windowing/android/OSScreenSaverAndroid.h |  2 +-
+ xbmc/windowing/osx/OSScreenSaverOSX.cpp       |  4 ----
+ xbmc/windowing/osx/OSScreenSaverOSX.h         |  2 +-
+ xbmc/windowing/osx/WinEventsOSX.h             |  4 ++--
+ xbmc/windowing/osx/WinEventsOSX.mm            |  8 -------
+ xbmc/windowing/osx/WinSystemOSX.mm            |  4 +---
+ xbmc/windowing/osx/WinSystemOSXGL.h           |  4 ++--
+ xbmc/windowing/osx/WinSystemOSXGL.mm          |  8 -------
+ .../windowing/wayland/InputProcessorPointer.h |  2 +-
+ xbmc/windowing/wayland/Seat.h                 |  6 ++---
+ xbmc/windowing/wayland/Signals.h              |  3 ++-
+ 104 files changed, 106 insertions(+), 357 deletions(-)
+
+diff --git a/tools/EventClients/Clients/OSXRemote/xbmcclientwrapper.mm b/tools/EventClients/Clients/OSXRemote/xbmcclientwrapper.mm
+index a4f440be6528..643725f12a74 100644
+--- a/tools/EventClients/Clients/OSXRemote/xbmcclientwrapper.mm
++++ b/tools/EventClients/Clients/OSXRemote/xbmcclientwrapper.mm
+@@ -30,7 +30,7 @@
+ //helper class for easy EventSequence handling
+ class XBMCClientEventSequence{
+ public:
+-  XBMCClientEventSequence(){}
++  XBMCClientEventSequence() = default;
+ 
+   //implicit conversion
+   XBMCClientEventSequence(eATVClientEvent f_event){
+diff --git a/tools/EventClients/lib/c++/xbmcclient.h b/tools/EventClients/lib/c++/xbmcclient.h
+index 59e3f15297a0..d508f50e7401 100644
+--- a/tools/EventClients/lib/c++/xbmcclient.h
++++ b/tools/EventClients/lib/c++/xbmcclient.h
+@@ -140,8 +140,8 @@ class CAddress
+ class XBMCClientUtils
+ {
+ public:
+-  XBMCClientUtils() {}
+-  ~XBMCClientUtils() {}
++  XBMCClientUtils() = default;
++  ~XBMCClientUtils() = default;
+   static unsigned int GetUniqueIdentifier()
+   {
+     static time_t id = time(NULL);
+@@ -196,8 +196,7 @@ class CPacket
+   {
+     m_PacketType = 0;
+   }
+-  virtual ~CPacket()
+-  { }
++  virtual ~CPacket() = default;
+ 
+   bool Send(int Socket, CAddress &Addr, unsigned int UID = XBMCClientUtils::GetUniqueIdentifier())
+   {
+@@ -595,8 +594,7 @@ class CPacketPING : public CPacket
+   {
+     m_PacketType = PT_PING;
+   }
+-  virtual ~CPacketPING()
+-  { }
++  virtual ~CPacketPING() = default;
+ };
+ 
+ class CPacketBYE : public CPacket
+@@ -609,8 +607,7 @@ class CPacketBYE : public CPacket
+   {
+     m_PacketType = PT_BYE;
+   }
+-  virtual ~CPacketBYE()
+-  { }
++  virtual ~CPacketBYE() = default;
+ };
+ 
+ class CPacketMOUSE : public CPacket
+@@ -648,8 +645,7 @@ class CPacketMOUSE : public CPacket
+     m_Payload.push_back( (m_Y & 0x00ff));
+   }
+ 
+-  virtual ~CPacketMOUSE()
+-  { }
++  virtual ~CPacketMOUSE() = default;
+ };
+ 
+ class CPacketLOG : public CPacket
+@@ -693,8 +689,7 @@ class CPacketLOG : public CPacket
+     m_Payload.push_back('\0');
+   }
+ 
+-  virtual ~CPacketLOG()
+-  { }
++  virtual ~CPacketLOG() = default;
+ };
+ 
+ class CPacketACTION : public CPacket
+@@ -729,8 +724,7 @@ class CPacketACTION : public CPacket
+     m_Payload.push_back('\0');
+   }
+ 
+-  virtual ~CPacketACTION()
+-  { }
++  virtual ~CPacketACTION() = default;
+ };
+ 
+ class CXBMCClient
+diff --git a/xbmc/AppParamParser.cpp b/xbmc/AppParamParser.cpp
+index 842c3ebe4983..6660b0a77632 100644
+--- a/xbmc/AppParamParser.cpp
++++ b/xbmc/AppParamParser.cpp
+@@ -23,9 +23,7 @@ CAppParamParser::CAppParamParser()
+ {
+ }
+ 
+-CAppParamParser::~CAppParamParser()
+-{
+-}
++CAppParamParser::~CAppParamParser() = default;
+ 
+ void CAppParamParser::Parse(const char* const* argv, int nArgs)
+ {
+diff --git a/xbmc/ApplicationPlayer.cpp b/xbmc/ApplicationPlayer.cpp
+index 09beb44b504d..af0008f31460 100644
+--- a/xbmc/ApplicationPlayer.cpp
++++ b/xbmc/ApplicationPlayer.cpp
+@@ -19,11 +19,6 @@
+ #include "guilib/GUIWindowManager.h"
+ #include "settings/MediaSettings.h"
+ 
+-CApplicationPlayer::CApplicationPlayer()
+-{
+-
+-}
+-
+ std::shared_ptr<IPlayer> CApplicationPlayer::GetInternal() const
+ {
+   CSingleLock lock(m_playerLock);
+diff --git a/xbmc/ApplicationPlayer.h b/xbmc/ApplicationPlayer.h
+index 9d25dfaa7c2e..8c103827a6b8 100644
+--- a/xbmc/ApplicationPlayer.h
++++ b/xbmc/ApplicationPlayer.h
+@@ -31,7 +31,7 @@ struct TextCacheStruct_t;
+ class CApplicationPlayer
+ {
+ public:
+-  CApplicationPlayer();
++  CApplicationPlayer() = default;
+ 
+   // player management
+   void ClosePlayer();
+diff --git a/xbmc/ApplicationStackHelper.cpp b/xbmc/ApplicationStackHelper.cpp
+index d6566b10b766..5ac45e937e5a 100644
+--- a/xbmc/ApplicationStackHelper.cpp
++++ b/xbmc/ApplicationStackHelper.cpp
+@@ -24,10 +24,6 @@ CApplicationStackHelper::CApplicationStackHelper(void)
+ {
+ }
+ 
+-CApplicationStackHelper::~CApplicationStackHelper(void)
+-{
+-}
+-
+ void CApplicationStackHelper::Clear()
+ {
+   m_currentStackPosition = 0;
+diff --git a/xbmc/ApplicationStackHelper.h b/xbmc/ApplicationStackHelper.h
+index dfde925f8404..6f17465b5293 100644
+--- a/xbmc/ApplicationStackHelper.h
++++ b/xbmc/ApplicationStackHelper.h
+@@ -15,7 +15,7 @@ class CApplicationStackHelper
+ {
+ public:
+   CApplicationStackHelper(void);
+-  ~CApplicationStackHelper(void);
++  ~CApplicationStackHelper() = default;
+ 
+   void Clear();
+   void OnPlayBackStarted(const CFileItem& item);
+diff --git a/xbmc/ServiceManager.cpp b/xbmc/ServiceManager.cpp
+index a999cfce90ce..5e40e6f92acf 100644
+--- a/xbmc/ServiceManager.cpp
++++ b/xbmc/ServiceManager.cpp
+@@ -35,9 +35,7 @@
+ 
+ using namespace KODI;
+ 
+-CServiceManager::CServiceManager()
+-{
+-}
++CServiceManager::CServiceManager() = default;
+ 
+ CServiceManager::~CServiceManager()
+ {
+diff --git a/xbmc/addons/AddonVersion.h b/xbmc/addons/AddonVersion.h
+index bac6f47638b0..aacd9e381676 100644
+--- a/xbmc/addons/AddonVersion.h
++++ b/xbmc/addons/AddonVersion.h
+@@ -57,11 +57,5 @@ namespace ADDON
+     static int CompareComponent(const char *a, const char *b);
+   };
+ 
+-  inline AddonVersion& AddonVersion::operator=(const AddonVersion& other)
+-  {
+-    mEpoch = other.mEpoch;
+-    mUpstream = other.mUpstream;
+-    mRevision = other.mRevision;
+-    return *this;
+-  }
++  inline AddonVersion& AddonVersion::operator=(const AddonVersion& other) = default;
+ }
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/PeripheralUtils.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/PeripheralUtils.h
+index 9b2a43f462ad..62e5a930262d 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/PeripheralUtils.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/PeripheralUtils.h
+@@ -150,9 +150,7 @@ namespace addon
+   class PeripheralEvent
+   {
+   public:
+-    PeripheralEvent(void)
+-    {
+-    }
++    PeripheralEvent() = default;
+ 
+     PeripheralEvent(unsigned int peripheralIndex, unsigned int buttonIndex, JOYSTICK_STATE_BUTTON state) :
+       m_type(PERIPHERAL_EVENT_TYPE_DRIVER_BUTTON),
+diff --git a/xbmc/commons/Buffer.h b/xbmc/commons/Buffer.h
+index 4b241b7f418b..98085ea27a49 100644
+--- a/xbmc/commons/Buffer.h
++++ b/xbmc/commons/Buffer.h
+@@ -132,8 +132,7 @@ namespace XbmcCommons
+      * in the source buffer and vice/vrs. However, each buffer maintains
+      * its own indexing.
+      */
+-    inline Buffer(const Buffer& buf) : bufferRef(buf.bufferRef), buffer(buf.buffer),
+-      mposition(buf.mposition), mcapacity(buf.mcapacity), mlimit(buf.mlimit) { }
++    inline Buffer(const Buffer& buf) = default;
+ 
+     /**
+      * Copy another buffer. This is a "shallow copy" and therefore
+diff --git a/xbmc/commons/Exception.h b/xbmc/commons/Exception.h
+index d2c1b64401eb..a986c4c97840 100644
+--- a/xbmc/commons/Exception.h
++++ b/xbmc/commons/Exception.h
+@@ -52,7 +52,7 @@ namespace XbmcCommons
+ 
+     inline explicit Exception(const char* classname_) : classname(classname_) { }
+     inline Exception(const char* classname_, const char* message_) : classname(classname_), message(message_) { }
+-    inline Exception(const Exception& other) : classname(other.classname), message(other.message) { }
++    inline Exception(const Exception& other) = default;
+ 
+     /**
+      * This method is called from the constructor of subclasses. It
+diff --git a/xbmc/cores/AudioEngine/Engines/ActiveAE/ActiveAEBuffer.cpp b/xbmc/cores/AudioEngine/Engines/ActiveAE/ActiveAEBuffer.cpp
+index 5e4856edfd6e..57872730f93b 100644
+--- a/xbmc/cores/AudioEngine/Engines/ActiveAE/ActiveAEBuffer.cpp
++++ b/xbmc/cores/AudioEngine/Engines/ActiveAE/ActiveAEBuffer.cpp
+@@ -29,10 +29,6 @@ CSoundPacket::~CSoundPacket()
+     CActiveAE::FreeSoundSample(data);
+ }
+ 
+-CSampleBuffer::CSampleBuffer()
+-{
+-}
+-
+ CSampleBuffer::~CSampleBuffer()
+ {
+   delete pkt;
+diff --git a/xbmc/cores/AudioEngine/Engines/ActiveAE/ActiveAEBuffer.h b/xbmc/cores/AudioEngine/Engines/ActiveAE/ActiveAEBuffer.h
+index a9bb172aab69..121762fbdf29 100644
+--- a/xbmc/cores/AudioEngine/Engines/ActiveAE/ActiveAEBuffer.h
++++ b/xbmc/cores/AudioEngine/Engines/ActiveAE/ActiveAEBuffer.h
+@@ -45,7 +45,7 @@ class CActiveAEBufferPool;
+ class CSampleBuffer
+ {
+ public:
+-  CSampleBuffer();
++  CSampleBuffer() = default;
+   ~CSampleBuffer();
+   CSampleBuffer *Acquire();
+   void Return();
+diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkDARWINIOS.h b/xbmc/cores/AudioEngine/Sinks/AESinkDARWINIOS.h
+index 78bf593f9a92..ce5f858019c2 100644
+--- a/xbmc/cores/AudioEngine/Sinks/AESinkDARWINIOS.h
++++ b/xbmc/cores/AudioEngine/Sinks/AESinkDARWINIOS.h
+@@ -29,7 +29,7 @@ class CAESinkDARWINIOS : public IAESink
+   virtual const char *GetName() { return "DARWINIOS"; }
+ 
+   CAESinkDARWINIOS();
+-  virtual ~CAESinkDARWINIOS();
++  virtual ~CAESinkDARWINIOS() = default;
+ 
+   static void Register();
+   static void EnumerateDevicesEx(AEDeviceInfoList &list, bool force);
+diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkDARWINIOS.mm b/xbmc/cores/AudioEngine/Sinks/AESinkDARWINIOS.mm
+index bf617b98d3fa..09e4fe473b3e 100644
+--- a/xbmc/cores/AudioEngine/Sinks/AESinkDARWINIOS.mm
++++ b/xbmc/cores/AudioEngine/Sinks/AESinkDARWINIOS.mm
+@@ -583,10 +583,6 @@ static void EnumerateDevices(AEDeviceInfoList &list)
+ {
+ }
+ 
+-CAESinkDARWINIOS::~CAESinkDARWINIOS()
+-{
+-}
+-
+ void CAESinkDARWINIOS::Register()
+ {
+   AE::AESinkRegEntry reg;
+diff --git a/xbmc/cores/AudioEngine/Sinks/osx/AEDeviceEnumerationOSX.h b/xbmc/cores/AudioEngine/Sinks/osx/AEDeviceEnumerationOSX.h
+index c78b312500ce..7baae8f3aa03 100644
+--- a/xbmc/cores/AudioEngine/Sinks/osx/AEDeviceEnumerationOSX.h
++++ b/xbmc/cores/AudioEngine/Sinks/osx/AEDeviceEnumerationOSX.h
+@@ -40,7 +40,7 @@ class AEDeviceEnumerationOSX
+   */
+   AEDeviceEnumerationOSX(AudioDeviceID deviceID);
+   // d'tor
+-  ~AEDeviceEnumerationOSX(){};
++  ~AEDeviceEnumerationOSX() = default;
+ 
+   /*!
+   * @brief Gets the device list which was enumerated by the last call to Enumerate
+diff --git a/xbmc/cores/AudioEngine/Utils/AEAudioFormat.h b/xbmc/cores/AudioEngine/Utils/AEAudioFormat.h
+index c5cb1c6d8f86..e793720adafa 100644
+--- a/xbmc/cores/AudioEngine/Utils/AEAudioFormat.h
++++ b/xbmc/cores/AudioEngine/Utils/AEAudioFormat.h
+@@ -66,16 +66,6 @@ struct AEAudioFormat
+             m_streamInfo    ==  fmt.m_streamInfo;
+   }
+ 
+-  AEAudioFormat& operator=(const AEAudioFormat& fmt)
+-  {
+-    m_dataFormat = fmt.m_dataFormat;
+-    m_sampleRate = fmt.m_sampleRate;
+-    m_channelLayout = fmt.m_channelLayout;
+-    m_frames = fmt.m_frames;
+-    m_frameSize = fmt.m_frameSize;
+-    m_streamInfo = fmt.m_streamInfo;
+-
+-    return *this;
+-  }
++  AEAudioFormat& operator=(const AEAudioFormat& fmt) = default;
+ };
+ 
+diff --git a/xbmc/cores/RetroPlayer/buffers/IRenderBuffer.h b/xbmc/cores/RetroPlayer/buffers/IRenderBuffer.h
+index f347c7c2223f..90111f96d017 100644
+--- a/xbmc/cores/RetroPlayer/buffers/IRenderBuffer.h
++++ b/xbmc/cores/RetroPlayer/buffers/IRenderBuffer.h
+@@ -24,7 +24,7 @@ namespace RETRO
+   class IRenderBuffer
+   {
+   public:
+-    virtual ~IRenderBuffer() { }
++    virtual ~IRenderBuffer() = default;
+ 
+     // Pool functions
+     virtual void Acquire() = 0;
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Overlay/DVDOverlayText.h b/xbmc/cores/VideoPlayer/DVDCodecs/Overlay/DVDOverlayText.h
+index df4e3d05e056..0867a57fbf08 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Overlay/DVDOverlayText.h
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Overlay/DVDOverlayText.h
+@@ -66,11 +66,7 @@ class CDVDOverlayText : public CDVDOverlay
+     {
+     }
+ 
+-    CElementText(CElementText& src)
+-     : CElement(src),
+-       m_text(src.m_text)
+-    {
+-    }
++    CElementText(CElementText& src) = default;
+ 
+     const std::string& GetText()
+     { return m_text; }
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.h b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.h
+index 944fa805dc43..349b10c12657 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.h
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.h
+@@ -66,7 +66,7 @@ class CMediaCodecVideoBuffer : public CVideoBuffer
+ public:
+   CMediaCodecVideoBuffer(int id)
+     : CVideoBuffer(id){};
+-  virtual ~CMediaCodecVideoBuffer(){};
++  virtual ~CMediaCodecVideoBuffer() = default;
+ 
+   void Set(int internalId,
+            int textureId,
+diff --git a/xbmc/cores/VideoPlayer/Process/android/ProcessInfoAndroid.cpp b/xbmc/cores/VideoPlayer/Process/android/ProcessInfoAndroid.cpp
+index 0c278cb624d0..dcc7597d2107 100644
+--- a/xbmc/cores/VideoPlayer/Process/android/ProcessInfoAndroid.cpp
++++ b/xbmc/cores/VideoPlayer/Process/android/ProcessInfoAndroid.cpp
+@@ -15,10 +15,6 @@ CProcessInfo* CProcessInfoAndroid::Create()
+   return new CProcessInfoAndroid();
+ }
+ 
+-CProcessInfoAndroid::CProcessInfoAndroid()
+-{
+-}
+-
+ void CProcessInfoAndroid::Register()
+ {
+   CProcessInfo::RegisterProcessControl("android", CProcessInfoAndroid::Create);
+diff --git a/xbmc/cores/VideoPlayer/Process/android/ProcessInfoAndroid.h b/xbmc/cores/VideoPlayer/Process/android/ProcessInfoAndroid.h
+index 1f7e1a5f9afa..ee55be0aac13 100644
+--- a/xbmc/cores/VideoPlayer/Process/android/ProcessInfoAndroid.h
++++ b/xbmc/cores/VideoPlayer/Process/android/ProcessInfoAndroid.h
+@@ -16,7 +16,7 @@ namespace VIDEOPLAYER
+   class CProcessInfoAndroid : public CProcessInfo
+   {
+   public:
+-    CProcessInfoAndroid();
++    CProcessInfoAndroid() = default;
+     static CProcessInfo* Create();
+     static void Register();
+     EINTERLACEMETHOD GetFallbackDeintMethod() override;
+diff --git a/xbmc/cores/VideoPlayer/Process/gbm/ProcessInfoGBM.cpp b/xbmc/cores/VideoPlayer/Process/gbm/ProcessInfoGBM.cpp
+index 02283193978d..700d53a4dab0 100644
+--- a/xbmc/cores/VideoPlayer/Process/gbm/ProcessInfoGBM.cpp
++++ b/xbmc/cores/VideoPlayer/Process/gbm/ProcessInfoGBM.cpp
+@@ -20,10 +20,6 @@ void CProcessInfoGBM::Register()
+   CProcessInfo::RegisterProcessControl("gbm", CProcessInfoGBM::Create);
+ }
+ 
+-CProcessInfoGBM::CProcessInfoGBM()
+-{
+-}
+-
+ EINTERLACEMETHOD CProcessInfoGBM::GetFallbackDeintMethod()
+ {
+ #if defined(__arm__)
+diff --git a/xbmc/cores/VideoPlayer/Process/gbm/ProcessInfoGBM.h b/xbmc/cores/VideoPlayer/Process/gbm/ProcessInfoGBM.h
+index 479e4fde4c85..cf44338e7fd0 100644
+--- a/xbmc/cores/VideoPlayer/Process/gbm/ProcessInfoGBM.h
++++ b/xbmc/cores/VideoPlayer/Process/gbm/ProcessInfoGBM.h
+@@ -17,7 +17,7 @@ namespace VIDEOPLAYER
+ class CProcessInfoGBM : public CProcessInfo
+ {
+ public:
+-  CProcessInfoGBM();
++  CProcessInfoGBM() = default;
+   static CProcessInfo* Create();
+   static void Register();
+   EINTERLACEMETHOD GetFallbackDeintMethod() override;
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/ColorManager.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/ColorManager.cpp
+index b8566d039a36..5d7dce0d86a0 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/ColorManager.cpp
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/ColorManager.cpp
+@@ -34,16 +34,18 @@ CColorManager::CColorManager()
+ #endif  //defined(HAVE_LCMS2)
+ }
+ 
++#if defined(HAVE_LCMS2)
+ CColorManager::~CColorManager()
+ {
+-#if defined(HAVE_LCMS2)
+   if (m_hProfile)
+   {
+     cmsCloseProfile(m_hProfile);
+     m_hProfile = nullptr;
+   }
+-#endif  //defined(HAVE_LCMS2)
+ }
++#else
++CColorManager::~CColorManager() = default;
++#endif //defined(HAVE_LCMS2)
+ 
+ bool CColorManager::IsEnabled() const
+ {
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererVTBGL.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererVTBGL.cpp
+index b4712311f4f1..a16e5960d59f 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererVTBGL.cpp
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererVTBGL.cpp
+@@ -36,10 +36,6 @@ bool CRendererVTB::Register()
+   return true;
+ }
+ 
+-CRendererVTB::CRendererVTB()
+-{
+-}
+-
+ CRendererVTB::~CRendererVTB()
+ {
+   for (int i = 0; i < NUM_BUFFERS; ++i)
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererVTBGL.h b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererVTBGL.h
+index 4142754089bf..d5c0b27e1883 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererVTBGL.h
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererVTBGL.h
+@@ -14,7 +14,7 @@
+ class CRendererVTB : public CLinuxRendererGL
+ {
+ public:
+-  CRendererVTB();
++  CRendererVTB() = default;
+   virtual ~CRendererVTB();
+ 
+   static CBaseRenderer* Create(CVideoBuffer *buffer);
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/VaapiEGL.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/VaapiEGL.cpp
+index 2fbf50b8d71e..0342c5441a57 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/VaapiEGL.cpp
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/VaapiEGL.cpp
+@@ -19,10 +19,6 @@
+ 
+ using namespace VAAPI;
+ 
+-CVaapi1Texture::CVaapi1Texture()
+-{
+-}
+-
+ void CVaapi1Texture::Init(InteropInfo &interop)
+ {
+   m_interop = interop;
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/VaapiEGL.h b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/VaapiEGL.h
+index db66aca02bbf..0a591a2fdc18 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/VaapiEGL.h
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/VaapiEGL.h
+@@ -61,7 +61,7 @@ class CVaapiTexture
+ class CVaapi1Texture : public CVaapiTexture
+ {
+ public:
+-  CVaapi1Texture();
++  CVaapi1Texture() = default;
+ 
+   bool Map(CVaapiRenderPicture *pic) override;
+   void Unmap() override;
+diff --git a/xbmc/dbwrappers/qry_dat.h b/xbmc/dbwrappers/qry_dat.h
+index 5ebdc07a4ab1..6c2bb2755d9c 100644
+--- a/xbmc/dbwrappers/qry_dat.h
++++ b/xbmc/dbwrappers/qry_dat.h
+@@ -209,9 +209,7 @@ typedef query_data::iterator qry_itor;
+ class result_set
+ {
+ public:
+-  result_set()
+-  {
+-  };
++  result_set() = default;
+   ~result_set()
+   {
+     clear();
+diff --git a/xbmc/filesystem/test/TestZipFile.cpp b/xbmc/filesystem/test/TestZipFile.cpp
+index 6ed17d605eb1..19ae21dfca40 100644
+--- a/xbmc/filesystem/test/TestZipFile.cpp
++++ b/xbmc/filesystem/test/TestZipFile.cpp
+@@ -24,23 +24,7 @@
+ class TestZipFile : public testing::Test
+ {
+ protected:
+-  TestZipFile()
+-  {
+-    /* Add default settings for locale.
+-     * Settings here are taken from CGUISettings::Initialize()
+-     */
+-    //! @todo implement
+-    /*
+-    CSettingsCategory *loc = CServiceBroker::GetSettingsComponent()->GetSettings()->AddCategory(7, "locale", 14090);
+-    CServiceBroker::GetSettingsComponent()->GetSettings()->AddString(loc, CSettings::SETTING_LOCALE_LANGUAGE,248,"english",
+-                            SPIN_CONTROL_TEXT);
+-    CServiceBroker::GetSettingsComponent()->GetSettings()->AddString(loc, CSettings::SETTING_LOCALE_COUNTRY, 20026, "USA",
+-                            SPIN_CONTROL_TEXT);
+-    CServiceBroker::GetSettingsComponent()->GetSettings()->AddString(loc, CSettings::SETTING_LOCALE_CHARSET, 14091, "DEFAULT",
+-                            SPIN_CONTROL_TEXT); // charset is set by the
+-                                                // language file
+-    */
+-  }
++  TestZipFile() = default;
+ 
+   ~TestZipFile() override
+   {
+diff --git a/xbmc/games/controllers/types/ControllerGrid.cpp b/xbmc/games/controllers/types/ControllerGrid.cpp
+index 8501a1c145c4..3446037b4622 100644
+--- a/xbmc/games/controllers/types/ControllerGrid.cpp
++++ b/xbmc/games/controllers/types/ControllerGrid.cpp
+@@ -17,16 +17,6 @@
+ using namespace KODI;
+ using namespace GAME;
+ 
+-CControllerGrid::CControllerGrid()
+-{
+-}
+-
+-CControllerGrid::CControllerGrid(const CControllerGrid &other) :
+-  m_grid(other.m_grid),
+-  m_height(other.m_height)
+-{
+-}
+-
+ CControllerGrid::~CControllerGrid() = default;
+ 
+ void CControllerGrid::SetControllerTree(const CControllerTree &controllerTree)
+diff --git a/xbmc/games/controllers/types/ControllerGrid.h b/xbmc/games/controllers/types/ControllerGrid.h
+index 72dfd47f3983..71c189252bbc 100644
+--- a/xbmc/games/controllers/types/ControllerGrid.h
++++ b/xbmc/games/controllers/types/ControllerGrid.h
+@@ -50,8 +50,8 @@ namespace GAME
+   class CControllerGrid
+   {
+   public:
+-    CControllerGrid();
+-    CControllerGrid(const CControllerGrid &other);
++    CControllerGrid() = default;
++    CControllerGrid(const CControllerGrid& other) = default;
+     ~CControllerGrid();
+ 
+     /*!
+diff --git a/xbmc/guilib/GUITexture.cpp b/xbmc/guilib/GUITexture.cpp
+index bac6a9321c76..795d9ce6ee1b 100644
+--- a/xbmc/guilib/GUITexture.cpp
++++ b/xbmc/guilib/GUITexture.cpp
+@@ -27,17 +27,6 @@ CTextureInfo::CTextureInfo(const std::string &file):
+   useLarge = false;
+ }
+ 
+-CTextureInfo& CTextureInfo::operator=(const CTextureInfo &right)
+-{
+-  border = right.border;
+-  orientation = right.orientation;
+-  diffuse = right.diffuse;
+-  filename = right.filename;
+-  useLarge = right.useLarge;
+-  diffuseColor = right.diffuseColor;
+-  return *this;
+-}
+-
+ CGUITextureBase::CGUITextureBase(float posX, float posY, float width, float height, const CTextureInfo& texture) :
+   m_height(height), m_info(texture)
+ {
+diff --git a/xbmc/guilib/GUITexture.h b/xbmc/guilib/GUITexture.h
+index 3de6321fc35a..5d03c113b419 100644
+--- a/xbmc/guilib/GUITexture.h
++++ b/xbmc/guilib/GUITexture.h
+@@ -56,7 +56,7 @@ class CTextureInfo
+ public:
+   CTextureInfo();
+   explicit CTextureInfo(const std::string &file);
+-  CTextureInfo& operator=(const CTextureInfo &right);
++  CTextureInfo& operator=(const CTextureInfo& right) = default;
+   bool       useLarge;
+   CRect      border;          // scaled  - unneeded if we get rid of scale on load
+   int        orientation;     // orientation of the texture (0 - 7 == EXIForientation - 1)
+diff --git a/xbmc/guilib/XBTF.cpp b/xbmc/guilib/XBTF.cpp
+index ea1f6cb84563..aa095ccb5f5e 100644
+--- a/xbmc/guilib/XBTF.cpp
++++ b/xbmc/guilib/XBTF.cpp
+@@ -121,12 +121,6 @@ CXBTFFile::CXBTFFile()
+     m_frames()
+ { }
+ 
+-CXBTFFile::CXBTFFile(const CXBTFFile& ref)
+-  : m_path(ref.m_path),
+-    m_loop(ref.m_loop),
+-    m_frames(ref.m_frames)
+-{ }
+-
+ const std::string& CXBTFFile::GetPath() const
+ {
+   return m_path;
+diff --git a/xbmc/guilib/XBTF.h b/xbmc/guilib/XBTF.h
+index f6a13126843d..fbb841c53f87 100644
+--- a/xbmc/guilib/XBTF.h
++++ b/xbmc/guilib/XBTF.h
+@@ -65,7 +65,7 @@ class CXBTFFile
+ {
+ public:
+   CXBTFFile();
+-  CXBTFFile(const CXBTFFile& ref);
++  CXBTFFile(const CXBTFFile& ref) = default;
+ 
+   const std::string& GetPath() const;
+   void SetPath(const std::string& path);
+diff --git a/xbmc/guilib/guiinfo/PicturesGUIInfo.cpp b/xbmc/guilib/guiinfo/PicturesGUIInfo.cpp
+index 000ea6f2a6d6..5b2e518debd0 100644
+--- a/xbmc/guilib/guiinfo/PicturesGUIInfo.cpp
++++ b/xbmc/guilib/guiinfo/PicturesGUIInfo.cpp
+@@ -82,13 +82,9 @@ static const std::map<int, int> listitem2slideshow_map =
+   { LISTITEM_PICTURE_GPS_ALT          , SLIDESHOW_EXIF_GPS_ALTITUDE }
+ };
+ 
+-CPicturesGUIInfo::CPicturesGUIInfo()
+-{
+-}
++CPicturesGUIInfo::CPicturesGUIInfo() = default;
+ 
+-CPicturesGUIInfo::~CPicturesGUIInfo()
+-{
+-}
++CPicturesGUIInfo::~CPicturesGUIInfo() = default;
+ 
+ void CPicturesGUIInfo::SetCurrentSlide(CFileItem *item)
+ {
+diff --git a/xbmc/guilib/guiinfo/PlayerGUIInfo.cpp b/xbmc/guilib/guiinfo/PlayerGUIInfo.cpp
+index bf10db6569d6..92f77a8e05a0 100644
+--- a/xbmc/guilib/guiinfo/PlayerGUIInfo.cpp
++++ b/xbmc/guilib/guiinfo/PlayerGUIInfo.cpp
+@@ -38,9 +38,7 @@ CPlayerGUIInfo::CPlayerGUIInfo()
+ {
+ }
+ 
+-CPlayerGUIInfo::~CPlayerGUIInfo()
+-{
+-}
++CPlayerGUIInfo::~CPlayerGUIInfo() = default;
+ 
+ int CPlayerGUIInfo::GetTotalPlayTime() const
+ {
+diff --git a/xbmc/input/ButtonTranslator.cpp b/xbmc/input/ButtonTranslator.cpp
+index edea18762172..c1a6ab43b5dc 100644
+--- a/xbmc/input/ButtonTranslator.cpp
++++ b/xbmc/input/ButtonTranslator.cpp
+@@ -31,14 +31,6 @@
+ 
+ using namespace KODI;
+ 
+-CButtonTranslator::CButtonTranslator()
+-{
+-}
+-
+-CButtonTranslator::~CButtonTranslator()
+-{
+-}
+-
+ // Add the supplied device name to the list of connected devices
+ bool CButtonTranslator::AddDevice(const std::string& strDevice)
+ {
+diff --git a/xbmc/input/ButtonTranslator.h b/xbmc/input/ButtonTranslator.h
+index 0a5c4eb86abd..d6b4a1ca6b99 100644
+--- a/xbmc/input/ButtonTranslator.h
++++ b/xbmc/input/ButtonTranslator.h
+@@ -29,10 +29,10 @@ class CButtonTranslator
+   friend class EVENTCLIENT::CEventButtonState;
+ 
+ public:
+-  CButtonTranslator();
++  CButtonTranslator() = default;
+   CButtonTranslator(const CButtonTranslator&) = delete;
+   CButtonTranslator const& operator=(CButtonTranslator const&) = delete;
+-  virtual ~CButtonTranslator();
++  virtual ~CButtonTranslator() = default;
+ 
+   // Add/remove a HID device with custom mappings
+   bool AddDevice(const std::string& strDevice);
+diff --git a/xbmc/input/IRTranslator.cpp b/xbmc/input/IRTranslator.cpp
+index 94186abd64e7..aca4fe88b4e2 100644
+--- a/xbmc/input/IRTranslator.cpp
++++ b/xbmc/input/IRTranslator.cpp
+@@ -21,10 +21,6 @@
+ #include <stdlib.h>
+ #include <vector>
+ 
+-CIRTranslator::CIRTranslator()
+-{
+-}
+-
+ void CIRTranslator::Load(const std::string &irMapName)
+ {
+   if (irMapName.empty())
+diff --git a/xbmc/input/IRTranslator.h b/xbmc/input/IRTranslator.h
+index 38ffaf21f254..b0406f952b4d 100644
+--- a/xbmc/input/IRTranslator.h
++++ b/xbmc/input/IRTranslator.h
+@@ -17,7 +17,7 @@ class TiXmlNode;
+ class CIRTranslator
+ {
+ public:
+-  CIRTranslator();
++  CIRTranslator() = default;
+ 
+   /*!
+    * \brief Loads Lircmap.xml/IRSSmap.xml
+diff --git a/xbmc/input/JoystickMapper.cpp b/xbmc/input/JoystickMapper.cpp
+index b5d3fdd619f4..4e4121a56e98 100644
+--- a/xbmc/input/JoystickMapper.cpp
++++ b/xbmc/input/JoystickMapper.cpp
+@@ -27,10 +27,6 @@ using namespace KODI;
+ #define JOYSTICK_XML_ATTR_HOLDTIME   "holdtime"
+ #define JOYSTICK_XML_ATTR_HOTKEY     "hotkey"
+ 
+-CJoystickMapper::~CJoystickMapper()
+-{
+-}
+-
+ void CJoystickMapper::MapActions(int windowID, const TiXmlNode *pDevice)
+ {
+   std::string controllerId;
+diff --git a/xbmc/input/JoystickMapper.h b/xbmc/input/JoystickMapper.h
+index 49b8628326bf..2ce8ad51ebb3 100644
+--- a/xbmc/input/JoystickMapper.h
++++ b/xbmc/input/JoystickMapper.h
+@@ -25,7 +25,7 @@ class CJoystickMapper : public IButtonMapper
+ {
+ public:
+   CJoystickMapper() = default;
+-  virtual ~CJoystickMapper();
++  virtual ~CJoystickMapper() = default;
+ 
+   // implementation of IButtonMapper
+   virtual void MapActions(int windowID, const TiXmlNode *pDevice) override;
+diff --git a/xbmc/interfaces/legacy/Dialog.h b/xbmc/interfaces/legacy/Dialog.h
+index dc58e5b2aa81..3dd0b726dcb3 100644
+--- a/xbmc/interfaces/legacy/Dialog.h
++++ b/xbmc/interfaces/legacy/Dialog.h
+@@ -762,8 +762,7 @@ namespace XBMCAddon
+       void deallocating() override;
+ 
+     public:
+-
+-      DialogBusy() {}
++      DialogBusy() = default;
+       ~DialogBusy() override;
+ 
+ #ifdef DOXYGEN_SHOULD_USE_THIS
+diff --git a/xbmc/interfaces/legacy/Exception.h b/xbmc/interfaces/legacy/Exception.h
+index 79e557449bc9..61a32be2db7d 100644
+--- a/xbmc/interfaces/legacy/Exception.h
++++ b/xbmc/interfaces/legacy/Exception.h
+@@ -26,7 +26,7 @@ namespace XBMCAddon
+   class UnimplementedException : public XbmcCommons::Exception
+   {
+   public:
+-    inline UnimplementedException(const UnimplementedException& other) : Exception(other) { }
++    inline UnimplementedException(const UnimplementedException& other) = default;
+     inline UnimplementedException(const char* classname, const char* methodname) :
+       Exception("UnimplementedException")
+     { SetMessage("Unimplemented method: %s::%s(...)", classname, methodname); }
+@@ -39,7 +39,7 @@ namespace XBMCAddon
+   class UnhandledException : public XbmcCommons::Exception
+   {
+   public:
+-    inline UnhandledException(const UnhandledException& other) : Exception(other) { }
++    inline UnhandledException(const UnhandledException& other) = default;
+     inline UnhandledException(const char* _message,...) : Exception("UnhandledException") { XBMCCOMMONS_COPYVARARGS(_message); }
+   };
+ }
+diff --git a/xbmc/interfaces/legacy/Tuple.h b/xbmc/interfaces/legacy/Tuple.h
+index 76d2338b3df3..3bc23b087098 100644
+--- a/xbmc/interfaces/legacy/Tuple.h
++++ b/xbmc/interfaces/legacy/Tuple.h
+@@ -21,7 +21,7 @@ namespace XBMCAddon
+   protected:
+     int numValuesSet;
+     explicit inline TupleBase(int pnumValuesSet) : numValuesSet(pnumValuesSet) {}
+-    inline TupleBase(const TupleBase& o) : numValuesSet(o.numValuesSet) {}
++    inline TupleBase(const TupleBase& o) = default;
+     inline void nvs(int newSize) { if(numValuesSet < newSize) numValuesSet = newSize; }
+   public:
+     inline int GetNumValuesSet() const { return numValuesSet; }
+diff --git a/xbmc/interfaces/legacy/WindowInterceptor.h b/xbmc/interfaces/legacy/WindowInterceptor.h
+index 3271ab1b545c..5b33c645f0c9 100644
+--- a/xbmc/interfaces/legacy/WindowInterceptor.h
++++ b/xbmc/interfaces/legacy/WindowInterceptor.h
+@@ -133,13 +133,15 @@ namespace XBMCAddon
+         P::SetLoadType(CGUIWindow::LOAD_ON_GUI_INIT);
+       }
+ 
++#ifdef ENABLE_XBMC_TRACE_API
+       ~Interceptor() override
+       {
+-#ifdef ENABLE_XBMC_TRACE_API
+         XBMCAddonUtils::TraceGuard tg;
+         CLog::Log(LOGDEBUG, "%sNEWADDON LIFECYCLE destroying %s 0x%lx", tg.getSpaces(),classname.c_str(), (long)(((void*)this)));
+-#endif
+       }
++#else
++      ~Interceptor() override = default;
++#endif
+ 
+       bool OnMessage(CGUIMessage& message) override
+       { XBMC_TRACE; return up() ? P::OnMessage(message) : checkedb(OnMessage(message)); }
+diff --git a/xbmc/media/drm/CryptoSession.h b/xbmc/media/drm/CryptoSession.h
+index ecf4e03d2fad..a7ec7a994de5 100644
+--- a/xbmc/media/drm/CryptoSession.h
++++ b/xbmc/media/drm/CryptoSession.h
+@@ -26,7 +26,7 @@ namespace DRM
+   public:
+     // Interface registration
+     static CCryptoSession* GetCryptoSession(const std::string& UUID, const std::string& cipherAlgo, const std::string& macAlgo);
+-    virtual ~CCryptoSession() {};
++    virtual ~CCryptoSession() = default;
+ 
+     // Interface methods
+     virtual XbmcCommons::Buffer GetKeyRequest(const XbmcCommons::Buffer& init, const std::string& mimeType, bool offlineKey, const std::map<std::string, std::string>& parameters) = 0;
+diff --git a/xbmc/messaging/ThreadMessage.h b/xbmc/messaging/ThreadMessage.h
+index e79237a25c67..2c72a2305dc8 100644
+--- a/xbmc/messaging/ThreadMessage.h
++++ b/xbmc/messaging/ThreadMessage.h
+@@ -60,18 +60,7 @@ class ThreadMessage
+   {
+   }
+ 
+-  ThreadMessage(const ThreadMessage& other)
+-    : dwMessage(other.dwMessage),
+-    param1(other.param1),
+-    param2(other.param2),
+-    param3(other.param3),
+-    lpVoid(other.lpVoid),
+-    strParam(other.strParam),
+-    params(other.params),
+-    waitEvent(other.waitEvent),
+-    result(other.result)
+-  {
+-  }
++  ThreadMessage(const ThreadMessage& other) = default;
+ 
+   ThreadMessage(ThreadMessage&& other)
+     : dwMessage(other.dwMessage),
+diff --git a/xbmc/platform/android/activity/AndroidJoyStick.h b/xbmc/platform/android/activity/AndroidJoyStick.h
+index c01184645854..0814f9ae0d2e 100644
+--- a/xbmc/platform/android/activity/AndroidJoyStick.h
++++ b/xbmc/platform/android/activity/AndroidJoyStick.h
+@@ -16,8 +16,8 @@ struct AInputEvent;
+ class CAndroidJoyStick
+ {
+ public:
+-  CAndroidJoyStick() { }
+-  ~CAndroidJoyStick() { }
++  CAndroidJoyStick() = default;
++  ~CAndroidJoyStick() = default;
+ 
+   bool onJoyStickEvent(AInputEvent* event);
+ };
+diff --git a/xbmc/platform/android/activity/AndroidKey.h b/xbmc/platform/android/activity/AndroidKey.h
+index 48c62bf1aa4e..13cad9d0dbd1 100644
+--- a/xbmc/platform/android/activity/AndroidKey.h
++++ b/xbmc/platform/android/activity/AndroidKey.h
+@@ -17,8 +17,8 @@
+ class CAndroidKey
+ {
+ public:
+-  CAndroidKey() {};
+- ~CAndroidKey() {};
++  CAndroidKey() = default;
++  ~CAndroidKey() = default;
+ 
+   bool onKeyboardEvent(AInputEvent *event);
+ 
+diff --git a/xbmc/platform/android/activity/AndroidMouse.cpp b/xbmc/platform/android/activity/AndroidMouse.cpp
+index 8db9f97ef367..39d39daa6ed2 100644
+--- a/xbmc/platform/android/activity/AndroidMouse.cpp
++++ b/xbmc/platform/android/activity/AndroidMouse.cpp
+@@ -23,10 +23,6 @@ CAndroidMouse::CAndroidMouse()
+ {
+ }
+ 
+-CAndroidMouse::~CAndroidMouse()
+-{
+-}
+-
+ bool CAndroidMouse::onMouseEvent(AInputEvent* event)
+ {
+   if (event == NULL)
+diff --git a/xbmc/platform/android/activity/AndroidMouse.h b/xbmc/platform/android/activity/AndroidMouse.h
+index 9d4dbbf36af4..e1385847f8ce 100644
+--- a/xbmc/platform/android/activity/AndroidMouse.h
++++ b/xbmc/platform/android/activity/AndroidMouse.h
+@@ -15,7 +15,7 @@ class CAndroidMouse
+ 
+ public:
+   CAndroidMouse();
+-  virtual ~CAndroidMouse();
++  virtual ~CAndroidMouse() = default;
+   bool onMouseEvent(AInputEvent* event);
+ 
+ protected:
+diff --git a/xbmc/platform/android/activity/DllGraphicBuffer.h b/xbmc/platform/android/activity/DllGraphicBuffer.h
+index c9a47fa375d3..3ddc46c8269a 100644
+--- a/xbmc/platform/android/activity/DllGraphicBuffer.h
++++ b/xbmc/platform/android/activity/DllGraphicBuffer.h
+@@ -13,7 +13,7 @@
+ class DllGraphicBufferInterface
+ {
+ public:
+-  virtual ~DllGraphicBufferInterface() {}
++  virtual ~DllGraphicBufferInterface() = default;
+   virtual void    GraphicBufferCtor(void *, uint32_t w, uint32_t h, uint32_t format, gfxImageUsage usage)=0;
+   virtual void    GraphicBufferDtor(void *)=0;
+   virtual int     GraphicBufferLock(void*, uint32_t usage, void **addr)=0;
+diff --git a/xbmc/platform/android/activity/JNIXBMCFile.h b/xbmc/platform/android/activity/JNIXBMCFile.h
+index 6d76016244e2..ba1cad4ac3cd 100644
+--- a/xbmc/platform/android/activity/JNIXBMCFile.h
++++ b/xbmc/platform/android/activity/JNIXBMCFile.h
+@@ -22,7 +22,7 @@ namespace jni
+   public:
+     CJNIXBMCFile();
+     CJNIXBMCFile(const jni::jhobject &object) : CJNIBase(object) {}
+-    virtual ~CJNIXBMCFile() {}
++    virtual ~CJNIXBMCFile() = default;
+ 
+     static void RegisterNatives(JNIEnv* env);
+ 
+diff --git a/xbmc/platform/android/activity/JNIXBMCJsonHandler.h b/xbmc/platform/android/activity/JNIXBMCJsonHandler.h
+index d32017d20189..de1592e20141 100644
+--- a/xbmc/platform/android/activity/JNIXBMCJsonHandler.h
++++ b/xbmc/platform/android/activity/JNIXBMCJsonHandler.h
+@@ -25,7 +25,7 @@ namespace jni
+ 
+ 
+   protected:
+-    virtual ~CJNIXBMCJsonHandler() {}
++    virtual ~CJNIXBMCJsonHandler() = default;
+ 
+     static jstring _requestJSON(JNIEnv* env, jobject thiz, jstring request);
+ 
+diff --git a/xbmc/platform/android/activity/JNIXBMCMainView.cpp b/xbmc/platform/android/activity/JNIXBMCMainView.cpp
+index b7fdec8ba540..454f00cd92e6 100644
+--- a/xbmc/platform/android/activity/JNIXBMCMainView.cpp
++++ b/xbmc/platform/android/activity/JNIXBMCMainView.cpp
+@@ -48,10 +48,6 @@ CJNIXBMCMainView::CJNIXBMCMainView(CJNISurfaceHolderCallback* callback)
+   m_instance = this;
+ }
+ 
+-CJNIXBMCMainView::~CJNIXBMCMainView()
+-{
+-}
+-
+ void CJNIXBMCMainView::_attach(JNIEnv* env, jobject thiz)
+ {
+   (void)env;
+diff --git a/xbmc/platform/android/activity/JNIXBMCMainView.h b/xbmc/platform/android/activity/JNIXBMCMainView.h
+index 5e07cf87324c..a2e4e212c8c4 100644
+--- a/xbmc/platform/android/activity/JNIXBMCMainView.h
++++ b/xbmc/platform/android/activity/JNIXBMCMainView.h
+@@ -20,7 +20,7 @@ class CJNIXBMCMainView : virtual public CJNIBase, public CJNISurfaceHolderCallba
+ {
+ public:
+   CJNIXBMCMainView(CJNISurfaceHolderCallback* callback);
+-  ~CJNIXBMCMainView();
++  ~CJNIXBMCMainView() = default;
+ 
+   static void RegisterNatives(JNIEnv* env);
+ 
+diff --git a/xbmc/platform/android/activity/JNIXBMCVideoView.cpp b/xbmc/platform/android/activity/JNIXBMCVideoView.cpp
+index 21a57818151f..c95a5acc9958 100644
+--- a/xbmc/platform/android/activity/JNIXBMCVideoView.cpp
++++ b/xbmc/platform/android/activity/JNIXBMCVideoView.cpp
+@@ -50,10 +50,6 @@ CJNIXBMCVideoView::CJNIXBMCVideoView(const jni::jhobject &object)
+ {
+ }
+ 
+-CJNIXBMCVideoView::~CJNIXBMCVideoView()
+-{
+-}
+-
+ CJNIXBMCVideoView* CJNIXBMCVideoView::createVideoView(CJNISurfaceHolderCallback* callback)
+ {
+   std::string signature = "()L" + s_className + ";";
+diff --git a/xbmc/platform/android/activity/JNIXBMCVideoView.h b/xbmc/platform/android/activity/JNIXBMCVideoView.h
+index de12c35ca23b..45c0008e3bf0 100644
+--- a/xbmc/platform/android/activity/JNIXBMCVideoView.h
++++ b/xbmc/platform/android/activity/JNIXBMCVideoView.h
+@@ -21,7 +21,7 @@ class CJNIXBMCVideoView : virtual public CJNIBase, public CJNISurfaceHolderCallb
+ {
+ public:
+   CJNIXBMCVideoView(const jni::jhobject &object);
+-  ~CJNIXBMCVideoView();
++  ~CJNIXBMCVideoView() = default;
+ 
+   static void RegisterNatives(JNIEnv* env);
+ 
+diff --git a/xbmc/platform/android/filesystem/APKDirectory.h b/xbmc/platform/android/filesystem/APKDirectory.h
+index e2e96ea67842..ac24cf846c69 100644
+--- a/xbmc/platform/android/filesystem/APKDirectory.h
++++ b/xbmc/platform/android/filesystem/APKDirectory.h
+@@ -14,10 +14,10 @@ namespace XFILE
+ {
+   class CAPKDirectory : public IFileDirectory
+   {
+-    public:
+-    CAPKDirectory() {};
+-    virtual ~CAPKDirectory() {};
+-    virtual bool GetDirectory(const CURL& url, CFileItemList &items);
++  public:
++    CAPKDirectory() = default;
++    virtual ~CAPKDirectory() = default;
++    virtual bool GetDirectory(const CURL& url, CFileItemList& items);
+     virtual bool ContainsFiles(const CURL& url);
+     virtual DIR_CACHE_TYPE GetCacheType(const CURL& url) const;
+     virtual bool Exists(const CURL& url);
+diff --git a/xbmc/platform/android/filesystem/APKFile.cpp b/xbmc/platform/android/filesystem/APKFile.cpp
+index 040277b6dee2..62e82d7841cf 100644
+--- a/xbmc/platform/android/filesystem/APKFile.cpp
++++ b/xbmc/platform/android/filesystem/APKFile.cpp
+@@ -30,10 +30,6 @@ CAPKFile::CAPKFile()
+   m_zip_archive = NULL;
+ }
+ 
+-CAPKFile::~CAPKFile()
+-{
+-}
+-
+ bool CAPKFile::Open(const CURL& url)
+ {
+   Close();
+diff --git a/xbmc/platform/android/filesystem/APKFile.h b/xbmc/platform/android/filesystem/APKFile.h
+index 6094afb52f5d..9c383b1067b2 100644
+--- a/xbmc/platform/android/filesystem/APKFile.h
++++ b/xbmc/platform/android/filesystem/APKFile.h
+@@ -20,7 +20,7 @@ namespace XFILE
+   {
+   public:
+     CAPKFile();
+-    virtual ~CAPKFile();
++    virtual ~CAPKFile() = default;
+     virtual bool Open(const CURL& url);
+     virtual void Close();
+     virtual bool Exists(const CURL& url);
+diff --git a/xbmc/platform/android/filesystem/AndroidAppDirectory.cpp b/xbmc/platform/android/filesystem/AndroidAppDirectory.cpp
+index e182ef3bcdc1..3f55c598eaae 100644
+--- a/xbmc/platform/android/filesystem/AndroidAppDirectory.cpp
++++ b/xbmc/platform/android/filesystem/AndroidAppDirectory.cpp
+@@ -22,14 +22,6 @@
+ 
+ using namespace XFILE;
+ 
+-CAndroidAppDirectory::CAndroidAppDirectory(void)
+-{
+-}
+-
+-CAndroidAppDirectory::~CAndroidAppDirectory(void)
+-{
+-}
+-
+ bool CAndroidAppDirectory::GetDirectory(const CURL& url, CFileItemList &items)
+ {
+   std::string dirname = url.GetFileName();
+diff --git a/xbmc/platform/android/filesystem/AndroidAppDirectory.h b/xbmc/platform/android/filesystem/AndroidAppDirectory.h
+index 4687fe5f09a1..afa685ad6bb4 100644
+--- a/xbmc/platform/android/filesystem/AndroidAppDirectory.h
++++ b/xbmc/platform/android/filesystem/AndroidAppDirectory.h
+@@ -17,8 +17,8 @@ class CAndroidAppDirectory :
+       public IDirectory
+ {
+ public:
+-  CAndroidAppDirectory(void);
+-  virtual ~CAndroidAppDirectory(void);
++  CAndroidAppDirectory() = default;
++  virtual ~CAndroidAppDirectory() = default;
+   virtual bool GetDirectory(const CURL& url, CFileItemList &items) override;
+   virtual bool Exists(const CURL& url) override { return true; };
+   virtual bool AllowAll() const override { return true; };
+diff --git a/xbmc/platform/android/powermanagement/AndroidPowerSyscall.cpp b/xbmc/platform/android/powermanagement/AndroidPowerSyscall.cpp
+index 1b5c16cf7cad..b43036a0c322 100644
+--- a/xbmc/platform/android/powermanagement/AndroidPowerSyscall.cpp
++++ b/xbmc/platform/android/powermanagement/AndroidPowerSyscall.cpp
+@@ -20,12 +20,6 @@ void CAndroidPowerSyscall::Register()
+   IPowerSyscall::RegisterPowerSyscall(CAndroidPowerSyscall::CreateInstance);
+ }
+ 
+-CAndroidPowerSyscall::CAndroidPowerSyscall()
+-{ }
+-
+-CAndroidPowerSyscall::~CAndroidPowerSyscall()
+-{ }
+-
+ int CAndroidPowerSyscall::BatteryLevel(void)
+ {
+   return CXBMCApp::GetBatteryLevel();
+diff --git a/xbmc/platform/android/powermanagement/AndroidPowerSyscall.h b/xbmc/platform/android/powermanagement/AndroidPowerSyscall.h
+index d0e3e7d57adf..188f7385542d 100644
+--- a/xbmc/platform/android/powermanagement/AndroidPowerSyscall.h
++++ b/xbmc/platform/android/powermanagement/AndroidPowerSyscall.h
+@@ -13,8 +13,8 @@
+ class CAndroidPowerSyscall : public CPowerSyscallWithoutEvents
+ {
+ public:
+-  CAndroidPowerSyscall();
+-  ~CAndroidPowerSyscall();
++  CAndroidPowerSyscall() = default;
++  ~CAndroidPowerSyscall() = default;
+ 
+   static IPowerSyscall* CreateInstance();
+   static void Register();
+diff --git a/xbmc/platform/android/storage/AndroidStorageProvider.h b/xbmc/platform/android/storage/AndroidStorageProvider.h
+index e5ea7e68400c..10d1a239ad82 100644
+--- a/xbmc/platform/android/storage/AndroidStorageProvider.h
++++ b/xbmc/platform/android/storage/AndroidStorageProvider.h
+@@ -18,7 +18,7 @@ class CAndroidStorageProvider : public IStorageProvider
+ {
+ public:
+   CAndroidStorageProvider();
+-  virtual ~CAndroidStorageProvider() { }
++  virtual ~CAndroidStorageProvider() = default;
+ 
+   virtual void Initialize() { }
+   virtual void Stop() { }
+diff --git a/xbmc/platform/darwin/PlatformDarwin.cpp b/xbmc/platform/darwin/PlatformDarwin.cpp
+index 545fd094c479..7c2b6042fc41 100644
+--- a/xbmc/platform/darwin/PlatformDarwin.cpp
++++ b/xbmc/platform/darwin/PlatformDarwin.cpp
+@@ -12,16 +12,6 @@
+ 
+ #include <stdlib.h>
+ 
+-CPlatformDarwin::CPlatformDarwin()
+-{
+-
+-}
+-
+-CPlatformDarwin::~CPlatformDarwin()
+-{
+-
+-}
+-
+ void CPlatformDarwin::Init()
+ {
+   CPlatformPosix::Init();
+diff --git a/xbmc/platform/darwin/PlatformDarwin.h b/xbmc/platform/darwin/PlatformDarwin.h
+index cf77821ff43e..86b940fdeabf 100644
+--- a/xbmc/platform/darwin/PlatformDarwin.h
++++ b/xbmc/platform/darwin/PlatformDarwin.h
+@@ -14,10 +14,10 @@ class CPlatformDarwin : public CPlatformPosix
+ {
+   public:
+     /**\brief C'tor */
+-    CPlatformDarwin();
++    CPlatformDarwin() = default;
+ 
+     /**\brief D'tor */
+-    virtual ~CPlatformDarwin();
++    virtual ~CPlatformDarwin() = default;
+ 
+     void Init() override;
+ };
+diff --git a/xbmc/platform/darwin/ios-common/AnnounceReceiver.h b/xbmc/platform/darwin/ios-common/AnnounceReceiver.h
+index 153ded9f9940..05c5ddd3fe7a 100644
+--- a/xbmc/platform/darwin/ios-common/AnnounceReceiver.h
++++ b/xbmc/platform/darwin/ios-common/AnnounceReceiver.h
+@@ -23,5 +23,5 @@ class CAnnounceReceiver : public ANNOUNCEMENT::IAnnouncer
+   virtual void Announce(ANNOUNCEMENT::AnnouncementFlag flag, const char *sender, const char *message, const CVariant &data);
+ 
+ private:
+-  CAnnounceReceiver() {};
++  CAnnounceReceiver() = default;
+ };
+diff --git a/xbmc/platform/darwin/storage/DarwinStorageProvider.h b/xbmc/platform/darwin/storage/DarwinStorageProvider.h
+index 4062c0f50867..7e679028c412 100644
+--- a/xbmc/platform/darwin/storage/DarwinStorageProvider.h
++++ b/xbmc/platform/darwin/storage/DarwinStorageProvider.h
+@@ -18,7 +18,7 @@ class CDarwinStorageProvider : public IStorageProvider
+ {
+ public:
+   CDarwinStorageProvider();
+-  virtual ~CDarwinStorageProvider() { }
++  virtual ~CDarwinStorageProvider() = default;
+ 
+   virtual void Initialize() { }
+   virtual void Stop() { }
+diff --git a/xbmc/platform/overrides/android/PlatformAndroid.cpp b/xbmc/platform/overrides/android/PlatformAndroid.cpp
+index 2186aaa83cb8..52f145b7c6d2 100644
+--- a/xbmc/platform/overrides/android/PlatformAndroid.cpp
++++ b/xbmc/platform/overrides/android/PlatformAndroid.cpp
+@@ -17,16 +17,6 @@ CPlatform* CPlatform::CreateInstance()
+   return new CPlatformAndroid();
+ }
+ 
+-CPlatformAndroid::CPlatformAndroid()
+-{
+-
+-}
+-
+-CPlatformAndroid::~CPlatformAndroid()
+-{
+-
+-}
+-
+ void CPlatformAndroid::Init()
+ {
+   CPlatformPosix::Init();
+diff --git a/xbmc/platform/overrides/android/PlatformAndroid.h b/xbmc/platform/overrides/android/PlatformAndroid.h
+index cae3e4b4ce4b..3a7e3ed95aa3 100644
+--- a/xbmc/platform/overrides/android/PlatformAndroid.h
++++ b/xbmc/platform/overrides/android/PlatformAndroid.h
+@@ -14,10 +14,10 @@ class CPlatformAndroid : public CPlatformPosix
+ {
+   public:
+     /**\brief C'tor */
+-    CPlatformAndroid();
++    CPlatformAndroid() = default;
+ 
+     /**\brief D'tor */
+-    virtual ~CPlatformAndroid();
++    virtual ~CPlatformAndroid() = default;
+ 
+     void Init() override;
+ };
+diff --git a/xbmc/profiles/ProfileManager.cpp b/xbmc/profiles/ProfileManager.cpp
+index 59e8d045ad5d..8161e1ec1424 100644
+--- a/xbmc/profiles/ProfileManager.cpp
++++ b/xbmc/profiles/ProfileManager.cpp
+@@ -87,9 +87,7 @@ CProfileManager::CProfileManager() :
+ {
+ }
+ 
+-CProfileManager::~CProfileManager()
+-{
+-}
++CProfileManager::~CProfileManager() = default;
+ 
+ void CProfileManager::Initialize(const std::shared_ptr<CSettings>& settings)
+ {
+diff --git a/xbmc/pvr/PVRGUIInfo.cpp b/xbmc/pvr/PVRGUIInfo.cpp
+index d294d208533c..f3a6abec36fa 100644
+--- a/xbmc/pvr/PVRGUIInfo.cpp
++++ b/xbmc/pvr/PVRGUIInfo.cpp
+@@ -50,10 +50,6 @@ CPVRGUIInfo::CPVRGUIInfo(void) :
+   ResetProperties();
+ }
+ 
+-CPVRGUIInfo::~CPVRGUIInfo(void)
+-{
+-}
+-
+ void CPVRGUIInfo::ResetProperties(void)
+ {
+   CSingleLock lock(m_critSection);
+diff --git a/xbmc/pvr/PVRGUIInfo.h b/xbmc/pvr/PVRGUIInfo.h
+index 01a41d7cf317..ee6e741cf59e 100644
+--- a/xbmc/pvr/PVRGUIInfo.h
++++ b/xbmc/pvr/PVRGUIInfo.h
+@@ -41,7 +41,7 @@ namespace PVR
+   {
+   public:
+     CPVRGUIInfo(void);
+-    ~CPVRGUIInfo(void) override;
++    ~CPVRGUIInfo() override = default;
+ 
+     void Start(void);
+     void Stop(void);
+diff --git a/xbmc/pvr/timers/PVRTimers.cpp b/xbmc/pvr/timers/PVRTimers.cpp
+index aa24746a899c..5bf365196d21 100644
+--- a/xbmc/pvr/timers/PVRTimers.cpp
++++ b/xbmc/pvr/timers/PVRTimers.cpp
+@@ -90,10 +90,6 @@ CPVRTimers::CPVRTimers(void)
+ {
+ }
+ 
+-CPVRTimers::~CPVRTimers(void)
+-{
+-}
+-
+ bool CPVRTimers::Load(void)
+ {
+   // unload previous timers
+diff --git a/xbmc/pvr/timers/PVRTimers.h b/xbmc/pvr/timers/PVRTimers.h
+index b3cd774a4a02..1716ab02ea23 100644
+--- a/xbmc/pvr/timers/PVRTimers.h
++++ b/xbmc/pvr/timers/PVRTimers.h
+@@ -65,7 +65,7 @@ namespace PVR
+   {
+   public:
+     CPVRTimers(void);
+-    ~CPVRTimers(void) override;
++    ~CPVRTimers() override = default;
+ 
+     /**
+      * @brief (re)load the timers from the clients.
+diff --git a/xbmc/pvr/windows/GUIWindowPVRSearch.cpp b/xbmc/pvr/windows/GUIWindowPVRSearch.cpp
+index 396aef4fa406..d5d3048bc5cb 100644
+--- a/xbmc/pvr/windows/GUIWindowPVRSearch.cpp
++++ b/xbmc/pvr/windows/GUIWindowPVRSearch.cpp
+@@ -89,9 +89,7 @@ CGUIWindowPVRSearchBase::CGUIWindowPVRSearchBase(bool bRadio, int id, const std:
+ {
+ }
+ 
+-CGUIWindowPVRSearchBase::~CGUIWindowPVRSearchBase()
+-{
+-}
++CGUIWindowPVRSearchBase::~CGUIWindowPVRSearchBase() = default;
+ 
+ void CGUIWindowPVRSearchBase::GetContextButtons(int itemNumber, CContextButtons &buttons)
+ {
+diff --git a/xbmc/rendering/gles/RenderSystemGLES.cpp b/xbmc/rendering/gles/RenderSystemGLES.cpp
+index 15b68fc7aea4..e92bee4da927 100644
+--- a/xbmc/rendering/gles/RenderSystemGLES.cpp
++++ b/xbmc/rendering/gles/RenderSystemGLES.cpp
+@@ -30,10 +30,6 @@ CRenderSystemGLES::CRenderSystemGLES()
+ {
+ }
+ 
+-CRenderSystemGLES::~CRenderSystemGLES()
+-{
+-}
+-
+ bool CRenderSystemGLES::InitRenderSystem()
+ {
+   GLint maxTextureSize;
+diff --git a/xbmc/rendering/gles/RenderSystemGLES.h b/xbmc/rendering/gles/RenderSystemGLES.h
+index 3f506562edce..e3c505f136f4 100644
+--- a/xbmc/rendering/gles/RenderSystemGLES.h
++++ b/xbmc/rendering/gles/RenderSystemGLES.h
+@@ -36,7 +36,7 @@ class CRenderSystemGLES : public CRenderSystemBase
+ {
+ public:
+   CRenderSystemGLES();
+-  virtual ~CRenderSystemGLES();
++  virtual ~CRenderSystemGLES() = default;
+ 
+   bool InitRenderSystem() override;
+   bool DestroyRenderSystem() override;
+diff --git a/xbmc/utils/ActorProtocol.h b/xbmc/utils/ActorProtocol.h
+index b96aa7d1b9c2..66d413e6cd62 100644
+--- a/xbmc/utils/ActorProtocol.h
++++ b/xbmc/utils/ActorProtocol.h
+@@ -23,14 +23,14 @@ namespace Actor
+ class CPayloadWrapBase
+ {
+ public:
+-  virtual ~CPayloadWrapBase() {};
++  virtual ~CPayloadWrapBase() = default;
+ };
+ 
+ template<typename Payload>
+ class CPayloadWrap : public CPayloadWrapBase
+ {
+ public:
+-  ~CPayloadWrap() override {};
++  ~CPayloadWrap() override = default;
+   CPayloadWrap(Payload *data) {m_pPayload.reset(data);};
+   CPayloadWrap(Payload &data) {m_pPayload.reset(new Payload(data));};
+   Payload *GetPlayload() {return m_pPayload.get();};
+diff --git a/xbmc/utils/Digest.h b/xbmc/utils/Digest.h
+index 1acc0985d039..6452857580b7 100644
+--- a/xbmc/utils/Digest.h
++++ b/xbmc/utils/Digest.h
+@@ -106,8 +106,7 @@ struct TypedDigest
+   CDigest::Type type{CDigest::Type::INVALID};
+   std::string value;
+ 
+-  TypedDigest()
+-  {}
++  TypedDigest() = default;
+ 
+   TypedDigest(CDigest::Type type, std::string const& value)
+   : type(type), value(value)
+diff --git a/xbmc/utils/EGLUtils.cpp b/xbmc/utils/EGLUtils.cpp
+index 8f300dbaedaf..a301f6b47f7b 100644
+--- a/xbmc/utils/EGLUtils.cpp
++++ b/xbmc/utils/EGLUtils.cpp
+@@ -182,10 +182,6 @@ void CEGLUtils::Log(int logLevel, const std::string& what)
+   CLog::Log(logLevel, "{} ({})", what.c_str(), errorStr);
+ }
+ 
+-CEGLContextUtils::CEGLContextUtils()
+-{
+-}
+-
+ CEGLContextUtils::CEGLContextUtils(EGLenum platform, std::string const& platformExtension)
+ : m_platform{platform}
+ {
+diff --git a/xbmc/utils/EGLUtils.h b/xbmc/utils/EGLUtils.h
+index 1de3c72ef174..ad3b04d73503 100644
+--- a/xbmc/utils/EGLUtils.h
++++ b/xbmc/utils/EGLUtils.h
+@@ -166,7 +166,7 @@ class CEGLAttributes
+ class CEGLContextUtils final
+ {
+ public:
+-  CEGLContextUtils();
++  CEGLContextUtils() = default;
+   /**
+    * \param platform platform as constant from an extension building on EGL_EXT_platform_base
+    */
+diff --git a/xbmc/utils/test/TestJobManager.cpp b/xbmc/utils/test/TestJobManager.cpp
+index 438b3c97eb46..6c0fc8883cfd 100644
+--- a/xbmc/utils/test/TestJobManager.cpp
++++ b/xbmc/utils/test/TestJobManager.cpp
+@@ -65,9 +65,7 @@ class ReallyDumbJob : public CJob
+ class TestJobManager : public testing::Test
+ {
+ protected:
+-  TestJobManager()
+-  {
+-  }
++  TestJobManager() = default;
+ 
+   ~TestJobManager() override
+   {
+diff --git a/xbmc/utils/test/TestLabelFormatter.cpp b/xbmc/utils/test/TestLabelFormatter.cpp
+index d3f3eff26cf6..0989fec5a559 100644
+--- a/xbmc/utils/test/TestLabelFormatter.cpp
++++ b/xbmc/utils/test/TestLabelFormatter.cpp
+@@ -20,19 +20,7 @@
+ class TestLabelFormatter : public testing::Test
+ {
+ protected:
+-  TestLabelFormatter()
+-  {
+-    //! @todo implement
+-    /* TODO
+-    CSettingsCategory* fl = CServiceBroker::GetSettingsComponent()->GetSettings()->AddCategory(7, "filelists", 14081);
+-    CServiceBroker::GetSettingsComponent()->GetSettings()->AddBool(fl, CSettings::SETTING_FILELISTS_SHOWPARENTDIRITEMS, 13306, true);
+-    CServiceBroker::GetSettingsComponent()->GetSettings()->AddBool(fl, CSettings::SETTING_FILELISTS_SHOWEXTENSIONS, 497, true);
+-    CServiceBroker::GetSettingsComponent()->GetSettings()->AddBool(fl, CSettings::SETTING_FILELISTS_IGNORETHEWHENSORTING, 13399, true);
+-    CServiceBroker::GetSettingsComponent()->GetSettings()->AddBool(fl, CSettings::SETTING_FILELISTS_ALLOWFILEDELETION, 14071, false);
+-    CServiceBroker::GetSettingsComponent()->GetSettings()->AddBool(fl, CSettings::SETTING_FILELISTS_SHOWADDSOURCEBUTTONS, 21382,  true);
+-    CServiceBroker::GetSettingsComponent()->GetSettings()->AddBool(fl, CSettings::SETTING_FILELISTS_SHOWHIDDEN, 21330, false);
+-    */
+-  }
++  TestLabelFormatter() = default;
+ 
+   ~TestLabelFormatter() override
+   {
+diff --git a/xbmc/windowing/android/AndroidUtils.cpp b/xbmc/windowing/android/AndroidUtils.cpp
+index f25791e8d5e4..bd5a32f3a464 100644
+--- a/xbmc/windowing/android/AndroidUtils.cpp
++++ b/xbmc/windowing/android/AndroidUtils.cpp
+@@ -190,10 +190,6 @@ CAndroidUtils::CAndroidUtils()
+   });
+ }
+ 
+-CAndroidUtils::~CAndroidUtils()
+-{
+-}
+-
+ bool CAndroidUtils::GetNativeResolution(RESOLUTION_INFO* res) const
+ {
+   EGLNativeWindowType nativeWindow = (EGLNativeWindowType)CXBMCApp::GetNativeWindow(30000);
+diff --git a/xbmc/windowing/android/AndroidUtils.h b/xbmc/windowing/android/AndroidUtils.h
+index f34dd72d5511..5cb4efeed6da 100644
+--- a/xbmc/windowing/android/AndroidUtils.h
++++ b/xbmc/windowing/android/AndroidUtils.h
+@@ -20,7 +20,7 @@ class CAndroidUtils : public ISettingCallback
+ {
+ public:
+   CAndroidUtils();
+-  virtual ~CAndroidUtils();
++  virtual ~CAndroidUtils() = default;
+   bool GetNativeResolution(RESOLUTION_INFO* res) const;
+   bool SetNativeResolution(const RESOLUTION_INFO& res);
+   bool ProbeResolutions(std::vector<RESOLUTION_INFO>& resolutions);
+diff --git a/xbmc/windowing/android/OSScreenSaverAndroid.h b/xbmc/windowing/android/OSScreenSaverAndroid.h
+index 978f7e0b05d7..1b67d85b630a 100644
+--- a/xbmc/windowing/android/OSScreenSaverAndroid.h
++++ b/xbmc/windowing/android/OSScreenSaverAndroid.h
+@@ -13,7 +13,7 @@
+ class COSScreenSaverAndroid : public KODI::WINDOWING::IOSScreenSaver
+ {
+ public:
+-  explicit COSScreenSaverAndroid() {}
++  explicit COSScreenSaverAndroid() = default;
+   void Inhibit() override;
+   void Uninhibit() override;
+ };
+diff --git a/xbmc/windowing/osx/OSScreenSaverOSX.cpp b/xbmc/windowing/osx/OSScreenSaverOSX.cpp
+index 9e134feb72ca..019f86cfb4d7 100644
+--- a/xbmc/windowing/osx/OSScreenSaverOSX.cpp
++++ b/xbmc/windowing/osx/OSScreenSaverOSX.cpp
+@@ -10,10 +10,6 @@
+ 
+ #include <CoreFoundation/CoreFoundation.h>
+ 
+-COSScreenSaverOSX::COSScreenSaverOSX()
+-{
+-}
+-
+ void COSScreenSaverOSX::Inhibit()
+ {
+   // see Technical Q&A QA1340
+diff --git a/xbmc/windowing/osx/OSScreenSaverOSX.h b/xbmc/windowing/osx/OSScreenSaverOSX.h
+index 70d4b7004e0c..c79367a9d95a 100644
+--- a/xbmc/windowing/osx/OSScreenSaverOSX.h
++++ b/xbmc/windowing/osx/OSScreenSaverOSX.h
+@@ -15,7 +15,7 @@
+ class COSScreenSaverOSX : public KODI::WINDOWING::IOSScreenSaver
+ {
+ public:
+-  COSScreenSaverOSX();
++  COSScreenSaverOSX() = default;
+   void Inhibit() override;
+   void Uninhibit() override;
+ 
+diff --git a/xbmc/windowing/osx/WinEventsOSX.h b/xbmc/windowing/osx/WinEventsOSX.h
+index b7d3af66ec02..3e35c19b2c9a 100644
+--- a/xbmc/windowing/osx/WinEventsOSX.h
++++ b/xbmc/windowing/osx/WinEventsOSX.h
+@@ -13,6 +13,6 @@
+ class CWinEventsOSX : public CWinEventsSDL
+ {
+ public:
+-  CWinEventsOSX();
+-  ~CWinEventsOSX();
++  CWinEventsOSX() = default;
++  ~CWinEventsOSX() = default;
+ };
+diff --git a/xbmc/windowing/osx/WinEventsOSX.mm b/xbmc/windowing/osx/WinEventsOSX.mm
+index dc7661f3b219..6294721b298d 100644
+--- a/xbmc/windowing/osx/WinEventsOSX.mm
++++ b/xbmc/windowing/osx/WinEventsOSX.mm
+@@ -9,11 +9,3 @@
+ #include "windowing/osx/WinEventsOSX.h"
+ 
+ // place holder for future native osx event handler
+-
+-CWinEventsOSX::CWinEventsOSX()
+-{
+-}
+-
+-CWinEventsOSX::~CWinEventsOSX()
+-{
+-}
+diff --git a/xbmc/windowing/osx/WinSystemOSX.mm b/xbmc/windowing/osx/WinSystemOSX.mm
+index 1634405f2a06..0274dbbeb44b 100644
+--- a/xbmc/windowing/osx/WinSystemOSX.mm
++++ b/xbmc/windowing/osx/WinSystemOSX.mm
+@@ -673,9 +673,7 @@ static void DisplayReconfigured(CGDirectDisplayID display,
+   m_dpms = std::make_shared<CCocoaDPMSSupport>();
+ }
+ 
+-CWinSystemOSX::~CWinSystemOSX()
+-{
+-};
++CWinSystemOSX::~CWinSystemOSX() = default;
+ 
+ void CWinSystemOSX::StartLostDeviceTimer()
+ {
+diff --git a/xbmc/windowing/osx/WinSystemOSXGL.h b/xbmc/windowing/osx/WinSystemOSXGL.h
+index 4de88c82a08d..07a630bbfba4 100644
+--- a/xbmc/windowing/osx/WinSystemOSXGL.h
++++ b/xbmc/windowing/osx/WinSystemOSXGL.h
+@@ -14,8 +14,8 @@
+ class CWinSystemOSXGL : public CWinSystemOSX, public CRenderSystemGL
+ {
+ public:
+-  CWinSystemOSXGL();
+-  virtual ~CWinSystemOSXGL();
++  CWinSystemOSXGL() = default;
++  virtual ~CWinSystemOSXGL() = default;
+ 
+   // Implementation of CWinSystemBase via CWinSystemOSX
+   CRenderSystemBase *GetRenderSystem() override { return this; }
+diff --git a/xbmc/windowing/osx/WinSystemOSXGL.mm b/xbmc/windowing/osx/WinSystemOSXGL.mm
+index 529ebc8b9c6a..4b6b20575ce8 100644
+--- a/xbmc/windowing/osx/WinSystemOSXGL.mm
++++ b/xbmc/windowing/osx/WinSystemOSXGL.mm
+@@ -20,14 +20,6 @@
+   return winSystem;
+ }
+ 
+-CWinSystemOSXGL::CWinSystemOSXGL()
+-{
+-}
+-
+-CWinSystemOSXGL::~CWinSystemOSXGL()
+-{
+-}
+-
+ void CWinSystemOSXGL::PresentRenderImpl(bool rendered)
+ {
+   if (rendered)
+diff --git a/xbmc/windowing/wayland/InputProcessorPointer.h b/xbmc/windowing/wayland/InputProcessorPointer.h
+index 1cb04f183ae6..f510215ce9fe 100644
+--- a/xbmc/windowing/wayland/InputProcessorPointer.h
++++ b/xbmc/windowing/wayland/InputProcessorPointer.h
+@@ -31,7 +31,7 @@ class IInputHandlerPointer
+   virtual void OnPointerLeave() {}
+   virtual void OnPointerEvent(XBMC_Event& event) = 0;
+ protected:
+-  ~IInputHandlerPointer() {}
++  ~IInputHandlerPointer() = default;
+ };
+ 
+ class CInputProcessorPointer final : public IRawInputHandlerPointer
+diff --git a/xbmc/windowing/wayland/Seat.h b/xbmc/windowing/wayland/Seat.h
+index 518f30ea3769..93cfcfd0715b 100644
+--- a/xbmc/windowing/wayland/Seat.h
++++ b/xbmc/windowing/wayland/Seat.h
+@@ -40,7 +40,7 @@ class IRawInputHandlerKeyboard
+   virtual void OnKeyboardModifiers(CSeat* seat, std::uint32_t serial, std::uint32_t modsDepressed, std::uint32_t modsLatched, std::uint32_t modsLocked, std::uint32_t group) {}
+   virtual void OnKeyboardRepeatInfo(CSeat* seat, std::int32_t rate, std::int32_t delay) {}
+ protected:
+-  ~IRawInputHandlerKeyboard() {}
++  ~IRawInputHandlerKeyboard() = default;
+ };
+ 
+ /**
+@@ -57,7 +57,7 @@ class IRawInputHandlerPointer
+   virtual void OnPointerButton(CSeat* seat, std::uint32_t serial, std::uint32_t time, std::uint32_t button, wayland::pointer_button_state state) {}
+   virtual void OnPointerAxis(CSeat* seat, std::uint32_t time, wayland::pointer_axis axis, double value) {}
+ protected:
+-  ~IRawInputHandlerPointer() {}
++  ~IRawInputHandlerPointer() = default;
+ };
+ 
+ /**
+@@ -74,7 +74,7 @@ class IRawInputHandlerTouch
+   virtual void OnTouchCancel(CSeat* seat) {}
+   virtual void OnTouchShape(CSeat* seat, std::int32_t id, double major, double minor) {}
+ protected:
+-  ~IRawInputHandlerTouch() {};
++  ~IRawInputHandlerTouch() = default;
+ };
+ 
+ /**
+diff --git a/xbmc/windowing/wayland/Signals.h b/xbmc/windowing/wayland/Signals.h
+index 4cc5e639c9e0..1939d088c617 100644
+--- a/xbmc/windowing/wayland/Signals.h
++++ b/xbmc/windowing/wayland/Signals.h
+@@ -23,7 +23,8 @@ using RegistrationIdentifierType = int;
+ class ISignalHandlerData
+ {
+ protected:
+-  ~ISignalHandlerData() {}
++  ~ISignalHandlerData() = default;
++
+ public:
+   virtual void Unregister(RegistrationIdentifierType id) = 0;
+ };

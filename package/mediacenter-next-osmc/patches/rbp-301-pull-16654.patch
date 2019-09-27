@@ -1,0 +1,155 @@
+From 8f66eff293e02e242fb35b20b5cd1c2cf1504475 Mon Sep 17 00:00:00 2001
+From: arnova <arnova@void.org>
+Date: Sun, 22 Sep 2019 13:58:49 +0200
+Subject: [PATCH] fixed: We must exact match addon
+ extensions/mimetypes/protocols (should fix #16652)
+
+---
+ xbmc/cores/paplayer/CodecFactory.cpp          |  6 ++-
+ xbmc/filesystem/FileDirectoryFactory.cpp      | 54 ++++++++++---------
+ xbmc/music/tags/MusicInfoTagLoaderFactory.cpp | 17 +++---
+ 3 files changed, 44 insertions(+), 33 deletions(-)
+
+diff --git a/xbmc/cores/paplayer/CodecFactory.cpp b/xbmc/cores/paplayer/CodecFactory.cpp
+index a5ae79127cb1..15a1b20a9ecd 100644
+--- a/xbmc/cores/paplayer/CodecFactory.cpp
++++ b/xbmc/cores/paplayer/CodecFactory.cpp
+@@ -26,7 +26,8 @@ ICodec* CodecFactory::CreateCodec(const std::string &strFileType)
+   CServiceBroker::GetBinaryAddonManager().GetAddonInfos(addonInfos, true, ADDON_AUDIODECODER);
+   for (const auto& addonInfo : addonInfos)
+   {
+-    if (CAudioDecoder::GetExtensions(addonInfo).find("."+fileType) != std::string::npos)
++    auto exts = StringUtils::Split(CAudioDecoder::GetExtensions(addonInfo), "|");
++    if (std::find(exts.begin(), exts.end(), "." + fileType) != exts.end())
+     {
+       CAudioDecoder* result = new CAudioDecoder(addonInfo);
+       if (!result->CreateDecoder())
+@@ -53,7 +54,8 @@ ICodec* CodecFactory::CreateCodecDemux(const CFileItem& file, unsigned int filec
+     CServiceBroker::GetBinaryAddonManager().GetAddonInfos(addonInfos, true, ADDON_AUDIODECODER);
+     for (const auto& addonInfo : addonInfos)
+     {
+-      if (CAudioDecoder::GetMimetypes(addonInfo).find(content) != std::string::npos)
++      auto types = StringUtils::Split(CAudioDecoder::GetMimetypes(addonInfo), "|");
++      if (std::find(types.begin(), types.end(), content) != types.end())
+       {
+         CAudioDecoder* result = new CAudioDecoder(addonInfo);
+         if (!result->CreateDecoder())
+diff --git a/xbmc/filesystem/FileDirectoryFactory.cpp b/xbmc/filesystem/FileDirectoryFactory.cpp
+index dd0cacdbbbf7..95e1d856184d 100644
+--- a/xbmc/filesystem/FileDirectoryFactory.cpp
++++ b/xbmc/filesystem/FileDirectoryFactory.cpp
+@@ -43,7 +43,7 @@ IFileDirectory* CFileDirectoryFactory::Create(const CURL& url, CFileItem* pItem,
+   if (url.IsProtocol("stack")) // disqualify stack as we need to work with each of the parts instead
+     return NULL;
+ 
+-  std::string strExtension=URIUtils::GetExtension(url);
++  std::string strExtension = URIUtils::GetExtension(url);
+   StringUtils::ToLower(strExtension);
+   if (!strExtension.empty() && CServiceBroker::IsBinaryAddonCacheUp())
+   {
+@@ -51,16 +51,19 @@ IFileDirectory* CFileDirectoryFactory::Create(const CURL& url, CFileItem* pItem,
+     CServiceBroker::GetBinaryAddonManager().GetAddonInfos(addonInfos, true, ADDON_AUDIODECODER);
+     for (const auto& addonInfo : addonInfos)
+     {
+-      if (CAudioDecoder::HasTracks(addonInfo) &&
+-          CAudioDecoder::GetExtensions(addonInfo).find(strExtension) != std::string::npos)
++      if (CAudioDecoder::HasTracks(addonInfo))
+       {
+-        CAudioDecoder* result = new CAudioDecoder(addonInfo);
+-        if (!result->CreateDecoder() || !result->ContainsFiles(url))
++        auto exts = StringUtils::Split(CAudioDecoder::GetExtensions(addonInfo), "|");
++        if (std::find(exts.begin(), exts.end(), "." + strExtension) != exts.end())
+         {
+-          delete result;
+-          return nullptr;
++          CAudioDecoder* result = new CAudioDecoder(addonInfo);
++          if (!result->CreateDecoder() || !result->ContainsFiles(url))
++          {
++            delete result;
++            return nullptr;
++          }
++          return result;
+         }
+-        return result;
+       }
+     }
+   }
+@@ -69,28 +72,31 @@ IFileDirectory* CFileDirectoryFactory::Create(const CURL& url, CFileItem* pItem,
+   {
+     for (const auto& vfsAddon : CServiceBroker::GetVFSAddonCache().GetAddonInstances())
+     {
+-      if (vfsAddon->HasFileDirectories() &&
+-          vfsAddon->GetExtensions().find(strExtension) != std::string::npos)
++      if (vfsAddon->HasFileDirectories())
+       {
+-        CVFSEntryIFileDirectoryWrapper* wrap = new CVFSEntryIFileDirectoryWrapper(vfsAddon);
+-        if (wrap->ContainsFiles(url))
++        auto exts = StringUtils::Split(vfsAddon->GetExtensions(), "|");
++        if (std::find(exts.begin(), exts.end(), "." + strExtension) != exts.end())
+         {
+-          if (wrap->m_items.Size() == 1)
++          CVFSEntryIFileDirectoryWrapper* wrap = new CVFSEntryIFileDirectoryWrapper(vfsAddon);
++          if (wrap->ContainsFiles(url))
+           {
+-            // one STORED file - collapse it down
+-            *pItem = *wrap->m_items[0];
++            if (wrap->m_items.Size() == 1)
++            {
++              // one STORED file - collapse it down
++              *pItem = *wrap->m_items[0];
++            }
++            else
++            { // compressed or more than one file -> create a dir
++              pItem->SetPath(wrap->m_items.GetPath());
++              return wrap;
++            }
+           }
+           else
+-          { // compressed or more than one file -> create a dir
+-            pItem->SetPath(wrap->m_items.GetPath());
+-            return wrap;
+-          }
+-        }
+-        else
+-          pItem->m_bIsFolder = true;
++            pItem->m_bIsFolder = true;
+ 
+-        delete wrap;
+-        return nullptr;
++          delete wrap;
++          return nullptr;
++        }
+       }
+     }
+   }
+diff --git a/xbmc/music/tags/MusicInfoTagLoaderFactory.cpp b/xbmc/music/tags/MusicInfoTagLoaderFactory.cpp
+index 459be28f3bf2..e117ce8ce81a 100644
+--- a/xbmc/music/tags/MusicInfoTagLoaderFactory.cpp
++++ b/xbmc/music/tags/MusicInfoTagLoaderFactory.cpp
+@@ -48,16 +48,19 @@ IMusicInfoTagLoader* CMusicInfoTagLoaderFactory::CreateLoader(const CFileItem& i
+   CServiceBroker::GetBinaryAddonManager().GetAddonInfos(addonInfos, true, ADDON_AUDIODECODER);
+   for (const auto& addonInfo : addonInfos)
+   {
+-    if (CAudioDecoder::HasTags(addonInfo) &&
+-        CAudioDecoder::GetExtensions(addonInfo).find("."+strExtension) != std::string::npos)
++    if (CAudioDecoder::HasTags(addonInfo))
+     {
+-      CAudioDecoder* result = new CAudioDecoder(addonInfo);
+-      if (!result->CreateDecoder())
++      auto exts = StringUtils::Split(CAudioDecoder::GetExtensions(addonInfo), "|");
++      if (std::find(exts.begin(), exts.end(), "." + strExtension) != exts.end())
+       {
+-        delete result;
+-        return nullptr;
++        CAudioDecoder* result = new CAudioDecoder(addonInfo);
++        if (!result->CreateDecoder())
++        {
++          delete result;
++          return nullptr;
++        }
++        return result;
+       }
+-      return result;
+     }
+   }
+ 
