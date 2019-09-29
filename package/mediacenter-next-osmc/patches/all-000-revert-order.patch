@@ -945,7 +945,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/interfaces/builtins/GUIContainerBuiltins.cpp  |  3 +-
  xbmc/interfaces/builtins/GUIControlBuiltins.cpp    |  1 -
  xbmc/interfaces/builtins/LibraryBuiltins.cpp       |  8 +--
- xbmc/interfaces/builtins/PVRBuiltins.cpp           | 11 ++--
  xbmc/interfaces/builtins/PictureBuiltins.cpp       |  3 +-
  xbmc/interfaces/builtins/ProfileBuiltins.cpp       | 12 ++--
  xbmc/interfaces/builtins/SkinBuiltins.cpp          |  8 +--
@@ -20183,34 +20182,6 @@ index 15f2cfbf4d..dbda3d9fec 100644
  #include "video/VideoDatabase.h"
  
  using namespace KODI::MESSAGING;
-diff --git a/xbmc/interfaces/builtins/PVRBuiltins.cpp b/xbmc/interfaces/builtins/PVRBuiltins.cpp
-index f17ff6d8bb..2e2d854c13 100644
---- a/xbmc/interfaces/builtins/PVRBuiltins.cpp
-+++ b/xbmc/interfaces/builtins/PVRBuiltins.cpp
-@@ -8,17 +8,18 @@
- 
- #include "PVRBuiltins.h"
- 
-+#include <algorithm>
-+#include <cstdlib>
-+
- #include "Application.h"
-+#include "guilib/GUIComponent.h"
- #include "GUIInfoManager.h"
- #include "ServiceBroker.h"
--#include "guilib/GUIComponent.h"
- #include "guilib/guiinfo/GUIInfoLabels.h"
--#include "pvr/PVRGUIActions.h"
--#include "pvr/PVRManager.h"
- #include "utils/log.h"
- 
--#include <algorithm>
--#include <cstdlib>
-+#include "pvr/PVRGUIActions.h"
-+#include "pvr/PVRManager.h"
- 
- /*! \brief Search for missing channel icons
-  *   \param params (ignored)
 diff --git a/xbmc/interfaces/builtins/PictureBuiltins.cpp b/xbmc/interfaces/builtins/PictureBuiltins.cpp
 index 15cfe0a982..b48e3f01e3 100644
 --- a/xbmc/interfaces/builtins/PictureBuiltins.cpp
