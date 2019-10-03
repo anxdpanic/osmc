@@ -1,0 +1,31 @@
+From 1f0bafeab56379c8cad8fa8e1eca416ad002b839 Mon Sep 17 00:00:00 2001
+From: Andrey Filipenkov <decapitator@ukr.net>
+Date: Sat, 7 Sep 2019 21:07:44 +0300
+Subject: [PATCH] [macos] make Blank Other Displays setting immediately take
+ effect
+
+previously app restart was required
+---
+ xbmc/settings/DisplaySettings.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/settings/DisplaySettings.cpp b/xbmc/settings/DisplaySettings.cpp
+index 736d7ed84530..70de6d5b305e 100644
+--- a/xbmc/settings/DisplaySettings.cpp
++++ b/xbmc/settings/DisplaySettings.cpp
+@@ -331,13 +331,13 @@ bool CDisplaySettings::OnSettingChanging(std::shared_ptr<const CSetting> setting
+ 
+     return true;
+   }
+-#if defined(HAVE_X11) || defined(TARGET_WINDOWS_DESKTOP)
++#if defined(HAVE_X11) || defined(TARGET_WINDOWS_DESKTOP) || defined(TARGET_DARWIN_OSX)
+   else if (settingId == CSettings::SETTING_VIDEOSCREEN_BLANKDISPLAYS)
+   {
+     auto winSystem = CServiceBroker::GetWinSystem();
+ #if defined(HAVE_X11)
+     winSystem->UpdateResolutions();
+-#elif defined(TARGET_WINDOWS_DESKTOP)
++#elif defined(TARGET_WINDOWS_DESKTOP) || defined(TARGET_DARWIN_OSX)
+     CGraphicContext& gfxContext = winSystem->GetGfxContext();
+     gfxContext.SetVideoResolution(gfxContext.GetVideoResolution(), true);
+ #endif

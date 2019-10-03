@@ -1,0 +1,1086 @@
+From a08ef0aa42360c99cdd8e736ee1495ed5f1a3912 Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Thu, 1 Nov 2018 15:45:50 +0100
+Subject: [PATCH] [PVR] Refactor PVR jobs. Get rid of PVRJobs.(h|cpp).
+
+---
+ xbmc/pvr/CMakeLists.txt             |   4 +-
+ xbmc/pvr/PVREventLogJob.cpp         |  44 +++++++
+ xbmc/pvr/PVREventLogJob.h           |  45 +++++++
+ xbmc/pvr/PVRGUIActions.cpp          |   4 +-
+ xbmc/pvr/PVRGUIChannelNavigator.cpp |  70 +++++++++-
+ xbmc/pvr/PVRJobs.cpp                | 152 ----------------------
+ xbmc/pvr/PVRJobs.h                  | 192 ----------------------------
+ xbmc/pvr/PVRManager.cpp             | 149 ++++++++++++++++-----
+ xbmc/pvr/PVRManager.h               |  36 ++----
+ xbmc/pvr/addons/PVRClients.cpp      |  23 +++-
+ xbmc/pvr/addons/PVRClients.h        |   5 +-
+ xbmc/pvr/timers/PVRTimers.cpp       |   4 +-
+ 12 files changed, 307 insertions(+), 421 deletions(-)
+ create mode 100644 xbmc/pvr/PVREventLogJob.cpp
+ create mode 100644 xbmc/pvr/PVREventLogJob.h
+ delete mode 100644 xbmc/pvr/PVRJobs.cpp
+ delete mode 100644 xbmc/pvr/PVRJobs.h
+
+diff --git a/xbmc/pvr/CMakeLists.txt b/xbmc/pvr/CMakeLists.txt
+index e7ef5217471a..a04e193015f3 100644
+--- a/xbmc/pvr/CMakeLists.txt
++++ b/xbmc/pvr/CMakeLists.txt
+@@ -7,7 +7,7 @@ set(SOURCES PVRActionListener.cpp
+             PVRGUIActions.cpp
+             PVRItem.cpp
+             PVRChannelNumberInputHandler.cpp
+-            PVRJobs.cpp
++            PVREventLogJob.cpp
+             PVRGUIChannelIconUpdater.cpp
+             PVRGUIChannelNavigator.cpp
+             PVRGUIDirectory.cpp
+@@ -26,7 +26,7 @@ set(HEADERS PVRActionListener.h
+             PVRGUIActions.h
+             PVRItem.h
+             PVRChannelNumberInputHandler.h
+-            PVRJobs.h
++            PVREventLogJob.h
+             PVRGUIChannelIconUpdater.h
+             PVRGUIChannelNavigator.h
+             PVRGUIDirectory.h
+diff --git a/xbmc/pvr/PVREventLogJob.cpp b/xbmc/pvr/PVREventLogJob.cpp
+new file mode 100644
+index 000000000000..12a3624c3ca9
+--- /dev/null
++++ b/xbmc/pvr/PVREventLogJob.cpp
+@@ -0,0 +1,44 @@
++/*
++ *  Copyright (C) 2012-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#include "PVREventLogJob.h"
++
++#include "ServiceBroker.h"
++#include "dialogs/GUIDialogKaiToast.h"
++#include "events/EventLog.h"
++#include "events/NotificationEvent.h"
++
++namespace PVR
++{
++
++CPVREventLogJob::CPVREventLogJob(bool bNotifyUser, bool bError, const std::string& label, const std::string& msg, const std::string& icon)
++{
++  AddEvent(bNotifyUser, bError, label, msg, icon);
++}
++
++void CPVREventLogJob::AddEvent(bool bNotifyUser, bool bError, const std::string& label, const std::string& msg, const std::string& icon)
++{
++  m_events.emplace_back(Event(bNotifyUser, bError, label, msg, icon));
++}
++
++bool CPVREventLogJob::DoWork()
++{
++  for (const auto& event : m_events)
++  {
++    if (event.m_bNotifyUser)
++      CGUIDialogKaiToast::QueueNotification(
++        event.m_bError ? CGUIDialogKaiToast::Error : CGUIDialogKaiToast::Info, event.m_label.c_str(), event.m_msg, 5000, true);
++
++    // Write event log entry.
++    CServiceBroker::GetEventLog().Add(
++      std::make_shared<CNotificationEvent>(event.m_label, event.m_msg, event.m_icon, event.m_bError ? EventLevel::Error : EventLevel::Information));
++  }
++  return true;
++}
++
++} // namespace PVR
+diff --git a/xbmc/pvr/PVREventLogJob.h b/xbmc/pvr/PVREventLogJob.h
+new file mode 100644
+index 000000000000..62d5751bf08f
+--- /dev/null
++++ b/xbmc/pvr/PVREventLogJob.h
+@@ -0,0 +1,45 @@
++/*
++ *  Copyright (C) 2012-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#pragma once
++
++#include "utils/Job.h"
++
++#include <string>
++#include <vector>
++
++namespace PVR
++{
++class CPVREventLogJob : public CJob
++{
++public:
++  CPVREventLogJob() = default;
++  CPVREventLogJob(bool bNotifyUser, bool bError, const std::string& label, const std::string& msg, const std::string& icon);
++  ~CPVREventLogJob() override = default;
++  const char* GetType() const override { return "pvr-eventlog-job"; }
++
++  void AddEvent(bool bNotifyUser, bool bError, const std::string& label, const std::string& msg, const std::string& icon);
++
++  bool DoWork() override;
++
++private:
++  struct Event
++  {
++    bool m_bNotifyUser;
++    bool m_bError;
++    std::string m_label;
++    std::string m_msg;
++    std::string m_icon;
++
++    Event(bool bNotifyUser, bool bError, const std::string& label, const std::string& msg, const std::string& icon)
++    : m_bNotifyUser(bNotifyUser), m_bError(bError), m_label(label), m_msg(msg), m_icon(icon) {}
++  };
++
++  std::vector<Event> m_events;
++};
++} // namespace PVR
+diff --git a/xbmc/pvr/PVRGUIActions.cpp b/xbmc/pvr/PVRGUIActions.cpp
+index 653e8a73123d..16264ab9676c 100644
+--- a/xbmc/pvr/PVRGUIActions.cpp
++++ b/xbmc/pvr/PVRGUIActions.cpp
+@@ -32,8 +32,8 @@
+ #include "messaging/helpers/DialogOKHelper.h"
+ #include "network/Network.h"
+ #include "pvr/PVRDatabase.h"
++#include "pvr/PVREventLogJob.h"
+ #include "pvr/PVRItem.h"
+-#include "pvr/PVRJobs.h"
+ #include "pvr/PVRManager.h"
+ #include "pvr/PVRStreamProperties.h"
+ #include "pvr/addons/PVRClients.h"
+@@ -1945,7 +1945,7 @@ namespace PVR
+         icon = "special://xbmc/media/icon256x256.png";
+       }
+ 
+-      CPVREventlogJob* job = new CPVREventlogJob;
++      CPVREventLogJob* job = new CPVREventLogJob;
+       job->AddEvent(false, // do not display a toast, only log event
+                     false, // info, no error
+                     name,
+diff --git a/xbmc/pvr/PVRGUIChannelNavigator.cpp b/xbmc/pvr/PVRGUIChannelNavigator.cpp
+index e30d970df09c..05c7fa891055 100644
+--- a/xbmc/pvr/PVRGUIChannelNavigator.cpp
++++ b/xbmc/pvr/PVRGUIChannelNavigator.cpp
+@@ -13,14 +13,78 @@
+ #include "ServiceBroker.h"
+ #include "guilib/GUIComponent.h"
+ #include "pvr/PVRGUIActions.h"
+-#include "pvr/PVRJobs.h"
+ #include "pvr/PVRManager.h"
+ #include "pvr/channels/PVRChannelGroup.h"
+ #include "settings/Settings.h"
+ #include "settings/SettingsComponent.h"
+ #include "threads/SingleLock.h"
++#include "utils/Job.h"
+ #include "utils/JobManager.h"
+ 
++#ifdef TARGET_POSIX
++#include "platform/posix/XTimeUtils.h"
++#endif
++
++namespace
++{
++class CPVRChannelTimeoutJobBase : public CJob, public IJobCallback
++{
++public:
++  CPVRChannelTimeoutJobBase() = delete;
++  CPVRChannelTimeoutJobBase(PVR::CPVRGUIChannelNavigator& channelNavigator, int iTimeout)
++  : m_channelNavigator(channelNavigator)
++  {
++    m_delayTimer.Set(iTimeout);
++  }
++
++  ~CPVRChannelTimeoutJobBase() override = default;
++
++  virtual void OnTimeout() = 0;
++
++  void OnJobComplete(unsigned int iJobID, bool bSuccess, CJob* job) override {}
++
++  bool DoWork() override
++  {
++    while (!ShouldCancel(0, 0))
++    {
++      if (m_delayTimer.IsTimePast())
++      {
++        OnTimeout();
++        return true;
++      }
++      Sleep(10);
++    }
++    return false;
++  }
++
++protected:
++  PVR::CPVRGUIChannelNavigator& m_channelNavigator;
++
++private:
++  XbmcThreads::EndTime m_delayTimer;
++};
++
++class CPVRChannelEntryTimeoutJob : public CPVRChannelTimeoutJobBase
++{
++public:
++  CPVRChannelEntryTimeoutJob(PVR::CPVRGUIChannelNavigator& channelNavigator, int iTimeout)
++  : CPVRChannelTimeoutJobBase(channelNavigator, iTimeout) {}
++  ~CPVRChannelEntryTimeoutJob() override = default;
++  const char* GetType() const override { return "pvr-channel-entry-timeout-job"; }
++  void OnTimeout() override { m_channelNavigator.SwitchToCurrentChannel(); }
++};
++
++class CPVRChannelInfoTimeoutJob : public CPVRChannelTimeoutJobBase
++{
++public:
++  CPVRChannelInfoTimeoutJob(PVR::CPVRGUIChannelNavigator& channelNavigator, int iTimeout)
++  : CPVRChannelTimeoutJobBase(channelNavigator, iTimeout) {}
++  ~CPVRChannelInfoTimeoutJob() override = default;
++  const char* GetType() const override { return "pvr-channel-info-timeout-job"; }
++  void OnTimeout() override { m_channelNavigator.HideInfo(); }
++};
++} // unnamed namespace
++
+ namespace PVR
+ {
+   void CPVRGUIChannelNavigator::SelectNextChannel(ChannelSwitchMode eSwitchMode)
+@@ -85,7 +149,7 @@ namespace PVR
+         if (m_iChannelEntryJobId >= 0)
+           CJobManager::GetInstance().CancelJob(m_iChannelEntryJobId);
+ 
+-        CPVRChannelEntryTimeoutJob* job = new CPVRChannelEntryTimeoutJob(iTimeout);
++        CPVRChannelEntryTimeoutJob* job = new CPVRChannelEntryTimeoutJob(*this, iTimeout);
+         m_iChannelEntryJobId = CJobManager::GetInstance().AddJob(job, dynamic_cast<IJobCallback*>(job));
+       }
+       else
+@@ -150,7 +214,7 @@ namespace PVR
+ 
+       if (!bForce && iTimeout > 0)
+       {
+-        CPVRChannelInfoTimeoutJob* job = new CPVRChannelInfoTimeoutJob(iTimeout * 1000);
++        CPVRChannelInfoTimeoutJob* job = new CPVRChannelInfoTimeoutJob(*this, iTimeout * 1000);
+         m_iChannelInfoJobId = CJobManager::GetInstance().AddJob(job, dynamic_cast<IJobCallback*>(job));
+       }
+     }
+diff --git a/xbmc/pvr/PVRJobs.cpp b/xbmc/pvr/PVRJobs.cpp
+deleted file mode 100644
+index 55315c73acc4..000000000000
+--- a/xbmc/pvr/PVRJobs.cpp
++++ /dev/null
+@@ -1,152 +0,0 @@
+-/*
+- *  Copyright (C) 2012-2018 Team Kodi
+- *  This file is part of Kodi - https://kodi.tv
+- *
+- *  SPDX-License-Identifier: GPL-2.0-or-later
+- *  See LICENSES/README.md for more information.
+- */
+-
+-#include "PVRJobs.h"
+-
+-#include "ServiceBroker.h"
+-#include "dialogs/GUIDialogKaiToast.h"
+-#include "events/EventLog.h"
+-#include "events/NotificationEvent.h"
+-#ifdef TARGET_POSIX
+-#include "platform/posix/XTimeUtils.h"
+-#endif
+-#include "pvr/PVRGUIActions.h"
+-#include "pvr/PVRGUIChannelIconUpdater.h"
+-#include "pvr/PVRManager.h"
+-#include "pvr/addons/PVRClients.h"
+-#include "pvr/channels/PVRChannelGroupsContainer.h"
+-#include "pvr/recordings/PVRRecordings.h"
+-#include "pvr/timers/PVRTimers.h"
+-
+-namespace PVR
+-{
+-
+-CPVRChannelEntryTimeoutJob::CPVRChannelEntryTimeoutJob(int iTimeout)
+-{
+-  m_delayTimer.Set(iTimeout);
+-}
+-
+-bool CPVRChannelEntryTimeoutJob::DoWork()
+-{
+-  while (!ShouldCancel(0, 0))
+-  {
+-    if (m_delayTimer.IsTimePast())
+-    {
+-      CServiceBroker::GetPVRManager().GUIActions()->GetChannelNavigator().SwitchToCurrentChannel();
+-      return true;
+-    }
+-    Sleep(10);
+-  }
+-  return false;
+-}
+-
+-CPVRChannelInfoTimeoutJob::CPVRChannelInfoTimeoutJob(int iTimeout)
+-{
+-  m_delayTimer.Set(iTimeout);
+-}
+-
+-bool CPVRChannelInfoTimeoutJob::DoWork()
+-{
+-  while (!ShouldCancel(0, 0))
+-  {
+-    if (m_delayTimer.IsTimePast())
+-    {
+-      CServiceBroker::GetPVRManager().GUIActions()->GetChannelNavigator().HideInfo();
+-      return true;
+-    }
+-    Sleep(10);
+-  }
+-  return false;
+-}
+-
+-bool CPVRPlayChannelOnStartupJob::DoWork()
+-{
+-  return CServiceBroker::GetPVRManager().GUIActions()->PlayChannelOnStartup();
+-}
+-
+-CPVREventlogJob::CPVREventlogJob(bool bNotifyUser, bool bError, const std::string& label, const std::string& msg, const std::string& icon)
+-{
+-  AddEvent(bNotifyUser, bError, label, msg, icon);
+-}
+-
+-void CPVREventlogJob::AddEvent(bool bNotifyUser, bool bError, const std::string& label, const std::string& msg, const std::string& icon)
+-{
+-  m_events.emplace_back(Event(bNotifyUser, bError, label, msg, icon));
+-}
+-
+-bool CPVREventlogJob::DoWork()
+-{
+-  for (const auto& event : m_events)
+-  {
+-    if (event.m_bNotifyUser)
+-      CGUIDialogKaiToast::QueueNotification(
+-        event.m_bError ? CGUIDialogKaiToast::Error : CGUIDialogKaiToast::Info, event.m_label.c_str(), event.m_msg, 5000, true);
+-
+-    // Write event log entry.
+-    CServiceBroker::GetEventLog().Add(
+-      EventPtr(new CNotificationEvent(event.m_label, event.m_msg, event.m_icon, event.m_bError ? EventLevel::Error : EventLevel::Information)));
+-  }
+-  return true;
+-}
+-
+-CPVRSearchMissingChannelIconsJob::CPVRSearchMissingChannelIconsJob(const std::vector<std::shared_ptr<CPVRChannelGroup>>& groups, bool bUpdateDb)
+-: m_updater(new CPVRGUIChannelIconUpdater(groups, bUpdateDb))
+-{
+-}
+-
+-bool CPVRSearchMissingChannelIconsJob::DoWork(void)
+-{
+-  m_updater->SearchAndUpdateMissingChannelIcons();
+-  return true;
+-}
+-
+-bool CPVRClientConnectionJob::DoWork(void)
+-{
+-  CServiceBroker::GetPVRManager().Clients()->ConnectionStateChange(m_client, m_connectString, m_state, m_message);
+-  return true;
+-}
+-
+-bool CPVRStartupJob::DoWork(void)
+-{
+-  CServiceBroker::GetPVRManager().Clients()->Start();
+-  return true;
+-}
+-
+-bool CPVRUpdateAddonsJob::DoWork(void)
+-{
+-  CServiceBroker::GetPVRManager().Clients()->UpdateAddons(m_changedAddonId);
+-  return true;
+-}
+-
+-bool CPVREpgsCreateJob::DoWork(void)
+-{
+-  return CServiceBroker::GetPVRManager().CreateChannelEpgs();
+-}
+-
+-bool CPVRRecordingsUpdateJob::DoWork(void)
+-{
+-  CServiceBroker::GetPVRManager().Recordings()->Update();
+-  return true;
+-}
+-
+-bool CPVRTimersUpdateJob::DoWork(void)
+-{
+-  return CServiceBroker::GetPVRManager().Timers()->Update();
+-}
+-
+-bool CPVRChannelsUpdateJob::DoWork(void)
+-{
+-  return CServiceBroker::GetPVRManager().ChannelGroups()->Update(true);
+-}
+-
+-bool CPVRChannelGroupsUpdateJob::DoWork(void)
+-{
+-  return CServiceBroker::GetPVRManager().ChannelGroups()->Update(false);
+-}
+-
+-} // namespace PVR
+diff --git a/xbmc/pvr/PVRJobs.h b/xbmc/pvr/PVRJobs.h
+deleted file mode 100644
+index e1eadb1e6144..000000000000
+--- a/xbmc/pvr/PVRJobs.h
++++ /dev/null
+@@ -1,192 +0,0 @@
+-/*
+- *  Copyright (C) 2012-2018 Team Kodi
+- *  This file is part of Kodi - https://kodi.tv
+- *
+- *  SPDX-License-Identifier: GPL-2.0-or-later
+- *  See LICENSES/README.md for more information.
+- */
+-
+-#pragma once
+-
+-#include "addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h"
+-#include "threads/SystemClock.h"
+-#include "utils/Job.h"
+-
+-#include <memory>
+-#include <string>
+-#include <vector>
+-
+-namespace PVR
+-{
+-  class CPVRChannelGroup;
+-  class CPVRClient;
+-
+-  class CPVRPlayChannelOnStartupJob : public CJob
+-  {
+-  public:
+-    CPVRPlayChannelOnStartupJob() = default;
+-    ~CPVRPlayChannelOnStartupJob() override = default;
+-    const char* GetType() const override { return "pvr-play-channel-on-startup"; }
+-
+-    bool DoWork() override;
+-  };
+-
+-  class CPVRChannelEntryTimeoutJob : public CJob, public IJobCallback
+-  {
+-  public:
+-    explicit CPVRChannelEntryTimeoutJob(int timeout);
+-    ~CPVRChannelEntryTimeoutJob() override = default;
+-    const char* GetType() const override { return "pvr-channel-entry-timeout-job"; }
+-    void OnJobComplete(unsigned int iJobID, bool bSuccess, CJob* job) override {}
+-
+-    bool DoWork() override;
+-  private:
+-    XbmcThreads::EndTime m_delayTimer;
+-  };
+-
+-  class CPVRChannelInfoTimeoutJob : public CJob, public IJobCallback
+-  {
+-  public:
+-    CPVRChannelInfoTimeoutJob(int iTimeout);
+-    ~CPVRChannelInfoTimeoutJob() override = default;
+-    const char* GetType() const override { return "pvr-channel-info-timeout-job"; }
+-    void OnJobComplete(unsigned int iJobID, bool bSuccess, CJob* job) override {}
+-
+-    bool DoWork() override;
+-  private:
+-    XbmcThreads::EndTime m_delayTimer;
+-  };
+-
+-  class CPVREventlogJob : public CJob
+-  {
+-  public:
+-    CPVREventlogJob() = default;
+-    CPVREventlogJob(bool bNotifyUser, bool bError, const std::string& label, const std::string& msg, const std::string& icon);
+-    ~CPVREventlogJob() override = default;
+-    const char* GetType() const override { return "pvr-eventlog-job"; }
+-
+-    void AddEvent(bool bNotifyUser, bool bError, const std::string& label, const std::string& msg, const std::string& icon);
+-
+-    bool DoWork() override;
+-  private:
+-    struct Event
+-    {
+-      bool m_bNotifyUser;
+-      bool m_bError;
+-      std::string m_label;
+-      std::string m_msg;
+-      std::string m_icon;
+-
+-      Event(bool bNotifyUser, bool bError, const std::string& label, const std::string& msg, const std::string& icon)
+-      : m_bNotifyUser(bNotifyUser), m_bError(bError), m_label(label), m_msg(msg), m_icon(icon) {}
+-    };
+-
+-    std::vector<Event> m_events;
+-  };
+-
+-  class CPVRStartupJob : public CJob
+-  {
+-  public:
+-    CPVRStartupJob(void) = default;
+-    ~CPVRStartupJob() override = default;
+-    const char* GetType() const override { return "pvr-startup"; }
+-
+-    bool DoWork() override;
+-  };
+-
+-  class CPVRUpdateAddonsJob : public CJob
+-  {
+-  public:
+-    explicit CPVRUpdateAddonsJob(const std::string& changedAddonId) : m_changedAddonId(changedAddonId) {};
+-    ~CPVRUpdateAddonsJob() override = default;
+-    const char* GetType() const override { return "pvr-update-addons"; }
+-
+-    bool DoWork() override;
+-
+-  private:
+-    CPVRUpdateAddonsJob() = delete;
+-
+-    std::string m_changedAddonId;
+-  };
+-
+-  class CPVREpgsCreateJob : public CJob
+-  {
+-  public:
+-    CPVREpgsCreateJob(void) = default;
+-    ~CPVREpgsCreateJob() override = default;
+-    const char* GetType() const override { return "pvr-create-epgs"; }
+-
+-    bool DoWork() override;
+-  };
+-
+-  class CPVRRecordingsUpdateJob : public CJob
+-  {
+-  public:
+-    CPVRRecordingsUpdateJob(void) = default;
+-    ~CPVRRecordingsUpdateJob() override = default;
+-    const char* GetType() const override { return "pvr-update-recordings"; }
+-
+-    bool DoWork() override;
+-  };
+-
+-  class CPVRTimersUpdateJob : public CJob
+-  {
+-  public:
+-    CPVRTimersUpdateJob(void) = default;
+-    ~CPVRTimersUpdateJob() override = default;
+-    const char* GetType() const override { return "pvr-update-timers"; }
+-
+-    bool DoWork() override;
+-  };
+-
+-  class CPVRChannelsUpdateJob : public CJob
+-  {
+-  public:
+-    CPVRChannelsUpdateJob(void) = default;
+-    ~CPVRChannelsUpdateJob() override = default;
+-    const char* GetType() const override { return "pvr-update-channels"; }
+-
+-    bool DoWork() override;
+-  };
+-
+-  class CPVRChannelGroupsUpdateJob : public CJob
+-  {
+-  public:
+-    CPVRChannelGroupsUpdateJob(void) = default;
+-    ~CPVRChannelGroupsUpdateJob() override = default;
+-    const char* GetType() const override { return "pvr-update-channelgroups"; }
+-
+-    bool DoWork() override;
+-  };
+-
+-  class CPVRGUIChannelIconUpdater;
+-
+-  class CPVRSearchMissingChannelIconsJob : public CJob
+-  {
+-  public:
+-    CPVRSearchMissingChannelIconsJob(const std::vector<std::shared_ptr<CPVRChannelGroup>>& groups, bool bUpdateDb);
+-    ~CPVRSearchMissingChannelIconsJob() override = default;
+-    const char* GetType() const override { return "pvr-search-missing-channel-icons"; }
+-
+-    bool DoWork() override;
+-  private:
+-    const std::unique_ptr<CPVRGUIChannelIconUpdater> m_updater;
+-  };
+-
+-  class CPVRClientConnectionJob : public CJob
+-  {
+-  public:
+-    CPVRClientConnectionJob(CPVRClient* client, std::string connectString, PVR_CONNECTION_STATE state, std::string message)
+-    : m_client(client), m_connectString(connectString), m_state(state), m_message(message) {}
+-    ~CPVRClientConnectionJob() override = default;
+-    const char* GetType() const override { return "pvr-client-connection"; }
+-
+-    bool DoWork() override;
+-  private:
+-    CPVRClient* m_client;
+-    std::string m_connectString;
+-    PVR_CONNECTION_STATE m_state;
+-    std::string m_message;
+-  };
+-
+-} // namespace PVR
+diff --git a/xbmc/pvr/PVRManager.cpp b/xbmc/pvr/PVRManager.cpp
+index 538feae44dcd..ea696d852801 100644
+--- a/xbmc/pvr/PVRManager.cpp
++++ b/xbmc/pvr/PVRManager.cpp
+@@ -15,9 +15,9 @@
+ #include "messaging/ApplicationMessenger.h"
+ #include "pvr/PVRDatabase.h"
+ #include "pvr/PVRGUIActions.h"
++#include "pvr/PVRGUIChannelIconUpdater.h"
+ #include "pvr/PVRGUIInfo.h"
+ #include "pvr/PVRGUIProgressHandler.h"
+-#include "pvr/PVRJobs.h"
+ #include "pvr/addons/PVRClients.h"
+ #include "pvr/channels/PVRChannel.h"
+ #include "pvr/channels/PVRChannelGroup.h"
+@@ -44,10 +44,63 @@
+ using namespace PVR;
+ using namespace KODI::MESSAGING;
+ 
+-CPVRManagerJobQueue::CPVRManagerJobQueue()
+-: m_triggerEvent(false)
++namespace PVR
+ {
+-}
++template<typename F>
++class CPVRLambdaJob : public CJob
++{
++public:
++  CPVRLambdaJob() = delete;
++  CPVRLambdaJob(const std::string& type, F&& f) : m_type(type), m_f(std::forward<F>(f)) {}
++
++  bool DoWork() override
++  {
++    m_f();
++    return true;
++  }
++
++  const char* GetType() const override
++  {
++    return m_type.c_str();
++  }
++
++private:
++  std::string m_type;
++  F m_f;
++};
++
++class CPVRManagerJobQueue
++{
++public:
++  CPVRManagerJobQueue() : m_triggerEvent(false) {}
++
++  void Start();
++  void Stop();
++  void Clear();
++
++  template<typename F>
++  void Append(const std::string& type, F&& f)
++  {
++    AppendJob(new CPVRLambdaJob<F>(type, std::forward<F>(f)));
++  }
++
++  void ExecutePendingJobs();
++
++  bool WaitForJobs(unsigned int milliSeconds)
++  {
++    return m_triggerEvent.WaitMSec(milliSeconds);
++  }
++
++
++private:
++  void AppendJob(CJob* job);
++
++  CCriticalSection m_critSection;
++  CEvent m_triggerEvent;
++  std::vector<CJob*> m_pendingUpdates;
++  bool m_bStopped = true;
++};
++} // namespace PVR
+ 
+ void CPVRManagerJobQueue::Start()
+ {
+@@ -73,7 +126,7 @@ void CPVRManagerJobQueue::Clear()
+   m_triggerEvent.Set();
+ }
+ 
+-void CPVRManagerJobQueue::AppendJob(CJob * job)
++void CPVRManagerJobQueue::AppendJob(CJob* job)
+ {
+   CSingleLock lock(m_critSection);
+ 
+@@ -93,7 +146,7 @@ void CPVRManagerJobQueue::AppendJob(CJob * job)
+ 
+ void CPVRManagerJobQueue::ExecutePendingJobs()
+ {
+-  std::vector<CJob *> pendingUpdates;
++  std::vector<CJob*> pendingUpdates;
+ 
+   {
+     CSingleLock lock(m_critSection);
+@@ -116,11 +169,6 @@ void CPVRManagerJobQueue::ExecutePendingJobs()
+   }
+ }
+ 
+-bool CPVRManagerJobQueue::WaitForJobs(unsigned int milliSeconds)
+-{
+-  return m_triggerEvent.WaitMSec(milliSeconds);
+-}
+-
+ CPVRManager::CPVRManager(void) :
+     CThread("PVRManager"),
+     m_channelGroups(new CPVRChannelGroupsContainer),
+@@ -129,6 +177,7 @@ CPVRManager::CPVRManager(void) :
+     m_addons(new CPVRClients),
+     m_guiInfo(new CPVRGUIInfo),
+     m_guiActions(new CPVRGUIActions),
++    m_pendingUpdates(new CPVRManagerJobQueue),
+     m_database(new CPVRDatabase),
+     m_parentalTimer(new CStopWatch),
+     m_settings({
+@@ -250,7 +299,7 @@ CPVREpgContainer& CPVRManager::EpgContainer()
+ 
+ void CPVRManager::Clear(void)
+ {
+-  m_pendingUpdates.Clear();
++  m_pendingUpdates->Clear();
+   m_epgContainer.Clear();
+ 
+   CSingleLock lock(m_critSection);
+@@ -282,7 +331,10 @@ void CPVRManager::Init()
+ {
+   // initial check for enabled addons
+   // if at least one pvr addon is enabled, PVRManager start up
+-  CJobManager::GetInstance().AddJob(new CPVRStartupJob(), nullptr);
++  CJobManager::GetInstance().Submit([this] {
++    Clients()->Start();
++    return true;
++  });
+ }
+ 
+ void CPVRManager::Start()
+@@ -329,7 +381,7 @@ void CPVRManager::Stop(void)
+   SetState(ManagerStateStopping);
+ 
+   m_addons->Stop();
+-  m_pendingUpdates.Stop();
++  m_pendingUpdates->Stop();
+   m_epgContainer.Stop();
+   m_guiInfo->Stop();
+ 
+@@ -445,7 +497,7 @@ void CPVRManager::Process(void)
+ 
+   m_guiInfo->Start();
+   m_epgContainer.Start(true);
+-  m_pendingUpdates.Start();
++  m_pendingUpdates->Start();
+ 
+   SetState(ManagerStateStarted);
+   CLog::Log(LOGNOTICE, "PVR Manager: Started");
+@@ -473,7 +525,7 @@ void CPVRManager::Process(void)
+     /* execute the next pending jobs if there are any */
+     try
+     {
+-      m_pendingUpdates.ExecutePendingJobs();
++      m_pendingUpdates->ExecutePendingJobs();
+     }
+     catch (...)
+     {
+@@ -482,7 +534,7 @@ void CPVRManager::Process(void)
+     }
+ 
+     if (IsStarted() && !bRestart)
+-      m_pendingUpdates.WaitForJobs(1000);
++      m_pendingUpdates->WaitForJobs(1000);
+   }
+ 
+   CLog::LogFC(LOGDEBUG, LOGPVR, "PVR Manager leaving main loop");
+@@ -590,7 +642,11 @@ void CPVRManager::UnloadComponents()
+ void CPVRManager::TriggerPlayChannelOnStartup(void)
+ {
+   if (IsStarted())
+-    CJobManager::GetInstance().AddJob(new CPVRPlayChannelOnStartupJob(), nullptr);
++  {
++    CJobManager::GetInstance().Submit([this] {
++      return GUIActions()->PlayChannelOnStartup();
++    });
++  }
+ }
+ 
+ bool CPVRManager::IsPlaying(void) const
+@@ -948,47 +1004,74 @@ bool CPVRManager::IsPlayingEpgTag(void) const
+   return IsStarted() && m_playingEpgTag;
+ }
+ 
+-void CPVRManager::TriggerEpgsCreate(void)
++void CPVRManager::TriggerEpgsCreate()
+ {
+-  m_pendingUpdates.AppendJob(new CPVREpgsCreateJob());
++  m_pendingUpdates->Append("pvr-create-epgs", [this]() {
++    return CreateChannelEpgs();
++  });
+ }
+ 
+-void CPVRManager::TriggerRecordingsUpdate(void)
++void CPVRManager::TriggerRecordingsUpdate()
+ {
+-  m_pendingUpdates.AppendJob(new CPVRRecordingsUpdateJob());
++  m_pendingUpdates->Append("pvr-update-recordings", [this]() {
++    return Recordings()->Update();
++  });
+ }
+ 
+-void CPVRManager::TriggerTimersUpdate(void)
++void CPVRManager::TriggerTimersUpdate()
+ {
+-  m_pendingUpdates.AppendJob(new CPVRTimersUpdateJob());
++  m_pendingUpdates->Append("pvr-update-timers", [this]() {
++    return Timers()->Update();
++  });
+ }
+ 
+-void CPVRManager::TriggerChannelsUpdate(void)
++void CPVRManager::TriggerChannelsUpdate()
+ {
+-  m_pendingUpdates.AppendJob(new CPVRChannelsUpdateJob());
++  m_pendingUpdates->Append("pvr-update-channels", [this]() {
++    return ChannelGroups()->Update(true);
++  });
+ }
+ 
+-void CPVRManager::TriggerChannelGroupsUpdate(void)
++void CPVRManager::TriggerChannelGroupsUpdate()
+ {
+-  m_pendingUpdates.AppendJob(new CPVRChannelGroupsUpdateJob());
++  m_pendingUpdates->Append("pvr-update-channelgroups", [this]() {
++    return ChannelGroups()->Update(false);
++  });
+ }
+ 
+ void CPVRManager::TriggerSearchMissingChannelIcons()
+ {
+   if (IsStarted())
+-    CJobManager::GetInstance().AddJob(new CPVRSearchMissingChannelIconsJob({m_channelGroups->GetGroupAllTV(), m_channelGroups->GetGroupAllRadio()}, true), nullptr);
++  {
++    CJobManager::GetInstance().Submit([this] {
++      CPVRGUIChannelIconUpdater updater({ChannelGroups()->GetGroupAllTV(), ChannelGroups()->GetGroupAllRadio()}, true);
++      updater.SearchAndUpdateMissingChannelIcons();
++      return true;
++    });
++  }
+ }
+ 
+ void CPVRManager::TriggerSearchMissingChannelIcons(const std::shared_ptr<CPVRChannelGroup>& group)
+ {
+   if (IsStarted())
+-    CJobManager::GetInstance().AddJob(new CPVRSearchMissingChannelIconsJob({group}, false), nullptr);
++  {
++    CJobManager::GetInstance().Submit([group] {
++      CPVRGUIChannelIconUpdater updater({group}, false);
++      updater.SearchAndUpdateMissingChannelIcons();
++      return true;
++    });
++  }
+ }
+ 
+-void CPVRManager::ConnectionStateChange(CPVRClient* client, std::string connectString, PVR_CONNECTION_STATE state, std::string message)
++void CPVRManager::ConnectionStateChange(CPVRClient* client,
++                                        const std::string& connectString,
++                                        PVR_CONNECTION_STATE state,
++                                        const std::string& message)
+ {
+-  // Note: No check for started pvr manager here. This method is intended to get called even before the mgr is started.
+-  CJobManager::GetInstance().AddJob(new CPVRClientConnectionJob(client, connectString, state, message), NULL);
++  CJobManager::GetInstance().Submit([this, client, connectString, state, message] {
++    Clients()->ConnectionStateChange(client, connectString, state, message);
++    return true;
++  });
+ }
+ 
+ bool CPVRManager::CreateChannelEpgs(void)
+diff --git a/xbmc/pvr/PVRManager.h b/xbmc/pvr/PVRManager.h
+index 34cb1b924afa..56218708b669 100644
+--- a/xbmc/pvr/PVRManager.h
++++ b/xbmc/pvr/PVRManager.h
+@@ -23,7 +23,6 @@
+ #include <vector>
+ 
+ class CFileItem;
+-class CJob;
+ class CStopWatch;
+ 
+ namespace PVR
+@@ -37,6 +36,7 @@ namespace PVR
+   class CPVRGUIActions;
+   class CPVRGUIInfo;
+   class CPVRGUIProgressHandler;
++  class CPVRManagerJobQueue;
+   class CPVRRecording;
+   class CPVRRecordings;
+   class CPVRTimers;
+@@ -79,26 +79,6 @@ namespace PVR
+     CurrentItem,
+   };
+ 
+-  class CPVRManagerJobQueue
+-  {
+-  public:
+-    CPVRManagerJobQueue();
+-
+-    void Start();
+-    void Stop();
+-    void Clear();
+-
+-    void AppendJob(CJob * job);
+-    void ExecutePendingJobs();
+-    bool WaitForJobs(unsigned int milliSeconds);
+-
+-  private:
+-    CCriticalSection m_critSection;
+-    CEvent m_triggerEvent;
+-    std::vector<CJob *> m_pendingUpdates;
+-    bool m_bStopped = true;
+-  };
+-
+   class CPVRManager : private CThread, public ANNOUNCEMENT::IAnnouncer
+   {
+   public:
+@@ -465,7 +445,10 @@ namespace PVR
+     /*!
+      * @brief Signal a connection change of a client
+      */
+-    void ConnectionStateChange(CPVRClient* client, std::string connectString, PVR_CONNECTION_STATE state, std::string message);
++    void ConnectionStateChange(CPVRClient* client,
++                               const std::string& connectString,
++                               PVR_CONNECTION_STATE state,
++                               const std::string& message);
+ 
+     /*!
+      * @brief Query the events available for CEventStream
+@@ -565,12 +548,11 @@ namespace PVR
+     CPVREpgContainer m_epgContainer;                              /*!< the epg container */
+     //@}
+ 
+-    CPVRManagerJobQueue m_pendingUpdates; /*!< vector of pending pvr updates */
+-
++    std::unique_ptr<CPVRManagerJobQueue> m_pendingUpdates; /*!< vector of pending pvr updates */
+     std::shared_ptr<CPVRDatabase> m_database; /*!< the database for all PVR related data */
+-    mutable CCriticalSection m_critSection;   /*!< critical section for all changes to this class, except for changes to triggers */
+-    bool m_bFirstStart = true;                /*!< true when the PVR manager was started first, false otherwise */
+-    bool m_bEpgsCreated = false;              /*!< true if epg data for channels has been created */
++    mutable CCriticalSection m_critSection; /*!< critical section for all changes to this class, except for changes to triggers */
++    bool m_bFirstStart = true; /*!< true when the PVR manager was started first, false otherwise */
++    bool m_bEpgsCreated = false; /*!< true if epg data for channels has been created */
+ 
+     mutable CCriticalSection m_managerStateMutex;
+     ManagerState m_managerState = ManagerStateStopped;
+diff --git a/xbmc/pvr/addons/PVRClients.cpp b/xbmc/pvr/addons/PVRClients.cpp
+index cc3b48dd4907..b05294fb32f8 100644
+--- a/xbmc/pvr/addons/PVRClients.cpp
++++ b/xbmc/pvr/addons/PVRClients.cpp
+@@ -12,9 +12,10 @@
+ #include "addons/BinaryAddonCache.h"
+ #include "guilib/LocalizeStrings.h"
+ #include "messaging/ApplicationMessenger.h"
+-#include "pvr/PVRJobs.h"
++#include "pvr/PVREventLogJob.h"
+ #include "pvr/PVRManager.h"
+ #include "pvr/channels/PVRChannelGroupInternal.h"
++#include "utils/JobManager.h"
+ #include "utils/log.h"
+ 
+ #include <functional>
+@@ -159,7 +160,7 @@ void CPVRClients::UpdateAddons(const std::string& changedAddonId /*= ""*/)
+         if (status == ADDON_STATUS_PERMANENT_FAILURE)
+         {
+           CServiceBroker::GetAddonMgr().DisableAddon(addon.first->ID());
+-          CJobManager::GetInstance().AddJob(new CPVREventlogJob(true, true, addon.first->Name(), g_localizeStrings.Get(24070), addon.first->Icon()), nullptr);
++          CJobManager::GetInstance().AddJob(new CPVREventLogJob(true, true, addon.first->Name(), g_localizeStrings.Get(24070), addon.first->Icon()), nullptr);
+         }
+       }
+     }
+@@ -236,8 +237,14 @@ void CPVRClients::OnAddonEvent(const AddonEvent& event)
+       typeid(event) == typeid(AddonEvents::ReInstalled))
+   {
+     // update addons
+-    if (CServiceBroker::GetAddonMgr().HasType(event.id, ADDON_PVRDLL))
+-      CJobManager::GetInstance().AddJob(new CPVRUpdateAddonsJob(event.id), nullptr);
++    const std::string id = event.id;
++    if (CServiceBroker::GetAddonMgr().HasType(id, ADDON_PVRDLL))
++    {
++      CJobManager::GetInstance().Submit([this, id] {
++        UpdateAddons(id);
++        return true;
++      });
++    }
+   }
+ }
+ 
+@@ -575,8 +582,10 @@ void CPVRClients::OnPowerSavingDeactivated()
+   });
+ }
+ 
+-void CPVRClients::ConnectionStateChange(
+-  CPVRClient* client, std::string& strConnectionString, PVR_CONNECTION_STATE newState, std::string& strMessage)
++void CPVRClients::ConnectionStateChange(CPVRClient* client,
++                                        const std::string& strConnectionString,
++                                        PVR_CONNECTION_STATE newState,
++                                        const std::string& strMessage)
+ {
+   if (!client)
+     return;
+@@ -634,7 +643,7 @@ void CPVRClients::ConnectionStateChange(
+     strMsg = g_localizeStrings.Get(iMsg);
+ 
+   // Notify user.
+-  CJobManager::GetInstance().AddJob(new CPVREventlogJob(bNotify, bError, client->Name(), strMsg, client->Icon()), nullptr);
++  CJobManager::GetInstance().AddJob(new CPVREventLogJob(bNotify, bError, client->Name(), strMsg, client->Icon()), nullptr);
+ 
+   if (newState == PVR_CONNECTION_STATE_CONNECTED)
+   {
+diff --git a/xbmc/pvr/addons/PVRClients.h b/xbmc/pvr/addons/PVRClients.h
+index db9e44178887..f341b0df04ee 100644
+--- a/xbmc/pvr/addons/PVRClients.h
++++ b/xbmc/pvr/addons/PVRClients.h
+@@ -300,7 +300,10 @@ namespace PVR
+      * @param newState The new connection state.
+      * @param strMessage A human readable message providing additional information.
+      */
+-    void ConnectionStateChange(CPVRClient* client, std::string& strConnectionString, PVR_CONNECTION_STATE newState, std::string& strMessage);
++    void ConnectionStateChange(CPVRClient* client,
++                               const std::string& strConnectionString,
++                               PVR_CONNECTION_STATE newState,
++                               const std::string& strMessage);
+ 
+   private:
+     /*!
+diff --git a/xbmc/pvr/timers/PVRTimers.cpp b/xbmc/pvr/timers/PVRTimers.cpp
+index b8502c4a0e0d..1bb2d18b43c8 100644
+--- a/xbmc/pvr/timers/PVRTimers.cpp
++++ b/xbmc/pvr/timers/PVRTimers.cpp
+@@ -11,7 +11,7 @@
+ #include "ServiceBroker.h"
+ #include "addons/PVRClient.h"
+ #include "pvr/PVRDatabase.h"
+-#include "pvr/PVRJobs.h"
++#include "pvr/PVREventLogJob.h"
+ #include "pvr/PVRManager.h"
+ #include "pvr/addons/PVRClients.h"
+ #include "pvr/channels/PVRChannel.h"
+@@ -354,7 +354,7 @@ bool CPVRTimers::UpdateEntries(const CPVRTimersContainer& timers, const std::vec
+ 
+     if (!timerNotifications.empty() && CServiceBroker::GetPVRManager().IsStarted())
+     {
+-      CPVREventlogJob* job = new CPVREventlogJob;
++      CPVREventLogJob* job = new CPVREventLogJob;
+ 
+       /* queue notifications / fill eventlog */
+       for (const auto& entry : timerNotifications)

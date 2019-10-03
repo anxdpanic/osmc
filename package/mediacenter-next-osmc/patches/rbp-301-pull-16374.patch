@@ -1,0 +1,417 @@
+From 2500134d3460e9182ff61f1bb0a6d86e3ceabf75 Mon Sep 17 00:00:00 2001
+From: Andrey Filipenkov <decapitator@ukr.net>
+Date: Mon, 15 Jul 2019 03:25:36 +0500
+Subject: [PATCH 1/2] split DarwinStorageProvider into OSX and iOS
+
+---
+ cmake/treedata/darwin_embedded/subdirs.txt    |  2 +-
+ cmake/treedata/osx/subdirs.txt                |  2 +-
+ .../darwin/ios-common/storage/CMakeLists.txt  |  5 ++
+ .../ios-common/storage/IOSStorageProvider.h   | 33 +++++++++++
+ .../ios-common/storage/IOSStorageProvider.mm  | 41 ++++++++++++++
+ xbmc/platform/darwin/osx/SDLMain.mm           |  6 +-
+ .../darwin/osx/storage/CMakeLists.txt         |  5 ++
+ .../storage/OSXStorageProvider.cpp}           | 56 +++++--------------
+ .../storage/OSXStorageProvider.h}             |  6 +-
+ xbmc/platform/darwin/storage/CMakeLists.txt   |  5 --
+ 10 files changed, 105 insertions(+), 56 deletions(-)
+ create mode 100644 xbmc/platform/darwin/ios-common/storage/CMakeLists.txt
+ create mode 100644 xbmc/platform/darwin/ios-common/storage/IOSStorageProvider.h
+ create mode 100644 xbmc/platform/darwin/ios-common/storage/IOSStorageProvider.mm
+ create mode 100644 xbmc/platform/darwin/osx/storage/CMakeLists.txt
+ rename xbmc/platform/darwin/{storage/DarwinStorageProvider.cpp => osx/storage/OSXStorageProvider.cpp} (85%)
+ rename xbmc/platform/darwin/{storage/DarwinStorageProvider.h => osx/storage/OSXStorageProvider.h} (88%)
+ delete mode 100644 xbmc/platform/darwin/storage/CMakeLists.txt
+
+diff --git a/cmake/treedata/darwin_embedded/subdirs.txt b/cmake/treedata/darwin_embedded/subdirs.txt
+index e3ef8fe63422..c67c154bfa66 100644
+--- a/cmake/treedata/darwin_embedded/subdirs.txt
++++ b/cmake/treedata/darwin_embedded/subdirs.txt
+@@ -2,8 +2,8 @@ xbmc/input/touch                      input/touch
+ xbmc/input/touch/generic              input/touch/generic
+ xbmc/platform/darwin                  platform/darwin
+ xbmc/platform/darwin/ios-common       platform/ios-common
++xbmc/platform/darwin/ios-common/storage platform/ios-common/storage
+ xbmc/platform/darwin/network          platform/darwin/network
+-xbmc/platform/darwin/storage          platform/storage
+ xbmc/platform/posix                   posix
+ xbmc/platform/posix/filesystem        platform/posix/filesystem
+ xbmc/platform/posix/network           platform/posix/network
+diff --git a/cmake/treedata/osx/subdirs.txt b/cmake/treedata/osx/subdirs.txt
+index b58813e14fa5..f53a6e1d49ff 100644
+--- a/cmake/treedata/osx/subdirs.txt
++++ b/cmake/treedata/osx/subdirs.txt
+@@ -5,7 +5,7 @@ xbmc/platform/darwin/network          platform/darwin/network
+ xbmc/platform/darwin/osx              platform/osx
+ xbmc/platform/darwin/osx/peripherals  platform/osx/peripherals
+ xbmc/platform/darwin/osx/powermanagement platform/darwin/osx/powermanagement
+-xbmc/platform/darwin/storage          platform/storage
++xbmc/platform/darwin/osx/storage      platform/osx/storage
+ xbmc/platform/posix                   posix
+ xbmc/platform/posix/filesystem        platform/posix/filesystem
+ xbmc/platform/posix/network           platform/posix/network
+diff --git a/xbmc/platform/darwin/ios-common/storage/CMakeLists.txt b/xbmc/platform/darwin/ios-common/storage/CMakeLists.txt
+new file mode 100644
+index 000000000000..16a8966fa648
+--- /dev/null
++++ b/xbmc/platform/darwin/ios-common/storage/CMakeLists.txt
+@@ -0,0 +1,5 @@
++set(SOURCES IOSStorageProvider.mm)
++
++set(HEADERS IOSStorageProvider.h)
++
++core_add_library(platform_ios_storage)
+diff --git a/xbmc/platform/darwin/ios-common/storage/IOSStorageProvider.h b/xbmc/platform/darwin/ios-common/storage/IOSStorageProvider.h
+new file mode 100644
+index 000000000000..3acf36338991
+--- /dev/null
++++ b/xbmc/platform/darwin/ios-common/storage/IOSStorageProvider.h
+@@ -0,0 +1,33 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#pragma once
++
++#include "storage/IStorageProvider.h"
++
++#include <string>
++#include <vector>
++
++class CIOSStorageProvider : public IStorageProvider
++{
++public:
++  CIOSStorageProvider() {}
++  virtual ~CIOSStorageProvider() {}
++
++  virtual void Initialize() {}
++  virtual void Stop() {}
++
++  virtual void GetLocalDrives(VECSOURCES& localDrives);
++  virtual void GetRemovableDrives(VECSOURCES& removableDrives) {}
++
++  virtual std::vector<std::string> GetDiskUsage(void);
++
++  virtual bool Eject(const std::string& mountpath) { return false; }
++
++  virtual bool PumpDriveChangeEvents(IStorageEventsCallback* callback) { return false; }
++};
+diff --git a/xbmc/platform/darwin/ios-common/storage/IOSStorageProvider.mm b/xbmc/platform/darwin/ios-common/storage/IOSStorageProvider.mm
+new file mode 100644
+index 000000000000..f47c6f707155
+--- /dev/null
++++ b/xbmc/platform/darwin/ios-common/storage/IOSStorageProvider.mm
+@@ -0,0 +1,41 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#include "IOSStorageProvider.h"
++
++#include "guilib/LocalizeStrings.h"
++#include "utils/StringUtils.h"
++
++#import <Foundation/Foundation.h>
++
++IStorageProvider* IStorageProvider::CreateInstance()
++{
++  return new CIOSStorageProvider();
++}
++
++void CIOSStorageProvider::GetLocalDrives(VECSOURCES& localDrives)
++{
++  CMediaSource share;
++
++  // User home folder
++  share.strPath = "special://envhome/";
++  share.strName = g_localizeStrings.Get(21440);
++  share.m_ignore = true;
++  localDrives.push_back(share);
++
++  // iOS Inbox folder
++  share.strPath = "special://envhome/Documents/Inbox";
++  share.strName = "Inbox";
++  share.m_ignore = true;
++  localDrives.push_back(share);
++}
++
++std::vector<std::string> CIOSStorageProvider::GetDiskUsage()
++{
++  return {};
++}
+diff --git a/xbmc/platform/darwin/osx/SDLMain.mm b/xbmc/platform/darwin/osx/SDLMain.mm
+index 761a754de456..ff8d6ee37011 100644
+--- a/xbmc/platform/darwin/osx/SDLMain.mm
++++ b/xbmc/platform/darwin/osx/SDLMain.mm
+@@ -13,7 +13,7 @@
+ 
+ #import "platform/darwin/osx/CocoaInterface.h"
+ #import "platform/darwin/osx/HotKeyController.h"
+-#import "platform/darwin/storage/DarwinStorageProvider.h"
++#import "platform/darwin/osx/storage/OSXStorageProvider.h"
+ 
+ #import <SDL/SDL.h>
+ #import <sys/param.h> /* for MAXPATHLEN */
+@@ -402,7 +402,7 @@ - (void) deviceDidMountNotification:(NSNotification *) note
+     NSString* volumePath = [note.userInfo objectForKey:@"NSDevicePath"];
+     const char* path = [volumePath UTF8String];
+ 
+-    CDarwinStorageProvider::VolumeMountNotification(label, path);
++    COSXStorageProvider::VolumeMountNotification(label, path);
+   }
+ }
+ 
+@@ -417,7 +417,7 @@ - (void) deviceDidUnMountNotification:(NSNotification *) note
+     NSString* volumePath = [note.userInfo objectForKey:@"NSDevicePath"];
+     const char* path = [volumePath UTF8String];
+ 
+-    CDarwinStorageProvider::VolumeUnmountNotification(label, path);
++    COSXStorageProvider::VolumeUnmountNotification(label, path);
+   }
+ }
+ 
+diff --git a/xbmc/platform/darwin/osx/storage/CMakeLists.txt b/xbmc/platform/darwin/osx/storage/CMakeLists.txt
+new file mode 100644
+index 000000000000..0fd79afc2e8e
+--- /dev/null
++++ b/xbmc/platform/darwin/osx/storage/CMakeLists.txt
+@@ -0,0 +1,5 @@
++set(SOURCES OSXStorageProvider.cpp)
++
++set(HEADERS OSXStorageProvider.h)
++
++core_add_library(platform_osx_storage)
+diff --git a/xbmc/platform/darwin/storage/DarwinStorageProvider.cpp b/xbmc/platform/darwin/osx/storage/OSXStorageProvider.cpp
+similarity index 85%
+rename from xbmc/platform/darwin/storage/DarwinStorageProvider.cpp
+rename to xbmc/platform/darwin/osx/storage/OSXStorageProvider.cpp
+index e3aebfe7a457..73c18d57ddd0 100644
+--- a/xbmc/platform/darwin/storage/DarwinStorageProvider.cpp
++++ b/xbmc/platform/darwin/osx/storage/OSXStorageProvider.cpp
+@@ -7,55 +7,40 @@
+  */
+ 
+ #include <stdlib.h>
+-#include "DarwinStorageProvider.h"
++#include "OSXStorageProvider.h"
+ #include "utils/RegExp.h"
+ #include "Util.h"
+ #include "guilib/LocalizeStrings.h"
+ 
+ #include <sys/mount.h>
+-#if defined(TARGET_DARWIN_OSX)
+ #include <DiskArbitration/DiskArbitration.h>
+ #include <IOKit/storage/IOCDMedia.h>
+ #include <IOKit/storage/IODVDMedia.h>
+ #include "platform/darwin/osx/CocoaInterface.h"
+-#endif
+ 
+-std::vector<std::pair<std::string, std::string>> CDarwinStorageProvider::m_mountsToNotify;
+-std::vector<std::pair<std::string, std::string>> CDarwinStorageProvider::m_unmountsToNotify;
++std::vector<std::pair<std::string, std::string>> COSXStorageProvider::m_mountsToNotify;
++std::vector<std::pair<std::string, std::string>> COSXStorageProvider::m_unmountsToNotify;
+ 
+ IStorageProvider* IStorageProvider::CreateInstance()
+ {
+-  return new CDarwinStorageProvider();
++  return new COSXStorageProvider();
+ }
+ 
+-CDarwinStorageProvider::CDarwinStorageProvider()
++COSXStorageProvider::COSXStorageProvider()
+ {
+   PumpDriveChangeEvents(NULL);
+ }
+ 
+-void CDarwinStorageProvider::GetLocalDrives(VECSOURCES &localDrives)
++void COSXStorageProvider::GetLocalDrives(VECSOURCES& localDrives)
+ {
+   CMediaSource share;
+ 
+   // User home folder
+-  #ifdef TARGET_DARWIN_EMBEDDED
+-    share.strPath = "special://envhome/";
+-  #else
+-    share.strPath = getenv("HOME");
+-  #endif
++  share.strPath = getenv("HOME");
+   share.strName = g_localizeStrings.Get(21440);
+   share.m_ignore = true;
+   localDrives.push_back(share);
+ 
+-#if defined(TARGET_DARWIN_IOS)
+-  // iOS Inbox folder
+-  share.strPath = "special://envhome/Documents/Inbox";
+-  share.strName = "Inbox";
+-  share.m_ignore = true;
+-  localDrives.push_back(share);
+-#endif
+-
+-#if defined(TARGET_DARWIN_OSX)
+   // User desktop folder
+   share.strPath = getenv("HOME");
+   share.strPath += "/Desktop";
+@@ -106,13 +91,10 @@ void CDarwinStorageProvider::GetLocalDrives(VECSOURCES &localDrives)
+ 
+     CFRelease(session);
+   }
+-#endif
+ }
+ 
+-void CDarwinStorageProvider::GetRemovableDrives(VECSOURCES &removableDrives)
++void COSXStorageProvider::GetRemovableDrives(VECSOURCES& removableDrives)
+ {
+-#if defined(TARGET_DARWIN_OSX)
+-
+   DASessionRef session = DASessionCreate(kCFAllocatorDefault);
+   if (session)
+   {
+@@ -161,20 +143,14 @@ void CDarwinStorageProvider::GetRemovableDrives(VECSOURCES &removableDrives)
+ 
+     CFRelease(session);
+   }
+-#endif
+ }
+ 
+-std::vector<std::string> CDarwinStorageProvider::GetDiskUsage()
++std::vector<std::string> COSXStorageProvider::GetDiskUsage()
+ {
+   std::vector<std::string> result;
+   char line[1024];
+ 
+-#ifdef TARGET_DARWIN_EMBEDDED
+-  FILE* pipe = popen("df -ht hfs,apfs", "r");
+-#else
+   FILE* pipe = popen("df -HT ufs,cd9660,hfs,apfs,udf", "r");
+-#endif
+-
+   if (pipe)
+   {
+     while (fgets(line, sizeof(line) - 1, pipe))
+@@ -187,7 +163,6 @@ std::vector<std::string> CDarwinStorageProvider::GetDiskUsage()
+   return result;
+ }
+ 
+-#if defined(TARGET_DARWIN_OSX)
+ namespace
+ {
+   class DAOperationContext
+@@ -295,11 +270,9 @@ namespace
+   }
+ 
+ } // unnamed namespace
+-#endif
+ 
+-bool CDarwinStorageProvider::Eject(const std::string& mountpath)
++bool COSXStorageProvider::Eject(const std::string& mountpath)
+ {
+-#if defined(TARGET_DARWIN_OSX)
+   if (mountpath.empty())
+     return false;
+ 
+@@ -332,12 +305,9 @@ bool CDarwinStorageProvider::Eject(const std::string& mountpath)
+   }
+ 
+   return success;
+-#else
+-  return false;
+-#endif
+ }
+ 
+-bool CDarwinStorageProvider::PumpDriveChangeEvents(IStorageEventsCallback *callback)
++bool COSXStorageProvider::PumpDriveChangeEvents(IStorageEventsCallback* callback)
+ {
+   // Note: If we find a way to only notify kodi user initiated mounts/unmounts we
+   //       could do this here, but currently we can't distinguish this and popups
+@@ -352,13 +322,13 @@ bool CDarwinStorageProvider::PumpDriveChangeEvents(IStorageEventsCallback *callb
+   return bChanged;
+ }
+ 
+-void CDarwinStorageProvider::VolumeMountNotification(const char* label, const char* mountpoint)
++void COSXStorageProvider::VolumeMountNotification(const char* label, const char* mountpoint)
+ {
+   if (label && mountpoint)
+     m_mountsToNotify.emplace_back(std::make_pair(label, mountpoint));
+ }
+ 
+-void CDarwinStorageProvider::VolumeUnmountNotification(const char* label, const char* mountpoint)
++void COSXStorageProvider::VolumeUnmountNotification(const char* label, const char* mountpoint)
+ {
+   if (label && mountpoint)
+    m_unmountsToNotify.emplace_back(std::make_pair(label, mountpoint));
+diff --git a/xbmc/platform/darwin/storage/DarwinStorageProvider.h b/xbmc/platform/darwin/osx/storage/OSXStorageProvider.h
+similarity index 88%
+rename from xbmc/platform/darwin/storage/DarwinStorageProvider.h
+rename to xbmc/platform/darwin/osx/storage/OSXStorageProvider.h
+index 7e679028c412..a7eac8541047 100644
+--- a/xbmc/platform/darwin/storage/DarwinStorageProvider.h
++++ b/xbmc/platform/darwin/osx/storage/OSXStorageProvider.h
+@@ -14,11 +14,11 @@
+ #include <utility>
+ #include <vector>
+ 
+-class CDarwinStorageProvider : public IStorageProvider
++class COSXStorageProvider : public IStorageProvider
+ {
+ public:
+-  CDarwinStorageProvider();
+-  virtual ~CDarwinStorageProvider() = default;
++  COSXStorageProvider();
++  virtual ~COSXStorageProvider() = default;
+ 
+   virtual void Initialize() { }
+   virtual void Stop() { }
+diff --git a/xbmc/platform/darwin/storage/CMakeLists.txt b/xbmc/platform/darwin/storage/CMakeLists.txt
+deleted file mode 100644
+index 9407297191c2..000000000000
+--- a/xbmc/platform/darwin/storage/CMakeLists.txt
++++ /dev/null
+@@ -1,5 +0,0 @@
+-set(SOURCES DarwinStorageProvider.cpp)
+-
+-set(HEADERS DarwinStorageProvider.h)
+-
+-core_add_library(platform_osx_storage)
+
+From 62c63c76a1aeb8f666502732dfe483ebeaa581ff Mon Sep 17 00:00:00 2001
+From: Andrey Filipenkov <decapitator@ukr.net>
+Date: Mon, 15 Jul 2019 13:25:27 +0500
+Subject: [PATCH 2/2] [ios] implement disk space usage
+
+---
+ .../ios-common/storage/IOSStorageProvider.mm     | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/platform/darwin/ios-common/storage/IOSStorageProvider.mm b/xbmc/platform/darwin/ios-common/storage/IOSStorageProvider.mm
+index f47c6f707155..8a28ca5cb64e 100644
+--- a/xbmc/platform/darwin/ios-common/storage/IOSStorageProvider.mm
++++ b/xbmc/platform/darwin/ios-common/storage/IOSStorageProvider.mm
+@@ -37,5 +37,19 @@
+ 
+ std::vector<std::string> CIOSStorageProvider::GetDiskUsage()
+ {
+-  return {};
++  std::vector<std::string> result;
++  auto fileSystemAttributes = [NSFileManager.defaultManager attributesOfFileSystemForPath:@"/"
++                                                                                    error:nil];
++
++  auto formatter = [NSByteCountFormatter new];
++  formatter.includesActualByteCount = YES;
++  formatter.zeroPadsFractionDigits = YES;
++
++  for (const auto& pair :
++       {std::make_pair(NSFileSystemFreeSize, 160), std::make_pair(NSFileSystemSize, 20161)})
++    if (auto sizeStr = [formatter stringForObjectValue:fileSystemAttributes[pair.first]])
++      result.push_back(
++          StringUtils::Format("{}: {}", g_localizeStrings.Get(pair.second), sizeStr.UTF8String));
++
++  return result;
+ }

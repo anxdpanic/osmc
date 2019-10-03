@@ -1,0 +1,27 @@
+From 2acec785c92111e985bff40cc2502e3a3e87f589 Mon Sep 17 00:00:00 2001
+From: fritsch <Peter.Fruehberger@gmail.com>
+Date: Tue, 1 Oct 2019 16:17:28 +0200
+Subject: [PATCH] AESinkAudioTrack: Remove Headphone check - let Audiotrack
+ handle it internally
+
+---
+ xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
+diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp b/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp
+index 9aaac01cdfa4..14c3ae429f21 100644
+--- a/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp
++++ b/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp
+@@ -825,11 +825,7 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
+   m_info.m_displayNameExtra = "audiotrack";
+ 
+   UpdateAvailablePCMCapabilities();
+-
+-  if (!CXBMCApp::IsHeadsetPlugged())
+-  {
+-    UpdateAvailablePassthroughCapabilities();
+-  }
++  UpdateAvailablePassthroughCapabilities();
+   list.push_back(m_info);
+ }
+ 

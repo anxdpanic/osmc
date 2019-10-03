@@ -1,0 +1,614 @@
+From 2a264d01d34296b59c8e535181e4415be692bbb8 Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Sun, 29 Sep 2019 11:46:47 +0200
+Subject: [PATCH] [PVR] Refactor: Move PVR classes from xbmc/addons to
+ xbmc/pvr/addons.
+
+---
+ xbmc/addons/AddonBuilder.cpp                              | 2 +-
+ xbmc/addons/CMakeLists.txt                                | 4 ----
+ xbmc/addons/interfaces/AddonInterfaces.cpp                | 2 +-
+ .../VideoPlayer/DVDInputStreams/InputStreamPVRBase.cpp    | 2 +-
+ .../VideoPlayer/DVDInputStreams/InputStreamPVRChannel.cpp | 2 +-
+ .../DVDInputStreams/InputStreamPVRRecording.cpp           | 2 +-
+ xbmc/pvr/PVRContextMenus.cpp                              | 4 ++--
+ xbmc/pvr/PVRDatabase.cpp                                  | 2 +-
+ xbmc/pvr/PVRGUIActions.cpp                                | 4 ++--
+ xbmc/pvr/PVRGUIInfo.cpp                                   | 1 +
+ xbmc/pvr/PVRManager.cpp                                   | 2 +-
+ xbmc/pvr/PVRPlaybackState.cpp                             | 2 +-
+ xbmc/pvr/addons/CMakeLists.txt                            | 8 ++++++--
+ xbmc/{ => pvr}/addons/PVRClient.cpp                       | 6 +++---
+ xbmc/{ => pvr}/addons/PVRClient.h                         | 8 +++-----
+ xbmc/{ => pvr}/addons/PVRClientMenuHooks.cpp              | 0
+ xbmc/{ => pvr}/addons/PVRClientMenuHooks.h                | 0
+ xbmc/pvr/addons/PVRClients.cpp                            | 5 +++--
+ xbmc/pvr/addons/PVRClients.h                              | 5 +++--
+ xbmc/pvr/channels/PVRChannel.cpp                          | 2 +-
+ xbmc/pvr/channels/PVRChannelGroup.cpp                     | 2 +-
+ xbmc/pvr/dialogs/GUIDialogPVRChannelManager.cpp           | 2 +-
+ xbmc/pvr/dialogs/GUIDialogPVRClientPriorities.cpp         | 1 +
+ xbmc/pvr/dialogs/GUIDialogPVRGuideInfo.cpp                | 2 +-
+ xbmc/pvr/dialogs/GUIDialogPVRRecordingSettings.cpp        | 2 +-
+ xbmc/pvr/dialogs/GUIDialogPVRTimerSettings.cpp            | 1 +
+ xbmc/pvr/epg/Epg.cpp                                      | 2 +-
+ xbmc/pvr/epg/EpgInfoTag.cpp                               | 2 +-
+ xbmc/pvr/recordings/PVRRecording.cpp                      | 2 +-
+ xbmc/pvr/timers/PVRTimerInfoTag.cpp                       | 2 +-
+ xbmc/pvr/timers/PVRTimerType.cpp                          | 2 +-
+ xbmc/pvr/timers/PVRTimers.cpp                             | 2 +-
+ 32 files changed, 44 insertions(+), 41 deletions(-)
+ rename xbmc/{ => pvr}/addons/PVRClient.cpp (99%)
+ rename xbmc/{ => pvr}/addons/PVRClient.h (99%)
+ rename xbmc/{ => pvr}/addons/PVRClientMenuHooks.cpp (100%)
+ rename xbmc/{ => pvr}/addons/PVRClientMenuHooks.h (100%)
+
+diff --git a/xbmc/addons/AddonBuilder.cpp b/xbmc/addons/AddonBuilder.cpp
+index daaf0c83df06..2754634fb693 100644
+--- a/xbmc/addons/AddonBuilder.cpp
++++ b/xbmc/addons/AddonBuilder.cpp
+@@ -14,7 +14,6 @@
+ #include "addons/GameResource.h"
+ #include "addons/ImageResource.h"
+ #include "addons/LanguageResource.h"
+-#include "addons/PVRClient.h"
+ #include "addons/PluginSource.h"
+ #include "addons/Repository.h"
+ #include "addons/Scraper.h"
+@@ -24,6 +23,7 @@
+ #include "addons/Webinterface.h"
+ #include "games/addons/GameClient.h"
+ #include "games/controllers/Controller.h"
++#include "pvr/addons/PVRClient.h"
+ #include "utils/StringUtils.h"
+ 
+ using namespace KODI;
+diff --git a/xbmc/addons/CMakeLists.txt b/xbmc/addons/CMakeLists.txt
+index 7b80c8fe5dd9..5d73b2c54f4b 100644
+--- a/xbmc/addons/CMakeLists.txt
++++ b/xbmc/addons/CMakeLists.txt
+@@ -21,8 +21,6 @@ set(SOURCES Addon.cpp
+             ImageResource.cpp
+             LanguageResource.cpp
+             PluginSource.cpp
+-            PVRClient.cpp
+-            PVRClientMenuHooks.cpp
+             Repository.cpp
+             RepositoryUpdater.cpp
+             Scraper.cpp
+@@ -60,8 +58,6 @@ set(HEADERS Addon.h
+             ImageResource.h
+             LanguageResource.h
+             PluginSource.h
+-            PVRClient.h
+-            PVRClientMenuHooks.h
+             Repository.h
+             RepositoryUpdater.h
+             Resource.h
+diff --git a/xbmc/addons/interfaces/AddonInterfaces.cpp b/xbmc/addons/interfaces/AddonInterfaces.cpp
+index 9ca8639e10f4..f41958328472 100644
+--- a/xbmc/addons/interfaces/AddonInterfaces.cpp
++++ b/xbmc/addons/interfaces/AddonInterfaces.cpp
+@@ -10,7 +10,6 @@
+ #include "AddonInterfaces.h"
+ 
+ #include "addons/Addon.h"
+-#include "addons/PVRClient.h"
+ #include "addons/interfaces/Addon/AddonCallbacksAddon.h"
+ #include "addons/interfaces/GUI/AddonCallbacksGUI.h"
+ #include "addons/interfaces/GUI/AddonGUIWindow.h"
+@@ -19,6 +18,7 @@
+ #include "games/addons/GameClient.h"
+ #include "messaging/ApplicationMessenger.h"
+ #include "peripherals/addons/PeripheralAddon.h"
++#include "pvr/addons/PVRClient.h"
+ #include "utils/log.h"
+ 
+ using namespace KODI;
+diff --git a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamPVRBase.cpp b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamPVRBase.cpp
+index d706bc30d798..969fd4f073b2 100644
+--- a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamPVRBase.cpp
++++ b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamPVRBase.cpp
+@@ -9,10 +9,10 @@
+ #include "InputStreamPVRBase.h"
+ 
+ #include "ServiceBroker.h"
+-#include "addons/PVRClient.h"
+ #include "cores/VideoPlayer/DVDDemuxers/DVDDemux.h"
+ #include "cores/VideoPlayer/Interface/Addon/DemuxPacket.h"
+ #include "pvr/PVRManager.h"
++#include "pvr/addons/PVRClient.h"
+ #include "settings/Settings.h"
+ #include "settings/SettingsComponent.h"
+ #include "utils/log.h"
+diff --git a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamPVRChannel.cpp b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamPVRChannel.cpp
+index 900027f097b6..e37a761f166f 100644
+--- a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamPVRChannel.cpp
++++ b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamPVRChannel.cpp
+@@ -9,8 +9,8 @@
+ #include "InputStreamPVRChannel.h"
+ 
+ #include "ServiceBroker.h"
+-#include "addons/PVRClient.h"
+ #include "pvr/PVRManager.h"
++#include "pvr/addons/PVRClient.h"
+ #include "pvr/channels/PVRChannelGroupsContainer.h"
+ #include "utils/log.h"
+ 
+diff --git a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamPVRRecording.cpp b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamPVRRecording.cpp
+index f22e146b1bb4..85afa225799f 100644
+--- a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamPVRRecording.cpp
++++ b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamPVRRecording.cpp
+@@ -9,8 +9,8 @@
+ #include "InputStreamPVRRecording.h"
+ 
+ #include "ServiceBroker.h"
+-#include "addons/PVRClient.h"
+ #include "pvr/PVRManager.h"
++#include "pvr/addons/PVRClient.h"
+ #include "pvr/recordings/PVRRecordings.h"
+ #include "utils/log.h"
+ 
+diff --git a/xbmc/pvr/PVRContextMenus.cpp b/xbmc/pvr/PVRContextMenus.cpp
+index bfb6f119d631..bdcd07201998 100644
+--- a/xbmc/pvr/PVRContextMenus.cpp
++++ b/xbmc/pvr/PVRContextMenus.cpp
+@@ -10,11 +10,11 @@
+ 
+ #include "ContextMenuItem.h"
+ #include "ServiceBroker.h"
+-#include "addons/PVRClient.h"
+-#include "addons/PVRClientMenuHooks.h"
+ #include "guilib/LocalizeStrings.h"
+ #include "pvr/PVRGUIActions.h"
+ #include "pvr/PVRManager.h"
++#include "pvr/addons/PVRClient.h"
++#include "pvr/addons/PVRClientMenuHooks.h"
+ #include "pvr/channels/PVRChannel.h"
+ #include "pvr/epg/EpgInfoTag.h"
+ #include "pvr/recordings/PVRRecording.h"
+diff --git a/xbmc/pvr/PVRDatabase.cpp b/xbmc/pvr/PVRDatabase.cpp
+index 13ecc74eb6a1..174584e54652 100644
+--- a/xbmc/pvr/PVRDatabase.cpp
++++ b/xbmc/pvr/PVRDatabase.cpp
+@@ -9,8 +9,8 @@
+ #include "PVRDatabase.h"
+ 
+ #include "ServiceBroker.h"
+-#include "addons/PVRClient.h"
+ #include "dbwrappers/dataset.h"
++#include "pvr/addons/PVRClient.h"
+ #include "pvr/channels/PVRChannel.h"
+ #include "pvr/channels/PVRChannelGroup.h"
+ #include "pvr/channels/PVRChannelGroups.h"
+diff --git a/xbmc/pvr/PVRGUIActions.cpp b/xbmc/pvr/PVRGUIActions.cpp
+index 0b7a3a27e4af..e120bf9eca2e 100644
+--- a/xbmc/pvr/PVRGUIActions.cpp
++++ b/xbmc/pvr/PVRGUIActions.cpp
+@@ -12,8 +12,6 @@
+ #include "FileItem.h"
+ #include "ServiceBroker.h"
+ #include "Util.h"
+-#include "addons/PVRClient.h"
+-#include "addons/PVRClientMenuHooks.h"
+ #include "cores/DataCacheCore.h"
+ #include "dialogs/GUIDialogBusy.h"
+ #include "dialogs/GUIDialogKaiToast.h"
+@@ -37,6 +35,8 @@
+ #include "pvr/PVRManager.h"
+ #include "pvr/PVRPlaybackState.h"
+ #include "pvr/PVRStreamProperties.h"
++#include "pvr/addons/PVRClient.h"
++#include "pvr/addons/PVRClientMenuHooks.h"
+ #include "pvr/addons/PVRClients.h"
+ #include "pvr/channels/PVRChannel.h"
+ #include "pvr/channels/PVRChannelGroup.h"
+diff --git a/xbmc/pvr/PVRGUIInfo.cpp b/xbmc/pvr/PVRGUIInfo.cpp
+index c1497e62b100..87fd7ab3e48f 100644
+--- a/xbmc/pvr/PVRGUIInfo.cpp
++++ b/xbmc/pvr/PVRGUIInfo.cpp
+@@ -20,6 +20,7 @@
+ #include "pvr/PVRItem.h"
+ #include "pvr/PVRManager.h"
+ #include "pvr/PVRPlaybackState.h"
++#include "pvr/addons/PVRClient.h"
+ #include "pvr/addons/PVRClients.h"
+ #include "pvr/channels/PVRChannel.h"
+ #include "pvr/channels/PVRChannelGroup.h"
+diff --git a/xbmc/pvr/PVRManager.cpp b/xbmc/pvr/PVRManager.cpp
+index 66656b3405e2..2e6a6c3f1d30 100644
+--- a/xbmc/pvr/PVRManager.cpp
++++ b/xbmc/pvr/PVRManager.cpp
+@@ -9,7 +9,6 @@
+ #include "PVRManager.h"
+ 
+ #include "ServiceBroker.h"
+-#include "addons/PVRClient.h"
+ #include "guilib/LocalizeStrings.h"
+ #include "interfaces/AnnouncementManager.h"
+ #include "messaging/ApplicationMessenger.h"
+@@ -19,6 +18,7 @@
+ #include "pvr/PVRGUIInfo.h"
+ #include "pvr/PVRGUIProgressHandler.h"
+ #include "pvr/PVRPlaybackState.h"
++#include "pvr/addons/PVRClient.h"
+ #include "pvr/addons/PVRClients.h"
+ #include "pvr/channels/PVRChannel.h"
+ #include "pvr/channels/PVRChannelGroup.h"
+diff --git a/xbmc/pvr/PVRPlaybackState.cpp b/xbmc/pvr/PVRPlaybackState.cpp
+index b531fb00370d..a8dcb8b50451 100644
+--- a/xbmc/pvr/PVRPlaybackState.cpp
++++ b/xbmc/pvr/PVRPlaybackState.cpp
+@@ -11,8 +11,8 @@
+ #include "FileItem.h"
+ #include "ServiceBroker.h"
+ #include "XBDateTime.h"
+-#include "addons/PVRClient.h"
+ #include "pvr/PVRManager.h"
++#include "pvr/addons/PVRClient.h"
+ #include "pvr/channels/PVRChannel.h"
+ #include "pvr/channels/PVRChannelGroup.h"
+ #include "pvr/channels/PVRChannelGroups.h"
+diff --git a/xbmc/pvr/addons/CMakeLists.txt b/xbmc/pvr/addons/CMakeLists.txt
+index ee4e628748ce..67d6b8445ee0 100644
+--- a/xbmc/pvr/addons/CMakeLists.txt
++++ b/xbmc/pvr/addons/CMakeLists.txt
+@@ -1,5 +1,9 @@
+-set(SOURCES PVRClients.cpp)
++set(SOURCES PVRClient.cpp
++            PVRClientMenuHooks.cpp
++            PVRClients.cpp)
+ 
+-set(HEADERS PVRClients.h)
++set(HEADERS PVRClient.h
++            PVRClientMenuHooks.h
++            PVRClients.h)
+ 
+ core_add_library(pvr_addons)
+diff --git a/xbmc/addons/PVRClient.cpp b/xbmc/pvr/addons/PVRClient.cpp
+similarity index 99%
+rename from xbmc/addons/PVRClient.cpp
+rename to xbmc/pvr/addons/PVRClient.cpp
+index 4f8ec7e1baed..a523d82add62 100644
+--- a/xbmc/addons/PVRClient.cpp
++++ b/xbmc/pvr/addons/PVRClient.cpp
+@@ -9,7 +9,6 @@
+ #include "PVRClient.h"
+ 
+ #include "ServiceBroker.h"
+-#include "addons/PVRClientMenuHooks.h"
+ #include "cores/VideoPlayer/DVDDemuxers/DVDDemuxUtils.h"
+ #include "dialogs/GUIDialogKaiToast.h"
+ #include "events/EventLog.h"
+@@ -19,6 +18,7 @@
+ #include "pvr/PVRDatabase.h"
+ #include "pvr/PVRManager.h"
+ #include "pvr/PVRStreamProperties.h"
++#include "pvr/addons/PVRClientMenuHooks.h"
+ #include "pvr/addons/PVRClients.h"
+ #include "pvr/channels/PVRChannel.h"
+ #include "pvr/channels/PVRChannelGroup.h"
+@@ -371,7 +371,7 @@ bool CPVRClient::GetAddonProperties(void)
+ {
+   std::string strBackendName, strConnectionString, strFriendlyName, strBackendVersion, strBackendHostname;
+   PVR_ADDON_CAPABILITIES addonCapabilities = {};
+-  CPVRTimerTypes timerTypes;
++  std::vector<std::shared_ptr<CPVRTimerType>> timerTypes;
+ 
+   /* get the capabilities */
+   PVR_ERROR retVal = DoAddonCall(__FUNCTION__, [&addonCapabilities](const AddonInstance* addon) {
+@@ -961,7 +961,7 @@ PVR_ERROR CPVRClient::UpdateTimer(const CPVRTimerInfoTag& timer)
+   }, m_clientCapabilities.SupportsTimers());
+ }
+ 
+-PVR_ERROR CPVRClient::GetTimerTypes(CPVRTimerTypes& results) const
++PVR_ERROR CPVRClient::GetTimerTypes(std::vector<std::shared_ptr<CPVRTimerType>>& results) const
+ {
+   CSingleLock lock(m_critSection);
+   results = m_timertypes;
+diff --git a/xbmc/addons/PVRClient.h b/xbmc/pvr/addons/PVRClient.h
+similarity index 99%
+rename from xbmc/addons/PVRClient.h
+rename to xbmc/pvr/addons/PVRClient.h
+index 387dd640085b..6bf38781c319 100644
+--- a/xbmc/addons/PVRClient.h
++++ b/xbmc/pvr/addons/PVRClient.h
+@@ -31,10 +31,8 @@ namespace PVR
+   class CPVRRecordings;
+   class CPVRStreamProperties;
+   class CPVRTimerInfoTag;
+-  class CPVRTimersContainer;
+-
+   class CPVRTimerType;
+-  typedef std::vector<std::shared_ptr<CPVRTimerType>> CPVRTimerTypes;
++  class CPVRTimersContainer;
+ 
+   #define PVR_INVALID_CLIENT_ID (-2)
+ 
+@@ -605,7 +603,7 @@ namespace PVR
+      * @param results The container to store the result in.
+      * @return PVR_ERROR_NO_ERROR if the list has been fetched successfully.
+      */
+-    PVR_ERROR GetTimerTypes(CPVRTimerTypes& results) const;
++    PVR_ERROR GetTimerTypes(std::vector<std::shared_ptr<CPVRTimerType>>& results) const;
+ 
+     //@}
+     /** @name PVR live stream methods */
+@@ -1113,7 +1111,7 @@ namespace PVR
+     PVR_CONNECTION_STATE   m_connectionState;      /*!< the backend connection state */
+     PVR_CONNECTION_STATE   m_prevConnectionState;  /*!< the previous backend connection state */
+     bool                   m_ignoreClient;         /*!< signals to PVRManager to ignore this client until it has been connected */
+-    CPVRTimerTypes         m_timertypes;           /*!< timer types supported by this backend */
++    std::vector<std::shared_ptr<CPVRTimerType>> m_timertypes; /*!< timer types supported by this backend */
+     int                    m_iClientId;            /*!< unique ID of the client */
+     mutable int            m_iPriority;            /*!< priority of the client */
+     mutable bool           m_bPriorityFetched;
+diff --git a/xbmc/addons/PVRClientMenuHooks.cpp b/xbmc/pvr/addons/PVRClientMenuHooks.cpp
+similarity index 100%
+rename from xbmc/addons/PVRClientMenuHooks.cpp
+rename to xbmc/pvr/addons/PVRClientMenuHooks.cpp
+diff --git a/xbmc/addons/PVRClientMenuHooks.h b/xbmc/pvr/addons/PVRClientMenuHooks.h
+similarity index 100%
+rename from xbmc/addons/PVRClientMenuHooks.h
+rename to xbmc/pvr/addons/PVRClientMenuHooks.h
+diff --git a/xbmc/pvr/addons/PVRClients.cpp b/xbmc/pvr/addons/PVRClients.cpp
+index 89f26168421d..367dd34543e7 100644
+--- a/xbmc/pvr/addons/PVRClients.cpp
++++ b/xbmc/pvr/addons/PVRClients.cpp
+@@ -15,6 +15,7 @@
+ #include "pvr/PVREventLogJob.h"
+ #include "pvr/PVRManager.h"
+ #include "pvr/PVRPlaybackState.h"
++#include "pvr/addons/PVRClient.h"
+ #include "pvr/channels/PVRChannelGroupInternal.h"
+ #include "utils/JobManager.h"
+ #include "utils/log.h"
+@@ -474,10 +475,10 @@ bool CPVRClients::GetTimers(CPVRTimersContainer* timers, std::vector<int>& faile
+   }, failedClients) == PVR_ERROR_NO_ERROR;
+ }
+ 
+-PVR_ERROR CPVRClients::GetTimerTypes(CPVRTimerTypes& results) const
++PVR_ERROR CPVRClients::GetTimerTypes(std::vector<std::shared_ptr<CPVRTimerType>>& results) const
+ {
+   return ForCreatedClients(__FUNCTION__, [&results](const std::shared_ptr<CPVRClient>& client) {
+-    CPVRTimerTypes types;
++    std::vector<std::shared_ptr<CPVRTimerType>> types;
+     PVR_ERROR ret = client->GetTimerTypes(types);
+     if (ret == PVR_ERROR_NO_ERROR)
+       results.insert(results.end(), types.begin(), types.end());
+diff --git a/xbmc/pvr/addons/PVRClients.h b/xbmc/pvr/addons/PVRClients.h
+index f341b0df04ee..b7bcdb71851d 100644
+--- a/xbmc/pvr/addons/PVRClients.h
++++ b/xbmc/pvr/addons/PVRClients.h
+@@ -9,7 +9,6 @@
+ #pragma once
+ 
+ #include "addons/AddonManager.h"
+-#include "addons/PVRClient.h"
+ #include "addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h"
+ #include "threads/CriticalSection.h"
+ 
+@@ -29,8 +28,10 @@ namespace PVR
+   class CPVRChannelGroupInternal;
+   class CPVRChannelGroup;
+   class CPVRChannelGroups;
++  class CPVRClient;
+   class CPVREpg;
+   class CPVRRecordings;
++  class CPVRTimerType;
+   class CPVRTimersContainer;
+ 
+   typedef std::map<int, std::shared_ptr<CPVRClient>> CPVRClientMap;
+@@ -190,7 +191,7 @@ namespace PVR
+      * @param results The container to store the result in.
+      * @return PVR_ERROR_NO_ERROR if the operation succeeded, the respective PVR_ERROR value otherwise.
+      */
+-    PVR_ERROR GetTimerTypes(CPVRTimerTypes& results) const;
++    PVR_ERROR GetTimerTypes(std::vector<std::shared_ptr<CPVRTimerType>>& results) const;
+ 
+     //@}
+ 
+diff --git a/xbmc/pvr/channels/PVRChannel.cpp b/xbmc/pvr/channels/PVRChannel.cpp
+index abc694ed42e8..294c5c93d99f 100644
+--- a/xbmc/pvr/channels/PVRChannel.cpp
++++ b/xbmc/pvr/channels/PVRChannel.cpp
+@@ -10,10 +10,10 @@
+ 
+ #include "ServiceBroker.h"
+ #include "XBDateTime.h"
+-#include "addons/PVRClient.h"
+ #include "guilib/LocalizeStrings.h"
+ #include "pvr/PVRDatabase.h"
+ #include "pvr/PVRManager.h"
++#include "pvr/addons/PVRClient.h"
+ #include "pvr/channels/PVRChannelsPath.h"
+ #include "pvr/epg/Epg.h"
+ #include "pvr/epg/EpgChannelData.h"
+diff --git a/xbmc/pvr/channels/PVRChannelGroup.cpp b/xbmc/pvr/channels/PVRChannelGroup.cpp
+index 1a8af05f4f09..af7adde9edb1 100644
+--- a/xbmc/pvr/channels/PVRChannelGroup.cpp
++++ b/xbmc/pvr/channels/PVRChannelGroup.cpp
+@@ -11,10 +11,10 @@
+ #include "PVRChannelGroup.h"
+ 
+ #include "ServiceBroker.h"
+-#include "addons/PVRClient.h"
+ #include "addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h"
+ #include "pvr/PVRDatabase.h"
+ #include "pvr/PVRManager.h"
++#include "pvr/addons/PVRClient.h"
+ #include "pvr/addons/PVRClients.h"
+ #include "pvr/channels/PVRChannel.h"
+ #include "pvr/channels/PVRChannelsPath.h"
+diff --git a/xbmc/pvr/dialogs/GUIDialogPVRChannelManager.cpp b/xbmc/pvr/dialogs/GUIDialogPVRChannelManager.cpp
+index fb657129e13d..ee431e86e20b 100644
+--- a/xbmc/pvr/dialogs/GUIDialogPVRChannelManager.cpp
++++ b/xbmc/pvr/dialogs/GUIDialogPVRChannelManager.cpp
+@@ -11,7 +11,6 @@
+ #include "FileItem.h"
+ #include "GUIPassword.h"
+ #include "ServiceBroker.h"
+-#include "addons/PVRClient.h"
+ #include "dialogs/GUIDialogFileBrowser.h"
+ #include "dialogs/GUIDialogProgress.h"
+ #include "dialogs/GUIDialogSelect.h"
+@@ -27,6 +26,7 @@
+ #include "profiles/ProfileManager.h"
+ #include "pvr/PVRGUIActions.h"
+ #include "pvr/PVRManager.h"
++#include "pvr/addons/PVRClient.h"
+ #include "pvr/addons/PVRClients.h"
+ #include "pvr/channels/PVRChannel.h"
+ #include "pvr/channels/PVRChannelGroup.h"
+diff --git a/xbmc/pvr/dialogs/GUIDialogPVRClientPriorities.cpp b/xbmc/pvr/dialogs/GUIDialogPVRClientPriorities.cpp
+index 09506ec94a54..044d2085b27f 100644
+--- a/xbmc/pvr/dialogs/GUIDialogPVRClientPriorities.cpp
++++ b/xbmc/pvr/dialogs/GUIDialogPVRClientPriorities.cpp
+@@ -11,6 +11,7 @@
+ #include "ServiceBroker.h"
+ #include "guilib/GUIMessage.h"
+ #include "pvr/PVRManager.h"
++#include "pvr/addons/PVRClient.h"
+ #include "settings/lib/Setting.h"
+ #include "utils/StringUtils.h"
+ #include "utils/log.h"
+diff --git a/xbmc/pvr/dialogs/GUIDialogPVRGuideInfo.cpp b/xbmc/pvr/dialogs/GUIDialogPVRGuideInfo.cpp
+index 15cfaf75362f..014e1df9765f 100644
+--- a/xbmc/pvr/dialogs/GUIDialogPVRGuideInfo.cpp
++++ b/xbmc/pvr/dialogs/GUIDialogPVRGuideInfo.cpp
+@@ -10,10 +10,10 @@
+ 
+ #include "FileItem.h"
+ #include "ServiceBroker.h"
+-#include "addons/PVRClient.h"
+ #include "guilib/GUIMessage.h"
+ #include "pvr/PVRGUIActions.h"
+ #include "pvr/PVRManager.h"
++#include "pvr/addons/PVRClient.h"
+ #include "pvr/epg/EpgInfoTag.h"
+ #include "pvr/recordings/PVRRecordings.h"
+ #include "pvr/timers/PVRTimerInfoTag.h"
+diff --git a/xbmc/pvr/dialogs/GUIDialogPVRRecordingSettings.cpp b/xbmc/pvr/dialogs/GUIDialogPVRRecordingSettings.cpp
+index e4d57fb5330a..a9333b0d3d2c 100644
+--- a/xbmc/pvr/dialogs/GUIDialogPVRRecordingSettings.cpp
++++ b/xbmc/pvr/dialogs/GUIDialogPVRRecordingSettings.cpp
+@@ -9,11 +9,11 @@
+ #include "GUIDialogPVRRecordingSettings.h"
+ 
+ #include "ServiceBroker.h"
+-#include "addons/PVRClient.h"
+ #include "guilib/GUIMessage.h"
+ #include "guilib/LocalizeStrings.h"
+ #include "messaging/helpers/DialogHelper.h"
+ #include "pvr/PVRManager.h"
++#include "pvr/addons/PVRClient.h"
+ #include "pvr/recordings/PVRRecording.h"
+ #include "settings/dialogs/GUIDialogSettingsBase.h"
+ #include "settings/lib/Setting.h"
+diff --git a/xbmc/pvr/dialogs/GUIDialogPVRTimerSettings.cpp b/xbmc/pvr/dialogs/GUIDialogPVRTimerSettings.cpp
+index 34c13ff5d2ae..2f85b26bc202 100644
+--- a/xbmc/pvr/dialogs/GUIDialogPVRTimerSettings.cpp
++++ b/xbmc/pvr/dialogs/GUIDialogPVRTimerSettings.cpp
+@@ -13,6 +13,7 @@
+ #include "guilib/GUIMessage.h"
+ #include "guilib/LocalizeStrings.h"
+ #include "pvr/PVRManager.h"
++#include "pvr/addons/PVRClient.h"
+ #include "pvr/addons/PVRClients.h"
+ #include "pvr/channels/PVRChannel.h"
+ #include "pvr/channels/PVRChannelGroup.h"
+diff --git a/xbmc/pvr/epg/Epg.cpp b/xbmc/pvr/epg/Epg.cpp
+index 7f403ef206d7..934566b6c7b0 100644
+--- a/xbmc/pvr/epg/Epg.cpp
++++ b/xbmc/pvr/epg/Epg.cpp
+@@ -9,9 +9,9 @@
+ #include "Epg.h"
+ 
+ #include "ServiceBroker.h"
+-#include "addons/PVRClient.h"
+ #include "guilib/LocalizeStrings.h"
+ #include "pvr/PVRManager.h"
++#include "pvr/addons/PVRClient.h"
+ #include "pvr/epg/EpgChannelData.h"
+ #include "pvr/epg/EpgDatabase.h"
+ #include "pvr/epg/EpgInfoTag.h"
+diff --git a/xbmc/pvr/epg/EpgInfoTag.cpp b/xbmc/pvr/epg/EpgInfoTag.cpp
+index 83d0babd882b..b9026e5672ff 100644
+--- a/xbmc/pvr/epg/EpgInfoTag.cpp
++++ b/xbmc/pvr/epg/EpgInfoTag.cpp
+@@ -9,11 +9,11 @@
+ #include "EpgInfoTag.h"
+ 
+ #include "ServiceBroker.h"
+-#include "addons/PVRClient.h"
+ #include "addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h"
+ #include "cores/DataCacheCore.h"
+ #include "pvr/PVRManager.h"
+ #include "pvr/PVRPlaybackState.h"
++#include "pvr/addons/PVRClient.h"
+ #include "pvr/epg/Epg.h"
+ #include "pvr/epg/EpgChannelData.h"
+ #include "pvr/epg/EpgDatabase.h"
+diff --git a/xbmc/pvr/recordings/PVRRecording.cpp b/xbmc/pvr/recordings/PVRRecording.cpp
+index fa888423a176..72ecc7d1f32c 100644
+--- a/xbmc/pvr/recordings/PVRRecording.cpp
++++ b/xbmc/pvr/recordings/PVRRecording.cpp
+@@ -9,10 +9,10 @@
+ #include "PVRRecording.h"
+ 
+ #include "ServiceBroker.h"
+-#include "addons/PVRClient.h"
+ #include "addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h"
+ #include "guilib/LocalizeStrings.h"
+ #include "pvr/PVRManager.h"
++#include "pvr/addons/PVRClient.h"
+ #include "pvr/channels/PVRChannel.h"
+ #include "pvr/channels/PVRChannelGroupsContainer.h"
+ #include "pvr/epg/Epg.h"
+diff --git a/xbmc/pvr/timers/PVRTimerInfoTag.cpp b/xbmc/pvr/timers/PVRTimerInfoTag.cpp
+index dc1ab9ac7b80..0c16509a283b 100644
+--- a/xbmc/pvr/timers/PVRTimerInfoTag.cpp
++++ b/xbmc/pvr/timers/PVRTimerInfoTag.cpp
+@@ -9,10 +9,10 @@
+ #include "PVRTimerInfoTag.h"
+ 
+ #include "ServiceBroker.h"
+-#include "addons/PVRClient.h"
+ #include "guilib/LocalizeStrings.h"
+ #include "pvr/PVRDatabase.h"
+ #include "pvr/PVRManager.h"
++#include "pvr/addons/PVRClient.h"
+ #include "pvr/addons/PVRClients.h"
+ #include "pvr/channels/PVRChannel.h"
+ #include "pvr/channels/PVRChannelGroups.h"
+diff --git a/xbmc/pvr/timers/PVRTimerType.cpp b/xbmc/pvr/timers/PVRTimerType.cpp
+index d581884f898a..75358fbdae54 100644
+--- a/xbmc/pvr/timers/PVRTimerType.cpp
++++ b/xbmc/pvr/timers/PVRTimerType.cpp
+@@ -9,9 +9,9 @@
+ #include "PVRTimerType.h"
+ 
+ #include "ServiceBroker.h"
+-#include "addons/PVRClient.h"
+ #include "guilib/LocalizeStrings.h"
+ #include "pvr/PVRManager.h"
++#include "pvr/addons/PVRClient.h"
+ #include "pvr/addons/PVRClients.h"
+ #include "utils/StringUtils.h"
+ #include "utils/log.h"
+diff --git a/xbmc/pvr/timers/PVRTimers.cpp b/xbmc/pvr/timers/PVRTimers.cpp
+index 1bb2d18b43c8..855e90915109 100644
+--- a/xbmc/pvr/timers/PVRTimers.cpp
++++ b/xbmc/pvr/timers/PVRTimers.cpp
+@@ -9,10 +9,10 @@
+ #include "PVRTimers.h"
+ 
+ #include "ServiceBroker.h"
+-#include "addons/PVRClient.h"
+ #include "pvr/PVRDatabase.h"
+ #include "pvr/PVREventLogJob.h"
+ #include "pvr/PVRManager.h"
++#include "pvr/addons/PVRClient.h"
+ #include "pvr/addons/PVRClients.h"
+ #include "pvr/channels/PVRChannel.h"
+ #include "pvr/epg/Epg.h"

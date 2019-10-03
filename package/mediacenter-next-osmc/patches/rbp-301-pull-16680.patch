@@ -1,0 +1,457 @@
+From 3d297b46f3ded1bb548944804b3d757d1032d47f Mon Sep 17 00:00:00 2001
+From: phunkyfish <phunkyfish@gmail.com>
+Date: Fri, 27 Sep 2019 10:12:07 +0100
+Subject: [PATCH] [pvr] refactoring - review fixup after merge of 16677
+
+---
+ xbmc/FileItem.h                               |  8 ++---
+ xbmc/addons/PVRClient.cpp                     | 12 +++----
+ xbmc/cores/VideoPlayer/VideoPlayerRadioRDS.h  |  6 ++--
+ xbmc/interfaces/json-rpc/PlayerOperations.h   |  4 +--
+ xbmc/interfaces/legacy/InfoTagRadioRDS.h      |  4 +--
+ xbmc/pvr/PVRItem.h                            |  1 -
+ xbmc/pvr/PVRManager.h                         | 32 +++++++++----------
+ xbmc/pvr/PVRSettings.h                        |  2 +-
+ xbmc/pvr/channels/PVRChannelGroups.h          |  6 ++--
+ xbmc/pvr/channels/PVRChannelGroupsContainer.h | 10 +++---
+ xbmc/pvr/epg/Epg.h                            | 26 +++++++--------
+ xbmc/pvr/timers/PVRTimerInfoTag.h             |  8 ++---
+ xbmc/pvr/timers/PVRTimerType.cpp              |  8 ++---
+ xbmc/pvr/timers/PVRTimerType.h                | 10 +++---
+ xbmc/pvr/windows/GUIEPGGridContainer.cpp      | 10 +++---
+ xbmc/pvr/windows/GUIEPGGridContainerModel.h   |  2 +-
+ 16 files changed, 74 insertions(+), 75 deletions(-)
+
+diff --git a/xbmc/FileItem.h b/xbmc/FileItem.h
+index 8c1f03860df6..2604b0a6147f 100644
+--- a/xbmc/FileItem.h
++++ b/xbmc/FileItem.h
+@@ -46,10 +46,10 @@ namespace GAME
+ 
+ namespace PVR
+ {
+-  class CPVRChannel;
+-  class CPVREpgInfoTag;
+-  class CPVRRecording;
+-  class CPVRTimerInfoTag;
++class CPVRChannel;
++class CPVREpgInfoTag;
++class CPVRRecording;
++class CPVRTimerInfoTag;
+ }
+ 
+ class CAlbum;
+diff --git a/xbmc/addons/PVRClient.cpp b/xbmc/addons/PVRClient.cpp
+index 151d697bdc4a..4f8ec7e1baed 100644
+--- a/xbmc/addons/PVRClient.cpp
++++ b/xbmc/addons/PVRClient.cpp
+@@ -1479,14 +1479,14 @@ void CPVRClient::cb_transfer_channel_group_member(void* kodiInstance, const ADDO
+   }
+ 
+   CPVRClient* client = static_cast<CPVRClient*>(kodiInstance);
+-  CPVRChannelGroup* group = static_cast<CPVRChannelGroup *>(handle->dataAddress);
++  CPVRChannelGroup* group = static_cast<CPVRChannelGroup*>(handle->dataAddress);
+   if (!member || !client || !group)
+   {
+     CLog::LogF(LOGERROR, "Invalid handler data");
+     return;
+   }
+ 
+-  std::shared_ptr<CPVRChannel> channel  = CServiceBroker::GetPVRManager().ChannelGroups()->GetByUniqueID(member->iChannelUniqueId, client->GetID());
++  std::shared_ptr<CPVRChannel> channel = CServiceBroker::GetPVRManager().ChannelGroups()->GetByUniqueID(member->iChannelUniqueId, client->GetID());
+   if (!channel)
+   {
+     CLog::LogF(LOGERROR, "Cannot find group '%s' or channel '%d'", member->strGroupName, member->iChannelUniqueId);
+@@ -1507,7 +1507,7 @@ void CPVRClient::cb_transfer_epg_entry(void* kodiInstance, const ADDON_HANDLE ha
+   }
+ 
+   CPVRClient* client = static_cast<CPVRClient*>(kodiInstance);
+-  CPVREpg* kodiEpg = static_cast<CPVREpg *>(handle->dataAddress);
++  CPVREpg* kodiEpg = static_cast<CPVREpg*>(handle->dataAddress);
+   if (!epgentry || !client || !kodiEpg)
+   {
+     CLog::LogF(LOGERROR, "Invalid handler data");
+@@ -1527,7 +1527,7 @@ void CPVRClient::cb_transfer_channel_entry(void* kodiInstance, const ADDON_HANDL
+   }
+ 
+   CPVRClient* client = static_cast<CPVRClient*>(kodiInstance);
+-  CPVRChannelGroupInternal* kodiChannels = static_cast<CPVRChannelGroupInternal *>(handle->dataAddress);
++  CPVRChannelGroupInternal* kodiChannels = static_cast<CPVRChannelGroupInternal*>(handle->dataAddress);
+   if (!channel || !client || !kodiChannels)
+   {
+     CLog::LogF(LOGERROR, "Invalid handler data");
+@@ -1548,7 +1548,7 @@ void CPVRClient::cb_transfer_recording_entry(void* kodiInstance, const ADDON_HAN
+   }
+ 
+   CPVRClient* client = static_cast<CPVRClient*>(kodiInstance);
+-  CPVRRecordings* kodiRecordings = static_cast<CPVRRecordings *>(handle->dataAddress);
++  CPVRRecordings* kodiRecordings = static_cast<CPVRRecordings*>(handle->dataAddress);
+   if (!recording || !client || !kodiRecordings)
+   {
+     CLog::LogF(LOGERROR, "Invalid handler data");
+@@ -1569,7 +1569,7 @@ void CPVRClient::cb_transfer_timer_entry(void* kodiInstance, const ADDON_HANDLE
+   }
+ 
+   CPVRClient* client = static_cast<CPVRClient*>(kodiInstance);
+-  CPVRTimersContainer* kodiTimers = static_cast<CPVRTimersContainer *>(handle->dataAddress);
++  CPVRTimersContainer* kodiTimers = static_cast<CPVRTimersContainer*>(handle->dataAddress);
+   if (!timer || !client || !kodiTimers)
+   {
+     CLog::LogF(LOGERROR, "Invalid handler data");
+diff --git a/xbmc/cores/VideoPlayer/VideoPlayerRadioRDS.h b/xbmc/cores/VideoPlayer/VideoPlayerRadioRDS.h
+index 42c52c65ea4a..fc5a83cab4cf 100644
+--- a/xbmc/cores/VideoPlayer/VideoPlayerRadioRDS.h
++++ b/xbmc/cores/VideoPlayer/VideoPlayerRadioRDS.h
+@@ -21,8 +21,8 @@ class CDVDStreamInfo;
+ 
+ namespace PVR
+ {
+-  class CPVRChannel;
+-  class CPVRRadioRDSInfoTag;
++class CPVRChannel;
++class CPVRRadioRDSInfoTag;
+ }
+ 
+ /// --- CDVDRadioRDSData ------------------------------------------------------------
+@@ -88,7 +88,7 @@ class CDVDRadioRDSData : public CThread, public IDVDStreamPlayer
+   void SetRadioStyle(std::string genre);
+ 
+   std::shared_ptr<PVR::CPVRRadioRDSInfoTag> m_currentInfoTag;
+-  std::shared_ptr<PVR::CPVRChannel>         m_currentChannel;
++  std::shared_ptr<PVR::CPVRChannel> m_currentChannel;
+   bool                        m_currentFileUpdate;
+   int                         m_speed;
+   CCriticalSection            m_critSection;
+diff --git a/xbmc/interfaces/json-rpc/PlayerOperations.h b/xbmc/interfaces/json-rpc/PlayerOperations.h
+index def0b385c61c..ddfc004e1461 100644
+--- a/xbmc/interfaces/json-rpc/PlayerOperations.h
++++ b/xbmc/interfaces/json-rpc/PlayerOperations.h
+@@ -17,8 +17,8 @@ class CVariant;
+ 
+ namespace PVR
+ {
+-  class CPVRChannelGroup;
+-  class CPVREpgInfoTag;
++class CPVRChannelGroup;
++class CPVREpgInfoTag;
+ }
+ 
+ namespace JSONRPC
+diff --git a/xbmc/interfaces/legacy/InfoTagRadioRDS.h b/xbmc/interfaces/legacy/InfoTagRadioRDS.h
+index 0d59de5d09d2..8bed0b6f6fef 100644
+--- a/xbmc/interfaces/legacy/InfoTagRadioRDS.h
++++ b/xbmc/interfaces/legacy/InfoTagRadioRDS.h
+@@ -14,8 +14,8 @@
+ 
+ namespace PVR
+ {
+-  class CPVRChannel;
+-  class CPVRRadioRDSInfoTag;
++class CPVRChannel;
++class CPVRRadioRDSInfoTag;
+ }
+ 
+ namespace XBMCAddon
+diff --git a/xbmc/pvr/PVRItem.h b/xbmc/pvr/PVRItem.h
+index 83c46ba12d4e..bf0245471e18 100644
+--- a/xbmc/pvr/PVRItem.h
++++ b/xbmc/pvr/PVRItem.h
+@@ -8,7 +8,6 @@
+ 
+ #pragma once
+ 
+-
+ #include <memory>
+ 
+ class CFileItem;
+diff --git a/xbmc/pvr/PVRManager.h b/xbmc/pvr/PVRManager.h
+index d847e718c14f..34cb1b924afa 100644
+--- a/xbmc/pvr/PVRManager.h
++++ b/xbmc/pvr/PVRManager.h
+@@ -556,27 +556,27 @@ namespace PVR
+ 
+     /** @name containers */
+     //@{
+-    std::shared_ptr<CPVRChannelGroupsContainer>  m_channelGroups;               /*!< pointer to the channel groups container */
+-    std::shared_ptr<CPVRRecordings>              m_recordings;                  /*!< pointer to the recordings container */
+-    std::shared_ptr<CPVRTimers>                  m_timers;                      /*!< pointer to the timers container */
+-    std::shared_ptr<CPVRClients>                 m_addons;                      /*!< pointer to the pvr addon container */
+-    std::unique_ptr<CPVRGUIInfo>   m_guiInfo;                     /*!< pointer to the guiinfo data */
+-    std::shared_ptr<CPVRGUIActions>              m_guiActions;                  /*!< pointer to the pvr gui actions */
+-    CPVREpgContainer               m_epgContainer;                /*!< the epg container */
++    std::shared_ptr<CPVRChannelGroupsContainer> m_channelGroups;  /*!< pointer to the channel groups container */
++    std::shared_ptr<CPVRRecordings> m_recordings;                 /*!< pointer to the recordings container */
++    std::shared_ptr<CPVRTimers> m_timers;                         /*!< pointer to the timers container */
++    std::shared_ptr<CPVRClients> m_addons;                        /*!< pointer to the pvr addon container */
++    std::unique_ptr<CPVRGUIInfo> m_guiInfo;                       /*!< pointer to the guiinfo data */
++    std::shared_ptr<CPVRGUIActions> m_guiActions;                 /*!< pointer to the pvr gui actions */
++    CPVREpgContainer m_epgContainer;                              /*!< the epg container */
+     //@}
+ 
+-    CPVRManagerJobQueue             m_pendingUpdates;              /*!< vector of pending pvr updates */
++    CPVRManagerJobQueue m_pendingUpdates; /*!< vector of pending pvr updates */
+ 
+-    std::shared_ptr<CPVRDatabase>                 m_database;                    /*!< the database for all PVR related data */
+-    mutable CCriticalSection        m_critSection;                 /*!< critical section for all changes to this class, except for changes to triggers */
+-    bool                            m_bFirstStart = true;          /*!< true when the PVR manager was started first, false otherwise */
+-    bool                            m_bEpgsCreated = false;        /*!< true if epg data for channels has been created */
++    std::shared_ptr<CPVRDatabase> m_database; /*!< the database for all PVR related data */
++    mutable CCriticalSection m_critSection;   /*!< critical section for all changes to this class, except for changes to triggers */
++    bool m_bFirstStart = true;                /*!< true when the PVR manager was started first, false otherwise */
++    bool m_bEpgsCreated = false;              /*!< true if epg data for channels has been created */
+ 
+-    mutable CCriticalSection        m_managerStateMutex;
+-    ManagerState                    m_managerState = ManagerStateStopped;
+-    std::unique_ptr<CStopWatch>     m_parentalTimer;
++    mutable CCriticalSection m_managerStateMutex;
++    ManagerState m_managerState = ManagerStateStopped;
++    std::unique_ptr<CStopWatch> m_parentalTimer;
+ 
+-    CCriticalSection                m_startStopMutex; // mutex for protecting pvr manager's start/restart/stop sequence */
++    CCriticalSection m_startStopMutex; // mutex for protecting pvr manager's start/restart/stop sequence */
+ 
+     CEventSource<PVREvent> m_events;
+ 
+diff --git a/xbmc/pvr/PVRSettings.h b/xbmc/pvr/PVRSettings.h
+index 269291b92c8b..38770b54fc34 100644
+--- a/xbmc/pvr/PVRSettings.h
++++ b/xbmc/pvr/PVRSettings.h
+@@ -27,7 +27,7 @@ namespace PVR
+   class CPVRSettings : private ISettingsHandler, private ISettingCallback
+   {
+   public:
+-    explicit CPVRSettings(const std::set<std::string>&  settingNames);
++    explicit CPVRSettings(const std::set<std::string>& settingNames);
+     ~CPVRSettings() override;
+ 
+     // ISettingsHandler implementation
+diff --git a/xbmc/pvr/channels/PVRChannelGroups.h b/xbmc/pvr/channels/PVRChannelGroups.h
+index 0e5b2f0de3ab..ba0149c1dbfb 100644
+--- a/xbmc/pvr/channels/PVRChannelGroups.h
++++ b/xbmc/pvr/channels/PVRChannelGroups.h
+@@ -211,9 +211,9 @@ namespace PVR
+      */
+     void RemoveFromAllGroups(const std::shared_ptr<CPVRChannel>& channel);
+ 
+-    bool                             m_bRadio;         /*!< true if this is a container for radio channels, false if it is for tv channels */
+-    std::shared_ptr<CPVRChannelGroup>              m_selectedGroup;  /*!< the group that's currently selected in the UI */
+-    std::vector<std::shared_ptr<CPVRChannelGroup>> m_groups;         /*!< the groups in this container */
++    bool m_bRadio;                                            /*!< true if this is a container for radio channels, false if it is for tv channels */
++    std::shared_ptr<CPVRChannelGroup> m_selectedGroup;        /*!< the group that's currently selected in the UI */
++    std::vector<std::shared_ptr<CPVRChannelGroup>> m_groups;  /*!< the groups in this container */
+     mutable CCriticalSection m_critSection;
+     std::vector<int> m_failedClientsForChannelGroups;
+   };
+diff --git a/xbmc/pvr/channels/PVRChannelGroupsContainer.h b/xbmc/pvr/channels/PVRChannelGroupsContainer.h
+index be877f8acedf..0cfe35bdcecf 100644
+--- a/xbmc/pvr/channels/PVRChannelGroupsContainer.h
++++ b/xbmc/pvr/channels/PVRChannelGroupsContainer.h
+@@ -79,13 +79,13 @@ namespace PVR
+      * @brief Get the group containing all TV channels.
+      * @return The group containing all TV channels.
+      */
+-    std::shared_ptr<CPVRChannelGroup> GetGroupAllTV(void)  const{ return GetGroupAll(false); }
++    std::shared_ptr<CPVRChannelGroup> GetGroupAllTV(void) const { return GetGroupAll(false); }
+ 
+     /*!
+      * @brief Get the group containing all radio channels.
+      * @return The group containing all radio channels.
+      */
+-    std::shared_ptr<CPVRChannelGroup> GetGroupAllRadio(void)  const{ return GetGroupAll(true); }
++    std::shared_ptr<CPVRChannelGroup> GetGroupAllRadio(void) const { return GetGroupAll(true); }
+ 
+     /*!
+      * @brief Get the group containing all TV or radio channels.
+@@ -178,9 +178,9 @@ namespace PVR
+   protected:
+     CPVRChannelGroups* m_groupsRadio; /*!< all radio channel groups */
+     CPVRChannelGroups* m_groupsTV;    /*!< all TV channel groups */
+-    CCriticalSection   m_critSection;
+-    bool               m_bUpdateChannelsOnly = false;
+-    bool               m_bIsUpdating = false;
++    CCriticalSection m_critSection;
++    bool m_bUpdateChannelsOnly = false;
++    bool m_bIsUpdating = false;
+     std::shared_ptr<CPVRChannelGroup> m_lastPlayedGroups[2]; /*!< used to store the last played groups */
+ 
+   private :
+diff --git a/xbmc/pvr/epg/Epg.h b/xbmc/pvr/epg/Epg.h
+index d1e52a76620c..53059ac1cd91 100644
+--- a/xbmc/pvr/epg/Epg.h
++++ b/xbmc/pvr/epg/Epg.h
+@@ -303,19 +303,19 @@ namespace PVR
+     void Cleanup(int iPastDays);
+ 
+     std::map<CDateTime, std::shared_ptr<CPVREpgInfoTag>> m_tags;
+-    std::map<int, std::shared_ptr<CPVREpgInfoTag>>       m_changedTags;
+-    std::map<int, std::shared_ptr<CPVREpgInfoTag>>       m_deletedTags;
+-    bool                                m_bChanged = false;        /*!< true if anything changed that needs to be persisted, false otherwise */
+-    bool                                m_bTagsChanged = false;    /*!< true when any tags are changed and not persisted, false otherwise */
+-    bool                                m_bLoaded = false;         /*!< true when the initial entries have been loaded */
+-    bool                                m_bUpdatePending = false;  /*!< true if manual update is pending */
+-    int                                 m_iEpgID = 0;          /*!< the database ID of this table */
+-    std::string                         m_strName;         /*!< the name of this table */
+-    std::string                         m_strScraperName;  /*!< the name of the scraper to use */
+-    mutable CDateTime                   m_nowActiveStart;  /*!< the start time of the tag that is currently active */
+-    CDateTime                           m_lastScanTime;    /*!< the last time the EPG has been updated */
+-    mutable CCriticalSection            m_critSection;     /*!< critical section for changes in this table */
+-    bool                                m_bUpdateLastScanTime = false;
++    std::map<int, std::shared_ptr<CPVREpgInfoTag>> m_changedTags;
++    std::map<int, std::shared_ptr<CPVREpgInfoTag>> m_deletedTags;
++    bool m_bChanged = false;            /*!< true if anything changed that needs to be persisted, false otherwise */
++    bool m_bTagsChanged = false;        /*!< true when any tags are changed and not persisted, false otherwise */
++    bool m_bLoaded = false;             /*!< true when the initial entries have been loaded */
++    bool m_bUpdatePending = false;      /*!< true if manual update is pending */
++    int m_iEpgID = 0;                   /*!< the database ID of this table */
++    std::string m_strName;              /*!< the name of this table */
++    std::string m_strScraperName;       /*!< the name of the scraper to use */
++    mutable CDateTime m_nowActiveStart; /*!< the start time of the tag that is currently active */
++    CDateTime m_lastScanTime;           /*!< the last time the EPG has been updated */
++    mutable CCriticalSection m_critSection; /*!< critical section for changes in this table */
++    bool m_bUpdateLastScanTime = false;
+ 
+     std::shared_ptr<CPVREpgChannelData> m_channelData;
+ 
+diff --git a/xbmc/pvr/timers/PVRTimerInfoTag.h b/xbmc/pvr/timers/PVRTimerInfoTag.h
+index 3a6ce7c4d3cd..af32687f629a 100644
+--- a/xbmc/pvr/timers/PVRTimerInfoTag.h
++++ b/xbmc/pvr/timers/PVRTimerInfoTag.h
+@@ -365,10 +365,10 @@ namespace PVR
+     static std::shared_ptr<CPVRTimerInfoTag> CreateFromDate(const std::shared_ptr<CPVRChannel>& channel, const CDateTime& start, int iDuration, bool bCreateReminder, bool bReadOnly);
+ 
+     mutable CCriticalSection m_critSection;
+-    CDateTime             m_StartTime; /*!< start time */
+-    CDateTime             m_StopTime;  /*!< stop time */
+-    CDateTime             m_FirstDay;  /*!< if it is a manual timer rule the first date it starts */
+-    std::shared_ptr<CPVRTimerType>      m_timerType; /*!< the type of this timer */
++    CDateTime m_StartTime; /*!< start time */
++    CDateTime m_StopTime;  /*!< stop time */
++    CDateTime m_FirstDay;  /*!< if it is a manual timer rule the first date it starts */
++    std::shared_ptr<CPVRTimerType> m_timerType; /*!< the type of this timer */
+ 
+     unsigned int m_iTVChildTimersActive = 0;
+     unsigned int m_iTVChildTimersConflictNOK = 0;
+diff --git a/xbmc/pvr/timers/PVRTimerType.cpp b/xbmc/pvr/timers/PVRTimerType.cpp
+index c81ed14f2fa7..d581884f898a 100644
+--- a/xbmc/pvr/timers/PVRTimerType.cpp
++++ b/xbmc/pvr/timers/PVRTimerType.cpp
+@@ -278,7 +278,7 @@ void CPVRTimerType::InitPriorityValues(const PVR_TIMER_TYPE& type)
+   }
+ }
+ 
+-void CPVRTimerType::GetPriorityValues(std::vector< std::pair<std::string, int>>& list) const
++void CPVRTimerType::GetPriorityValues(std::vector<std::pair<std::string, int>>& list) const
+ {
+   for (const auto& prio : m_priorityValues)
+     list.push_back(prio);
+@@ -318,7 +318,7 @@ void CPVRTimerType::InitLifetimeValues(const PVR_TIMER_TYPE& type)
+   }
+ }
+ 
+-void CPVRTimerType::GetLifetimeValues(std::vector< std::pair<std::string, int>>& list) const
++void CPVRTimerType::GetLifetimeValues(std::vector<std::pair<std::string, int>>& list) const
+ {
+   for (const auto& lifetime : m_lifetimeValues)
+     list.push_back(lifetime);
+@@ -343,7 +343,7 @@ void CPVRTimerType::InitMaxRecordingsValues(const PVR_TIMER_TYPE& type)
+   }
+ }
+ 
+-void CPVRTimerType::GetMaxRecordingsValues(std::vector< std::pair<std::string, int>>& list) const
++void CPVRTimerType::GetMaxRecordingsValues(std::vector<std::pair<std::string, int>>& list) const
+ {
+   for (const auto& maxRecordings : m_maxRecordingsValues)
+     list.push_back(maxRecordings);
+@@ -380,7 +380,7 @@ void CPVRTimerType::InitPreventDuplicateEpisodesValues(const PVR_TIMER_TYPE& typ
+   }
+ }
+ 
+-void CPVRTimerType::GetPreventDuplicateEpisodesValues(std::vector< std::pair<std::string, int>>& list) const
++void CPVRTimerType::GetPreventDuplicateEpisodesValues(std::vector<std::pair<std::string, int>>& list) const
+ {
+   for (const auto& preventDupEpisodes : m_preventDupEpisodesValues)
+     list.push_back(preventDupEpisodes);
+diff --git a/xbmc/pvr/timers/PVRTimerType.h b/xbmc/pvr/timers/PVRTimerType.h
+index 9075696e5261..c3478bc33ff8 100644
+--- a/xbmc/pvr/timers/PVRTimerType.h
++++ b/xbmc/pvr/timers/PVRTimerType.h
+@@ -310,7 +310,7 @@ namespace PVR
+      * @brief Obtain a list with all possible values for the priority attribute.
+      * @param list out, the list with the values or an empty list, if priority is not supported by this type.
+      */
+-    void GetPriorityValues(std::vector< std::pair<std::string, int>>& list) const;
++    void GetPriorityValues(std::vector<std::pair<std::string, int>>& list) const;
+ 
+     /*!
+      * @brief Obtain the default value for the priority attribute.
+@@ -322,7 +322,7 @@ namespace PVR
+      * @brief Obtain a list with all possible values for the lifetime attribute.
+      * @param list out, the list with the values or an empty list, if lifetime is not supported by this type.
+      */
+-    void GetLifetimeValues(std::vector< std::pair<std::string, int>>& list) const;
++    void GetLifetimeValues(std::vector<std::pair<std::string, int>>& list) const;
+ 
+     /*!
+      * @brief Obtain the default value for the lifetime attribute.
+@@ -334,7 +334,7 @@ namespace PVR
+      * @brief Obtain a list with all possible values for the MaxRecordings attribute.
+      * @param list out, the list with the values or an empty list, if MaxRecordings is not supported by this type.
+      */
+-    void GetMaxRecordingsValues(std::vector< std::pair<std::string, int>>& list) const;
++    void GetMaxRecordingsValues(std::vector<std::pair<std::string, int>>& list) const;
+ 
+     /*!
+      * @brief Obtain the default value for the MaxRecordings attribute.
+@@ -346,7 +346,7 @@ namespace PVR
+      * @brief Obtain a list with all possible values for the duplicate episode prevention attribute.
+      * @param list out, the list with the values or an empty list, if duplicate episode prevention is not supported by this type.
+      */
+-    void GetPreventDuplicateEpisodesValues(std::vector< std::pair<std::string, int>>& list) const;
++    void GetPreventDuplicateEpisodesValues(std::vector<std::pair<std::string, int>>& list) const;
+ 
+     /*!
+      * @brief Obtain the default value for the duplicate episode prevention attribute.
+@@ -358,7 +358,7 @@ namespace PVR
+      * @brief Obtain a list with all possible values for the recording group attribute.
+      * @param list out, the list with the values or an empty list, if recording group is not supported by this type.
+      */
+-    void GetRecordingGroupValues(std::vector< std::pair<std::string, int>>& list) const;
++    void GetRecordingGroupValues(std::vector<std::pair<std::string, int>>& list) const;
+ 
+     /*!
+      * @brief Obtain the default value for the Recording Group attribute.
+diff --git a/xbmc/pvr/windows/GUIEPGGridContainer.cpp b/xbmc/pvr/windows/GUIEPGGridContainer.cpp
+index 3de7938c6e31..97f53a4e20ca 100644
+--- a/xbmc/pvr/windows/GUIEPGGridContainer.cpp
++++ b/xbmc/pvr/windows/GUIEPGGridContainer.cpp
+@@ -1780,12 +1780,12 @@ void CGUIEPGGridContainer::GoToBlock(int blockIndex)
+ 
+ void CGUIEPGGridContainer::UpdateLayout()
+ {
+-  CGUIListItemLayout* oldFocusedChannelLayout   = m_focusedChannelLayout;
+-  CGUIListItemLayout* oldChannelLayout          = m_channelLayout;
++  CGUIListItemLayout* oldFocusedChannelLayout = m_focusedChannelLayout;
++  CGUIListItemLayout* oldChannelLayout = m_channelLayout;
+   CGUIListItemLayout* oldFocusedProgrammeLayout = m_focusedProgrammeLayout;
+-  CGUIListItemLayout* oldProgrammeLayout        = m_programmeLayout;
+-  CGUIListItemLayout* oldRulerLayout            = m_rulerLayout;
+-  CGUIListItemLayout* oldRulerDateLayout        = m_rulerDateLayout;
++  CGUIListItemLayout* oldProgrammeLayout = m_programmeLayout;
++  CGUIListItemLayout* oldRulerLayout = m_rulerLayout;
++  CGUIListItemLayout* oldRulerDateLayout = m_rulerDateLayout;
+ 
+   GetCurrentLayouts();
+ 
+diff --git a/xbmc/pvr/windows/GUIEPGGridContainerModel.h b/xbmc/pvr/windows/GUIEPGGridContainerModel.h
+index b2823f051958..e9dec73c46d7 100644
+--- a/xbmc/pvr/windows/GUIEPGGridContainerModel.h
++++ b/xbmc/pvr/windows/GUIEPGGridContainerModel.h
+@@ -60,7 +60,7 @@ namespace PVR
+ 
+     int GetBlockCount() const { return m_blocks; }
+     bool HasGridItems() const { return !m_gridIndex.empty(); }
+-    GridItem* GetGridItemPtr(int iChannel, int iBlock) { return& m_gridIndex[iChannel][iBlock]; }
++    GridItem* GetGridItemPtr(int iChannel, int iBlock) { return &m_gridIndex[iChannel][iBlock]; }
+     std::shared_ptr<CFileItem> GetGridItem(int iChannel, int iBlock) const { return m_gridIndex[iChannel][iBlock].item; }
+     float GetGridItemWidth(int iChannel, int iBlock) const { return m_gridIndex[iChannel][iBlock].width; }
+     float GetGridItemOriginWidth(int iChannel, int iBlock) const { return m_gridIndex[iChannel][iBlock].originWidth; }
