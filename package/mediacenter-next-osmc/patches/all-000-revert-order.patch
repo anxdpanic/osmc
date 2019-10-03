@@ -74,7 +74,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/URL.h                                         |  3 +-
  xbmc/Util.h                                        |  9 ++-
  xbmc/XBDateTime.h                                  |  4 +-
- xbmc/addons/AddonBuilder.cpp                       |  7 +--
  xbmc/addons/AddonDatabase.cpp                      | 12 ++--
  xbmc/addons/AddonDatabase.h                        | 10 ++--
  xbmc/addons/addoninfo/AddonInfo.h                  |  3 +-
@@ -106,7 +105,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/addons/ImageResource.h                        |  4 +-
  xbmc/addons/LanguageResource.cpp                   |  5 +-
  xbmc/addons/LanguageResource.h                     |  4 +-
- xbmc/addons/PVRClientMenuHooks.cpp                 |  3 +-
  xbmc/addons/PluginSource.cpp                       |  6 +-
  xbmc/addons/Repository.cpp                         | 16 +++---
  xbmc/addons/Repository.h                           |  8 +--
@@ -3391,36 +3389,6 @@ index 1deab13017..d1566f86c5 100644
  
  /*! \brief TIME_FORMAT enum/bitmask used for formatting time strings
   Note the use of bitmasking, e.g.
-diff --git a/xbmc/addons/AddonBuilder.cpp b/xbmc/addons/AddonBuilder.cpp
-index 1967a5f9d9..5831abca12 100644
---- a/xbmc/addons/AddonBuilder.cpp
-+++ b/xbmc/addons/AddonBuilder.cpp
-@@ -6,15 +6,13 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
--#include "addons/AddonBuilder.h"
--
- #include "ServiceBroker.h"
-+#include "addons/AddonBuilder.h"
- #include "addons/ContextMenuAddon.h"
--#include "addons/FontResource.h"
- #include "addons/GameResource.h"
-+#include "addons/FontResource.h"
- #include "addons/ImageResource.h"
- #include "addons/LanguageResource.h"
--#include "addons/PVRClient.h"
- #include "addons/PluginSource.h"
- #include "addons/Repository.h"
- #include "addons/Scraper.h"
-@@ -24,6 +22,7 @@
- #include "addons/Webinterface.h"
- #include "games/addons/GameClient.h"
- #include "games/controllers/Controller.h"
-+#include "addons/PVRClient.h"
- #include "utils/StringUtils.h"
- 
- using namespace KODI;
 diff --git a/xbmc/addons/AddonDatabase.cpp b/xbmc/addons/AddonDatabase.cpp
 index 846d756ba1..19eca090ba 100644
 --- a/xbmc/addons/AddonDatabase.cpp
@@ -4058,22 +4026,6 @@ index 62d85f3ced..45bd4c4a0e 100644
  namespace ADDON
  {
  class CLanguageResource : public CResource
-diff --git a/xbmc/addons/PVRClientMenuHooks.cpp b/xbmc/addons/PVRClientMenuHooks.cpp
-index 6244964b81..dfabdc7d5a 100644
---- a/xbmc/addons/PVRClientMenuHooks.cpp
-+++ b/xbmc/addons/PVRClientMenuHooks.cpp
-@@ -8,9 +8,10 @@
- 
- #include "PVRClientMenuHooks.h"
- 
-+#include "pvr/PVRContextMenus.h"
-+
- #include "addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h"
- #include "guilib/LocalizeStrings.h"
--#include "pvr/PVRContextMenus.h"
- #include "utils/log.h"
- 
- namespace PVR
 diff --git a/xbmc/addons/PluginSource.cpp b/xbmc/addons/PluginSource.cpp
 index 61a0d049a0..1af805fd8b 100644
 --- a/xbmc/addons/PluginSource.cpp
