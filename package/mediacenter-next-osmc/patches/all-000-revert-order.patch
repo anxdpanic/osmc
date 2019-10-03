@@ -129,7 +129,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/addons/binary-addons/BinaryAddonType.cpp      |  4 +-
  xbmc/addons/binary-addons/BinaryAddonType.h        |  3 +-
  .../interfaces/Addon/AddonCallbacksAddon.cpp       | 20 +++----
- xbmc/addons/interfaces/AddonInterfaces.cpp         |  5 +-
  xbmc/addons/interfaces/Filesystem.cpp              | 10 ++--
  xbmc/addons/interfaces/GUI/AddonCallbacksGUI.cpp   | 20 +++----
  xbmc/addons/interfaces/GUI/AddonGUIWindow.cpp      |  2 +-
@@ -4445,26 +4444,6 @@ index 3b73e99380..3d53190878 100644
  
  using namespace ADDON;
  using namespace XFILE;
-diff --git a/xbmc/addons/interfaces/AddonInterfaces.cpp b/xbmc/addons/interfaces/AddonInterfaces.cpp
-index 9ca8639e10..b558175c01 100644
---- a/xbmc/addons/interfaces/AddonInterfaces.cpp
-+++ b/xbmc/addons/interfaces/AddonInterfaces.cpp
-@@ -11,12 +11,13 @@
- 
- #include "addons/Addon.h"
- #include "addons/PVRClient.h"
-+#include "games/addons/GameClient.h"
-+
- #include "addons/interfaces/Addon/AddonCallbacksAddon.h"
- #include "addons/interfaces/GUI/AddonCallbacksGUI.h"
--#include "addons/interfaces/GUI/AddonGUIWindow.h"
- #include "addons/interfaces/GUI/Window.h"
-+#include "addons/interfaces/GUI/AddonGUIWindow.h"
- #include "filesystem/SpecialProtocol.h"
--#include "games/addons/GameClient.h"
- #include "messaging/ApplicationMessenger.h"
- #include "peripherals/addons/PeripheralAddon.h"
- #include "utils/log.h"
 diff --git a/xbmc/addons/interfaces/Filesystem.cpp b/xbmc/addons/interfaces/Filesystem.cpp
 index a771f89259..a20775b107 100644
 --- a/xbmc/addons/interfaces/Filesystem.cpp
