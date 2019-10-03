@@ -745,7 +745,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/guilib/GUIComponent.cpp                       |  3 +-
  xbmc/guilib/GUIControl.cpp                         | 14 ++---
  xbmc/guilib/GUIControl.h                           | 12 ++--
- xbmc/guilib/GUIControlFactory.cpp                  | 65 +++++++++++-----------
  xbmc/guilib/GUIControlFactory.h                    |  6 +-
  xbmc/guilib/GUIControlGroup.cpp                    |  1 -
  xbmc/guilib/GUIControlGroup.h                      |  4 +-
@@ -16269,96 +16268,6 @@ index 7a924f2ae7..df412bfa38 100644
  
  class CGUIListItem; // forward
  class CAction;
-diff --git a/xbmc/guilib/GUIControlFactory.cpp b/xbmc/guilib/GUIControlFactory.cpp
-index 7eff6cd58b..8cbde5313d 100644
---- a/xbmc/guilib/GUIControlFactory.cpp
-+++ b/xbmc/guilib/GUIControlFactory.cpp
-@@ -7,53 +7,52 @@
-  */
- 
- #include "GUIControlFactory.h"
--
--#include "GUIAction.h"
--#include "GUIBorderedImage.h"
-+#include "LocalizeStrings.h"
- #include "GUIButtonControl.h"
--#include "GUIColorManager.h"
--#include "GUIControlGroup.h"
--#include "GUIControlGroupList.h"
--#include "GUIEditControl.h"
--#include "GUIFadeLabelControl.h"
--#include "GUIFixedListContainer.h"
--#include "GUIFontManager.h"
-+#include "GUIRadioButtonControl.h"
-+#include "GUISpinControl.h"
-+#include "GUIRSSControl.h"
- #include "GUIImage.h"
--#include "GUIInfoManager.h"
-+#include "GUIBorderedImage.h"
- #include "GUILabelControl.h"
--#include "GUIListContainer.h"
--#include "GUIListGroup.h"
--#include "GUIListLabel.h"
--#include "GUIMoverControl.h"
--#include "GUIMultiImage.h"
--#include "GUIPanelContainer.h"
-+#include "GUIEditControl.h"
-+#include "GUIFadeLabelControl.h"
-+#include "GUIToggleButtonControl.h"
-+#include "GUITextBox.h"
-+#include "GUIVideoControl.h"
- #include "GUIProgressControl.h"
--#include "GUIRSSControl.h"
--#include "GUIRadioButtonControl.h"
-+#include "GUISliderControl.h"
-+#include "GUIMoverControl.h"
- #include "GUIRangesControl.h"
- #include "GUIRenderingControl.h"
- #include "GUIResizeControl.h"
--#include "GUIScrollBarControl.h"
--#include "GUISettingsSliderControl.h"
--#include "GUISliderControl.h"
--#include "GUISpinControl.h"
- #include "GUISpinControlEx.h"
--#include "GUITextBox.h"
--#include "GUIToggleButtonControl.h"
--#include "GUIVideoControl.h"
- #include "GUIVisualisationControl.h"
-+#include "GUISettingsSliderControl.h"
-+#include "GUIMultiImage.h"
-+#include "GUIControlGroup.h"
-+#include "GUIControlGroupList.h"
-+#include "GUIScrollBarControl.h"
-+#include "GUIListContainer.h"
-+#include "GUIFixedListContainer.h"
- #include "GUIWrappingListContainer.h"
--#include "LocalizeStrings.h"
--#include "Util.h"
--#include "addons/Skin.h"
--#include "cores/RetroPlayer/guicontrols/GUIGameControl.h"
--#include "games/controllers/guicontrols/GUIGameController.h"
--#include "input/Key.h"
- #include "pvr/windows/GUIEPGGridContainer.h"
-+#include "GUIPanelContainer.h"
-+#include "GUIListLabel.h"
-+#include "GUIListGroup.h"
-+#include "GUIInfoManager.h"
-+#include "input/Key.h"
-+#include "addons/Skin.h"
- #include "utils/CharsetConverter.h"
-+#include "utils/XMLUtils.h"
-+#include "GUIFontManager.h"
-+#include "GUIColorManager.h"
- #include "utils/RssManager.h"
- #include "utils/StringUtils.h"
--#include "utils/XMLUtils.h"
-+#include "GUIAction.h"
-+#include "cores/RetroPlayer/guicontrols/GUIGameControl.h"
-+#include "games/controllers/guicontrols/GUIGameController.h"
-+#include "Util.h"
- 
- using namespace KODI;
- using namespace KODI::GUILIB;
 diff --git a/xbmc/guilib/GUIControlFactory.h b/xbmc/guilib/GUIControlFactory.h
 index 7084df8033..e4d23910e9 100644
 --- a/xbmc/guilib/GUIControlFactory.h
