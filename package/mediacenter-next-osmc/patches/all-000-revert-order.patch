@@ -896,7 +896,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/input/KeymapEnvironment.cpp                   |  1 -
  xbmc/input/TouchTranslator.cpp                     |  3 +-
  xbmc/input/WindowKeymap.cpp                        |  1 -
- xbmc/input/WindowTranslator.cpp                    |  5 +-
  xbmc/input/XBMC_keyboard.h                         |  4 +-
  xbmc/input/XBMC_keytable.cpp                       |  5 +-
  xbmc/input/actions/Action.cpp                      |  1 -
@@ -19245,27 +19244,6 @@ index 1068895657..89bafda34b 100644
  #include "WindowTranslator.h"
  
  using namespace KODI;
-diff --git a/xbmc/input/WindowTranslator.cpp b/xbmc/input/WindowTranslator.cpp
-index 9fd182a3ba..8ffd794099 100644
---- a/xbmc/input/WindowTranslator.cpp
-+++ b/xbmc/input/WindowTranslator.cpp
-@@ -7,14 +7,13 @@
-  */
- 
- #include "WindowTranslator.h"
--
- #include "Application.h"
--#include "ServiceBroker.h"
- #include "guilib/WindowIDs.h"
- #include "pvr/PVRGUIActions.h"
- #include "pvr/PVRManager.h"
--#include "utils/StringUtils.h"
-+#include "ServiceBroker.h"
- #include "utils/log.h"
-+#include "utils/StringUtils.h"
- 
- #include <algorithm>
- #include <cstring>
 diff --git a/xbmc/input/XBMC_keyboard.h b/xbmc/input/XBMC_keyboard.h
 index dfd936c26b..0bf80eddea 100644
 --- a/xbmc/input/XBMC_keyboard.h
