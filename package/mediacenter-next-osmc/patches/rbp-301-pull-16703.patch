@@ -1,0 +1,2652 @@
+From 927cb635bcd5879cdef8881d74b8299e8590774f Mon Sep 17 00:00:00 2001
+From: phunkyfish <phunkyfish@gmail.com>
+Date: Wed, 2 Oct 2019 22:27:17 +0100
+Subject: [PATCH] [pvr] refactoring - remove extra whitespace
+
+---
+ xbmc/pvr/PVRContextMenus.cpp                  |   2 +-
+ xbmc/pvr/PVRDatabase.cpp                      |  32 ++--
+ xbmc/pvr/PVRManager.h                         |  14 +-
+ xbmc/pvr/addons/PVRClient.cpp                 | 108 ++++++------
+ xbmc/pvr/addons/PVRClient.h                   |  34 ++--
+ xbmc/pvr/addons/PVRClients.cpp                |   2 +-
+ xbmc/pvr/addons/PVRClients.h                  |  12 +-
+ xbmc/pvr/channels/PVRChannel.cpp              |  10 +-
+ xbmc/pvr/channels/PVRChannel.h                |  44 ++---
+ xbmc/pvr/channels/PVRChannelGroup.cpp         |   4 +-
+ xbmc/pvr/channels/PVRChannelGroup.h           |  20 +--
+ xbmc/pvr/channels/PVRChannelGroups.h          |   6 +-
+ xbmc/pvr/channels/PVRChannelGroupsContainer.h |   2 +-
+ xbmc/pvr/channels/PVRChannelNumber.h          |   2 +-
+ xbmc/pvr/channels/PVRRadioRDSInfoTag.h        |   2 +-
+ .../dialogs/GUIDialogPVRChannelManager.cpp    |  22 +--
+ xbmc/pvr/dialogs/GUIDialogPVRGroupManager.cpp |  10 +-
+ xbmc/pvr/dialogs/GUIDialogPVRGroupManager.h   |   8 +-
+ xbmc/pvr/dialogs/GUIDialogPVRGuideSearch.h    |   2 +-
+ .../pvr/dialogs/GUIDialogPVRTimerSettings.cpp |  38 ++---
+ xbmc/pvr/dialogs/GUIDialogPVRTimerSettings.h  |  68 ++++----
+ xbmc/pvr/epg/Epg.cpp                          |   4 +-
+ xbmc/pvr/epg/Epg.h                            |  16 +-
+ xbmc/pvr/epg/EpgContainer.cpp                 |   4 +-
+ xbmc/pvr/epg/EpgContainer.h                   |  30 ++--
+ xbmc/pvr/epg/EpgDatabase.cpp                  |  48 +++---
+ xbmc/pvr/epg/EpgInfoTag.cpp                   | 112 ++++++-------
+ xbmc/pvr/epg/EpgInfoTag.h                     |  52 +++---
+ xbmc/pvr/epg/EpgSearchFilter.cpp              |  24 +--
+ xbmc/pvr/epg/EpgSearchFilter.h                |  36 ++--
+ xbmc/pvr/guilib/GUIEPGGridContainer.cpp       |  84 +++++-----
+ xbmc/pvr/guilib/GUIEPGGridContainer.h         |  26 +--
+ xbmc/pvr/guilib/GUIEPGGridContainerModel.cpp  |   6 +-
+ xbmc/pvr/guilib/PVRGUIActions.cpp             |   6 +-
+ xbmc/pvr/guilib/guiinfo/PVRGUIInfo.cpp        |  30 ++--
+ xbmc/pvr/guilib/guiinfo/PVRGUIInfo.h          |  60 +++----
+ xbmc/pvr/recordings/PVRRecording.cpp          | 154 +++++++++---------
+ xbmc/pvr/recordings/PVRRecording.h            |  40 ++---
+ xbmc/pvr/recordings/PVRRecordings.cpp         |   2 +-
+ xbmc/pvr/recordings/PVRRecordingsPath.cpp     |  16 +-
+ xbmc/pvr/settings/PVRSettings.cpp             |   2 +-
+ xbmc/pvr/timers/PVRTimerInfoTag.cpp           | 150 ++++++++---------
+ xbmc/pvr/timers/PVRTimerInfoTag.h             |  52 +++---
+ xbmc/pvr/timers/PVRTimerType.cpp              |  26 +--
+ xbmc/pvr/timers/PVRTimerType.h                |  18 +-
+ xbmc/pvr/timers/PVRTimersPath.cpp             |  10 +-
+ xbmc/pvr/windows/GUIWindowPVRBase.h           |  10 +-
+ xbmc/pvr/windows/GUIWindowPVRSearch.h         |   2 +-
+ 48 files changed, 731 insertions(+), 731 deletions(-)
+
+diff --git a/xbmc/pvr/PVRContextMenus.cpp b/xbmc/pvr/PVRContextMenus.cpp
+index 5168d8386fcd..f7ddce455e2f 100644
+--- a/xbmc/pvr/PVRContextMenus.cpp
++++ b/xbmc/pvr/PVRContextMenus.cpp
+@@ -568,7 +568,7 @@ namespace PVR
+       if (timer && (!item.GetEPGInfoTag() || !URIUtils::PathEquals(item.GetPath(), CPVRTimersPath::PATH_ADDTIMER)) && !timer->IsRecording())
+       {
+         const std::shared_ptr<CPVRTimerType> timerType(timer->GetTimerType());
+-        return  timerType && timerType->AllowsDelete();
++        return timerType && timerType->AllowsDelete();
+       }
+ 
+       return false;
+diff --git a/xbmc/pvr/PVRDatabase.cpp b/xbmc/pvr/PVRDatabase.cpp
+index 174584e54652..48347bb01b39 100644
+--- a/xbmc/pvr/PVRDatabase.cpp
++++ b/xbmc/pvr/PVRDatabase.cpp
+@@ -325,21 +325,21 @@ int CPVRDatabase::Get(CPVRChannelGroup& results, bool bCompressDB)
+       {
+         std::shared_ptr<CPVRChannel> channel = std::shared_ptr<CPVRChannel>(new CPVRChannel());
+ 
+-        channel->m_iChannelId              = m_pDS->fv("idChannel").get_asInt();
+-        channel->m_iUniqueId               = m_pDS->fv("iUniqueId").get_asInt();
+-        channel->m_bIsRadio                = m_pDS->fv("bIsRadio").get_asBool();
+-        channel->m_bIsHidden               = m_pDS->fv("bIsHidden").get_asBool();
+-        channel->m_bIsUserSetIcon          = m_pDS->fv("bIsUserSetIcon").get_asBool();
+-        channel->m_bIsUserSetName          = m_pDS->fv("bIsUserSetName").get_asBool();
+-        channel->m_bIsLocked               = m_pDS->fv("bIsLocked").get_asBool();
+-        channel->m_strIconPath             = m_pDS->fv("sIconPath").get_asString();
+-        channel->m_strChannelName          = m_pDS->fv("sChannelName").get_asString();
+-        channel->m_bEPGEnabled             = m_pDS->fv("bEPGEnabled").get_asBool();
+-        channel->m_strEPGScraper           = m_pDS->fv("sEPGScraper").get_asString();
+-        channel->m_iLastWatched            = static_cast<time_t>(m_pDS->fv("iLastWatched").get_asInt());
+-        channel->m_iClientId               = m_pDS->fv("iClientId").get_asInt();
+-        channel->m_iEpgId                  = bUseEpgDB ? m_pDS->fv("idEpg").get_asInt() : -1;
+-        channel->m_bHasArchive             = m_pDS->fv("bHasArchive").get_asBool();
++        channel->m_iChannelId = m_pDS->fv("idChannel").get_asInt();
++        channel->m_iUniqueId = m_pDS->fv("iUniqueId").get_asInt();
++        channel->m_bIsRadio = m_pDS->fv("bIsRadio").get_asBool();
++        channel->m_bIsHidden = m_pDS->fv("bIsHidden").get_asBool();
++        channel->m_bIsUserSetIcon = m_pDS->fv("bIsUserSetIcon").get_asBool();
++        channel->m_bIsUserSetName = m_pDS->fv("bIsUserSetName").get_asBool();
++        channel->m_bIsLocked = m_pDS->fv("bIsLocked").get_asBool();
++        channel->m_strIconPath = m_pDS->fv("sIconPath").get_asString();
++        channel->m_strChannelName = m_pDS->fv("sChannelName").get_asString();
++        channel->m_bEPGEnabled = m_pDS->fv("bEPGEnabled").get_asBool();
++        channel->m_strEPGScraper = m_pDS->fv("sEPGScraper").get_asString();
++        channel->m_iLastWatched = static_cast<time_t>(m_pDS->fv("iLastWatched").get_asInt());
++        channel->m_iClientId = m_pDS->fv("iClientId").get_asInt();
++        channel->m_iEpgId = bUseEpgDB ? m_pDS->fv("idEpg").get_asInt() : -1;
++        channel->m_bHasArchive = m_pDS->fv("bHasArchive").get_asBool();
+         channel->UpdateEncryptionName();
+ 
+         auto newMember = std::make_shared<PVRChannelGroupMember>(channel,
+@@ -491,7 +491,7 @@ bool CPVRDatabase::RemoveStaleChannelsFromGroup(const CPVRChannelGroup& group)
+     // mysql doesn't support subqueries when deleting and sqlite doesn't support joins when deleting
+     if (StringUtils::EqualsNoCase(CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_databaseTV.type, "mysql"))
+     {
+-      const  std::string strQuery = PrepareSQL("DELETE m FROM map_channelgroups_channels m LEFT JOIN channels c ON (c.idChannel = m.idChannel) WHERE c.idChannel IS NULL");
++      const std::string strQuery = PrepareSQL("DELETE m FROM map_channelgroups_channels m LEFT JOIN channels c ON (c.idChannel = m.idChannel) WHERE c.idChannel IS NULL");
+       bDelete = ExecuteQuery(strQuery);
+     }
+     else
+diff --git a/xbmc/pvr/PVRManager.h b/xbmc/pvr/PVRManager.h
+index 4f16cadb78a5..2ad049f9c524 100644
+--- a/xbmc/pvr/PVRManager.h
++++ b/xbmc/pvr/PVRManager.h
+@@ -407,13 +407,13 @@ namespace PVR
+ 
+     /** @name containers */
+     //@{
+-    std::shared_ptr<CPVRChannelGroupsContainer> m_channelGroups;  /*!< pointer to the channel groups container */
+-    std::shared_ptr<CPVRRecordings> m_recordings;                 /*!< pointer to the recordings container */
+-    std::shared_ptr<CPVRTimers> m_timers;                         /*!< pointer to the timers container */
+-    std::shared_ptr<CPVRClients> m_addons;                        /*!< pointer to the pvr addon container */
+-    std::unique_ptr<CPVRGUIInfo> m_guiInfo;                       /*!< pointer to the guiinfo data */
+-    std::shared_ptr<CPVRGUIActions> m_guiActions;                 /*!< pointer to the pvr gui actions */
+-    CPVREpgContainer m_epgContainer;                              /*!< the epg container */
++    std::shared_ptr<CPVRChannelGroupsContainer> m_channelGroups; /*!< pointer to the channel groups container */
++    std::shared_ptr<CPVRRecordings> m_recordings; /*!< pointer to the recordings container */
++    std::shared_ptr<CPVRTimers> m_timers; /*!< pointer to the timers container */
++    std::shared_ptr<CPVRClients> m_addons; /*!< pointer to the pvr addon container */
++    std::unique_ptr<CPVRGUIInfo> m_guiInfo; /*!< pointer to the guiinfo data */
++    std::shared_ptr<CPVRGUIActions> m_guiActions; /*!< pointer to the pvr gui actions */
++    CPVREpgContainer m_epgContainer; /*!< the epg container */
+     //@}
+ 
+     std::unique_ptr<CPVRManagerJobQueue> m_pendingUpdates; /*!< vector of pending pvr updates */
+diff --git a/xbmc/pvr/addons/PVRClient.cpp b/xbmc/pvr/addons/PVRClient.cpp
+index a523d82add62..02fb7cf35426 100644
+--- a/xbmc/pvr/addons/PVRClient.cpp
++++ b/xbmc/pvr/addons/PVRClient.cpp
+@@ -102,20 +102,20 @@ void CPVRClient::ResetProperties(int iClientId /* = PVR_INVALID_CLIENT_ID */)
+   CSingleLock lock(m_critSection);
+ 
+   /* initialise members */
+-  m_strUserPath           = CSpecialProtocol::TranslatePath(Profile());
+-  m_strClientPath         = CSpecialProtocol::TranslatePath(Path());
+-  m_bReadyToUse           = false;
+-  m_bBlockAddonCalls      = false;
+-  m_connectionState       = PVR_CONNECTION_STATE_UNKNOWN;
+-  m_prevConnectionState   = PVR_CONNECTION_STATE_UNKNOWN;
+-  m_ignoreClient          = false;
+-  m_iClientId             = iClientId;
+-  m_iPriority             = 0;
+-  m_bPriorityFetched      = false;
+-  m_strBackendVersion     = DEFAULT_INFO_STRING_VALUE;
+-  m_strConnectionString   = DEFAULT_INFO_STRING_VALUE;
+-  m_strFriendlyName       = DEFAULT_INFO_STRING_VALUE;
+-  m_strBackendName        = DEFAULT_INFO_STRING_VALUE;
++  m_strUserPath = CSpecialProtocol::TranslatePath(Profile());
++  m_strClientPath = CSpecialProtocol::TranslatePath(Path());
++  m_bReadyToUse = false;
++  m_bBlockAddonCalls = false;
++  m_connectionState = PVR_CONNECTION_STATE_UNKNOWN;
++  m_prevConnectionState = PVR_CONNECTION_STATE_UNKNOWN;
++  m_ignoreClient = false;
++  m_iClientId = iClientId;
++  m_iPriority = 0;
++  m_bPriorityFetched = false;
++  m_strBackendVersion = DEFAULT_INFO_STRING_VALUE;
++  m_strConnectionString = DEFAULT_INFO_STRING_VALUE;
++  m_strFriendlyName = DEFAULT_INFO_STRING_VALUE;
++  m_strBackendName = DEFAULT_INFO_STRING_VALUE;
+   m_strBackendHostname.clear();
+   m_menuhooks.reset();
+   m_timertypes.clear();
+@@ -319,32 +319,32 @@ void CPVRClient::WriteClientTimerInfo(const CPVRTimerInfoTag& xbmcTimer, PVR_TIM
+   int iPVRTimeCorrection = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_iPVRTimeCorrection;
+ 
+   addonTimer = {0};
+-  addonTimer.iClientIndex              = xbmcTimer.m_iClientIndex;
+-  addonTimer.iParentClientIndex        = xbmcTimer.m_iParentClientIndex;
+-  addonTimer.state                     = xbmcTimer.m_state;
+-  addonTimer.iTimerType                = xbmcTimer.GetTimerType() ? xbmcTimer.GetTimerType()->GetTypeId() : PVR_TIMER_TYPE_NONE;
+-  addonTimer.iClientChannelUid         = xbmcTimer.m_iClientChannelUid;
++  addonTimer.iClientIndex = xbmcTimer.m_iClientIndex;
++  addonTimer.iParentClientIndex = xbmcTimer.m_iParentClientIndex;
++  addonTimer.state = xbmcTimer.m_state;
++  addonTimer.iTimerType = xbmcTimer.GetTimerType() ? xbmcTimer.GetTimerType()->GetTypeId() : PVR_TIMER_TYPE_NONE;
++  addonTimer.iClientChannelUid = xbmcTimer.m_iClientChannelUid;
+   strncpy(addonTimer.strTitle, xbmcTimer.m_strTitle.c_str(), sizeof(addonTimer.strTitle) - 1);
+   strncpy(addonTimer.strEpgSearchString, xbmcTimer.m_strEpgSearchString.c_str(), sizeof(addonTimer.strEpgSearchString) - 1);
+-  addonTimer.bFullTextEpgSearch        = xbmcTimer.m_bFullTextEpgSearch;
++  addonTimer.bFullTextEpgSearch = xbmcTimer.m_bFullTextEpgSearch;
+   strncpy(addonTimer.strDirectory, xbmcTimer.m_strDirectory.c_str(), sizeof(addonTimer.strDirectory) - 1);
+-  addonTimer.iPriority                 = xbmcTimer.m_iPriority;
+-  addonTimer.iLifetime                 = xbmcTimer.m_iLifetime;
+-  addonTimer.iMaxRecordings            = xbmcTimer.m_iMaxRecordings;
++  addonTimer.iPriority = xbmcTimer.m_iPriority;
++  addonTimer.iLifetime = xbmcTimer.m_iLifetime;
++  addonTimer.iMaxRecordings = xbmcTimer.m_iMaxRecordings;
+   addonTimer.iPreventDuplicateEpisodes = xbmcTimer.m_iPreventDupEpisodes;
+-  addonTimer.iRecordingGroup           = xbmcTimer.m_iRecordingGroup;
+-  addonTimer.iWeekdays                 = xbmcTimer.m_iWeekdays;
+-  addonTimer.startTime                 = start - iPVRTimeCorrection;
+-  addonTimer.endTime                   = end - iPVRTimeCorrection;
+-  addonTimer.bStartAnyTime             = xbmcTimer.m_bStartAnyTime;
+-  addonTimer.bEndAnyTime               = xbmcTimer.m_bEndAnyTime;
+-  addonTimer.firstDay                  = firstDay - iPVRTimeCorrection;
+-  addonTimer.iEpgUid                   = epgTag ? epgTag->UniqueBroadcastID() : PVR_TIMER_NO_EPG_UID;
++  addonTimer.iRecordingGroup = xbmcTimer.m_iRecordingGroup;
++  addonTimer.iWeekdays = xbmcTimer.m_iWeekdays;
++  addonTimer.startTime = start - iPVRTimeCorrection;
++  addonTimer.endTime = end - iPVRTimeCorrection;
++  addonTimer.bStartAnyTime = xbmcTimer.m_bStartAnyTime;
++  addonTimer.bEndAnyTime = xbmcTimer.m_bEndAnyTime;
++  addonTimer.firstDay = firstDay - iPVRTimeCorrection;
++  addonTimer.iEpgUid = epgTag ? epgTag->UniqueBroadcastID() : PVR_TIMER_NO_EPG_UID;
+   strncpy(addonTimer.strSummary, xbmcTimer.m_strSummary.c_str(), sizeof(addonTimer.strSummary) - 1);
+-  addonTimer.iMarginStart              = xbmcTimer.m_iMarginStart;
+-  addonTimer.iMarginEnd                = xbmcTimer.m_iMarginEnd;
+-  addonTimer.iGenreType                = epgTag ? epgTag->GenreType() : 0;
+-  addonTimer.iGenreSubType             = epgTag ? epgTag->GenreSubType() : 0;
++  addonTimer.iMarginStart = xbmcTimer.m_iMarginStart;
++  addonTimer.iMarginEnd = xbmcTimer.m_iMarginEnd;
++  addonTimer.iGenreType = epgTag ? epgTag->GenreType() : 0;
++  addonTimer.iGenreSubType = epgTag ? epgTag->GenreSubType() : 0;
+   strncpy(addonTimer.strSeriesLink, xbmcTimer.SeriesLink().c_str(), sizeof(addonTimer.strSeriesLink) - 1);
+ }
+ 
+@@ -356,14 +356,14 @@ void CPVRClient::WriteClientTimerInfo(const CPVRTimerInfoTag& xbmcTimer, PVR_TIM
+ void CPVRClient::WriteClientChannelInfo(const std::shared_ptr<CPVRChannel>& xbmcChannel, PVR_CHANNEL& addonChannel)
+ {
+   addonChannel = {0};
+-  addonChannel.iUniqueId         = xbmcChannel->UniqueID();
+-  addonChannel.iChannelNumber    = xbmcChannel->ClientChannelNumber().GetChannelNumber();
++  addonChannel.iUniqueId = xbmcChannel->UniqueID();
++  addonChannel.iChannelNumber = xbmcChannel->ClientChannelNumber().GetChannelNumber();
+   addonChannel.iSubChannelNumber = xbmcChannel->ClientChannelNumber().GetSubChannelNumber();
+   strncpy(addonChannel.strChannelName, xbmcChannel->ClientChannelName().c_str(), sizeof(addonChannel.strChannelName) - 1);
+   strncpy(addonChannel.strIconPath, xbmcChannel->IconPath().c_str(), sizeof(addonChannel.strIconPath) - 1);
+   addonChannel.iEncryptionSystem = xbmcChannel->EncryptionSystem();
+-  addonChannel.bIsRadio          = xbmcChannel->IsRadio();
+-  addonChannel.bIsHidden         = xbmcChannel->IsHidden();
++  addonChannel.bIsRadio = xbmcChannel->IsRadio();
++  addonChannel.bIsHidden = xbmcChannel->IsHidden();
+   strncpy(addonChannel.strInputFormat, xbmcChannel->InputFormat().c_str(), sizeof(addonChannel.strInputFormat) - 1);
+ }
+ 
+@@ -430,7 +430,7 @@ bool CPVRClient::GetAddonProperties(void)
+       size = 0;
+       // manual one time
+       memset(&types_array[size], 0, sizeof(types_array[size]));
+-      types_array[size].iId         = size + 1;
++      types_array[size].iId = size + 1;
+       types_array[size].iAttributes = PVR_TIMER_TYPE_IS_MANUAL               |
+                                       PVR_TIMER_TYPE_SUPPORTS_ENABLE_DISABLE |
+                                       PVR_TIMER_TYPE_SUPPORTS_CHANNELS       |
+@@ -443,7 +443,7 @@ bool CPVRClient::GetAddonProperties(void)
+ 
+       // manual timer rule
+       memset(&types_array[size], 0, sizeof(types_array[size]));
+-      types_array[size].iId         = size + 1;
++      types_array[size].iId = size + 1;
+       types_array[size].iAttributes = PVR_TIMER_TYPE_IS_MANUAL               |
+                                       PVR_TIMER_TYPE_IS_REPEATING            |
+                                       PVR_TIMER_TYPE_SUPPORTS_ENABLE_DISABLE |
+@@ -461,7 +461,7 @@ bool CPVRClient::GetAddonProperties(void)
+       {
+         // One-shot epg-based
+         memset(&types_array[size], 0, sizeof(types_array[size]));
+-        types_array[size].iId         = size + 1;
++        types_array[size].iId = size + 1;
+         types_array[size].iAttributes = PVR_TIMER_TYPE_SUPPORTS_ENABLE_DISABLE    |
+                                         PVR_TIMER_TYPE_REQUIRES_EPG_TAG_ON_CREATE |
+                                         PVR_TIMER_TYPE_SUPPORTS_CHANNELS          |
+@@ -498,13 +498,13 @@ bool CPVRClient::GetAddonProperties(void)
+ 
+   /* update the members */
+   CSingleLock lock(m_critSection);
+-  m_strBackendName      = strBackendName;
++  m_strBackendName = strBackendName;
+   m_strConnectionString = strConnectionString;
+-  m_strFriendlyName     = strFriendlyName;
+-  m_strBackendVersion   = strBackendVersion;
+-  m_clientCapabilities  = addonCapabilities;
+-  m_strBackendHostname  = strBackendHostname;
+-  m_timertypes          = timerTypes;
++  m_strFriendlyName = strFriendlyName;
++  m_strBackendVersion = strBackendVersion;
++  m_clientCapabilities = addonCapabilities;
++  m_strBackendHostname = strBackendHostname;
++  m_timertypes = timerTypes;
+ 
+   return retVal == PVR_ERROR_NO_ERROR;
+ }
+@@ -538,7 +538,7 @@ PVR_ERROR CPVRClient::GetDriveSpace(long long& iTotal, long long& iUsed)
+ {
+   /* default to 0 in case of error */
+   iTotal = 0;
+-  iUsed  = 0;
++  iUsed = 0;
+ 
+   return DoAddonCall(__FUNCTION__, [this, &iTotal, &iUsed](const AddonInstance* addon) {
+     long long iTotalSpace = 0;
+@@ -601,8 +601,8 @@ PVR_ERROR CPVRClient::GetEPGForChannel(int iChannelUid, CPVREpg* epg, time_t sta
+   return DoAddonCall(__FUNCTION__, [this, iChannelUid, epg, start, end](const AddonInstance* addon) {
+ 
+     ADDON_HANDLE_STRUCT handle = {0};
+-    handle.callerAddress  = this;
+-    handle.dataAddress    = epg;
++    handle.callerAddress = this;
++    handle.dataAddress = epg;
+ 
+     int iPVRTimeCorrection = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_iPVRTimeCorrection;
+ 
+@@ -1743,7 +1743,7 @@ class CCodecIds
+       if (av_codec_is_decoder(codec))
+       {
+         tmp.codec_type = (xbmc_codec_type_t)codec->type;
+-        tmp.codec_id   = codec->id;
++        tmp.codec_id = codec->id;
+ 
+         std::string strUpperCodecName = codec->name;
+         StringUtils::ToUpper(strUpperCodecName);
+@@ -1754,12 +1754,12 @@ class CCodecIds
+ 
+     // teletext is not returned by av_codec_next. we got our own decoder
+     tmp.codec_type = XBMC_CODEC_TYPE_SUBTITLE;
+-    tmp.codec_id   = AV_CODEC_ID_DVB_TELETEXT;
++    tmp.codec_id = AV_CODEC_ID_DVB_TELETEXT;
+     m_lookup.insert(std::make_pair("TELETEXT", tmp));
+ 
+     // rds is not returned by av_codec_next. we got our own decoder
+     tmp.codec_type = XBMC_CODEC_TYPE_RDS;
+-    tmp.codec_id   = AV_CODEC_ID_NONE;
++    tmp.codec_id = AV_CODEC_ID_NONE;
+     m_lookup.insert(std::make_pair("RDS", tmp));
+   }
+ 
+diff --git a/xbmc/pvr/addons/PVRClient.h b/xbmc/pvr/addons/PVRClient.h
+index 6bf38781c319..ad879e79e4d0 100644
+--- a/xbmc/pvr/addons/PVRClient.h
++++ b/xbmc/pvr/addons/PVRClient.h
+@@ -274,7 +274,7 @@ namespace PVR
+ 
+     /*!
+      * @brief Gets the backend's previous connection state.
+-     * @return the backend's previous  connection state.
++     * @return the backend's previous connection state.
+      */
+     PVR_CONNECTION_STATE GetPreviousConnectionState(void) const;
+ 
+@@ -1106,28 +1106,28 @@ namespace PVR
+     static xbmc_codec_t cb_get_codec_by_name(const void* kodiInstance, const char* strCodecName);
+     //@}
+ 
+-    std::atomic<bool>      m_bReadyToUse;          /*!< true if this add-on is initialised (ADDON_Create returned true), false otherwise */
+-    std::atomic<bool>      m_bBlockAddonCalls;     /*!< true if no add-on API calls are allowed */
+-    PVR_CONNECTION_STATE   m_connectionState;      /*!< the backend connection state */
+-    PVR_CONNECTION_STATE   m_prevConnectionState;  /*!< the previous backend connection state */
+-    bool                   m_ignoreClient;         /*!< signals to PVRManager to ignore this client until it has been connected */
++    std::atomic<bool> m_bReadyToUse; /*!< true if this add-on is initialised (ADDON_Create returned true), false otherwise */
++    std::atomic<bool> m_bBlockAddonCalls; /*!< true if no add-on API calls are allowed */
++    PVR_CONNECTION_STATE m_connectionState; /*!< the backend connection state */
++    PVR_CONNECTION_STATE m_prevConnectionState; /*!< the previous backend connection state */
++    bool m_ignoreClient; /*!< signals to PVRManager to ignore this client until it has been connected */
+     std::vector<std::shared_ptr<CPVRTimerType>> m_timertypes; /*!< timer types supported by this backend */
+-    int                    m_iClientId;            /*!< unique ID of the client */
+-    mutable int            m_iPriority;            /*!< priority of the client */
+-    mutable bool           m_bPriorityFetched;
++    int m_iClientId; /*!< unique ID of the client */
++    mutable int m_iPriority; /*!< priority of the client */
++    mutable bool m_bPriorityFetched;
+ 
+     /* cached data */
+-    std::string            m_strBackendName;       /*!< the cached backend version */
+-    std::string            m_strBackendVersion;    /*!< the cached backend version */
+-    std::string            m_strConnectionString;  /*!< the cached connection string */
+-    std::string            m_strFriendlyName;      /*!< the cached friendly name */
+-    std::string            m_strBackendHostname;   /*!< the cached backend hostname */
+-    CPVRClientCapabilities m_clientCapabilities;   /*!< the cached add-on's capabilities */
++    std::string m_strBackendName; /*!< the cached backend version */
++    std::string m_strBackendVersion; /*!< the cached backend version */
++    std::string m_strConnectionString; /*!< the cached connection string */
++    std::string m_strFriendlyName; /*!< the cached friendly name */
++    std::string m_strBackendHostname; /*!< the cached backend hostname */
++    CPVRClientCapabilities m_clientCapabilities; /*!< the cached add-on's capabilities */
+     std::shared_ptr<CPVRClientMenuHooks> m_menuhooks; /*!< the menu hooks for this add-on */
+ 
+     /* stored strings to make sure const char* members in PVR_PROPERTIES stay valid */
+-    std::string            m_strUserPath;         /*!< @brief translated path to the user profile */
+-    std::string            m_strClientPath;       /*!< @brief translated path to this add-on */
++    std::string m_strUserPath; /*!< @brief translated path to the user profile */
++    std::string m_strClientPath; /*!< @brief translated path to this add-on */
+ 
+     mutable CCriticalSection m_critSection;
+ 
+diff --git a/xbmc/pvr/addons/PVRClients.cpp b/xbmc/pvr/addons/PVRClients.cpp
+index 367dd34543e7..6d19cf0f1967 100644
+--- a/xbmc/pvr/addons/PVRClients.cpp
++++ b/xbmc/pvr/addons/PVRClients.cpp
+@@ -233,7 +233,7 @@ bool CPVRClients::StopClient(const AddonPtr& addon, bool bRestart)
+ 
+ void CPVRClients::OnAddonEvent(const AddonEvent& event)
+ {
+-  if (typeid(event) == typeid(AddonEvents::Enabled) ||  // also called on install,
++  if (typeid(event) == typeid(AddonEvents::Enabled) || // also called on install,
+       typeid(event) == typeid(AddonEvents::Disabled) || // not called on uninstall
+       typeid(event) == typeid(AddonEvents::UnInstalled) ||
+       typeid(event) == typeid(AddonEvents::ReInstalled))
+diff --git a/xbmc/pvr/addons/PVRClients.h b/xbmc/pvr/addons/PVRClients.h
+index b7bcdb71851d..23256a169c19 100644
+--- a/xbmc/pvr/addons/PVRClients.h
++++ b/xbmc/pvr/addons/PVRClients.h
+@@ -44,12 +44,12 @@ namespace PVR
+     std::string name;
+     std::string version;
+     std::string host;
+-    int         numTimers = 0;
+-    int         numRecordings = 0;
+-    int         numDeletedRecordings = 0;
+-    int         numChannels = 0;
+-    long long   diskUsed = 0;
+-    long long   diskTotal = 0;
++    int numTimers = 0;
++    int numRecordings = 0;
++    int numDeletedRecordings = 0;
++    int numChannels = 0;
++    long long diskUsed = 0;
++    long long diskTotal = 0;
+   };
+ 
+   class CPVRClients : public ADDON::IAddonMgrCallback
+diff --git a/xbmc/pvr/channels/PVRChannel.cpp b/xbmc/pvr/channels/PVRChannel.cpp
+index 294c5c93d99f..2211da131cd5 100644
+--- a/xbmc/pvr/channels/PVRChannel.cpp
++++ b/xbmc/pvr/channels/PVRChannel.cpp
+@@ -31,7 +31,7 @@ using namespace PVR;
+ 
+ bool CPVRChannel::operator==(const CPVRChannel& right) const
+ {
+-  return (m_bIsRadio  == right.m_bIsRadio &&
++  return (m_bIsRadio == right.m_bIsRadio &&
+           m_iUniqueId == right.m_iUniqueId &&
+           m_iClientId == right.m_iClientId);
+ }
+@@ -164,11 +164,11 @@ bool CPVRChannel::UpdateFromClient(const std::shared_ptr<CPVRChannel>& channel)
+       m_strClientChannelName    != channel->ClientChannelName() ||
+       m_bHasArchive             != channel->HasArchive())
+   {
+-    m_clientChannelNumber     = channel->m_clientChannelNumber;
+-    m_strInputFormat          = channel->InputFormat();
++    m_clientChannelNumber = channel->m_clientChannelNumber;
++    m_strInputFormat = channel->InputFormat();
+     m_iClientEncryptionSystem = channel->EncryptionSystem();
+-    m_strClientChannelName    = channel->ClientChannelName();
+-    m_bHasArchive             = channel->HasArchive();
++    m_strClientChannelName = channel->ClientChannelName();
++    m_bHasArchive = channel->HasArchive();
+ 
+     UpdateEncryptionName();
+   }
+diff --git a/xbmc/pvr/channels/PVRChannel.h b/xbmc/pvr/channels/PVRChannel.h
+index 471745905d3a..e29836742833 100644
+--- a/xbmc/pvr/channels/PVRChannel.h
++++ b/xbmc/pvr/channels/PVRChannel.h
+@@ -438,26 +438,26 @@ namespace PVR
+     /*! @name XBMC related channel data
+      */
+     //@{
+-    int m_iChannelId = -1;                         /*!< the identifier given to this channel by the TV database */
+-    bool m_bIsRadio = false;                       /*!< true if this channel is a radio channel, false if not */
+-    bool m_bIsHidden = false;                      /*!< true if this channel is hidden, false if not */
+-    bool m_bIsUserSetName = false;                 /*!< true if user set the channel name via GUI, false if not */
+-    bool m_bIsUserSetIcon = false;                 /*!< true if user set the icon via GUI, false if not */
+-    bool m_bIsLocked = false;                      /*!< true if channel is locked, false if not */
+-    std::string m_strIconPath;                     /*!< the path to the icon for this channel */
+-    std::string m_strChannelName;                  /*!< the name for this channel used by XBMC */
+-    time_t m_iLastWatched = 0;                     /*!< last time channel has been watched */
+-    bool m_bChanged = false;                       /*!< true if anything in this entry was changed that needs to be persisted */
+-    CPVRChannelNumber m_channelNumber;             /*!< the active channel number this channel has in the currently selected channel group */
++    int m_iChannelId = -1; /*!< the identifier given to this channel by the TV database */
++    bool m_bIsRadio = false; /*!< true if this channel is a radio channel, false if not */
++    bool m_bIsHidden = false; /*!< true if this channel is hidden, false if not */
++    bool m_bIsUserSetName = false; /*!< true if user set the channel name via GUI, false if not */
++    bool m_bIsUserSetIcon = false; /*!< true if user set the icon via GUI, false if not */
++    bool m_bIsLocked = false; /*!< true if channel is locked, false if not */
++    std::string m_strIconPath; /*!< the path to the icon for this channel */
++    std::string m_strChannelName; /*!< the name for this channel used by XBMC */
++    time_t m_iLastWatched = 0; /*!< last time channel has been watched */
++    bool m_bChanged = false; /*!< true if anything in this entry was changed that needs to be persisted */
++    CPVRChannelNumber m_channelNumber; /*!< the active channel number this channel has in the currently selected channel group */
+     std::shared_ptr<CPVRRadioRDSInfoTag> m_rdsTag; /*! < the radio rds data, if available for the channel. */
+-    bool m_bHasArchive = false;                    /*!< true if this channel supports archive */
++    bool m_bHasArchive = false; /*!< true if this channel supports archive */
+     //@}
+ 
+     /*! @name EPG related channel data
+      */
+     //@{
+-    int m_iEpgId = -1;                      /*!< the id of the EPG for this channel */
+-    bool m_bEPGEnabled = false;             /*!< don't use an EPG for this channel if set to false */
++    int m_iEpgId = -1; /*!< the id of the EPG for this channel */
++    bool m_bEPGEnabled = false; /*!< don't use an EPG for this channel if set to false */
+     std::string m_strEPGScraper = "client"; /*!< the name of the scraper to be used for this channel */
+     std::shared_ptr<CPVREpg> m_epg;
+     //@}
+@@ -465,15 +465,15 @@ namespace PVR
+     /*! @name Client related channel data
+      */
+     //@{
+-    int m_iUniqueId = -1;                    /*!< the unique identifier for this channel */
+-    int m_iClientId = -1;                    /*!< the identifier of the client that serves this channel */
++    int m_iUniqueId = -1; /*!< the unique identifier for this channel */
++    int m_iClientId = -1; /*!< the identifier of the client that serves this channel */
+     CPVRChannelNumber m_clientChannelNumber; /*!< the channel number on the client for the currently selected channel group */
+-    std::string m_strClientChannelName;      /*!< the name of this channel on the client */
+-    std::string m_strInputFormat;            /*!< the stream input type based on ffmpeg/libavformat/allformats.c */
+-    std::string m_strFileNameAndPath;        /*!< the filename to be used by PVRManager to open and read the stream */
+-    int m_iClientEncryptionSystem = -1;      /*!< the encryption system used by this channel. 0 for FreeToAir, -1 for unknown */
+-    std::string m_strClientEncryptionName;   /*!< the name of the encryption system used by this channel */
+-    int m_iOrder = 0;                        /*!< the order from this channels currently selected group memeber */
++    std::string m_strClientChannelName; /*!< the name of this channel on the client */
++    std::string m_strInputFormat; /*!< the stream input type based on ffmpeg/libavformat/allformats.c */
++    std::string m_strFileNameAndPath; /*!< the filename to be used by PVRManager to open and read the stream */
++    int m_iClientEncryptionSystem = -1; /*!< the encryption system used by this channel. 0 for FreeToAir, -1 for unknown */
++    std::string m_strClientEncryptionName; /*!< the name of the encryption system used by this channel */
++    int m_iOrder = 0; /*!< the order from this channels currently selected group memeber */
+     //@}
+ 
+     mutable CCriticalSection m_critSection;
+diff --git a/xbmc/pvr/channels/PVRChannelGroup.cpp b/xbmc/pvr/channels/PVRChannelGroup.cpp
+index af7adde9edb1..5ab642de691f 100644
+--- a/xbmc/pvr/channels/PVRChannelGroup.cpp
++++ b/xbmc/pvr/channels/PVRChannelGroup.cpp
+@@ -91,7 +91,7 @@ bool CPVRChannelGroup::Load(std::vector<std::shared_ptr<CPVRChannel>>& channelsT
+   Unload();
+ 
+   const std::shared_ptr<CSettings> settings = CServiceBroker::GetSettingsComponent()->GetSettings();
+-  m_bUsingBackendChannelOrder   = settings->GetBool(CSettings::SETTING_PVRMANAGER_BACKENDCHANNELORDER);
++  m_bUsingBackendChannelOrder = settings->GetBool(CSettings::SETTING_PVRMANAGER_BACKENDCHANNELORDER);
+   m_bUsingBackendChannelNumbers = settings->GetBool(CSettings::SETTING_PVRMANAGER_USEBACKENDCHANNELNUMBERS) &&
+                                   CServiceBroker::GetPVRManager().Clients()->EnabledClientAmount() == 1;
+   m_bStartGroupChannelNumbersFromOne = settings->GetBool(CSettings::SETTING_PVRMANAGER_STARTGROUPCHANNELNUMBERSFROMONE) && !m_bUsingBackendChannelNumbers;
+@@ -849,7 +849,7 @@ void CPVRChannelGroup::OnSettingChanged(std::shared_ptr<const CSetting> setting)
+       settingId == CSettings::SETTING_PVRMANAGER_STARTGROUPCHANNELNUMBERSFROMONE)
+   {
+     const std::shared_ptr<CSettings> settings = CServiceBroker::GetSettingsComponent()->GetSettings();
+-    bool bUsingBackendChannelOrder   = settings->GetBool(CSettings::SETTING_PVRMANAGER_BACKENDCHANNELORDER);
++    bool bUsingBackendChannelOrder = settings->GetBool(CSettings::SETTING_PVRMANAGER_BACKENDCHANNELORDER);
+     bool bUsingBackendChannelNumbers = settings->GetBool(CSettings::SETTING_PVRMANAGER_USEBACKENDCHANNELNUMBERS) &&
+                                        CServiceBroker::GetPVRManager().Clients()->EnabledClientAmount() == 1;
+     bool bStartGroupChannelNumbersFromOne = settings->GetBool(CSettings::SETTING_PVRMANAGER_STARTGROUPCHANNELNUMBERSFROMONE) && !bUsingBackendChannelNumbers;
+diff --git a/xbmc/pvr/channels/PVRChannelGroup.h b/xbmc/pvr/channels/PVRChannelGroup.h
+index 8ebba3e4f7e1..bb0cf1432baa 100644
+--- a/xbmc/pvr/channels/PVRChannelGroup.h
++++ b/xbmc/pvr/channels/PVRChannelGroup.h
+@@ -538,16 +538,16 @@ namespace PVR
+      */
+     bool UpdateClientPriorities();
+ 
+-    int              m_iGroupType = PVR_GROUP_TYPE_DEFAULT;                  /*!< The type of this group */
+-    int              m_iGroupId = INVALID_GROUP_ID; /*!< The ID of this group in the database */
+-    bool             m_bLoaded = false;                     /*!< True if this container is loaded, false otherwise */
+-    bool             m_bChanged = false;                    /*!< true if anything changed in this group that hasn't been persisted, false otherwise */
+-    bool             m_bUsingBackendChannelOrder = false;   /*!< true to use the channel order from backends, false otherwise */
+-    bool             m_bUsingBackendChannelNumbers = false; /*!< true to use the channel numbers from 1 backend, false otherwise */
+-    bool             m_bPreventSortAndRenumber = false;     /*!< true when sorting and renumbering should not be done after adding/updating channels to the group */
+-    time_t           m_iLastWatched = 0;                /*!< last time group has been watched */
+-    bool             m_bHidden = false;                     /*!< true if this group is hidden, false otherwise */
+-    int              m_iPosition = 0;                   /*!< the position of this group within the group list */
++    int m_iGroupType = PVR_GROUP_TYPE_DEFAULT; /*!< The type of this group */
++    int m_iGroupId = INVALID_GROUP_ID; /*!< The ID of this group in the database */
++    bool m_bLoaded = false; /*!< True if this container is loaded, false otherwise */
++    bool m_bChanged = false; /*!< true if anything changed in this group that hasn't been persisted, false otherwise */
++    bool m_bUsingBackendChannelOrder = false; /*!< true to use the channel order from backends, false otherwise */
++    bool m_bUsingBackendChannelNumbers = false; /*!< true to use the channel numbers from 1 backend, false otherwise */
++    bool m_bPreventSortAndRenumber = false; /*!< true when sorting and renumbering should not be done after adding/updating channels to the group */
++    time_t m_iLastWatched = 0; /*!< last time group has been watched */
++    bool m_bHidden = false; /*!< true if this group is hidden, false otherwise */
++    int m_iPosition = 0; /*!< the position of this group within the group list */
+     std::vector<std::shared_ptr<PVRChannelGroupMember>> m_sortedMembers; /*!< members sorted by channel number */
+     std::map<std::pair<int, int>, std::shared_ptr<PVRChannelGroupMember>> m_members; /*!< members with key clientid+uniqueid */
+     mutable CCriticalSection m_critSection;
+diff --git a/xbmc/pvr/channels/PVRChannelGroups.h b/xbmc/pvr/channels/PVRChannelGroups.h
+index ba0149c1dbfb..7a04b540d6b6 100644
+--- a/xbmc/pvr/channels/PVRChannelGroups.h
++++ b/xbmc/pvr/channels/PVRChannelGroups.h
+@@ -211,9 +211,9 @@ namespace PVR
+      */
+     void RemoveFromAllGroups(const std::shared_ptr<CPVRChannel>& channel);
+ 
+-    bool m_bRadio;                                            /*!< true if this is a container for radio channels, false if it is for tv channels */
+-    std::shared_ptr<CPVRChannelGroup> m_selectedGroup;        /*!< the group that's currently selected in the UI */
+-    std::vector<std::shared_ptr<CPVRChannelGroup>> m_groups;  /*!< the groups in this container */
++    bool m_bRadio; /*!< true if this is a container for radio channels, false if it is for tv channels */
++    std::shared_ptr<CPVRChannelGroup> m_selectedGroup; /*!< the group that's currently selected in the UI */
++    std::vector<std::shared_ptr<CPVRChannelGroup>> m_groups; /*!< the groups in this container */
+     mutable CCriticalSection m_critSection;
+     std::vector<int> m_failedClientsForChannelGroups;
+   };
+diff --git a/xbmc/pvr/channels/PVRChannelGroupsContainer.h b/xbmc/pvr/channels/PVRChannelGroupsContainer.h
+index 0cfe35bdcecf..f715c1dd0d5d 100644
+--- a/xbmc/pvr/channels/PVRChannelGroupsContainer.h
++++ b/xbmc/pvr/channels/PVRChannelGroupsContainer.h
+@@ -177,7 +177,7 @@ namespace PVR
+ 
+   protected:
+     CPVRChannelGroups* m_groupsRadio; /*!< all radio channel groups */
+-    CPVRChannelGroups* m_groupsTV;    /*!< all TV channel groups */
++    CPVRChannelGroups* m_groupsTV; /*!< all TV channel groups */
+     CCriticalSection m_critSection;
+     bool m_bUpdateChannelsOnly = false;
+     bool m_bIsUpdating = false;
+diff --git a/xbmc/pvr/channels/PVRChannelNumber.h b/xbmc/pvr/channels/PVRChannelNumber.h
+index 048b6835102c..b6e2efc7ad3a 100644
+--- a/xbmc/pvr/channels/PVRChannelNumber.h
++++ b/xbmc/pvr/channels/PVRChannelNumber.h
+@@ -22,7 +22,7 @@ namespace PVR
+ 
+     constexpr bool operator ==(const CPVRChannelNumber& right) const
+     {
+-      return (m_iChannelNumber  == right.m_iChannelNumber &&
++      return (m_iChannelNumber == right.m_iChannelNumber &&
+               m_iSubChannelNumber == right.m_iSubChannelNumber);
+     }
+ 
+diff --git a/xbmc/pvr/channels/PVRRadioRDSInfoTag.h b/xbmc/pvr/channels/PVRRadioRDSInfoTag.h
+index 731acbbd9ef1..80954354bc32 100644
+--- a/xbmc/pvr/channels/PVRRadioRDSInfoTag.h
++++ b/xbmc/pvr/channels/PVRRadioRDSInfoTag.h
+@@ -140,7 +140,7 @@ class CPVRRadioRDSInfoTag final : public IArchivable, public ISerializable
+   std::string m_strConductor;
+   std::string m_strAlbum;
+   std::string m_strComment;
+-  int         m_iAlbumTracknumber;
++  int m_iAlbumTracknumber;
+   std::string m_strRadioStyle;
+ 
+   class Info
+diff --git a/xbmc/pvr/dialogs/GUIDialogPVRChannelManager.cpp b/xbmc/pvr/dialogs/GUIDialogPVRChannelManager.cpp
+index d7bb51fad68d..932492baa927 100644
+--- a/xbmc/pvr/dialogs/GUIDialogPVRChannelManager.cpp
++++ b/xbmc/pvr/dialogs/GUIDialogPVRChannelManager.cpp
+@@ -116,13 +116,13 @@ bool CGUIDialogPVRChannelManager::OnActionMove(const CAction& action)
+       {
+         std::string strNumber;
+ 
+-        bool bMoveUp        = iActionId == ACTION_PAGE_UP || iActionId == ACTION_MOVE_UP || iActionId == ACTION_FIRST_PAGE;
++        bool bMoveUp = iActionId == ACTION_PAGE_UP || iActionId == ACTION_MOVE_UP || iActionId == ACTION_FIRST_PAGE;
+         unsigned int iLines = bMoveUp ? abs(m_iSelected - iSelected) : 1;
+-        bool bOutOfBounds   = bMoveUp ? m_iSelected <= 0  : m_iSelected >= m_channelItems->Size() - 1;
++        bool bOutOfBounds = bMoveUp ? m_iSelected <= 0  : m_iSelected >= m_channelItems->Size() - 1;
+         if (bOutOfBounds)
+         {
+           bMoveUp = !bMoveUp;
+-          iLines  = m_channelItems->Size() - 1;
++          iLines = m_channelItems->Size() - 1;
+         }
+         for (unsigned int iLine = 0; iLine < iLines; ++iLine)
+         {
+@@ -480,7 +480,7 @@ bool CGUIDialogPVRChannelManager::OnClickButtonNewChannel()
+     else if (ret == PVR_ERROR_NOT_IMPLEMENTED)
+       HELPERS::ShowOKDialogText(CVariant{19033}, CVariant{19038}); // "Information", "Not supported by the PVR backend."
+     else
+-      HELPERS::ShowOKDialogText(CVariant{2103}, CVariant{16029});  // "Add-on error", "Check the log for more information about this message."
++      HELPERS::ShowOKDialogText(CVariant{2103}, CVariant{16029}); // "Add-on error", "Check the log for more information about this message."
+   }
+   return true;
+ }
+@@ -570,12 +570,12 @@ bool CGUIDialogPVRChannelManager::OnPopupMenu(int iItem)
+   if (!pItem)
+     return false;
+ 
+-  buttons.Add(CONTEXT_BUTTON_MOVE, 116);          /* Move channel up or down */
++  buttons.Add(CONTEXT_BUTTON_MOVE, 116); /* Move channel up or down */
+ 
+   if (pItem->GetProperty("SupportsSettings").asBoolean())
+   {
+-    buttons.Add(CONTEXT_BUTTON_SETTINGS, 10004);  /* Open add-on channel settings dialog */
+-    buttons.Add(CONTEXT_BUTTON_DELETE, 117);      /* Delete add-on channel */
++    buttons.Add(CONTEXT_BUTTON_SETTINGS, 10004); /* Open add-on channel settings dialog */
++    buttons.Add(CONTEXT_BUTTON_DELETE, 117); /* Delete add-on channel */
+   }
+ 
+   int choice = CGUIDialogContextMenu::ShowAndGetChoice(buttons);
+@@ -614,7 +614,7 @@ bool CGUIDialogPVRChannelManager::OnContextButton(int itemNumber, CONTEXT_BUTTON
+     if (ret == PVR_ERROR_NOT_IMPLEMENTED)
+       HELPERS::ShowOKDialogText(CVariant{19033}, CVariant{19038}); // "Information", "Not supported by the PVR backend."
+     else if (ret != PVR_ERROR_NO_ERROR)
+-      HELPERS::ShowOKDialogText(CVariant{2103}, CVariant{16029});  // "Add-on error", "Check the log for more information about this message."
++      HELPERS::ShowOKDialogText(CVariant{2103}, CVariant{16029}); // "Add-on error", "Check the log for more information about this message."
+   }
+   else if (button == CONTEXT_BUTTON_DELETE)
+   {
+@@ -623,7 +623,7 @@ bool CGUIDialogPVRChannelManager::OnContextButton(int itemNumber, CONTEXT_BUTTON
+       return true;
+ 
+     pDialog->SetHeading(CVariant{19211}); // Delete channel
+-    pDialog->SetText(CVariant{750});      // Are you sure?
++    pDialog->SetText(CVariant{750}); // Are you sure?
+     pDialog->Open();
+ 
+     if (pDialog->IsConfirmed())
+@@ -643,7 +643,7 @@ bool CGUIDialogPVRChannelManager::OnContextButton(int itemNumber, CONTEXT_BUTTON
+         else if (ret == PVR_ERROR_NOT_IMPLEMENTED)
+           HELPERS::ShowOKDialogText(CVariant{19033}, CVariant{19038}); // "Information", "Not supported by the PVR backend."
+         else
+-          HELPERS::ShowOKDialogText(CVariant{2103}, CVariant{16029});  // "Add-on error", "Check the log for more information about this message."
++          HELPERS::ShowOKDialogText(CVariant{2103}, CVariant{16029}); // "Add-on error", "Check the log for more information about this message."
+       }
+     }
+   }
+@@ -745,7 +745,7 @@ void CGUIDialogPVRChannelManager::RenameChannel(const CFileItemPtr& pItem)
+ 
+     const std::shared_ptr<CPVRClient> client = CServiceBroker::GetPVRManager().GetClient(*pItem);
+     if (!client || (client->RenameChannel(channel) != PVR_ERROR_NO_ERROR))
+-      HELPERS::ShowOKDialogText(CVariant{2103}, CVariant{16029});  // Add-on error;Check the log file for details.
++      HELPERS::ShowOKDialogText(CVariant{2103}, CVariant{16029}); // Add-on error;Check the log file for details.
+   }
+ }
+ 
+diff --git a/xbmc/pvr/dialogs/GUIDialogPVRGroupManager.cpp b/xbmc/pvr/dialogs/GUIDialogPVRGroupManager.cpp
+index 363ba45386ac..2c052ebaf5ed 100644
+--- a/xbmc/pvr/dialogs/GUIDialogPVRGroupManager.cpp
++++ b/xbmc/pvr/dialogs/GUIDialogPVRGroupManager.cpp
+@@ -54,8 +54,8 @@ CGUIDialogPVRGroupManager::CGUIDialogPVRGroupManager() :
+     CGUIDialog(WINDOW_DIALOG_PVR_GROUP_MANAGER, "DialogPVRGroupManager.xml")
+ {
+   m_ungroupedChannels = new CFileItemList;
+-  m_groupMembers      = new CFileItemList;
+-  m_channelGroups     = new CFileItemList;
++  m_groupMembers = new CFileItemList;
++  m_channelGroups = new CFileItemList;
+ 
+   SetRadio(false);
+ }
+@@ -187,7 +187,7 @@ bool CGUIDialogPVRGroupManager::ActionButtonUngroupedChannels(CGUIMessage& messa
+   bool bReturn = false;
+   unsigned int iControl = message.GetSenderId();
+ 
+-  if (m_viewUngroupedChannels.HasControl(iControl))   // list/thumb control
++  if (m_viewUngroupedChannels.HasControl(iControl)) // list/thumb control
+   {
+     m_iSelectedUngroupedChannel = m_viewUngroupedChannels.GetSelectedItem();
+     int iAction = message.GetParam1();
+@@ -219,7 +219,7 @@ bool CGUIDialogPVRGroupManager::ActionButtonGroupMembers(CGUIMessage& message)
+   bool bReturn = false;
+   unsigned int iControl = message.GetSenderId();
+ 
+-  if (m_viewGroupMembers.HasControl(iControl))   // list/thumb control
++  if (m_viewGroupMembers.HasControl(iControl)) // list/thumb control
+   {
+     m_iSelectedGroupMember = m_viewGroupMembers.GetSelectedItem();
+     int iAction = message.GetParam1();
+@@ -245,7 +245,7 @@ bool CGUIDialogPVRGroupManager::ActionButtonChannelGroups(CGUIMessage& message)
+   bool bReturn = false;
+   unsigned int iControl = message.GetSenderId();
+ 
+-  if (m_viewChannelGroups.HasControl(iControl))   // list/thumb control
++  if (m_viewChannelGroups.HasControl(iControl)) // list/thumb control
+   {
+     int iAction = message.GetParam1();
+ 
+diff --git a/xbmc/pvr/dialogs/GUIDialogPVRGroupManager.h b/xbmc/pvr/dialogs/GUIDialogPVRGroupManager.h
+index 604b290bad05..b18a478c5edb 100644
+--- a/xbmc/pvr/dialogs/GUIDialogPVRGroupManager.h
++++ b/xbmc/pvr/dialogs/GUIDialogPVRGroupManager.h
+@@ -56,7 +56,7 @@ namespace PVR
+     bool OnActionMove(const CAction& action);
+ 
+     std::shared_ptr<CPVRChannelGroup> m_selectedGroup;
+-    bool              m_bIsRadio;
++    bool m_bIsRadio;
+ 
+     int m_iSelectedUngroupedChannel = 0;
+     int m_iSelectedGroupMember = 0;
+@@ -66,9 +66,9 @@ namespace PVR
+     CFileItemList *   m_groupMembers;
+     CFileItemList *   m_channelGroups;
+ 
+-    CGUIViewControl   m_viewUngroupedChannels;
+-    CGUIViewControl   m_viewGroupMembers;
+-    CGUIViewControl   m_viewChannelGroups;
++    CGUIViewControl m_viewUngroupedChannels;
++    CGUIViewControl m_viewGroupMembers;
++    CGUIViewControl m_viewChannelGroups;
+ 
+     CPVRThumbLoader m_thumbLoader;
+   };
+diff --git a/xbmc/pvr/dialogs/GUIDialogPVRGuideSearch.h b/xbmc/pvr/dialogs/GUIDialogPVRGuideSearch.h
+index 6b61bc2d02da..aff4fcef34b2 100644
+--- a/xbmc/pvr/dialogs/GUIDialogPVRGuideSearch.h
++++ b/xbmc/pvr/dialogs/GUIDialogPVRGuideSearch.h
+@@ -44,7 +44,7 @@ namespace PVR
+     void Update();
+ 
+     bool IsRadioSelected(int controlID);
+-    int  GetSpinValue(int controlID);
++    int GetSpinValue(int controlID);
+     std::string GetEditValue(int controlID);
+ 
+     bool m_bConfirmed = false;
+diff --git a/xbmc/pvr/dialogs/GUIDialogPVRTimerSettings.cpp b/xbmc/pvr/dialogs/GUIDialogPVRTimerSettings.cpp
+index 2f85b26bc202..35c9ef997e58 100644
+--- a/xbmc/pvr/dialogs/GUIDialogPVRTimerSettings.cpp
++++ b/xbmc/pvr/dialogs/GUIDialogPVRTimerSettings.cpp
+@@ -96,19 +96,19 @@ void CGUIDialogPVRTimerSettings::SetTimer(const std::shared_ptr<CPVRTimerInfoTag
+   m_timerInfoTag = timer;
+ 
+   // Copy data we need from tag. Do not modify the tag itself until Save()!
+-  m_timerType     = m_timerInfoTag->GetTimerType();
+-  m_bIsRadio      = m_timerInfoTag->m_bIsRadio;
+-  m_bIsNewTimer   = m_timerInfoTag->m_iClientIndex == PVR_TIMER_NO_CLIENT_INDEX;
+-  m_bTimerActive  = m_bIsNewTimer || !m_timerType->SupportsEnableDisable() || !(m_timerInfoTag->m_state == PVR_TIMER_STATE_DISABLED);
++  m_timerType = m_timerInfoTag->GetTimerType();
++  m_bIsRadio = m_timerInfoTag->m_bIsRadio;
++  m_bIsNewTimer = m_timerInfoTag->m_iClientIndex == PVR_TIMER_NO_CLIENT_INDEX;
++  m_bTimerActive = m_bIsNewTimer || !m_timerType->SupportsEnableDisable() || !(m_timerInfoTag->m_state == PVR_TIMER_STATE_DISABLED);
+   m_bStartAnyTime = m_bIsNewTimer || !m_timerType->SupportsStartAnyTime() || m_timerInfoTag->m_bStartAnyTime;
+-  m_bEndAnyTime   = m_bIsNewTimer || !m_timerType->SupportsEndAnyTime() || m_timerInfoTag->m_bEndAnyTime;
+-  m_strTitle      = m_timerInfoTag->m_strTitle;
++  m_bEndAnyTime = m_bIsNewTimer || !m_timerType->SupportsEndAnyTime() || m_timerInfoTag->m_bEndAnyTime;
++  m_strTitle = m_timerInfoTag->m_strTitle;
+ 
+   m_startLocalTime = m_timerInfoTag->StartAsLocalTime();
+-  m_endLocalTime   = m_timerInfoTag->EndAsLocalTime();
++  m_endLocalTime = m_timerInfoTag->EndAsLocalTime();
+ 
+   m_timerStartTimeStr = m_startLocalTime.GetAsLocalizedTime("", false);
+-  m_timerEndTimeStr   = m_endLocalTime.GetAsLocalizedTime("", false);
++  m_timerEndTimeStr = m_endLocalTime.GetAsLocalizedTime("", false);
+   m_firstDayLocalTime = m_timerInfoTag->FirstDayAsLocalTime();
+ 
+   m_strEpgSearchString = m_timerInfoTag->m_strEpgSearchString;
+@@ -122,18 +122,18 @@ void CGUIDialogPVRTimerSettings::SetTimer(const std::shared_ptr<CPVRTimerInfoTag
+     m_iWeekdays = PVR_WEEKDAY_ALLDAYS;
+ 
+   m_iPreventDupEpisodes = m_timerInfoTag->m_iPreventDupEpisodes;
+-  m_iMarginStart        = m_timerInfoTag->m_iMarginStart;
+-  m_iMarginEnd          = m_timerInfoTag->m_iMarginEnd;
+-  m_iPriority           = m_timerInfoTag->m_iPriority;
+-  m_iLifetime           = m_timerInfoTag->m_iLifetime;
+-  m_iMaxRecordings      = m_timerInfoTag->m_iMaxRecordings;
++  m_iMarginStart = m_timerInfoTag->m_iMarginStart;
++  m_iMarginEnd = m_timerInfoTag->m_iMarginEnd;
++  m_iPriority = m_timerInfoTag->m_iPriority;
++  m_iLifetime = m_timerInfoTag->m_iLifetime;
++  m_iMaxRecordings = m_timerInfoTag->m_iMaxRecordings;
+ 
+   if (m_bIsNewTimer && m_timerInfoTag->m_strDirectory.empty() && m_timerType->SupportsRecordingFolders())
+     m_strDirectory = m_strTitle;
+   else
+     m_strDirectory = m_timerInfoTag->m_strDirectory;
+ 
+-  m_iRecordingGroup     = m_timerInfoTag->m_iRecordingGroup;
++  m_iRecordingGroup = m_timerInfoTag->m_iRecordingGroup;
+ 
+   InitializeChannelsList();
+   InitializeTypesList();
+@@ -560,11 +560,11 @@ void CGUIDialogPVRTimerSettings::Save()
+   // Begin and end time
+   if (!m_bStartAnyTime && !m_bEndAnyTime)
+   {
+-    if (m_timerType->SupportsStartTime() &&    // has start clock entry
+-        m_timerType->SupportsEndTime() &&      // and end clock entry
+-        m_timerType->IsTimerRule())            // but no associated start/end day spinners
++    if (m_timerType->SupportsStartTime() && // has start clock entry
++        m_timerType->SupportsEndTime() && // and end clock entry
++        m_timerType->IsTimerRule()) // but no associated start/end day spinners
+     {
+-      if (m_endLocalTime < m_startLocalTime)   // And the end clock is earlier than the start clock
++      if (m_endLocalTime < m_startLocalTime) // And the end clock is earlier than the start clock
+       {
+         CLog::LogFC(LOGDEBUG, LOGPVR, "End before start, adding a day.");
+         m_endLocalTime += CDateTimeSpan(1, 0, 0, 0);
+@@ -611,7 +611,7 @@ void CGUIDialogPVRTimerSettings::Save()
+ 
+   // Pre and post record time
+   m_timerInfoTag->m_iMarginStart = m_iMarginStart;
+-  m_timerInfoTag->m_iMarginEnd   = m_iMarginEnd;
++  m_timerInfoTag->m_iMarginEnd = m_iMarginEnd;
+ 
+   // Priority
+   m_timerInfoTag->m_iPriority = m_iPriority;
+diff --git a/xbmc/pvr/dialogs/GUIDialogPVRTimerSettings.h b/xbmc/pvr/dialogs/GUIDialogPVRTimerSettings.h
+index 96c446fd60f6..e3b27022ed85 100644
+--- a/xbmc/pvr/dialogs/GUIDialogPVRTimerSettings.h
++++ b/xbmc/pvr/dialogs/GUIDialogPVRTimerSettings.h
+@@ -56,7 +56,7 @@ namespace PVR
+     void InitializeChannelsList();
+     void SetButtonLabels();
+ 
+-    static int  GetDateAsIndex(const CDateTime& datetime);
++    static int GetDateAsIndex(const CDateTime& datetime);
+     static void SetDateFromIndex(CDateTime& datetime, int date);
+     static void SetTimeFromSystemTime(CDateTime& datetime, const SYSTEMTIME& time);
+ 
+@@ -104,16 +104,16 @@ namespace PVR
+     static bool EndAnytimeSetCondition(
+       const std::string& condition, const std::string& value, std::shared_ptr<const CSetting> setting, void* data);
+ 
+-    typedef std::map<int, std::shared_ptr<CPVRTimerType>>  TypeEntriesMap;
++    typedef std::map<int, std::shared_ptr<CPVRTimerType>> TypeEntriesMap;
+ 
+     typedef struct ChannelDescriptor
+     {
+-      int         channelUid;
+-      int         clientId;
++      int channelUid;
++      int clientId;
+       std::string description;
+ 
+       ChannelDescriptor(int _channelUid = PVR_CHANNEL_INVALID_UID,
+-                        int _clientId   = -1,
++                        int _clientId = -1,
+                         const std::string& _description = "")
+       : channelUid(_channelUid),
+         clientId(_clientId),
+@@ -122,8 +122,8 @@ namespace PVR
+ 
+       inline bool operator ==(const ChannelDescriptor& right) const
+       {
+-        return (channelUid  == right.channelUid &&
+-                clientId    == right.clientId   &&
++        return (channelUid == right.channelUid &&
++                clientId == right.clientId &&
+                 description == right.description);
+       }
+ 
+@@ -132,32 +132,32 @@ namespace PVR
+     typedef std::map <int, ChannelDescriptor> ChannelEntriesMap;
+ 
+     std::shared_ptr<CPVRTimerInfoTag> m_timerInfoTag;
+-    TypeEntriesMap      m_typeEntries;
+-    ChannelEntriesMap   m_channelEntries;
+-    std::string         m_timerStartTimeStr;
+-    std::string         m_timerEndTimeStr;
+-
+-    std::shared_ptr<CPVRTimerType>    m_timerType;
+-    bool                m_bIsRadio = false;
+-    bool                m_bIsNewTimer = true;
+-    bool                m_bTimerActive = false;
+-    std::string         m_strTitle;
+-    std::string         m_strEpgSearchString;
+-    bool                m_bFullTextEpgSearch = true;
+-    ChannelDescriptor   m_channel;
+-    CDateTime           m_startLocalTime;
+-    CDateTime           m_endLocalTime;
+-    bool                m_bStartAnyTime = false;
+-    bool                m_bEndAnyTime = false;
+-    unsigned int        m_iWeekdays;
+-    CDateTime           m_firstDayLocalTime;
+-    unsigned int        m_iPreventDupEpisodes = 0;
+-    unsigned int        m_iMarginStart = 0;
+-    unsigned int        m_iMarginEnd = 0;
+-    int                 m_iPriority = 0;
+-    int                 m_iLifetime = 0;
+-    int                 m_iMaxRecordings = 0;
+-    std::string         m_strDirectory;
+-    unsigned int        m_iRecordingGroup = 0;
++    TypeEntriesMap m_typeEntries;
++    ChannelEntriesMap m_channelEntries;
++    std::string m_timerStartTimeStr;
++    std::string m_timerEndTimeStr;
++
++    std::shared_ptr<CPVRTimerType> m_timerType;
++    bool m_bIsRadio = false;
++    bool m_bIsNewTimer = true;
++    bool m_bTimerActive = false;
++    std::string m_strTitle;
++    std::string m_strEpgSearchString;
++    bool m_bFullTextEpgSearch = true;
++    ChannelDescriptor m_channel;
++    CDateTime m_startLocalTime;
++    CDateTime m_endLocalTime;
++    bool m_bStartAnyTime = false;
++    bool m_bEndAnyTime = false;
++    unsigned int m_iWeekdays;
++    CDateTime m_firstDayLocalTime;
++    unsigned int m_iPreventDupEpisodes = 0;
++    unsigned int m_iMarginStart = 0;
++    unsigned int m_iMarginEnd = 0;
++    int m_iPriority = 0;
++    int m_iLifetime = 0;
++    int m_iMaxRecordings = 0;
++    std::string m_strDirectory;
++    unsigned int m_iRecordingGroup = 0;
+   };
+ } // namespace PVR
+diff --git a/xbmc/pvr/epg/Epg.cpp b/xbmc/pvr/epg/Epg.cpp
+index 934566b6c7b0..20988683db85 100644
+--- a/xbmc/pvr/epg/Epg.cpp
++++ b/xbmc/pvr/epg/Epg.cpp
+@@ -513,8 +513,8 @@ bool CPVREpg::Persist(const std::shared_ptr<CPVREpgDatabase>& database)
+ 
+     m_deletedTags.clear();
+     m_changedTags.clear();
+-    m_bChanged            = false;
+-    m_bTagsChanged        = false;
++    m_bChanged = false;
++    m_bTagsChanged = false;
+     m_bUpdateLastScanTime = false;
+   }
+ 
+diff --git a/xbmc/pvr/epg/Epg.h b/xbmc/pvr/epg/Epg.h
+index 53059ac1cd91..c1dde8dfdbcc 100644
+--- a/xbmc/pvr/epg/Epg.h
++++ b/xbmc/pvr/epg/Epg.h
+@@ -305,15 +305,15 @@ namespace PVR
+     std::map<CDateTime, std::shared_ptr<CPVREpgInfoTag>> m_tags;
+     std::map<int, std::shared_ptr<CPVREpgInfoTag>> m_changedTags;
+     std::map<int, std::shared_ptr<CPVREpgInfoTag>> m_deletedTags;
+-    bool m_bChanged = false;            /*!< true if anything changed that needs to be persisted, false otherwise */
+-    bool m_bTagsChanged = false;        /*!< true when any tags are changed and not persisted, false otherwise */
+-    bool m_bLoaded = false;             /*!< true when the initial entries have been loaded */
+-    bool m_bUpdatePending = false;      /*!< true if manual update is pending */
+-    int m_iEpgID = 0;                   /*!< the database ID of this table */
+-    std::string m_strName;              /*!< the name of this table */
+-    std::string m_strScraperName;       /*!< the name of the scraper to use */
++    bool m_bChanged = false; /*!< true if anything changed that needs to be persisted, false otherwise */
++    bool m_bTagsChanged = false; /*!< true when any tags are changed and not persisted, false otherwise */
++    bool m_bLoaded = false; /*!< true when the initial entries have been loaded */
++    bool m_bUpdatePending = false; /*!< true if manual update is pending */
++    int m_iEpgID = 0; /*!< the database ID of this table */
++    std::string m_strName; /*!< the name of this table */
++    std::string m_strScraperName; /*!< the name of the scraper to use */
+     mutable CDateTime m_nowActiveStart; /*!< the start time of the tag that is currently active */
+-    CDateTime m_lastScanTime;           /*!< the last time the EPG has been updated */
++    CDateTime m_lastScanTime; /*!< the last time the EPG has been updated */
+     mutable CCriticalSection m_critSection; /*!< critical section for changes in this table */
+     bool m_bUpdateLastScanTime = false;
+ 
+diff --git a/xbmc/pvr/epg/EpgContainer.cpp b/xbmc/pvr/epg/EpgContainer.cpp
+index de73f192c51f..e1b8c376b0e7 100644
+--- a/xbmc/pvr/epg/EpgContainer.cpp
++++ b/xbmc/pvr/epg/EpgContainer.cpp
+@@ -148,7 +148,7 @@ void CPVREpgContainer::Clear()
+ 
+     m_epgIdToEpgMap.clear();
+     m_channelUidToEpgMap.clear();
+-    m_iNextEpgUpdate  = 0;
++    m_iNextEpgUpdate = 0;
+     m_bStarted = false;
+     m_bIsInitialising = true;
+     m_iNextEpgId = 0;
+@@ -193,7 +193,7 @@ void CPVREpgContainer::Start(bool bAsync)
+     m_bIsInitialising = true;
+     m_bStop = false;
+ 
+-    m_iNextEpgUpdate  = 0;
++    m_iNextEpgUpdate = 0;
+     m_iNextEpgActiveTagCheck = 0;
+     m_bUpdateNotificationPending = false;
+   }
+diff --git a/xbmc/pvr/epg/EpgContainer.h b/xbmc/pvr/epg/EpgContainer.h
+index 9562b12ca7af..22b1869eb003 100644
+--- a/xbmc/pvr/epg/EpgContainer.h
++++ b/xbmc/pvr/epg/EpgContainer.h
+@@ -261,29 +261,29 @@ namespace PVR
+ 
+     std::shared_ptr<CPVREpgDatabase> m_database; /*!< the EPG database */
+ 
+-    bool m_bIsUpdating = false;                /*!< true while an update is running */
+-    bool m_bIsInitialising = true;             /*!< true while the epg manager hasn't loaded all tables */
+-    bool m_bStarted = false;                   /*!< true if EpgContainer has fully started */
+-    bool m_bLoaded = false;                    /*!< true after epg data is initially loaded from the database */
+-    bool m_bPreventUpdates = false;            /*!< true to prevent EPG updates */
+-    bool m_bPlaying = false;                   /*!< true if Kodi is currently playing something */
+-    int m_pendingUpdates = 0;                  /*!< count of pending manual updates */
+-    time_t m_iLastEpgCleanup = 0;              /*!< the time the EPG was cleaned up */
+-    time_t m_iNextEpgUpdate = 0;               /*!< the time the EPG will be updated */
+-    time_t m_iNextEpgActiveTagCheck = 0;       /*!< the time the EPG will be checked for active tag updates */
+-    int m_iNextEpgId = 0;                      /*!< the next epg ID that will be given to a new table when the db isn't being used */
++    bool m_bIsUpdating = false; /*!< true while an update is running */
++    bool m_bIsInitialising = true; /*!< true while the epg manager hasn't loaded all tables */
++    bool m_bStarted = false; /*!< true if EpgContainer has fully started */
++    bool m_bLoaded = false; /*!< true after epg data is initially loaded from the database */
++    bool m_bPreventUpdates = false; /*!< true to prevent EPG updates */
++    bool m_bPlaying = false; /*!< true if Kodi is currently playing something */
++    int m_pendingUpdates = 0; /*!< count of pending manual updates */
++    time_t m_iLastEpgCleanup = 0; /*!< the time the EPG was cleaned up */
++    time_t m_iNextEpgUpdate = 0; /*!< the time the EPG will be updated */
++    time_t m_iNextEpgActiveTagCheck = 0; /*!< the time the EPG will be checked for active tag updates */
++    int m_iNextEpgId = 0; /*!< the next epg ID that will be given to a new table when the db isn't being used */
+ 
+     std::map<int, std::shared_ptr<CPVREpg>> m_epgIdToEpgMap; /*!< the EPGs in this container. maps epg ids to epgs */
+     std::map<std::pair<int, int>, std::shared_ptr<CPVREpg>> m_channelUidToEpgMap; /*!< the EPGs in this container. maps channel uids to epgs */
+ 
+-    mutable CCriticalSection m_critSection;    /*!< a critical section for changes to this container */
+-    CEvent m_updateEvent;                      /*!< trigger when an update finishes */
++    mutable CCriticalSection m_critSection; /*!< a critical section for changes to this container */
++    CEvent m_updateEvent; /*!< trigger when an update finishes */
+ 
+     std::list<CEpgUpdateRequest> m_updateRequests; /*!< list of update requests triggered by addon */
+-    CCriticalSection m_updateRequestsLock;         /*!< protect update requests */
++    CCriticalSection m_updateRequestsLock; /*!< protect update requests */
+ 
+     std::list<CEpgTagStateChange> m_epgTagChanges; /*!< list of updated epg tags announced by addon */
+-    CCriticalSection m_epgTagChangesLock;          /*!< protect changed epg tags list */
++    CCriticalSection m_epgTagChangesLock; /*!< protect changed epg tags list */
+ 
+     bool m_bUpdateNotificationPending = false; /*!< true while an epg updated notification to observers is pending. */
+     CPVRSettings m_settings;
+diff --git a/xbmc/pvr/epg/EpgDatabase.cpp b/xbmc/pvr/epg/EpgDatabase.cpp
+index 7c7e2a8bbecb..22db957c2743 100644
+--- a/xbmc/pvr/epg/EpgDatabase.cpp
++++ b/xbmc/pvr/epg/EpgDatabase.cpp
+@@ -211,8 +211,8 @@ std::vector<std::shared_ptr<CPVREpg>> CPVREpgDatabase::GetAll()
+     {
+       while (!m_pDS->eof())
+       {
+-        int iEpgID                 = m_pDS->fv("idEpg").get_asInt();
+-        std::string strName        = m_pDS->fv("sName").get_asString().c_str();
++        int iEpgID = m_pDS->fv("idEpg").get_asInt();
++        std::string strName = m_pDS->fv("sName").get_asString().c_str();
+         std::string strScraperName = m_pDS->fv("sScraperName").get_asString().c_str();
+ 
+         result.emplace_back(new CPVREpg(iEpgID, strName, strScraperName));
+@@ -260,28 +260,28 @@ std::vector<std::shared_ptr<CPVREpgInfoTag>> CPVREpgDatabase::Get(const CPVREpg&
+         // Compat: null value for broadcast uid changed from numerical -1 to 0 with PVR Addon API v4.0.0
+         newTag->m_iUniqueBroadcastID = iBroadcastUID == -1 ? EPG_TAG_INVALID_UID : iBroadcastUID;
+ 
+-        newTag->m_iDatabaseID        = m_pDS->fv("idBroadcast").get_asInt();
+-        newTag->m_strTitle           = m_pDS->fv("sTitle").get_asString().c_str();
+-        newTag->m_strPlotOutline     = m_pDS->fv("sPlotOutline").get_asString().c_str();
+-        newTag->m_strPlot            = m_pDS->fv("sPlot").get_asString().c_str();
+-        newTag->m_strOriginalTitle   = m_pDS->fv("sOriginalTitle").get_asString().c_str();
+-        newTag->m_cast               = newTag->Tokenize(m_pDS->fv("sCast").get_asString());
+-        newTag->m_directors          = newTag->Tokenize(m_pDS->fv("sDirector").get_asString());
+-        newTag->m_writers            = newTag->Tokenize(m_pDS->fv("sWriter").get_asString());
+-        newTag->m_iYear              = m_pDS->fv("iYear").get_asInt();
+-        newTag->m_strIMDBNumber      = m_pDS->fv("sIMDBNumber").get_asString().c_str();
+-        newTag->m_iGenreType         = m_pDS->fv("iGenreType").get_asInt();
+-        newTag->m_iGenreSubType      = m_pDS->fv("iGenreSubType").get_asInt();
+-        newTag->m_genre              = newTag->Tokenize(m_pDS->fv("sGenre").get_asString());
+-        newTag->m_iParentalRating    = m_pDS->fv("iParentalRating").get_asInt();
+-        newTag->m_iStarRating        = m_pDS->fv("iStarRating").get_asInt();
+-        newTag->m_iEpisodeNumber     = m_pDS->fv("iEpisodeId").get_asInt();
+-        newTag->m_iEpisodePart       = m_pDS->fv("iEpisodePart").get_asInt();
+-        newTag->m_strEpisodeName     = m_pDS->fv("sEpisodeName").get_asString().c_str();
+-        newTag->m_iSeriesNumber      = m_pDS->fv("iSeriesId").get_asInt();
+-        newTag->m_strIconPath        = m_pDS->fv("sIconPath").get_asString().c_str();
+-        newTag->m_iFlags             = m_pDS->fv("iFlags").get_asInt();
+-        newTag->m_strSeriesLink      = m_pDS->fv("sSeriesLink").get_asString().c_str();
++        newTag->m_iDatabaseID = m_pDS->fv("idBroadcast").get_asInt();
++        newTag->m_strTitle = m_pDS->fv("sTitle").get_asString().c_str();
++        newTag->m_strPlotOutline = m_pDS->fv("sPlotOutline").get_asString().c_str();
++        newTag->m_strPlot = m_pDS->fv("sPlot").get_asString().c_str();
++        newTag->m_strOriginalTitle = m_pDS->fv("sOriginalTitle").get_asString().c_str();
++        newTag->m_cast = newTag->Tokenize(m_pDS->fv("sCast").get_asString());
++        newTag->m_directors = newTag->Tokenize(m_pDS->fv("sDirector").get_asString());
++        newTag->m_writers = newTag->Tokenize(m_pDS->fv("sWriter").get_asString());
++        newTag->m_iYear = m_pDS->fv("iYear").get_asInt();
++        newTag->m_strIMDBNumber = m_pDS->fv("sIMDBNumber").get_asString().c_str();
++        newTag->m_iGenreType = m_pDS->fv("iGenreType").get_asInt();
++        newTag->m_iGenreSubType = m_pDS->fv("iGenreSubType").get_asInt();
++        newTag->m_genre = newTag->Tokenize(m_pDS->fv("sGenre").get_asString());
++        newTag->m_iParentalRating = m_pDS->fv("iParentalRating").get_asInt();
++        newTag->m_iStarRating = m_pDS->fv("iStarRating").get_asInt();
++        newTag->m_iEpisodeNumber = m_pDS->fv("iEpisodeId").get_asInt();
++        newTag->m_iEpisodePart = m_pDS->fv("iEpisodePart").get_asInt();
++        newTag->m_strEpisodeName = m_pDS->fv("sEpisodeName").get_asString().c_str();
++        newTag->m_iSeriesNumber = m_pDS->fv("iSeriesId").get_asInt();
++        newTag->m_strIconPath = m_pDS->fv("sIconPath").get_asString().c_str();
++        newTag->m_iFlags = m_pDS->fv("iFlags").get_asInt();
++        newTag->m_strSeriesLink = m_pDS->fv("sSeriesLink").get_asString().c_str();
+ 
+         result.emplace_back(newTag);
+ 
+diff --git a/xbmc/pvr/epg/EpgInfoTag.cpp b/xbmc/pvr/epg/EpgInfoTag.cpp
+index b9026e5672ff..2992adfb9bc6 100644
+--- a/xbmc/pvr/epg/EpgInfoTag.cpp
++++ b/xbmc/pvr/epg/EpgInfoTag.cpp
+@@ -128,35 +128,35 @@ bool CPVREpgInfoTag::operator ==(const CPVREpgInfoTag& right) const
+     return true;
+ 
+   CSingleLock lock(m_critSection);
+-  return (m_iDatabaseID        == right.m_iDatabaseID &&
+-          m_iGenreType         == right.m_iGenreType &&
+-          m_iGenreSubType      == right.m_iGenreSubType &&
+-          m_iParentalRating    == right.m_iParentalRating &&
+-          m_firstAired         == right.m_firstAired &&
+-          m_iStarRating        == right.m_iStarRating &&
+-          m_iSeriesNumber      == right.m_iSeriesNumber &&
+-          m_iEpisodeNumber     == right.m_iEpisodeNumber &&
+-          m_iEpisodePart       == right.m_iEpisodePart &&
++  return (m_iDatabaseID == right.m_iDatabaseID &&
++          m_iGenreType == right.m_iGenreType &&
++          m_iGenreSubType == right.m_iGenreSubType &&
++          m_iParentalRating == right.m_iParentalRating &&
++          m_firstAired == right.m_firstAired &&
++          m_iStarRating == right.m_iStarRating &&
++          m_iSeriesNumber == right.m_iSeriesNumber &&
++          m_iEpisodeNumber == right.m_iEpisodeNumber &&
++          m_iEpisodePart == right.m_iEpisodePart &&
+           m_iUniqueBroadcastID == right.m_iUniqueBroadcastID &&
+-          m_strTitle           == right.m_strTitle &&
+-          m_strPlotOutline     == right.m_strPlotOutline &&
+-          m_strPlot            == right.m_strPlot &&
+-          m_strOriginalTitle   == right.m_strOriginalTitle &&
+-          m_cast               == right.m_cast &&
+-          m_directors          == right.m_directors &&
+-          m_writers            == right.m_writers &&
+-          m_iYear              == right.m_iYear &&
+-          m_strIMDBNumber      == right.m_strIMDBNumber &&
+-          m_genre              == right.m_genre &&
+-          m_strEpisodeName     == right.m_strEpisodeName &&
+-          m_iEpgID             == right.m_iEpgID &&
+-          m_strIconPath        == right.m_strIconPath &&
++          m_strTitle == right.m_strTitle &&
++          m_strPlotOutline == right.m_strPlotOutline &&
++          m_strPlot == right.m_strPlot &&
++          m_strOriginalTitle == right.m_strOriginalTitle &&
++          m_cast == right.m_cast &&
++          m_directors == right.m_directors &&
++          m_writers == right.m_writers &&
++          m_iYear == right.m_iYear &&
++          m_strIMDBNumber == right.m_strIMDBNumber &&
++          m_genre == right.m_genre &&
++          m_strEpisodeName == right.m_strEpisodeName &&
++          m_iEpgID == right.m_iEpgID &&
++          m_strIconPath == right.m_strIconPath &&
+           m_strFileNameAndPath == right.m_strFileNameAndPath &&
+-          m_startTime          == right.m_startTime &&
+-          m_endTime            == right.m_endTime &&
+-          m_iFlags             == right.m_iFlags &&
+-          m_strSeriesLink      == right.m_strSeriesLink &&
+-          m_channelData        == right.m_channelData);
++          m_startTime == right.m_startTime &&
++          m_endTime == right.m_endTime &&
++          m_iFlags == right.m_iFlags &&
++          m_strSeriesLink == right.m_strSeriesLink &&
++          m_channelData == right.m_channelData);
+ }
+ 
+ bool CPVREpgInfoTag::operator !=(const CPVREpgInfoTag& right) const
+@@ -432,7 +432,7 @@ void CPVREpgInfoTag::SetGenre(int iGenreType, int iGenreSubType, const char* str
+ {
+   if (m_iGenreType != iGenreType || m_iGenreSubType != iGenreSubType)
+   {
+-    m_iGenreType    = iGenreType;
++    m_iGenreType = iGenreType;
+     m_iGenreSubType = iGenreSubType;
+     if ((iGenreType == EPG_GENRE_USE_STRING || iGenreSubType == EPG_GENRE_USE_STRING) && (strGenre != NULL) && (strlen(strGenre) > 0))
+     {
+@@ -559,45 +559,45 @@ bool CPVREpgInfoTag::Update(const CPVREpgInfoTag& tag, bool bUpdateBroadcastId /
+   if (bChanged)
+   {
+     if (bUpdateBroadcastId)
+-      m_iDatabaseID      = tag.m_iDatabaseID;
+-
+-    m_strTitle           = tag.m_strTitle;
+-    m_strPlotOutline     = tag.m_strPlotOutline;
+-    m_strPlot            = tag.m_strPlot;
+-    m_strOriginalTitle   = tag.m_strOriginalTitle;
+-    m_cast               = tag.m_cast;
+-    m_directors          = tag.m_directors;
+-    m_writers            = tag.m_writers;
+-    m_iYear              = tag.m_iYear;
+-    m_strIMDBNumber      = tag.m_strIMDBNumber;
+-    m_startTime          = tag.m_startTime;
+-    m_endTime            = tag.m_endTime;
+-    m_iGenreType         = tag.m_iGenreType;
+-    m_iGenreSubType      = tag.m_iGenreSubType;
+-    m_iEpgID             = tag.m_iEpgID;
+-    m_iFlags             = tag.m_iFlags;
+-    m_strSeriesLink      = tag.m_strSeriesLink;
++      m_iDatabaseID = tag.m_iDatabaseID;
++
++    m_strTitle = tag.m_strTitle;
++    m_strPlotOutline = tag.m_strPlotOutline;
++    m_strPlot = tag.m_strPlot;
++    m_strOriginalTitle = tag.m_strOriginalTitle;
++    m_cast = tag.m_cast;
++    m_directors = tag.m_directors;
++    m_writers = tag.m_writers;
++    m_iYear = tag.m_iYear;
++    m_strIMDBNumber = tag.m_strIMDBNumber;
++    m_startTime = tag.m_startTime;
++    m_endTime = tag.m_endTime;
++    m_iGenreType = tag.m_iGenreType;
++    m_iGenreSubType = tag.m_iGenreSubType;
++    m_iEpgID = tag.m_iEpgID;
++    m_iFlags = tag.m_iFlags;
++    m_strSeriesLink = tag.m_strSeriesLink;
+ 
+     if (m_iGenreType == EPG_GENRE_USE_STRING || m_iGenreSubType == EPG_GENRE_USE_STRING)
+     {
+       /* No type/subtype. Use the provided description */
+-      m_genre            = tag.m_genre;
++      m_genre = tag.m_genre;
+     }
+     else
+     {
+       /* Determine genre description by type/subtype */
+       m_genre = StringUtils::Split(CPVREpg::ConvertGenreIdToString(tag.m_iGenreType, tag.m_iGenreSubType), CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_videoItemSeparator);
+     }
+-    m_firstAired         = tag.m_firstAired;
+-    m_iParentalRating    = tag.m_iParentalRating;
+-    m_iStarRating        = tag.m_iStarRating;
+-    m_iEpisodeNumber     = tag.m_iEpisodeNumber;
+-    m_iEpisodePart       = tag.m_iEpisodePart;
+-    m_iSeriesNumber      = tag.m_iSeriesNumber;
+-    m_strEpisodeName     = tag.m_strEpisodeName;
++    m_firstAired = tag.m_firstAired;
++    m_iParentalRating = tag.m_iParentalRating;
++    m_iStarRating = tag.m_iStarRating;
++    m_iEpisodeNumber = tag.m_iEpisodeNumber;
++    m_iEpisodePart = tag.m_iEpisodePart;
++    m_iSeriesNumber = tag.m_iSeriesNumber;
++    m_strEpisodeName = tag.m_strEpisodeName;
+     m_iUniqueBroadcastID = tag.m_iUniqueBroadcastID;
+-    m_strIconPath        = tag.m_strIconPath;
+-    m_channelData        = tag.m_channelData;
++    m_strIconPath = tag.m_strIconPath;
++    m_channelData = tag.m_channelData;
+   }
+ 
+   if (bChanged)
+diff --git a/xbmc/pvr/epg/EpgInfoTag.h b/xbmc/pvr/epg/EpgInfoTag.h
+index af2b804bd0b3..99d20202be06 100644
+--- a/xbmc/pvr/epg/EpgInfoTag.h
++++ b/xbmc/pvr/epg/EpgInfoTag.h
+@@ -428,33 +428,33 @@ namespace PVR
+      */
+     CDateTime GetCurrentPlayingTime(void) const;
+ 
+-    int                      m_iDatabaseID = -1;    /*!< database ID */
+-    int                      m_iGenreType = 0;      /*!< genre type */
+-    int                      m_iGenreSubType = 0;   /*!< genre subtype */
+-    int                      m_iParentalRating = 0; /*!< parental rating */
+-    int                      m_iStarRating = 0;     /*!< star rating */
+-    int                      m_iSeriesNumber = 0;   /*!< series number */
+-    int                      m_iEpisodeNumber = 0;  /*!< episode number */
+-    int                      m_iEpisodePart = 0;    /*!< episode part number */
+-    unsigned int m_iUniqueBroadcastID = 0;   /*!< unique broadcast ID */
+-    std::string              m_strTitle;            /*!< title */
+-    std::string              m_strPlotOutline;      /*!< plot outline */
+-    std::string              m_strPlot;             /*!< plot */
+-    std::string              m_strOriginalTitle;    /*!< original title */
+-    std::vector<std::string> m_cast;                /*!< cast */
+-    std::vector<std::string> m_directors;           /*!< director(s) */
+-    std::vector<std::string> m_writers;             /*!< writer(s) */
+-    int                      m_iYear = 0;           /*!< year */
+-    std::string              m_strIMDBNumber;       /*!< imdb number */
+-    std::vector<std::string> m_genre;               /*!< genre */
+-    std::string              m_strEpisodeName;      /*!< episode name */
+-    std::string              m_strIconPath;         /*!< the path to the icon */
+-    std::string              m_strFileNameAndPath;  /*!< the filename and path */
+-    CDateTime                m_startTime;           /*!< event start time */
+-    CDateTime                m_endTime;             /*!< event end time */
+-    CDateTime                m_firstAired;          /*!< first airdate */
++    int m_iDatabaseID = -1; /*!< database ID */
++    int m_iGenreType = 0; /*!< genre type */
++    int m_iGenreSubType = 0; /*!< genre subtype */
++    int m_iParentalRating = 0; /*!< parental rating */
++    int m_iStarRating = 0; /*!< star rating */
++    int m_iSeriesNumber = 0; /*!< series number */
++    int m_iEpisodeNumber = 0; /*!< episode number */
++    int m_iEpisodePart = 0; /*!< episode part number */
++    unsigned int m_iUniqueBroadcastID = 0; /*!< unique broadcast ID */
++    std::string m_strTitle; /*!< title */
++    std::string m_strPlotOutline; /*!< plot outline */
++    std::string m_strPlot; /*!< plot */
++    std::string m_strOriginalTitle; /*!< original title */
++    std::vector<std::string> m_cast; /*!< cast */
++    std::vector<std::string> m_directors; /*!< director(s) */
++    std::vector<std::string> m_writers; /*!< writer(s) */
++    int m_iYear = 0; /*!< year */
++    std::string m_strIMDBNumber; /*!< imdb number */
++    std::vector<std::string> m_genre; /*!< genre */
++    std::string m_strEpisodeName; /*!< episode name */
++    std::string m_strIconPath; /*!< the path to the icon */
++    std::string m_strFileNameAndPath; /*!< the filename and path */
++    CDateTime m_startTime; /*!< event start time */
++    CDateTime m_endTime; /*!< event end time */
++    CDateTime m_firstAired; /*!< first airdate */
+     unsigned int m_iFlags = 0; /*!< the flags applicable to this EPG entry */
+-    std::string              m_strSeriesLink;       /*!< series link */
++    std::string m_strSeriesLink; /*!< series link */
+ 
+     mutable CCriticalSection m_critSection;
+     std::shared_ptr<CPVREpgChannelData> m_channelData;
+diff --git a/xbmc/pvr/epg/EpgSearchFilter.cpp b/xbmc/pvr/epg/EpgSearchFilter.cpp
+index a359d2aab3c1..ebf205db2abf 100644
+--- a/xbmc/pvr/epg/EpgSearchFilter.cpp
++++ b/xbmc/pvr/epg/EpgSearchFilter.cpp
+@@ -35,12 +35,12 @@ CPVREpgSearchFilter::CPVREpgSearchFilter(bool bRadio)
+ void CPVREpgSearchFilter::Reset()
+ {
+   m_strSearchTerm.clear();
+-  m_bIsCaseSensitive         = false;
+-  m_bSearchInDescription     = false;
+-  m_iGenreType               = EPG_SEARCH_UNSET;
+-  m_iGenreSubType            = EPG_SEARCH_UNSET;
+-  m_iMinimumDuration         = EPG_SEARCH_UNSET;
+-  m_iMaximumDuration         = EPG_SEARCH_UNSET;
++  m_bIsCaseSensitive = false;
++  m_bSearchInDescription = false;
++  m_iGenreType = EPG_SEARCH_UNSET;
++  m_iGenreSubType = EPG_SEARCH_UNSET;
++  m_iMinimumDuration = EPG_SEARCH_UNSET;
++  m_iMaximumDuration = EPG_SEARCH_UNSET;
+ 
+   m_startDateTime.SetFromUTCDateTime(CServiceBroker::GetPVRManager().EpgContainer().GetFirstEPGDate());
+   if (!m_startDateTime.IsValid())
+@@ -56,16 +56,16 @@ void CPVREpgSearchFilter::Reset()
+     m_endDateTime.SetFromUTCDateTime(m_startDateTime + CDateTimeSpan(10, 0, 0, 0)); // default to start + 10 days
+   }
+ 
+-  m_bIncludeUnknownGenres    = false;
+-  m_bRemoveDuplicates        = false;
++  m_bIncludeUnknownGenres = false;
++  m_bRemoveDuplicates = false;
+ 
+   /* pvr specific filters */
+   m_channelNumber = CPVRChannelNumber();
+-  m_bFreeToAirOnly           = false;
+-  m_iChannelGroup            = EPG_SEARCH_UNSET;
+-  m_bIgnorePresentTimers     = true;
++  m_bFreeToAirOnly = false;
++  m_iChannelGroup = EPG_SEARCH_UNSET;
++  m_bIgnorePresentTimers = true;
+   m_bIgnorePresentRecordings = true;
+-  m_iUniqueBroadcastId       = EPG_TAG_INVALID_UID;
++  m_iUniqueBroadcastId = EPG_TAG_INVALID_UID;
+ }
+ 
+ bool CPVREpgSearchFilter::MatchGenre(const std::shared_ptr<CPVREpgInfoTag>& tag) const
+diff --git a/xbmc/pvr/epg/EpgSearchFilter.h b/xbmc/pvr/epg/EpgSearchFilter.h
+index a2a5c4aac92a..2fc785af5d4e 100644
+--- a/xbmc/pvr/epg/EpgSearchFilter.h
++++ b/xbmc/pvr/epg/EpgSearchFilter.h
+@@ -123,25 +123,25 @@ namespace PVR
+     bool MatchTimers(const std::shared_ptr<CPVREpgInfoTag>& tag) const;
+     bool MatchRecordings(const std::shared_ptr<CPVREpgInfoTag>& tag) const;
+ 
+-    std::string   m_strSearchTerm;            /*!< The term to search for */
+-    bool          m_bIsCaseSensitive;         /*!< Do a case sensitive search */
+-    bool          m_bSearchInDescription;     /*!< Search for strSearchTerm in the description too */
+-    int           m_iGenreType;               /*!< The genre type for an entry */
+-    int           m_iGenreSubType;            /*!< The genre subtype for an entry */
+-    int           m_iMinimumDuration;         /*!< The minimum duration for an entry */
+-    int           m_iMaximumDuration;         /*!< The maximum duration for an entry */
+-    CDateTime     m_startDateTime;            /*!< The minimum start time for an entry */
+-    CDateTime     m_endDateTime;              /*!< The maximum end time for an entry */
+-    bool          m_bIncludeUnknownGenres;    /*!< Include unknown genres or not */
+-    bool          m_bRemoveDuplicates;        /*!< True to remove duplicate events, false if not */
+-    const bool    m_bIsRadio;                 /*!< True to filter radio channels only, false to tv only */
++    std::string m_strSearchTerm; /*!< The term to search for */
++    bool m_bIsCaseSensitive; /*!< Do a case sensitive search */
++    bool m_bSearchInDescription; /*!< Search for strSearchTerm in the description too */
++    int m_iGenreType; /*!< The genre type for an entry */
++    int m_iGenreSubType; /*!< The genre subtype for an entry */
++    int m_iMinimumDuration; /*!< The minimum duration for an entry */
++    int m_iMaximumDuration; /*!< The maximum duration for an entry */
++    CDateTime m_startDateTime; /*!< The minimum start time for an entry */
++    CDateTime m_endDateTime; /*!< The maximum end time for an entry */
++    bool m_bIncludeUnknownGenres; /*!< Include unknown genres or not */
++    bool m_bRemoveDuplicates; /*!< True to remove duplicate events, false if not */
++    const bool m_bIsRadio; /*!< True to filter radio channels only, false to tv only */
+ 
+     /* PVR specific filters */
+-    CPVRChannelNumber  m_channelNumber;       /*!< The channel number in the selected channel group */
+-    bool          m_bFreeToAirOnly;           /*!< Include free to air channels only */
+-    int           m_iChannelGroup;            /*!< The group this channel belongs to */
+-    bool          m_bIgnorePresentTimers;     /*!< True to ignore currently present timers (future recordings), false if not */
+-    bool          m_bIgnorePresentRecordings; /*!< True to ignore currently active recordings, false if not */
+-    unsigned int  m_iUniqueBroadcastId;       /*!< The broadcastid to search for */
++    CPVRChannelNumber m_channelNumber; /*!< The channel number in the selected channel group */
++    bool m_bFreeToAirOnly; /*!< Include free to air channels only */
++    int m_iChannelGroup; /*!< The group this channel belongs to */
++    bool m_bIgnorePresentTimers; /*!< True to ignore currently present timers (future recordings), false if not */
++    bool m_bIgnorePresentRecordings; /*!< True to ignore currently active recordings, false if not */
++    unsigned int m_iUniqueBroadcastId; /*!< The broadcastid to search for */
+   };
+ }
+diff --git a/xbmc/pvr/guilib/GUIEPGGridContainer.cpp b/xbmc/pvr/guilib/GUIEPGGridContainer.cpp
+index 7ce863b6b65e..a4f609c619b0 100644
+--- a/xbmc/pvr/guilib/GUIEPGGridContainer.cpp
++++ b/xbmc/pvr/guilib/GUIEPGGridContainer.cpp
+@@ -663,12 +663,12 @@ void CGUIEPGGridContainer::UpdateItems()
+     prevSelectedEpgTag = m_item->item->GetEPGInfoTag();
+ 
+   const int oldChannelIndex = m_channelOffset + m_channelCursor;
+-  const int oldBlockIndex   = m_blockOffset + m_blockCursor;
++  const int oldBlockIndex = m_blockOffset + m_blockCursor;
+   const CDateTime oldGridStart(m_gridModel->GetGridStart());
+-  int eventOffset           = oldBlockIndex;
+-  int newChannelIndex       = oldChannelIndex;
+-  int newBlockIndex         = oldBlockIndex;
+-  int channelUid            = -1;
++  int eventOffset = oldBlockIndex;
++  int newChannelIndex = oldChannelIndex;
++  int newBlockIndex = oldBlockIndex;
++  int channelUid = -1;
+   unsigned int broadcastUid = 0;
+ 
+   if (prevSelectedEpgTag)
+@@ -731,7 +731,7 @@ void CGUIEPGGridContainer::UpdateItems()
+     }
+   }
+ 
+-  m_lastItem    = nullptr;
++  m_lastItem = nullptr;
+   m_lastChannel = nullptr;
+ 
+   // always use asynchronously precalculated grid data.
+@@ -1463,7 +1463,7 @@ void CGUIEPGGridContainer::ScrollToChannelOffset(int offset)
+   if (range <= 0)
+     range = 1;
+ 
+-  if (offset * size < m_channelScrollOffset &&  m_channelScrollOffset - offset * size > size * range)
++  if (offset * size < m_channelScrollOffset && m_channelScrollOffset - offset * size > size * range)
+   {
+     // scrolling up, and we're jumping more than 0.5 of a screen
+     m_channelScrollOffset = (offset + range) * size;
+@@ -1493,7 +1493,7 @@ void CGUIEPGGridContainer::ScrollToBlockOffset(int offset)
+   if (range <= 0)
+     range = 1;
+ 
+-  if (offset * size < m_programmeScrollOffset &&  m_programmeScrollOffset - offset * size > size * range)
++  if (offset * size < m_programmeScrollOffset && m_programmeScrollOffset - offset * size > size * range)
+   {
+     // scrolling left, and we're jumping more than 0.5 of a screen
+     m_programmeScrollOffset = (offset + range) * size;
+@@ -1621,7 +1621,7 @@ void CGUIEPGGridContainer::GoToBegin()
+ 
+ void CGUIEPGGridContainer::GoToEnd()
+ {
+-  int blocksEnd = 0;   // the end block of the last epg element for the selected channel
++  int blocksEnd = 0; // the end block of the last epg element for the selected channel
+   int blocksStart = 0; // the start block of the last epg element for the selected channel
+   int blockOffset = 0; // the block offset to scroll to
+   for (int blockIndex = m_gridModel->GetBlockCount() - 1; blockIndex >= 0 && (!blocksEnd || !blocksStart); blockIndex--)
+@@ -1639,7 +1639,7 @@ void CGUIEPGGridContainer::GoToEnd()
+     blockOffset = blocksEnd - m_blocksPerPage;
+ 
+   ScrollToBlockOffset(blockOffset); // scroll to the start point of the last epg element
+-  SetBlock(m_blocksPerPage - 1);    // select the last epg element
++  SetBlock(m_blocksPerPage - 1); // select the last epg element
+ }
+ 
+ void CGUIEPGGridContainer::GoToNow()
+@@ -1812,25 +1812,25 @@ void CGUIEPGGridContainer::UpdateLayout()
+     return; // nothing has changed, so don't update stuff
+ 
+   m_channelHeight = m_channelLayout->Size(VERTICAL);
+-  m_channelWidth  = m_channelLayout->Size(HORIZONTAL);
++  m_channelWidth = m_channelLayout->Size(HORIZONTAL);
+ 
+   m_rulerDateHeight = m_rulerDateLayout ? m_rulerDateLayout->Size(VERTICAL) : 0;
+   m_rulerDateWidth = m_rulerDateLayout ? m_rulerDateLayout->Size(HORIZONTAL) : 0;
+ 
+   if (m_orientation == VERTICAL)
+   {
+-    m_rulerHeight       = m_rulerLayout->Size(VERTICAL);
+-    m_gridPosX          = m_posX + m_channelWidth;
+-    m_gridPosY          = m_posY + m_rulerHeight + m_rulerDateHeight;
+-    m_gridWidth         = m_width - m_channelWidth;
+-    m_gridHeight        = m_height - m_rulerHeight - m_rulerDateHeight;
+-    m_blockSize         = m_gridWidth / m_blocksPerPage;
+-    m_rulerWidth        = m_rulerUnit * m_blockSize;
+-    m_channelPosX       = m_posX;
+-    m_channelPosY       = m_posY + m_rulerHeight + m_rulerDateHeight;
+-    m_rulerPosX         = m_posX + m_channelWidth;
+-    m_rulerPosY         = m_posY + m_rulerDateHeight;
+-    m_channelsPerPage   = m_gridHeight / m_channelHeight;
++    m_rulerHeight = m_rulerLayout->Size(VERTICAL);
++    m_gridPosX = m_posX + m_channelWidth;
++    m_gridPosY = m_posY + m_rulerHeight + m_rulerDateHeight;
++    m_gridWidth = m_width - m_channelWidth;
++    m_gridHeight = m_height - m_rulerHeight - m_rulerDateHeight;
++    m_blockSize = m_gridWidth / m_blocksPerPage;
++    m_rulerWidth = m_rulerUnit * m_blockSize;
++    m_channelPosX = m_posX;
++    m_channelPosY = m_posY + m_rulerHeight + m_rulerDateHeight;
++    m_rulerPosX = m_posX + m_channelWidth;
++    m_rulerPosY = m_posY + m_rulerDateHeight;
++    m_channelsPerPage = m_gridHeight / m_channelHeight;
+     m_programmesPerPage = (m_gridWidth / m_blockSize) + 1;
+ 
+     m_programmeLayout->SetHeight(m_channelHeight);
+@@ -1838,18 +1838,18 @@ void CGUIEPGGridContainer::UpdateLayout()
+   }
+   else
+   {
+-    m_rulerWidth        = m_rulerLayout->Size(HORIZONTAL);
+-    m_gridPosX          = m_posX + m_rulerWidth;
+-    m_gridPosY          = m_posY + m_channelHeight + m_rulerDateHeight;
+-    m_gridWidth         = m_width - m_rulerWidth;
+-    m_gridHeight        = m_height - m_channelHeight - m_rulerDateHeight;
+-    m_blockSize         = m_gridHeight / m_blocksPerPage;
+-    m_rulerHeight       = m_rulerUnit * m_blockSize;
+-    m_channelPosX       = m_posX + m_rulerWidth;
+-    m_channelPosY       = m_posY + m_rulerDateHeight;
+-    m_rulerPosX         = m_posX;
+-    m_rulerPosY         = m_posY + m_channelHeight + m_rulerDateHeight;
+-    m_channelsPerPage   = m_gridWidth / m_channelWidth;
++    m_rulerWidth = m_rulerLayout->Size(HORIZONTAL);
++    m_gridPosX = m_posX + m_rulerWidth;
++    m_gridPosY = m_posY + m_channelHeight + m_rulerDateHeight;
++    m_gridWidth = m_width - m_rulerWidth;
++    m_gridHeight = m_height - m_channelHeight - m_rulerDateHeight;
++    m_blockSize = m_gridHeight / m_blocksPerPage;
++    m_rulerHeight = m_rulerUnit * m_blockSize;
++    m_channelPosX = m_posX + m_rulerWidth;
++    m_channelPosY = m_posY + m_rulerDateHeight;
++    m_rulerPosX = m_posX;
++    m_rulerPosY = m_posY + m_channelHeight + m_rulerDateHeight;
++    m_channelsPerPage = m_gridWidth / m_channelWidth;
+     m_programmesPerPage = (m_gridHeight / m_blockSize) + 1;
+ 
+     m_programmeLayout->SetWidth(m_channelWidth);
+@@ -1857,7 +1857,7 @@ void CGUIEPGGridContainer::UpdateLayout()
+   }
+ 
+   // ensure that the scroll offsets are a multiple of our sizes
+-  m_channelScrollOffset   = m_channelOffset * m_programmeLayout->Size(m_orientation);
++  m_channelScrollOffset = m_channelOffset * m_programmeLayout->Size(m_orientation);
+   m_programmeScrollOffset = m_blockOffset * m_blockSize;
+ }
+ 
+@@ -1904,7 +1904,7 @@ void CGUIEPGGridContainer::GetCurrentLayouts()
+   }
+ 
+   if (!m_channelLayout && !m_channelLayouts.empty())
+-    m_channelLayout = &m_channelLayouts[0];  // failsafe
++    m_channelLayout = &m_channelLayouts[0]; // failsafe
+ 
+   m_focusedChannelLayout = nullptr;
+ 
+@@ -1918,7 +1918,7 @@ void CGUIEPGGridContainer::GetCurrentLayouts()
+   }
+ 
+   if (!m_focusedChannelLayout && !m_focusedChannelLayouts.empty())
+-    m_focusedChannelLayout = &m_focusedChannelLayouts[0];  // failsafe
++    m_focusedChannelLayout = &m_focusedChannelLayouts[0]; // failsafe
+ 
+   m_programmeLayout = nullptr;
+ 
+@@ -1932,7 +1932,7 @@ void CGUIEPGGridContainer::GetCurrentLayouts()
+   }
+ 
+   if (!m_programmeLayout && !m_programmeLayouts.empty())
+-    m_programmeLayout = &m_programmeLayouts[0];  // failsafe
++    m_programmeLayout = &m_programmeLayouts[0]; // failsafe
+ 
+   m_focusedProgrammeLayout = nullptr;
+ 
+@@ -1946,7 +1946,7 @@ void CGUIEPGGridContainer::GetCurrentLayouts()
+   }
+ 
+   if (!m_focusedProgrammeLayout && !m_focusedProgrammeLayouts.empty())
+-    m_focusedProgrammeLayout = &m_focusedProgrammeLayouts[0];  // failsafe
++    m_focusedProgrammeLayout = &m_focusedProgrammeLayouts[0]; // failsafe
+ 
+   m_rulerLayout = nullptr;
+ 
+@@ -1960,7 +1960,7 @@ void CGUIEPGGridContainer::GetCurrentLayouts()
+   }
+ 
+   if (!m_rulerLayout && !m_rulerLayouts.empty())
+-    m_rulerLayout = &m_rulerLayouts[0];  // failsafe
++    m_rulerLayout = &m_rulerLayouts[0]; // failsafe
+ 
+   m_rulerDateLayout = nullptr;
+ 
+@@ -2263,7 +2263,7 @@ void CGUIEPGGridContainer::HandleProgrammeGrid(bool bRender, unsigned int curren
+     return;
+ 
+   int blockOffset = MathUtils::round_int(m_programmeScrollOffset / m_blockSize);
+-  int chanOffset  = MathUtils::round_int(m_channelScrollOffset / m_programmeLayout->Size(m_orientation));
++  int chanOffset = MathUtils::round_int(m_channelScrollOffset / m_programmeLayout->Size(m_orientation));
+ 
+   int cacheBeforeProgramme, cacheAfterProgramme;
+   GetProgrammeCacheOffsets(cacheBeforeProgramme, cacheAfterProgramme);
+diff --git a/xbmc/pvr/guilib/GUIEPGGridContainer.h b/xbmc/pvr/guilib/GUIEPGGridContainer.h
+index 38a40aee3c47..d6f238663749 100644
+--- a/xbmc/pvr/guilib/GUIEPGGridContainer.h
++++ b/xbmc/pvr/guilib/GUIEPGGridContainer.h
+@@ -208,19 +208,19 @@ namespace PVR
+ 
+     float m_rulerDateHeight; //! height of ruler date item
+     float m_rulerDateWidth; //! width of ruler date item
+-    float m_rulerPosX;      //! X position of first ruler item
+-    float m_rulerPosY;      //! Y position of first ruler item
+-    float m_rulerHeight;    //! height of the scrolling timeline above the ruler items
+-    float m_rulerWidth;     //! width of each element of the ruler
+-    float m_channelPosX;    //! X position of first channel row
+-    float m_channelPosY;    //! Y position of first channel row
+-    float m_channelHeight;  //! height of the channel item
+-    float m_channelWidth;   //! width of the channel item
+-    float m_gridPosX;       //! X position of first grid item
+-    float m_gridPosY;       //! Y position of first grid item
+-    float m_gridWidth;      //! width of the epg grid control
+-    float m_gridHeight;     //! height of the epg grid control
+-    float m_blockSize;      //! a block's width in pixels
++    float m_rulerPosX; //! X position of first ruler item
++    float m_rulerPosY; //! Y position of first ruler item
++    float m_rulerHeight; //! height of the scrolling timeline above the ruler items
++    float m_rulerWidth; //! width of each element of the ruler
++    float m_channelPosX; //! X position of first channel row
++    float m_channelPosY; //! Y position of first channel row
++    float m_channelHeight; //! height of the channel item
++    float m_channelWidth; //! width of the channel item
++    float m_gridPosX; //! X position of first grid item
++    float m_gridPosY; //! Y position of first grid item
++    float m_gridWidth; //! width of the epg grid control
++    float m_gridHeight; //! height of the epg grid control
++    float m_blockSize; //! a block's width in pixels
+     float m_analogScrollCount;
+ 
+     CGUITexture m_guiProgressIndicatorTexture;
+diff --git a/xbmc/pvr/guilib/GUIEPGGridContainerModel.cpp b/xbmc/pvr/guilib/GUIEPGGridContainerModel.cpp
+index cde580109880..c630ff9de44d 100644
+--- a/xbmc/pvr/guilib/GUIEPGGridContainerModel.cpp
++++ b/xbmc/pvr/guilib/GUIEPGGridContainerModel.cpp
+@@ -166,9 +166,9 @@ void CGUIEPGGridContainerModel::Initialize(const std::unique_ptr<CFileItemList>&
+     CDateTime gridCursor(m_gridStart); //reset cursor for new channel
+     unsigned long progIdx = m_epgItemsPtr[channel].start;
+     unsigned long lastIdx = m_epgItemsPtr[channel].stop;
+-    int iEpgId            = m_programmeItems[progIdx]->GetEPGInfoTag()->EpgID();
+-    int itemSize          = 1; // size of the programme in blocks
+-    int savedBlock        = 0;
++    int iEpgId = m_programmeItems[progIdx]->GetEPGInfoTag()->EpgID();
++    int itemSize = 1; // size of the programme in blocks
++    int savedBlock = 0;
+     CFileItemPtr item;
+     std::shared_ptr<CPVREpgInfoTag> tag;
+ 
+diff --git a/xbmc/pvr/guilib/PVRGUIActions.cpp b/xbmc/pvr/guilib/PVRGUIActions.cpp
+index e120bf9eca2e..45de7d104243 100644
+--- a/xbmc/pvr/guilib/PVRGUIActions.cpp
++++ b/xbmc/pvr/guilib/PVRGUIActions.cpp
+@@ -536,10 +536,10 @@ namespace PVR
+             m_pDlgSelect->Add(StringUtils::Format(g_localizeStrings.Get(19090).c_str(), m_iInstantRecordTime)); // Record next <default duration> minutes
+             break;
+           case RECORD_30_MINUTES:
+-            m_pDlgSelect->Add(StringUtils::Format(g_localizeStrings.Get(19090).c_str(), 30));  // Record next 30 minutes
++            m_pDlgSelect->Add(StringUtils::Format(g_localizeStrings.Get(19090).c_str(), 30)); // Record next 30 minutes
+             break;
+           case RECORD_60_MINUTES:
+-            m_pDlgSelect->Add(StringUtils::Format(g_localizeStrings.Get(19090).c_str(), 60));  // Record next 60 minutes
++            m_pDlgSelect->Add(StringUtils::Format(g_localizeStrings.Get(19090).c_str(), 60)); // Record next 60 minutes
+             break;
+           case RECORD_120_MINUTES:
+             m_pDlgSelect->Add(StringUtils::Format(g_localizeStrings.Get(19090).c_str(), 120)); // Record next 120 minutes
+@@ -1580,7 +1580,7 @@ namespace PVR
+     }
+ 
+     if (settingsHooks.empty())
+-      return true;  // no settings hooks, no error
++      return true; // no settings hooks, no error
+ 
+     auto selectedHook = settingsHooks.begin();
+ 
+diff --git a/xbmc/pvr/guilib/guiinfo/PVRGUIInfo.cpp b/xbmc/pvr/guilib/guiinfo/PVRGUIInfo.cpp
+index 4e564ad16e7a..c3fee6aa8365 100644
+--- a/xbmc/pvr/guilib/guiinfo/PVRGUIInfo.cpp
++++ b/xbmc/pvr/guilib/guiinfo/PVRGUIInfo.cpp
+@@ -60,9 +60,9 @@ void CPVRGUIInfo::ResetProperties(void)
+   m_tvTimersInfo.ResetProperties();
+   m_radioTimersInfo.ResetProperties();
+   m_timesInfo.Reset();
+-  m_bHasTVRecordings            = false;
+-  m_bHasRadioRecordings         = false;
+-  m_iCurrentActiveClient        = 0;
++  m_bHasTVRecordings = false;
++  m_bHasRadioRecordings = false;
++  m_iCurrentActiveClient = 0;
+   m_strPlayingClientName        .clear();
+   m_strBackendName              .clear();
+   m_strBackendVersion           .clear();
+@@ -71,18 +71,18 @@ void CPVRGUIInfo::ResetProperties(void)
+   m_strBackendRecordings        .clear();
+   m_strBackendDeletedRecordings .clear();
+   m_strBackendChannels          .clear();
+-  m_iBackendDiskTotal           = 0;
+-  m_iBackendDiskUsed            = 0;
+-  m_bIsPlayingTV                = false;
+-  m_bIsPlayingRadio             = false;
+-  m_bIsPlayingRecording         = false;
+-  m_bIsPlayingEpgTag            = false;
+-  m_bIsPlayingEncryptedStream   = false;
+-  m_bIsRecordingPlayingChannel  = false;
+-  m_bCanRecordPlayingChannel    = false;
+-  m_bIsPlayingActiveRecording   = false;
+-  m_bHasTVChannels              = false;
+-  m_bHasRadioChannels           = false;
++  m_iBackendDiskTotal = 0;
++  m_iBackendDiskUsed = 0;
++  m_bIsPlayingTV = false;
++  m_bIsPlayingRadio = false;
++  m_bIsPlayingRecording = false;
++  m_bIsPlayingEpgTag = false;
++  m_bIsPlayingEncryptedStream = false;
++  m_bIsRecordingPlayingChannel = false;
++  m_bCanRecordPlayingChannel = false;
++  m_bIsPlayingActiveRecording = false;
++  m_bHasTVChannels = false;
++  m_bHasRadioChannels = false;
+ 
+   ClearQualityInfo(m_qualityInfo);
+   ClearDescrambleInfo(m_descrambleInfo);
+diff --git a/xbmc/pvr/guilib/guiinfo/PVRGUIInfo.h b/xbmc/pvr/guilib/guiinfo/PVRGUIInfo.h
+index 43c362752d38..3b97ee9ef237 100644
+--- a/xbmc/pvr/guilib/guiinfo/PVRGUIInfo.h
++++ b/xbmc/pvr/guilib/guiinfo/PVRGUIInfo.h
+@@ -111,43 +111,43 @@ namespace PVR
+ 
+     /** @name PVRGUIInfo data */
+     //@{
+-    CPVRGUIAnyTimerInfo   m_anyTimersInfo; // tv + radio
+-    CPVRGUITVTimerInfo    m_tvTimersInfo;
++    CPVRGUIAnyTimerInfo m_anyTimersInfo; // tv + radio
++    CPVRGUITVTimerInfo m_tvTimersInfo;
+     CPVRGUIRadioTimerInfo m_radioTimersInfo;
+ 
+     CPVRGUITimesInfo m_timesInfo;
+ 
+-    bool                            m_bHasTVRecordings;
+-    bool                            m_bHasRadioRecordings;
+-    unsigned int                    m_iCurrentActiveClient;
+-    std::string                     m_strPlayingClientName;
+-    std::string                     m_strBackendName;
+-    std::string                     m_strBackendVersion;
+-    std::string                     m_strBackendHost;
+-    std::string                     m_strBackendTimers;
+-    std::string                     m_strBackendRecordings;
+-    std::string                     m_strBackendDeletedRecordings;
+-    std::string                     m_strBackendChannels;
+-    long long                       m_iBackendDiskTotal;
+-    long long                       m_iBackendDiskUsed;
+-    bool                            m_bIsPlayingTV;
+-    bool                            m_bIsPlayingRadio;
+-    bool                            m_bIsPlayingRecording;
+-    bool                            m_bIsPlayingEpgTag;
+-    bool                            m_bIsPlayingEncryptedStream;
+-    bool                            m_bHasTVChannels;
+-    bool                            m_bHasRadioChannels;
+-    bool                            m_bCanRecordPlayingChannel;
+-    bool                            m_bIsRecordingPlayingChannel;
+-    bool                            m_bIsPlayingActiveRecording;
+-    std::string                     m_strPlayingTVGroup;
+-    std::string                     m_strPlayingRadioGroup;
++    bool m_bHasTVRecordings;
++    bool m_bHasRadioRecordings;
++    unsigned int m_iCurrentActiveClient;
++    std::string m_strPlayingClientName;
++    std::string m_strBackendName;
++    std::string m_strBackendVersion;
++    std::string m_strBackendHost;
++    std::string m_strBackendTimers;
++    std::string m_strBackendRecordings;
++    std::string m_strBackendDeletedRecordings;
++    std::string m_strBackendChannels;
++    long long m_iBackendDiskTotal;
++    long long m_iBackendDiskUsed;
++    bool m_bIsPlayingTV;
++    bool m_bIsPlayingRadio;
++    bool m_bIsPlayingRecording;
++    bool m_bIsPlayingEpgTag;
++    bool m_bIsPlayingEncryptedStream;
++    bool m_bHasTVChannels;
++    bool m_bHasRadioChannels;
++    bool m_bCanRecordPlayingChannel;
++    bool m_bIsRecordingPlayingChannel;
++    bool m_bIsPlayingActiveRecording;
++    std::string m_strPlayingTVGroup;
++    std::string m_strPlayingRadioGroup;
+ 
+     //@}
+ 
+-    PVR_SIGNAL_STATUS               m_qualityInfo;       /*!< stream quality information */
+-    PVR_DESCRAMBLE_INFO             m_descrambleInfo;    /*!< stream descramble information */
+-    std::vector<SBackend>           m_backendProperties;
++    PVR_SIGNAL_STATUS m_qualityInfo; /*!< stream quality information */
++    PVR_DESCRAMBLE_INFO m_descrambleInfo; /*!< stream descramble information */
++    std::vector<SBackend> m_backendProperties;
+ 
+     mutable CCriticalSection m_critSection;
+ 
+diff --git a/xbmc/pvr/recordings/PVRRecording.cpp b/xbmc/pvr/recordings/PVRRecording.cpp
+index 72ecc7d1f32c..8d9847d63a2c 100644
+--- a/xbmc/pvr/recordings/PVRRecording.cpp
++++ b/xbmc/pvr/recordings/PVRRecording.cpp
+@@ -72,28 +72,28 @@ CPVRRecording::CPVRRecording(const PVR_RECORDING& recording, unsigned int iClien
+ {
+   Reset();
+ 
+-  m_strRecordingId                 = recording.strRecordingId;
+-  m_strTitle                       = recording.strTitle;
+-  m_strShowTitle                   = recording.strEpisodeName;
+-  m_iSeason                        = recording.iSeriesNumber;
+-  m_iEpisode                       = recording.iEpisodeNumber;
++  m_strRecordingId = recording.strRecordingId;
++  m_strTitle = recording.strTitle;
++  m_strShowTitle = recording.strEpisodeName;
++  m_iSeason = recording.iSeriesNumber;
++  m_iEpisode = recording.iEpisodeNumber;
+   if (recording.iYear > 0)
+     SetYear(recording.iYear);
+-  m_iClientId                      = iClientId;
+-  m_recordingTime                  = recording.recordingTime + CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_iPVRTimeCorrection;
+-  m_iPriority                      = recording.iPriority;
+-  m_iLifetime                      = recording.iLifetime;
++  m_iClientId = iClientId;
++  m_recordingTime = recording.recordingTime + CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_iPVRTimeCorrection;
++  m_iPriority = recording.iPriority;
++  m_iLifetime = recording.iLifetime;
+   // Deleted recording is placed at the root of the deleted view
+-  m_strDirectory                   = recording.bIsDeleted ? "" : recording.strDirectory;
+-  m_strPlot                        = recording.strPlot;
+-  m_strPlotOutline                 = recording.strPlotOutline;
+-  m_strChannelName                 = recording.strChannelName;
+-  m_strIconPath                    = recording.strIconPath;
+-  m_strThumbnailPath               = recording.strThumbnailPath;
+-  m_strFanartPath                  = recording.strFanartPath;
+-  m_bIsDeleted                     = recording.bIsDeleted;
+-  m_iEpgEventId                    = recording.iEpgEventId;
+-  m_iChannelUid                    = recording.iChannelUid;
++  m_strDirectory = recording.bIsDeleted ? "" : recording.strDirectory;
++  m_strPlot = recording.strPlot;
++  m_strPlotOutline = recording.strPlotOutline;
++  m_strChannelName = recording.strChannelName;
++  m_strIconPath = recording.strIconPath;
++  m_strThumbnailPath = recording.strThumbnailPath;
++  m_strFanartPath = recording.strFanartPath;
++  m_bIsDeleted = recording.bIsDeleted;
++  m_iEpgEventId = recording.iEpgEventId;
++  m_iChannelUid = recording.iChannelUid;
+ 
+   SetGenre(recording.iGenreType, recording.iGenreSubType, recording.strGenreDescription);
+   CVideoInfoTag::SetPlayCount(recording.iPlayCount);
+@@ -133,33 +133,33 @@ CPVRRecording::CPVRRecording(const PVR_RECORDING& recording, unsigned int iClien
+ bool CPVRRecording::operator ==(const CPVRRecording& right) const
+ {
+   return (this == &right) ||
+-      (m_strRecordingId     == right.m_strRecordingId &&
+-       m_iClientId          == right.m_iClientId &&
+-       m_strChannelName     == right.m_strChannelName &&
+-       m_recordingTime      == right.m_recordingTime &&
+-       GetDuration()        == right.GetDuration() &&
+-       m_strPlotOutline     == right.m_strPlotOutline &&
+-       m_strPlot            == right.m_strPlot &&
+-       m_iPriority          == right.m_iPriority &&
+-       m_iLifetime          == right.m_iLifetime &&
+-       m_strDirectory       == right.m_strDirectory &&
++      (m_strRecordingId == right.m_strRecordingId &&
++       m_iClientId == right.m_iClientId &&
++       m_strChannelName == right.m_strChannelName &&
++       m_recordingTime == right.m_recordingTime &&
++       GetDuration() == right.GetDuration() &&
++       m_strPlotOutline == right.m_strPlotOutline &&
++       m_strPlot == right.m_strPlot &&
++       m_iPriority == right.m_iPriority &&
++       m_iLifetime == right.m_iLifetime &&
++       m_strDirectory == right.m_strDirectory &&
+        m_strFileNameAndPath == right.m_strFileNameAndPath &&
+-       m_strTitle           == right.m_strTitle &&
+-       m_strShowTitle       == right.m_strShowTitle &&
+-       m_iSeason            == right.m_iSeason &&
+-       m_iEpisode           == right.m_iEpisode &&
+-       GetPremiered()       == right.GetPremiered() &&
+-       m_strIconPath        == right.m_strIconPath &&
+-       m_strThumbnailPath   == right.m_strThumbnailPath &&
+-       m_strFanartPath      == right.m_strFanartPath &&
+-       m_iRecordingId       == right.m_iRecordingId &&
+-       m_bIsDeleted         == right.m_bIsDeleted &&
+-       m_iEpgEventId        == right.m_iEpgEventId &&
+-       m_iChannelUid        == right.m_iChannelUid &&
+-       m_bRadio             == right.m_bRadio &&
+-       m_genre              == right.m_genre &&
+-       m_iGenreType         == right.m_iGenreType &&
+-       m_iGenreSubType      == right.m_iGenreSubType);
++       m_strTitle == right.m_strTitle &&
++       m_strShowTitle == right.m_strShowTitle &&
++       m_iSeason == right.m_iSeason &&
++       m_iEpisode == right.m_iEpisode &&
++       GetPremiered() == right.GetPremiered() &&
++       m_strIconPath == right.m_strIconPath &&
++       m_strThumbnailPath == right.m_strThumbnailPath &&
++       m_strFanartPath == right.m_strFanartPath &&
++       m_iRecordingId == right.m_iRecordingId &&
++       m_bIsDeleted == right.m_bIsDeleted &&
++       m_iEpgEventId == right.m_iEpgEventId &&
++       m_iChannelUid == right.m_iChannelUid &&
++       m_bRadio == right.m_bRadio &&
++       m_genre == right.m_genre &&
++       m_iGenreType == right.m_iGenreType &&
++       m_iGenreSubType == right.m_iGenreSubType);
+ }
+ 
+ bool CPVRRecording::operator !=(const CPVRRecording& right) const
+@@ -195,23 +195,23 @@ void CPVRRecording::Serialize(CVariant& value) const
+ void CPVRRecording::Reset(void)
+ {
+   m_strRecordingId     .clear();
+-  m_iClientId          = -1;
++  m_iClientId = -1;
+   m_strChannelName     .clear();
+   m_strDirectory       .clear();
+-  m_iPriority          = -1;
+-  m_iLifetime          = -1;
++  m_iPriority = -1;
++  m_iLifetime = -1;
+   m_strFileNameAndPath .clear();
+   m_strIconPath        .clear();
+   m_strThumbnailPath   .clear();
+   m_strFanartPath      .clear();
+-  m_bGotMetaData       = false;
+-  m_iRecordingId       = 0;
+-  m_bIsDeleted         = false;
+-  m_iEpgEventId        = EPG_TAG_INVALID_UID;
+-  m_iSeason            = -1;
+-  m_iEpisode           = -1;
+-  m_iChannelUid        = PVR_CHANNEL_INVALID_UID;
+-  m_bRadio             = false;
++  m_bGotMetaData = false;
++  m_iRecordingId = 0;
++  m_bIsDeleted = false;
++  m_iEpgEventId = EPG_TAG_INVALID_UID;
++  m_iSeason = -1;
++  m_iEpisode = -1;
++  m_iChannelUid = PVR_CHANNEL_INVALID_UID;
++  m_bRadio = false;
+ 
+   m_recordingTime.Reset();
+   CVideoInfoTag::Reset();
+@@ -340,28 +340,28 @@ std::vector<PVR_EDL_ENTRY> CPVRRecording::GetEdl() const
+ 
+ void CPVRRecording::Update(const CPVRRecording& tag)
+ {
+-  m_strRecordingId    = tag.m_strRecordingId;
+-  m_iClientId         = tag.m_iClientId;
+-  m_strTitle          = tag.m_strTitle;
+-  m_strShowTitle      = tag.m_strShowTitle;
+-  m_iSeason           = tag.m_iSeason;
+-  m_iEpisode          = tag.m_iEpisode;
++  m_strRecordingId = tag.m_strRecordingId;
++  m_iClientId = tag.m_iClientId;
++  m_strTitle = tag.m_strTitle;
++  m_strShowTitle = tag.m_strShowTitle;
++  m_iSeason = tag.m_iSeason;
++  m_iEpisode = tag.m_iEpisode;
+   SetPremiered(tag.GetPremiered());
+-  m_recordingTime     = tag.m_recordingTime;
+-  m_iPriority         = tag.m_iPriority;
+-  m_iLifetime         = tag.m_iLifetime;
+-  m_strDirectory      = tag.m_strDirectory;
+-  m_strPlot           = tag.m_strPlot;
+-  m_strPlotOutline    = tag.m_strPlotOutline;
+-  m_strChannelName    = tag.m_strChannelName;
+-  m_genre             = tag.m_genre;
+-  m_strIconPath       = tag.m_strIconPath;
+-  m_strThumbnailPath  = tag.m_strThumbnailPath;
+-  m_strFanartPath     = tag.m_strFanartPath;
+-  m_bIsDeleted        = tag.m_bIsDeleted;
+-  m_iEpgEventId       = tag.m_iEpgEventId;
+-  m_iChannelUid       = tag.m_iChannelUid;
+-  m_bRadio            = tag.m_bRadio;
++  m_recordingTime = tag.m_recordingTime;
++  m_iPriority = tag.m_iPriority;
++  m_iLifetime = tag.m_iLifetime;
++  m_strDirectory = tag.m_strDirectory;
++  m_strPlot = tag.m_strPlot;
++  m_strPlotOutline = tag.m_strPlotOutline;
++  m_strChannelName = tag.m_strChannelName;
++  m_genre = tag.m_genre;
++  m_strIconPath = tag.m_strIconPath;
++  m_strThumbnailPath = tag.m_strThumbnailPath;
++  m_strFanartPath = tag.m_strFanartPath;
++  m_bIsDeleted = tag.m_bIsDeleted;
++  m_iEpgEventId = tag.m_iEpgEventId;
++  m_iChannelUid = tag.m_iChannelUid;
++  m_bRadio = tag.m_bRadio;
+ 
+   CVideoInfoTag::SetPlayCount(tag.GetLocalPlayCount());
+   CVideoInfoTag::SetResumePoint(tag.GetLocalResumePoint());
+diff --git a/xbmc/pvr/recordings/PVRRecording.h b/xbmc/pvr/recordings/PVRRecording.h
+index 04b1e6979fba..9f77eb8b29ab 100644
+--- a/xbmc/pvr/recordings/PVRRecording.h
++++ b/xbmc/pvr/recordings/PVRRecording.h
+@@ -49,8 +49,8 @@ namespace PVR
+   class CPVRRecordingUid final
+   {
+   public:
+-    int           m_iClientId;        /*!< ID of the backend */
+-    std::string   m_strRecordingId;   /*!< unique ID of the recording on the client */
++    int m_iClientId; /*!< ID of the backend */
++    std::string m_strRecordingId; /*!< unique ID of the recording on the client */
+ 
+     CPVRRecordingUid(int iClientId, const std::string& strRecordingId);
+ 
+@@ -63,16 +63,16 @@ namespace PVR
+   class CPVRRecording final : public CVideoInfoTag
+   {
+   public:
+-    int           m_iClientId;        /*!< ID of the backend */
+-    std::string   m_strRecordingId;   /*!< unique ID of the recording on the client */
+-    std::string   m_strChannelName;   /*!< name of the channel this was recorded from */
+-    int           m_iPriority;        /*!< priority of this recording */
+-    int           m_iLifetime;        /*!< lifetime of this recording */
+-    std::string   m_strDirectory;     /*!< directory of this recording on the client */
+-    std::string   m_strIconPath;      /*!< icon path */
+-    std::string   m_strThumbnailPath; /*!< thumbnail path */
+-    std::string   m_strFanartPath;    /*!< fanart path */
+-    unsigned      m_iRecordingId;     /*!< id that won't change while xbmc is running */
++    int m_iClientId; /*!< ID of the backend */
++    std::string m_strRecordingId; /*!< unique ID of the recording on the client */
++    std::string m_strChannelName; /*!< name of the channel this was recorded from */
++    int m_iPriority; /*!< priority of this recording */
++    int m_iLifetime; /*!< lifetime of this recording */
++    std::string m_strDirectory; /*!< directory of this recording on the client */
++    std::string m_strIconPath; /*!< icon path */
++    std::string m_strThumbnailPath; /*!< thumbnail path */
++    std::string m_strFanartPath; /*!< fanart path */
++    unsigned m_iRecordingId; /*!< id that won't change while xbmc is running */
+ 
+     CPVRRecording(void);
+     CPVRRecording(const PVR_RECORDING& recording, unsigned int iClientId);
+@@ -318,14 +318,14 @@ namespace PVR
+    const std::string GetGenresLabel() const;
+ 
+   private:
+-    CDateTime    m_recordingTime; /*!< start time of the recording */
+-    bool         m_bGotMetaData;
+-    bool         m_bIsDeleted;    /*!< set if entry is a deleted recording which can be undelete */
+-    unsigned int m_iEpgEventId;   /*!< epg broadcast id associated with this recording */
+-    int          m_iChannelUid;   /*!< channel uid associated with this recording */
+-    bool         m_bRadio;        /*!< radio or tv recording */
+-    int          m_iGenreType = 0;    /*!< genre type */
+-    int          m_iGenreSubType = 0; /*!< genre subtype */
++    CDateTime m_recordingTime; /*!< start time of the recording */
++    bool m_bGotMetaData;
++    bool m_bIsDeleted; /*!< set if entry is a deleted recording which can be undelete */
++    unsigned int m_iEpgEventId; /*!< epg broadcast id associated with this recording */
++    int m_iChannelUid; /*!< channel uid associated with this recording */
++    bool m_bRadio; /*!< radio or tv recording */
++    int m_iGenreType = 0; /*!< genre type */
++    int m_iGenreSubType = 0; /*!< genre subtype */
+     mutable XbmcThreads::EndTime m_resumePointRefetchTimeout;
+ 
+     void UpdatePath(void);
+diff --git a/xbmc/pvr/recordings/PVRRecordings.cpp b/xbmc/pvr/recordings/PVRRecordings.cpp
+index 23889e961a55..9552b41c1bfe 100644
+--- a/xbmc/pvr/recordings/PVRRecordings.cpp
++++ b/xbmc/pvr/recordings/PVRRecordings.cpp
+@@ -133,7 +133,7 @@ std::shared_ptr<CPVRRecording> CPVRRecordings::GetByPath(const std::string& path
+   if (recPath.IsValid())
+   {
+     bool bDeleted = recPath.IsDeleted();
+-    bool bRadio   = recPath.IsRadio();
++    bool bRadio = recPath.IsRadio();
+ 
+     for (const auto recording : m_recordings)
+     {
+diff --git a/xbmc/pvr/recordings/PVRRecordingsPath.cpp b/xbmc/pvr/recordings/PVRRecordingsPath.cpp
+index 2b5bf0ec9099..7160cf46bb4d 100644
+--- a/xbmc/pvr/recordings/PVRRecordingsPath.cpp
++++ b/xbmc/pvr/recordings/PVRRecordingsPath.cpp
+@@ -18,10 +18,10 @@
+ 
+ using namespace PVR;
+ 
+-const std::string CPVRRecordingsPath::PATH_RECORDINGS               = "pvr://recordings/";
+-const std::string CPVRRecordingsPath::PATH_ACTIVE_TV_RECORDINGS     = "pvr://recordings/tv/active/";
+-const std::string CPVRRecordingsPath::PATH_ACTIVE_RADIO_RECORDINGS  = "pvr://recordings/radio/active/";
+-const std::string CPVRRecordingsPath::PATH_DELETED_TV_RECORDINGS    = "pvr://recordings/tv/deleted/";
++const std::string CPVRRecordingsPath::PATH_RECORDINGS = "pvr://recordings/";
++const std::string CPVRRecordingsPath::PATH_ACTIVE_TV_RECORDINGS = "pvr://recordings/tv/active/";
++const std::string CPVRRecordingsPath::PATH_ACTIVE_RADIO_RECORDINGS = "pvr://recordings/radio/active/";
++const std::string CPVRRecordingsPath::PATH_DELETED_TV_RECORDINGS = "pvr://recordings/tv/deleted/";
+ const std::string CPVRRecordingsPath::PATH_DELETED_RADIO_RECORDINGS = "pvr://recordings/radio/deleted/";
+ 
+ CPVRRecordingsPath::CPVRRecordingsPath(const std::string& strPath)
+@@ -29,15 +29,15 @@ CPVRRecordingsPath::CPVRRecordingsPath(const std::string& strPath)
+   std::string strVarPath(TrimSlashes(strPath));
+   const std::vector<std::string> segments = URIUtils::SplitPath(strVarPath);
+ 
+-  m_bValid  = ((segments.size() >= 4) && // at least pvr://recordings/[tv|radio]/[active|deleted]
++  m_bValid = ((segments.size() >= 4) && // at least pvr://recordings/[tv|radio]/[active|deleted]
+                StringUtils::StartsWith(strVarPath, "pvr://") &&
+                (segments.at(1) == "recordings") &&
+                ((segments.at(2) == "tv") || (segments.at(2) == "radio")) &&
+                ((segments.at(3) == "active") || (segments.at(3) == "deleted")));
+   if (m_bValid)
+   {
+-    m_bRoot   = (m_bValid && (segments.size() == 4));
+-    m_bRadio  = (m_bValid && (segments.at(2) == "radio"));
++    m_bRoot = (m_bValid && (segments.size() == 4));
++    m_bRadio = (m_bValid && (segments.at(2) == "radio"));
+     m_bActive = (m_bValid && (segments.at(3) == "active"));
+ 
+     if (m_bRoot)
+@@ -117,7 +117,7 @@ CPVRRecordingsPath::CPVRRecordingsPath(bool bDeleted, bool bRadio,
+                                         strDirectoryN.c_str(), strTitleN.c_str(), strSeasonEpisodeN.c_str(),
+                                         strYearN.c_str(), strSubtitleN.c_str());
+   m_params = StringUtils::Format(", TV%s, %s, %s.pvr", strChannelNameN.c_str(), recordingTime.GetAsSaveString().c_str(), strId.c_str());
+-  m_path   = StringUtils::Format("pvr://recordings/%s/%s/%s%s", bRadio ? "radio" : "tv", bDeleted ? "deleted" : "active", m_directoryPath.c_str(), m_params.c_str());
++  m_path = StringUtils::Format("pvr://recordings/%s/%s/%s%s", bRadio ? "radio" : "tv", bDeleted ? "deleted" : "active", m_directoryPath.c_str(), m_params.c_str());
+ }
+ 
+ std::string CPVRRecordingsPath::GetUnescapedDirectoryPath() const
+diff --git a/xbmc/pvr/settings/PVRSettings.cpp b/xbmc/pvr/settings/PVRSettings.cpp
+index 0c957c112f4c..a769fe407273 100644
+--- a/xbmc/pvr/settings/PVRSettings.cpp
++++ b/xbmc/pvr/settings/PVRSettings.cpp
+@@ -148,7 +148,7 @@ std::string CPVRSettings::GetStringValue(const std::string& settingName) const
+ }
+ 
+ void CPVRSettings::MarginTimeFiller(
+-  SettingConstPtr  /*setting*/, std::vector<IntegerSettingOption>& list, int& current, void * /*data*/)
++  SettingConstPtr /*setting*/, std::vector<IntegerSettingOption>& list, int& current, void* /*data*/)
+ {
+   list.clear();
+ 
+diff --git a/xbmc/pvr/timers/PVRTimerInfoTag.cpp b/xbmc/pvr/timers/PVRTimerInfoTag.cpp
+index 0c16509a283b..e2408b92c681 100644
+--- a/xbmc/pvr/timers/PVRTimerInfoTag.cpp
++++ b/xbmc/pvr/timers/PVRTimerInfoTag.cpp
+@@ -127,7 +127,7 @@ CPVRTimerInfoTag::CPVRTimerInfoTag(const PVR_TIMER& timer, const std::shared_ptr
+     if (timer.iTimerType == PVR_TIMER_TYPE_NONE)
+     {
+       // Create type according to certain timer values.
+-      unsigned int iMustHave    = PVR_TIMER_TYPE_ATTRIBUTE_NONE;
++      unsigned int iMustHave = PVR_TIMER_TYPE_ATTRIBUTE_NONE;
+       unsigned int iMustNotHave = PVR_TIMER_TYPE_FORBIDS_NEW_INSTANCES;
+ 
+       if (timer.iEpgUid == PVR_TIMER_NO_EPG_UID && timer.iWeekdays != PVR_WEEKDAY_NONE)
+@@ -170,35 +170,35 @@ bool CPVRTimerInfoTag::operator ==(const CPVRTimerInfoTag& right) const
+     bChannelsMatch = false;
+ 
+   return (bChannelsMatch &&
+-          m_iClientIndex        == right.m_iClientIndex &&
+-          m_iParentClientIndex  == right.m_iParentClientIndex &&
+-          m_strSummary          == right.m_strSummary &&
+-          m_iClientChannelUid   == right.m_iClientChannelUid &&
+-          m_bIsRadio            == right.m_bIsRadio &&
++          m_iClientIndex == right.m_iClientIndex &&
++          m_iParentClientIndex == right.m_iParentClientIndex &&
++          m_strSummary == right.m_strSummary &&
++          m_iClientChannelUid == right.m_iClientChannelUid &&
++          m_bIsRadio == right.m_bIsRadio &&
+           m_iPreventDupEpisodes == right.m_iPreventDupEpisodes &&
+-          m_iRecordingGroup     == right.m_iRecordingGroup &&
+-          m_StartTime           == right.m_StartTime &&
+-          m_StopTime            == right.m_StopTime &&
+-          m_bStartAnyTime       == right.m_bStartAnyTime &&
+-          m_bEndAnyTime         == right.m_bEndAnyTime &&
+-          m_FirstDay            == right.m_FirstDay &&
+-          m_iWeekdays           == right.m_iWeekdays &&
+-          m_iPriority           == right.m_iPriority &&
+-          m_iLifetime           == right.m_iLifetime &&
+-          m_iMaxRecordings      == right.m_iMaxRecordings &&
+-          m_strFileNameAndPath  == right.m_strFileNameAndPath &&
+-          m_strTitle            == right.m_strTitle &&
+-          m_strEpgSearchString  == right.m_strEpgSearchString &&
+-          m_bFullTextEpgSearch  == right.m_bFullTextEpgSearch &&
+-          m_strDirectory        == right.m_strDirectory &&
+-          m_iClientId           == right.m_iClientId &&
+-          m_iMarginStart        == right.m_iMarginStart &&
+-          m_iMarginEnd          == right.m_iMarginEnd &&
+-          m_state               == right.m_state &&
+-          m_timerType           == right.m_timerType &&
+-          m_iTimerId            == right.m_iTimerId &&
+-          m_strSeriesLink       == right.m_strSeriesLink &&
+-          m_iEpgUid             == right.m_iEpgUid &&
++          m_iRecordingGroup == right.m_iRecordingGroup &&
++          m_StartTime == right.m_StartTime &&
++          m_StopTime == right.m_StopTime &&
++          m_bStartAnyTime == right.m_bStartAnyTime &&
++          m_bEndAnyTime == right.m_bEndAnyTime &&
++          m_FirstDay == right.m_FirstDay &&
++          m_iWeekdays == right.m_iWeekdays &&
++          m_iPriority == right.m_iPriority &&
++          m_iLifetime == right.m_iLifetime &&
++          m_iMaxRecordings == right.m_iMaxRecordings &&
++          m_strFileNameAndPath == right.m_strFileNameAndPath &&
++          m_strTitle == right.m_strTitle &&
++          m_strEpgSearchString == right.m_strEpgSearchString &&
++          m_bFullTextEpgSearch == right.m_bFullTextEpgSearch &&
++          m_strDirectory == right.m_strDirectory &&
++          m_iClientId == right.m_iClientId &&
++          m_iMarginStart == right.m_iMarginStart &&
++          m_iMarginEnd == right.m_iMarginEnd &&
++          m_state == right.m_state &&
++          m_timerType == right.m_timerType &&
++          m_iTimerId == right.m_iTimerId &&
++          m_strSeriesLink == right.m_strSeriesLink &&
++          m_iEpgUid == right.m_iEpgUid &&
+           m_iTVChildTimersActive == right.m_iTVChildTimersActive &&
+           m_iTVChildTimersConflictNOK == right.m_iTVChildTimersConflictNOK &&
+           m_iTVChildTimersRecording == right.m_iTVChildTimersRecording &&
+@@ -355,11 +355,11 @@ void CPVRTimerInfoTag::SetTimerType(const std::shared_ptr<CPVRTimerType>& type)
+ 
+   if (m_timerType && m_iClientIndex == PVR_TIMER_NO_CLIENT_INDEX)
+   {
+-    m_iPriority           = m_timerType->GetPriorityDefault();
+-    m_iLifetime           = m_timerType->GetLifetimeDefault();
+-    m_iMaxRecordings      = m_timerType->GetMaxRecordingsDefault();
++    m_iPriority = m_timerType->GetPriorityDefault();
++    m_iLifetime = m_timerType->GetLifetimeDefault();
++    m_iMaxRecordings = m_timerType->GetMaxRecordingsDefault();
+     m_iPreventDupEpisodes = m_timerType->GetPreventDuplicateEpisodesDefault();
+-    m_iRecordingGroup     = m_timerType->GetRecordingGroupDefault();
++    m_iRecordingGroup = m_timerType->GetRecordingGroupDefault();
+   }
+ 
+   if (m_timerType && !m_timerType->IsTimerRule())
+@@ -396,7 +396,7 @@ std::string CPVRTimerInfoTag::GetStatus(bool bRadio) const
+     if ((m_iTVChildTimersRecording > 0 && !bRadio) || (m_iRadioChildTimersRecording > 0 && bRadio))
+       strReturn = g_localizeStrings.Get(19162); // "Recording active"
+     else if ((m_iTVChildTimersErrors > 0 && !bRadio) || (m_iRadioChildTimersErrors > 0 && bRadio))
+-      strReturn = g_localizeStrings.Get(257);   // "Error"
++      strReturn = g_localizeStrings.Get(257); // "Error"
+     else if ((m_iTVChildTimersConflictNOK > 0 && !bRadio) || (m_iRadioChildTimersConflictNOK > 0 && bRadio))
+       strReturn = g_localizeStrings.Get(19276); // "Conflict error"
+     else if ((m_iTVChildTimersActive > 0 && !bRadio) || (m_iRadioChildTimersActive > 0 && bRadio))
+@@ -438,7 +438,7 @@ std::string CPVRTimerInfoTag::GetWeekdaysString(unsigned int iWeekdays, bool bEp
+     return strReturn;
+   else if (iWeekdays == PVR_WEEKDAY_ALLDAYS)
+     strReturn = bEpgBased
+-              ? g_localizeStrings.Get(807)  // "Any day"
++              ? g_localizeStrings.Get(807) // "Any day"
+               : g_localizeStrings.Get(808); // "Every day"
+   else if (iWeekdays == PVR_WEEKDAY_MONDAY)
+     strReturn = g_localizeStrings.Get(831); // "Mondays"
+@@ -562,34 +562,34 @@ bool CPVRTimerInfoTag::UpdateEntry(const std::shared_ptr<CPVRTimerInfoTag>& tag)
+ {
+   CSingleLock lock(m_critSection);
+ 
+-  m_iClientId           = tag->m_iClientId;
+-  m_iClientIndex        = tag->m_iClientIndex;
+-  m_iParentClientIndex  = tag->m_iParentClientIndex;
+-  m_strTitle            = tag->m_strTitle;
+-  m_strEpgSearchString  = tag->m_strEpgSearchString;
+-  m_bFullTextEpgSearch  = tag->m_bFullTextEpgSearch;
+-  m_strDirectory        = tag->m_strDirectory;
+-  m_iClientChannelUid   = tag->m_iClientChannelUid;
+-  m_StartTime           = tag->m_StartTime;
+-  m_StopTime            = tag->m_StopTime;
+-  m_bStartAnyTime       = tag->m_bStartAnyTime;
+-  m_bEndAnyTime         = tag->m_bEndAnyTime;
+-  m_FirstDay            = tag->m_FirstDay;
+-  m_iPriority           = tag->m_iPriority;
+-  m_iLifetime           = tag->m_iLifetime;
+-  m_iMaxRecordings      = tag->m_iMaxRecordings;
+-  m_state               = tag->m_state;
++  m_iClientId = tag->m_iClientId;
++  m_iClientIndex = tag->m_iClientIndex;
++  m_iParentClientIndex = tag->m_iParentClientIndex;
++  m_strTitle = tag->m_strTitle;
++  m_strEpgSearchString = tag->m_strEpgSearchString;
++  m_bFullTextEpgSearch = tag->m_bFullTextEpgSearch;
++  m_strDirectory = tag->m_strDirectory;
++  m_iClientChannelUid = tag->m_iClientChannelUid;
++  m_StartTime = tag->m_StartTime;
++  m_StopTime = tag->m_StopTime;
++  m_bStartAnyTime = tag->m_bStartAnyTime;
++  m_bEndAnyTime = tag->m_bEndAnyTime;
++  m_FirstDay = tag->m_FirstDay;
++  m_iPriority = tag->m_iPriority;
++  m_iLifetime = tag->m_iLifetime;
++  m_iMaxRecordings = tag->m_iMaxRecordings;
++  m_state = tag->m_state;
+   m_iPreventDupEpisodes = tag->m_iPreventDupEpisodes;
+-  m_iRecordingGroup     = tag->m_iRecordingGroup;
+-  m_iWeekdays           = tag->m_iWeekdays;
+-  m_bIsRadio            = tag->m_bIsRadio;
+-  m_iMarginStart        = tag->m_iMarginStart;
+-  m_iMarginEnd          = tag->m_iMarginEnd;
+-  m_strSeriesLink       = tag->m_strSeriesLink;
+-  m_iEpgUid             = tag->m_iEpgUid;
+-  m_epgTag              = tag->m_epgTag;
+-  m_strSummary          = tag->m_strSummary;
+-  m_channel             = tag->m_channel;
++  m_iRecordingGroup = tag->m_iRecordingGroup;
++  m_iWeekdays = tag->m_iWeekdays;
++  m_bIsRadio = tag->m_bIsRadio;
++  m_iMarginStart = tag->m_iMarginStart;
++  m_iMarginEnd = tag->m_iMarginEnd;
++  m_strSeriesLink = tag->m_strSeriesLink;
++  m_iEpgUid = tag->m_iEpgUid;
++  m_epgTag = tag->m_epgTag;
++  m_strSummary = tag->m_strSummary;
++  m_channel = tag->m_channel;
+ 
+   m_iTVChildTimersActive = tag->m_iTVChildTimersActive;
+   m_iTVChildTimersConflictNOK = tag->m_iTVChildTimersConflictNOK;
+@@ -766,13 +766,13 @@ std::shared_ptr<CPVRTimerInfoTag> CPVRTimerInfoTag::CreateFromDate(
+   {
+     newTimer.reset(new CPVRTimerInfoTag);
+ 
+-    newTimer->m_iClientIndex       = PVR_TIMER_NO_CLIENT_INDEX;
++    newTimer->m_iClientIndex = PVR_TIMER_NO_CLIENT_INDEX;
+     newTimer->m_iParentClientIndex = PVR_TIMER_NO_PARENT;
+-    newTimer->m_channel            = channel;
+-    newTimer->m_strTitle           = channel->ChannelName();
+-    newTimer->m_iClientChannelUid  = channel->UniqueID();
+-    newTimer->m_iClientId          = channel->ClientID();
+-    newTimer->m_bIsRadio           = channel->IsRadio();
++    newTimer->m_channel = channel;
++    newTimer->m_strTitle = channel->ChannelName();
++    newTimer->m_iClientChannelUid = channel->UniqueID();
++    newTimer->m_iClientId = channel->ClientID();
++    newTimer->m_bIsRadio = channel->IsRadio();
+ 
+     int iMustHaveAttribs = PVR_TIMER_TYPE_IS_MANUAL;
+     if (bCreateReminder)
+@@ -876,18 +876,18 @@ std::shared_ptr<CPVRTimerInfoTag> CPVRTimerInfoTag::CreateFromEpg(
+     return std::shared_ptr<CPVRTimerInfoTag>();
+   }
+ 
+-  newTag->m_iClientIndex       = PVR_TIMER_NO_CLIENT_INDEX;
++  newTag->m_iClientIndex = PVR_TIMER_NO_CLIENT_INDEX;
+   newTag->m_iParentClientIndex = PVR_TIMER_NO_PARENT;
+   if (!CServiceBroker::GetPVRManager().IsParentalLocked(tag))
+     newTag->m_strTitle = tag->Title();
+   if (newTag->m_strTitle.empty())
+     newTag->m_strTitle = channel->ChannelName();
+-  newTag->m_iClientChannelUid  = channel->UniqueID();
+-  newTag->m_iClientId          = channel->ClientID();
+-  newTag->m_bIsRadio           = channel->IsRadio();
+-  newTag->m_channel            = channel;
+-  newTag->m_strSeriesLink      = tag->SeriesLink();
+-  newTag->m_iEpgUid            = tag->UniqueBroadcastID();
++  newTag->m_iClientChannelUid = channel->UniqueID();
++  newTag->m_iClientId = channel->ClientID();
++  newTag->m_bIsRadio = channel->IsRadio();
++  newTag->m_channel = channel;
++  newTag->m_strSeriesLink = tag->SeriesLink();
++  newTag->m_iEpgUid = tag->UniqueBroadcastID();
+   newTag->SetStartFromUTC(tag->StartAsUTC());
+   newTag->SetEndFromUTC(tag->EndAsUTC());
+ 
+diff --git a/xbmc/pvr/timers/PVRTimerInfoTag.h b/xbmc/pvr/timers/PVRTimerInfoTag.h
+index af32687f629a..c11b47faa19e 100644
+--- a/xbmc/pvr/timers/PVRTimerInfoTag.h
++++ b/xbmc/pvr/timers/PVRTimerInfoTag.h
+@@ -328,30 +328,30 @@ namespace PVR
+      */
+     bool IsOwnedByClient() const;
+ 
+-    std::string           m_strTitle;            /*!< @brief name of this timer */
+-    std::string           m_strEpgSearchString;  /*!< @brief a epg data match string for epg-based timer rules. Format is backend-dependent, for example regexp */
+-    bool                  m_bFullTextEpgSearch = false; /*!< @brief indicates whether only epg episode title can be matched by the pvr backend or "more" (backend-dependent") data. */
+-    std::string           m_strDirectory;        /*!< @brief directory where the recording must be stored */
+-    std::string           m_strSummary;          /*!< @brief summary string with the time to show inside a GUI list */
+-    PVR_TIMER_STATE       m_state = PVR_TIMER_STATE_SCHEDULED;  /*!< @brief the state of this timer */
+-    int                   m_iClientId;           /*!< @brief ID of the backend */
+-    int                   m_iClientIndex;        /*!< @brief index number of the tag, given by the backend, PVR_TIMER_NO_CLIENT_INDEX for new */
+-    int                   m_iParentClientIndex;  /*!< @brief for timers scheduled by a timer rule, the index number of the parent, given by the backend, PVR_TIMER_NO_PARENT for no parent */
+-    int                   m_iClientChannelUid;   /*!< @brief channel uid */
+-    bool                  m_bStartAnyTime = false;  /*!< @brief Ignore start date and time clock. Record at 'Any Time' */
+-    bool                  m_bEndAnyTime = false; /*!< @brief Ignore end date and time clock. Record at 'Any Time' */
+-    int                   m_iPriority;           /*!< @brief priority of the timer */
+-    int                   m_iLifetime;           /*!< @brief lifetime of the timer in days */
+-    int                   m_iMaxRecordings = 0;  /*!< @brief (optional) backend setting for maximum number of recordings to keep*/
+-    unsigned int          m_iWeekdays;           /*!< @brief bit based store of weekdays for timer rules */
+-    unsigned int          m_iPreventDupEpisodes; /*!< @brief only record new episodes for epg-based timer rules */
+-    unsigned int          m_iRecordingGroup = 0; /*!< @brief (optional) if set, the addon/backend stores the recording to a group (sub-folder) */
+-    std::string           m_strFileNameAndPath;  /*!< @brief file name is only for reference */
+-    bool                  m_bIsRadio;            /*!< @brief is radio channel if set */
+-    unsigned int          m_iTimerId = 0;        /*!< @brief id that won't change as long as Kodi is running */
+-    unsigned int          m_iMarginStart;        /*!< @brief (optional) if set, the backend starts the recording iMarginStart minutes before startTime. */
+-    unsigned int          m_iMarginEnd;          /*!< @brief (optional) if set, the backend ends the recording iMarginEnd minutes after endTime. */
+-    mutable unsigned int  m_iEpgUid;             /*!< id of epg event associated with this timer, EPG_TAG_INVALID_UID if none. */
++    std::string m_strTitle; /*!< @brief name of this timer */
++    std::string m_strEpgSearchString; /*!< @brief a epg data match string for epg-based timer rules. Format is backend-dependent, for example regexp */
++    bool m_bFullTextEpgSearch = false; /*!< @brief indicates whether only epg episode title can be matched by the pvr backend or "more" (backend-dependent") data. */
++    std::string m_strDirectory; /*!< @brief directory where the recording must be stored */
++    std::string m_strSummary; /*!< @brief summary string with the time to show inside a GUI list */
++    PVR_TIMER_STATE m_state = PVR_TIMER_STATE_SCHEDULED; /*!< @brief the state of this timer */
++    int m_iClientId; /*!< @brief ID of the backend */
++    int m_iClientIndex; /*!< @brief index number of the tag, given by the backend, PVR_TIMER_NO_CLIENT_INDEX for new */
++    int m_iParentClientIndex; /*!< @brief for timers scheduled by a timer rule, the index number of the parent, given by the backend, PVR_TIMER_NO_PARENT for no parent */
++    int m_iClientChannelUid; /*!< @brief channel uid */
++    bool m_bStartAnyTime = false; /*!< @brief Ignore start date and time clock. Record at 'Any Time' */
++    bool m_bEndAnyTime = false; /*!< @brief Ignore end date and time clock. Record at 'Any Time' */
++    int m_iPriority; /*!< @brief priority of the timer */
++    int m_iLifetime; /*!< @brief lifetime of the timer in days */
++    int m_iMaxRecordings = 0; /*!< @brief (optional) backend setting for maximum number of recordings to keep*/
++    unsigned int m_iWeekdays; /*!< @brief bit based store of weekdays for timer rules */
++    unsigned int m_iPreventDupEpisodes; /*!< @brief only record new episodes for epg-based timer rules */
++    unsigned int m_iRecordingGroup = 0; /*!< @brief (optional) if set, the addon/backend stores the recording to a group (sub-folder) */
++    std::string m_strFileNameAndPath; /*!< @brief file name is only for reference */
++    bool m_bIsRadio; /*!< @brief is radio channel if set */
++    unsigned int m_iTimerId = 0; /*!< @brief id that won't change as long as Kodi is running */
++    unsigned int m_iMarginStart; /*!< @brief (optional) if set, the backend starts the recording iMarginStart minutes before startTime. */
++    unsigned int m_iMarginEnd; /*!< @brief (optional) if set, the backend ends the recording iMarginEnd minutes after endTime. */
++    mutable unsigned int m_iEpgUid; /*!< id of epg event associated with this timer, EPG_TAG_INVALID_UID if none. */
+     std::string m_strSeriesLink; /*!< series link */
+ 
+   private:
+@@ -366,8 +366,8 @@ namespace PVR
+ 
+     mutable CCriticalSection m_critSection;
+     CDateTime m_StartTime; /*!< start time */
+-    CDateTime m_StopTime;  /*!< stop time */
+-    CDateTime m_FirstDay;  /*!< if it is a manual timer rule the first date it starts */
++    CDateTime m_StopTime; /*!< stop time */
++    CDateTime m_FirstDay; /*!< if it is a manual timer rule the first date it starts */
+     std::shared_ptr<CPVRTimerType> m_timerType; /*!< the type of this timer */
+ 
+     unsigned int m_iTVChildTimersActive = 0;
+diff --git a/xbmc/pvr/timers/PVRTimerType.cpp b/xbmc/pvr/timers/PVRTimerType.cpp
+index 75358fbdae54..63f66cbe3048 100644
+--- a/xbmc/pvr/timers/PVRTimerType.cpp
++++ b/xbmc/pvr/timers/PVRTimerType.cpp
+@@ -187,20 +187,20 @@ CPVRTimerType::~CPVRTimerType() = default;
+ 
+ bool CPVRTimerType::operator ==(const CPVRTimerType& right) const
+ {
+-  return (m_iClientId                  == right.m_iClientId   &&
+-          m_iTypeId                    == right.m_iTypeId  &&
+-          m_iAttributes                == right.m_iAttributes &&
+-          m_strDescription             == right.m_strDescription &&
+-          m_priorityValues             == right.m_priorityValues &&
+-          m_iPriorityDefault           == right.m_iPriorityDefault &&
+-          m_lifetimeValues             == right.m_lifetimeValues &&
+-          m_iLifetimeDefault           == right.m_iLifetimeDefault &&
+-          m_maxRecordingsValues        == right.m_maxRecordingsValues &&
+-          m_iMaxRecordingsDefault      == right.m_iMaxRecordingsDefault &&
+-          m_preventDupEpisodesValues   == right.m_preventDupEpisodesValues &&
++  return (m_iClientId == right.m_iClientId &&
++          m_iTypeId == right.m_iTypeId &&
++          m_iAttributes == right.m_iAttributes &&
++          m_strDescription == right.m_strDescription &&
++          m_priorityValues == right.m_priorityValues &&
++          m_iPriorityDefault == right.m_iPriorityDefault &&
++          m_lifetimeValues == right.m_lifetimeValues &&
++          m_iLifetimeDefault == right.m_iLifetimeDefault &&
++          m_maxRecordingsValues == right.m_maxRecordingsValues &&
++          m_iMaxRecordingsDefault == right.m_iMaxRecordingsDefault &&
++          m_preventDupEpisodesValues == right.m_preventDupEpisodesValues &&
+           m_iPreventDupEpisodesDefault == right.m_iPreventDupEpisodesDefault &&
+-          m_recordingGroupValues       == right.m_recordingGroupValues &&
+-          m_iRecordingGroupDefault     == right.m_iRecordingGroupDefault);
++          m_recordingGroupValues == right.m_recordingGroupValues &&
++          m_iRecordingGroupDefault == right.m_iRecordingGroupDefault);
+ }
+ 
+ bool CPVRTimerType::operator !=(const CPVRTimerType& right) const
+diff --git a/xbmc/pvr/timers/PVRTimerType.h b/xbmc/pvr/timers/PVRTimerType.h
+index c3478bc33ff8..734e6e06d80e 100644
+--- a/xbmc/pvr/timers/PVRTimerType.h
++++ b/xbmc/pvr/timers/PVRTimerType.h
+@@ -375,19 +375,19 @@ namespace PVR
+     void InitPreventDuplicateEpisodesValues(const PVR_TIMER_TYPE& type);
+     void InitRecordingGroupValues(const PVR_TIMER_TYPE& type);
+ 
+-    int           m_iClientId = -1;
+-    unsigned int  m_iTypeId;
+-    unsigned int  m_iAttributes;
+-    std::string   m_strDescription;
++    int m_iClientId = -1;
++    unsigned int m_iTypeId;
++    unsigned int m_iAttributes;
++    std::string m_strDescription;
+     std::vector< std::pair<std::string, int> > m_priorityValues;
+-    int           m_iPriorityDefault = DEFAULT_RECORDING_PRIORITY;
++    int m_iPriorityDefault = DEFAULT_RECORDING_PRIORITY;
+     std::vector< std::pair<std::string, int> > m_lifetimeValues;
+-    int           m_iLifetimeDefault = DEFAULT_RECORDING_LIFETIME;
++    int m_iLifetimeDefault = DEFAULT_RECORDING_LIFETIME;
+     std::vector< std::pair<std::string, int> > m_maxRecordingsValues;
+-    int           m_iMaxRecordingsDefault = 0;
++    int m_iMaxRecordingsDefault = 0;
+     std::vector< std::pair<std::string, int> > m_preventDupEpisodesValues;
+-    unsigned int  m_iPreventDupEpisodesDefault = DEFAULT_RECORDING_DUPLICATEHANDLING;
++    unsigned int m_iPreventDupEpisodesDefault = DEFAULT_RECORDING_DUPLICATEHANDLING;
+     std::vector< std::pair<std::string, int> > m_recordingGroupValues;
+-    unsigned int  m_iRecordingGroupDefault = 0;
++    unsigned int m_iRecordingGroupDefault = 0;
+   };
+ }
+diff --git a/xbmc/pvr/timers/PVRTimersPath.cpp b/xbmc/pvr/timers/PVRTimersPath.cpp
+index 7b7925966435..023338c075e5 100644
+--- a/xbmc/pvr/timers/PVRTimersPath.cpp
++++ b/xbmc/pvr/timers/PVRTimersPath.cpp
+@@ -18,7 +18,7 @@
+ using namespace PVR;
+ 
+ const std::string CPVRTimersPath::PATH_ADDTIMER = "pvr://timers/addtimer/";
+-const std::string CPVRTimersPath::PATH_NEW      = "pvr://timers/new/";
++const std::string CPVRTimersPath::PATH_NEW = "pvr://timers/new/";
+ 
+ CPVRTimersPath::CPVRTimersPath(const std::string& strPath)
+ {
+@@ -61,12 +61,12 @@ bool CPVRTimersPath::Init(const std::string& strPath)
+   m_path = strVarPath;
+   const std::vector<std::string> segments = URIUtils::SplitPath(m_path);
+ 
+-  m_bValid   = (((segments.size() == 4) || (segments.size() == 6)) &&
++  m_bValid = (((segments.size() == 4) || (segments.size() == 6)) &&
+                 (segments.at(1) == "timers") &&
+-                ((segments.at(2) == "radio") || (segments.at(2) == "tv"))&&
++                ((segments.at(2) == "radio") || (segments.at(2) == "tv")) &&
+                 ((segments.at(3) == "rules") || (segments.at(3) == "timers")));
+-  m_bRoot    = (m_bValid && (segments.size() == 4));
+-  m_bRadio   = (m_bValid && (segments.at(2) == "radio"));
++  m_bRoot = (m_bValid && (segments.size() == 4));
++  m_bRadio = (m_bValid && (segments.at(2) == "radio"));
+   m_bTimerRules = (m_bValid && (segments.at(3) == "rules"));
+ 
+   if (!m_bValid || m_bRoot)
+diff --git a/xbmc/pvr/windows/GUIWindowPVRBase.h b/xbmc/pvr/windows/GUIWindowPVRBase.h
+index 80eff48cd412..122658aac7f8 100644
+--- a/xbmc/pvr/windows/GUIWindowPVRBase.h
++++ b/xbmc/pvr/windows/GUIWindowPVRBase.h
+@@ -40,12 +40,12 @@ namespace PVR
+ 
+   enum EPGSelectAction
+   {
+-    EPG_SELECT_ACTION_CONTEXT_MENU   = 0,
+-    EPG_SELECT_ACTION_SWITCH         = 1,
+-    EPG_SELECT_ACTION_INFO           = 2,
+-    EPG_SELECT_ACTION_RECORD         = 3,
++    EPG_SELECT_ACTION_CONTEXT_MENU = 0,
++    EPG_SELECT_ACTION_SWITCH = 1,
++    EPG_SELECT_ACTION_INFO = 2,
++    EPG_SELECT_ACTION_RECORD = 3,
+     EPG_SELECT_ACTION_PLAY_RECORDING = 4,
+-    EPG_SELECT_ACTION_SMART_SELECT   = 5
++    EPG_SELECT_ACTION_SMART_SELECT = 5
+   };
+ 
+   class CPVRChannelGroup;
+diff --git a/xbmc/pvr/windows/GUIWindowPVRSearch.h b/xbmc/pvr/windows/GUIWindowPVRSearch.h
+index a2759af3cf99..532f7b5da90c 100644
+--- a/xbmc/pvr/windows/GUIWindowPVRSearch.h
++++ b/xbmc/pvr/windows/GUIWindowPVRSearch.h
+@@ -26,7 +26,7 @@ namespace PVR
+     CGUIWindowPVRSearchBase(bool bRadio, int id, const std::string& xmlFile);
+     ~CGUIWindowPVRSearchBase() override;
+ 
+-    bool OnMessage(CGUIMessage& message)  override;
++    bool OnMessage(CGUIMessage& message) override;
+     void GetContextButtons(int itemNumber, CContextButtons& buttons) override;
+     bool OnContextButton(int itemNumber, CONTEXT_BUTTON button) override;
+ 
