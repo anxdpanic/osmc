@@ -1,0 +1,114 @@
+From 619e559f8ca3b2f4bd72054b17bcd71624910fbb Mon Sep 17 00:00:00 2001
+From: Rechi <Rechi@users.noreply.github.com>
+Date: Sun, 6 Oct 2019 07:05:13 +1000
+Subject: [PATCH] [depends] bump libbluray to 1.1.2
+
+- build static
+- enable metadata support (libxml2)
+- enable font support (freetype2)
+- add fontconfig dependency
+---
+ cmake/modules/FindBluray.cmake            | 4 ++++
+ cmake/scripts/android/Install.cmake       | 1 -
+ tools/android/packaging/Makefile.in       | 2 +-
+ tools/depends/target/Makefile             | 2 +-
+ tools/depends/target/libbluray/Makefile   | 6 +++---
+ tools/depends/target/libbluray/tvos.patch | 4 ++--
+ 6 files changed, 11 insertions(+), 8 deletions(-)
+
+diff --git a/cmake/modules/FindBluray.cmake b/cmake/modules/FindBluray.cmake
+index 58a9a912cbe7..34bc50ef54a0 100644
+--- a/cmake/modules/FindBluray.cmake
++++ b/cmake/modules/FindBluray.cmake
+@@ -48,6 +48,10 @@ if(BLURAY_FOUND)
+     list(APPEND BLURAY_DEFINITIONS -DHAVE_LIBBLURAY_BDJ=1)
+   endif()
+ 
++  if(${BLURAY_LIBRARY} MATCHES ".+\.a$" AND PC_BLURAY_STATIC_LIBRARIES)
++    list(APPEND BLURAY_LIBRARIES ${PC_BLURAY_STATIC_LIBRARIES})
++  endif()
++
+   if(NOT TARGET Bluray::Bluray)
+     add_library(Bluray::Bluray UNKNOWN IMPORTED)
+     if(BLURAY_LIBRARY)
+diff --git a/cmake/scripts/android/Install.cmake b/cmake/scripts/android/Install.cmake
+index 456ae9fa9ba1..0e557d1711e0 100644
+--- a/cmake/scripts/android/Install.cmake
++++ b/cmake/scripts/android/Install.cmake
+@@ -153,7 +153,6 @@ foreach(lib IN LISTS required_dyload dyload_optional ITEMS Shairplay)
+   endif()
+ endforeach()
+ add_bundle_file(${ASS_LIBRARY} ${libdir} "")
+-add_bundle_file(${BLURAY_LIBRARY} ${libdir} "")
+ add_bundle_file(${SHAIRPLAY_LIBRARY} ${libdir} "")
+ add_bundle_file(${SMBCLIENT_LIBRARY} ${libdir} "")
+ 
+diff --git a/tools/android/packaging/Makefile.in b/tools/android/packaging/Makefile.in
+index 11475268b7cc..ab7321857980 100644
+--- a/tools/android/packaging/Makefile.in
++++ b/tools/android/packaging/Makefile.in
+@@ -5,7 +5,7 @@ BUILD_TYPE_LC:=$(shell echo $(BUILD_TYPE) | tr A-Z a-z)
+ 
+ OBJS = libshairplay.so \
+   libass.so \
+-  libbluray.so libsmbclient.so
++  libsmbclient.so
+ 
+ PLATFORM_OBJS =
+ EXCLUDED_ADDONS =
+diff --git a/tools/depends/target/Makefile b/tools/depends/target/Makefile
+index 7c626b2276ff..8ab5c199ff4b 100644
+--- a/tools/depends/target/Makefile
++++ b/tools/depends/target/Makefile
+@@ -95,7 +95,7 @@ python27: expat gettext libxml2 sqlite3 openssl libffi
+ libcdio: $(ICONV)
+ libcdio-gplv3: $(ICONV)
+ libplist: $(ZLIB)
+-libbluray: $(ICONV) libxml2
++libbluray: fontconfig freetype2 $(ICONV) libxml2
+ mariadb: openssl $(ICONV) $(ZLIB)
+ libzip: $(ZLIB)
+ libpng: $(ZLIB)
+diff --git a/tools/depends/target/libbluray/Makefile b/tools/depends/target/libbluray/Makefile
+index 776c3f73ed08..62f9b8de4964 100644
+--- a/tools/depends/target/libbluray/Makefile
++++ b/tools/depends/target/libbluray/Makefile
+@@ -3,14 +3,14 @@ DEPS= ../../Makefile.include Makefile tvos.patch
+ 
+ # lib name, version
+ LIBNAME=libbluray
+-VERSION=1.0.2
++VERSION=1.1.2
+ SOURCE=$(LIBNAME)-$(VERSION)
+ ARCHIVE=$(SOURCE).tar.bz2
+ 
+ # configuration settings
+-CONFIGURE=./configure --prefix=$(PREFIX) --exec-prefix=$(PREFIX) \
++CONFIGURE=./configure --prefix=$(PREFIX) --disable-shared --exec-prefix=$(PREFIX) \
+   --disable-examples --disable-doxygen-doc \
+-  --disable-bdjava-jar --without-libxml2 --without-freetype
++  --disable-bdjava-jar
+ 
+ LIBDYLIB=$(PLATFORM)/.libs/libbluray.la
+ 
+diff --git a/tools/depends/target/libbluray/tvos.patch b/tools/depends/target/libbluray/tvos.patch
+index 0c464c7606a3..d9fb4a5d004b 100644
+--- a/tools/depends/target/libbluray/tvos.patch
++++ b/tools/depends/target/libbluray/tvos.patch
+@@ -1,6 +1,6 @@
+ --- a/src/libbluray/bdj/bdj.c
+ +++ b/src/libbluray/bdj/bdj.c
+-@@ -245,7 +245,7 @@
++@@ -252,7 +252,7 @@
+          return NULL;
+      }
+  
+@@ -9,7 +9,7 @@
+      {
+          case -1:
+              BD_DEBUG(DBG_BDJ | DBG_CRIT, "vfork failed\n");
+-@@ -277,7 +277,7 @@
++@@ -284,7 +284,7 @@
+  
+              waitpid(java_home_pid, &exitcode, 0);
+      }
