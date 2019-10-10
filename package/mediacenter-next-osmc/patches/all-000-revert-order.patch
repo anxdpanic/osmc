@@ -1469,8 +1469,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/settings/SettingControl.cpp                   |  7 +--
  xbmc/settings/SettingCreator.cpp                   |  1 -
  xbmc/settings/SettingDateTime.cpp                  |  1 -
- xbmc/settings/SettingPath.cpp                      |  3 +-
- xbmc/settings/SettingPath.h                        |  4 +-
  xbmc/settings/SettingUtils.cpp                     |  1 -
  xbmc/settings/SettingUtils.h                       |  2 +-
  xbmc/settings/Settings.h                           |  4 +-
@@ -30631,41 +30629,6 @@ index 69c3fd9af3..0543301dd5 100644
  #include "XBDateTime.h"
  
  CSettingDate::CSettingDate(const std::string &id, CSettingsManager *settingsManager /* = NULL */)
-diff --git a/xbmc/settings/SettingPath.cpp b/xbmc/settings/SettingPath.cpp
-index bef55a8a6e..17f032dfca 100644
---- a/xbmc/settings/SettingPath.cpp
-+++ b/xbmc/settings/SettingPath.cpp
-@@ -7,12 +7,11 @@
-  */
- 
- #include "SettingPath.h"
--
- #include "settings/lib/SettingsManager.h"
-+#include "utils/log.h"
- #include "utils/StringUtils.h"
- #include "utils/XBMCTinyXML.h"
- #include "utils/XMLUtils.h"
--#include "utils/log.h"
- 
- #define XML_ELM_DEFAULT     "default"
- #define XML_ELM_CONSTRAINTS "constraints"
-diff --git a/xbmc/settings/SettingPath.h b/xbmc/settings/SettingPath.h
-index d8797ea7bf..7bd9265cd7 100644
---- a/xbmc/settings/SettingPath.h
-+++ b/xbmc/settings/SettingPath.h
-@@ -8,10 +8,10 @@
- 
- #pragma once
- 
--#include "settings/lib/Setting.h"
--
- #include <vector>
- 
-+#include "settings/lib/Setting.h"
-+
- class CSettingPath : public CSettingString
- {
- public:
 diff --git a/xbmc/settings/SettingUtils.cpp b/xbmc/settings/SettingUtils.cpp
 index edb791f033..392f7b2f1c 100644
 --- a/xbmc/settings/SettingUtils.cpp
