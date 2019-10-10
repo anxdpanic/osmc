@@ -31437,56 +31437,6 @@ index f4dc1c7836..dc5d4faa27 100644
  class CSettingCategory;
  class CSettingGroup;
  class CSettingSection;
-diff --git a/xbmc/settings/windows/GUIControlSettings.cpp b/xbmc/settings/windows/GUIControlSettings.cpp
-index 9359dc68a3..7f52085fc2 100644
---- a/xbmc/settings/windows/GUIControlSettings.cpp
-+++ b/xbmc/settings/windows/GUIControlSettings.cpp
-@@ -8,9 +8,10 @@
- 
- #include "GUIControlSettings.h"
- 
--#include "FileItem.h"
-+#include <set>
-+#include <utility>
-+
- #include "ServiceBroker.h"
--#include "Util.h"
- #include "addons/AddonManager.h"
- #include "addons/GUIWindowAddonBrowser.h"
- #include "addons/settings/SettingUrlEncodedString.h"
-@@ -18,6 +19,7 @@
- #include "dialogs/GUIDialogNumeric.h"
- #include "dialogs/GUIDialogSelect.h"
- #include "dialogs/GUIDialogSlider.h"
-+#include "FileItem.h"
- #include "guilib/GUIComponent.h"
- #include "guilib/GUIEditControl.h"
- #include "guilib/GUIImage.h"
-@@ -27,21 +29,19 @@
- #include "guilib/GUISpinControlEx.h"
- #include "guilib/GUIWindowManager.h"
- #include "guilib/LocalizeStrings.h"
-+#include "settings/lib/Setting.h"
-+#include "settings/lib/SettingDefinitions.h"
- #include "settings/MediaSourceSettings.h"
- #include "settings/SettingAddon.h"
- #include "settings/SettingControl.h"
- #include "settings/SettingDateTime.h"
- #include "settings/SettingPath.h"
- #include "settings/SettingUtils.h"
--#include "settings/lib/Setting.h"
--#include "settings/lib/SettingDefinitions.h"
- #include "storage/MediaManager.h"
-+#include "Util.h"
- #include "utils/StringUtils.h"
- #include "utils/Variant.h"
- 
--#include <set>
--#include <utility>
--
- using namespace ADDON;
- 
- static std::string Localize(std::uint32_t code, ILocalizer* localizer)
 diff --git a/xbmc/settings/windows/GUIControlSettings.h b/xbmc/settings/windows/GUIControlSettings.h
 index a06238844c..0a1ed1f1b6 100644
 --- a/xbmc/settings/windows/GUIControlSettings.h
