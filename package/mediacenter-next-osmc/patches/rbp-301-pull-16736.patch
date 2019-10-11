@@ -1,0 +1,22 @@
+From 502182fb817fd54a86c0edaeeb07358b7018df84 Mon Sep 17 00:00:00 2001
+From: DaVukovic <dvukovic@gmx.de>
+Date: Tue, 8 Oct 2019 14:46:32 +0200
+Subject: [PATCH] AdvancedSettings: Fix arttype return
+
+---
+ xbmc/settings/AdvancedSettings.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/settings/AdvancedSettings.cpp b/xbmc/settings/AdvancedSettings.cpp
+index ba4e3503e647..425da8f848c5 100644
+--- a/xbmc/settings/AdvancedSettings.cpp
++++ b/xbmc/settings/AdvancedSettings.cpp
+@@ -1413,7 +1413,7 @@ void CAdvancedSettings::SetExtraLogLevel(const std::vector<CVariant> &components
+ void CAdvancedSettings::SetExtraArtwork(const TiXmlElement* arttypes, std::vector<std::string>& artworkMap)
+ {
+   if (!arttypes)
+-    return
++    return;
+   artworkMap.clear();
+   const TiXmlNode* arttype = arttypes->FirstChild("arttype");
+   while (arttype)

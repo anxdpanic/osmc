@@ -1,0 +1,94 @@
+From b74fa3af0edfa987bfbadbb3c799dd3c512f6a0d Mon Sep 17 00:00:00 2001
+From: phunkyfish <phunkyfish@gmail.com>
+Date: Sun, 6 Oct 2019 18:13:14 +0100
+Subject: [PATCH 1/2] [skin.estuary] add year to guide, recordings, timers and
+ info if populated
+
+---
+ addons/skin.estuary/xml/DialogPVRInfo.xml | 2 +-
+ addons/skin.estuary/xml/Includes_PVR.xml  | 4 ++--
+ addons/skin.estuary/xml/MyPVRGuide.xml    | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/addons/skin.estuary/xml/DialogPVRInfo.xml b/addons/skin.estuary/xml/DialogPVRInfo.xml
+index 80914a1c6bed..9f73bca98213 100644
+--- a/addons/skin.estuary/xml/DialogPVRInfo.xml
++++ b/addons/skin.estuary/xml/DialogPVRInfo.xml
+@@ -125,7 +125,7 @@
+ 				</control>
+ 			</control>
+ 			<include content="InfoDialogTopBarInfo">
+-				<param name="main_label" value="$INFO[ListItem.Title]" />
++				<param name="main_label" value="$INFO[ListItem.Title] $INFO[ListItem.Year,([COLOR grey],[/COLOR])]" />
+ 				<param name="sub_label" value="[COLOR grey]$VAR[SeasonEpisodeLabel][/COLOR]$INFO[ListItem.EpisodeName,[COLOR white][B],[/B][/COLOR]]" />
+ 				<param name="posy" value="40" />
+ 			</include>
+diff --git a/addons/skin.estuary/xml/Includes_PVR.xml b/addons/skin.estuary/xml/Includes_PVR.xml
+index 1ce836b3739e..a60f449eb160 100644
+--- a/addons/skin.estuary/xml/Includes_PVR.xml
++++ b/addons/skin.estuary/xml/Includes_PVR.xml
+@@ -246,7 +246,7 @@
+ 				<width>830</width>
+ 				<height>262</height>
+ 				<font>font36_title</font>
+-				<label>$INFO[ListItem.Title]</label>
++				<label>$INFO[ListItem.Title] $INFO[ListItem.Year,([COLOR grey],[/COLOR])]</label>
+ 				<visible>!PVR.HasEpg</visible>
+ 			</control>
+ 			<control type="label">
+@@ -254,7 +254,7 @@
+ 				<width>830</width>
+ 				<height>262</height>
+ 				<font>font36_title</font>
+-				<label>$INFO[ListItem.EpgEventTitle]</label>
++				<label>$INFO[ListItem.EpgEventTitle] $INFO[ListItem.Year,([COLOR grey],[/COLOR])]</label>
+ 				<visible>PVR.HasEpg</visible>
+ 			</control>
+ 			<control type="label">
+diff --git a/addons/skin.estuary/xml/MyPVRGuide.xml b/addons/skin.estuary/xml/MyPVRGuide.xml
+index bace03301eeb..48a9bcecdc59 100644
+--- a/addons/skin.estuary/xml/MyPVRGuide.xml
++++ b/addons/skin.estuary/xml/MyPVRGuide.xml
+@@ -186,7 +186,7 @@
+ 						<control type="label">
+ 							<width>70%</width>
+ 							<height>30</height>
+-							<label>[B]$INFO[ListItem.EpgEventTitle][/B]</label>
++							<label>[B]$INFO[ListItem.EpgEventTitle][/B] $INFO[ListItem.Year,([COLOR grey],[/COLOR])]</label>
+ 						</control>
+ 						<control type="label">
+ 							<top>0</top>
+
+From 80e1a678343b409c98ed90d1c2ebb8eeecd8b9f2 Mon Sep 17 00:00:00 2001
+From: phunkyfish <phunkyfish@gmail.com>
+Date: Sun, 6 Oct 2019 18:29:17 +0100
+Subject: [PATCH 2/2] [skin.estuary] add genre to recordings and  timer uis
+
+---
+ addons/skin.estuary/xml/Includes_PVR.xml | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/addons/skin.estuary/xml/Includes_PVR.xml b/addons/skin.estuary/xml/Includes_PVR.xml
+index a60f449eb160..81ede14e6dd5 100644
+--- a/addons/skin.estuary/xml/Includes_PVR.xml
++++ b/addons/skin.estuary/xml/Includes_PVR.xml
+@@ -259,10 +259,18 @@
+ 			</control>
+ 			<control type="label">
+ 				<top>435</top>
+-				<width>830</width>
++				<width>40%</width>
+ 				<height>70</height>
+ 				<label>[I]$VAR[SeasonEpisodeLabel]$INFO[ListItem.EpisodeName][/I]</label>
+ 			</control>
++			<control type="label">
++				<top>435</top>
++				<right>30</right>
++				<width>60%</width>
++				<height>70</height>
++				<align>right</align>
++				<label>$INFO[ListItem.Genre,[COLOR grey]$LOCALIZE[515]:[/COLOR] ]</label>
++			</control>
+ 			<control type="textbox">
+ 				<top>490</top>
+ 				<width>830</width>
