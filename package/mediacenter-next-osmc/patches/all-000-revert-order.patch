@@ -1042,7 +1042,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/interfaces/python/LanguageHook.cpp            |  4 +-
  xbmc/interfaces/python/LanguageHook.h              |  6 +-
  xbmc/interfaces/python/PyContext.cpp               |  5 +-
- xbmc/interfaces/python/PythonInvoker.h             | 10 ++--
  xbmc/interfaces/python/XBPython.h                  |  6 +-
  xbmc/interfaces/python/swig.cpp                    |  5 +-
  xbmc/interfaces/python/swig.h                      | 11 ++--
@@ -22051,32 +22050,6 @@ index 3b64ac611e..7ea293fc51 100644
  namespace XBMCAddon
  {
    namespace Python
-diff --git a/xbmc/interfaces/python/PythonInvoker.h b/xbmc/interfaces/python/PythonInvoker.h
-index 41b459c4f9..3dc1dda4b0 100644
---- a/xbmc/interfaces/python/PythonInvoker.h
-+++ b/xbmc/interfaces/python/PythonInvoker.h
-@@ -8,16 +8,16 @@
- 
- #pragma once
- 
-+#include <map>
-+#include <string>
-+#include <vector>
-+
- #include "interfaces/generic/ILanguageInvoker.h"
--#include "interfaces/legacy/Addon.h"
- #include "interfaces/python/LanguageHook.h"
-+#include "interfaces/legacy/Addon.h"
- #include "threads/CriticalSection.h"
- #include "threads/Event.h"
- 
--#include <map>
--#include <string>
--#include <vector>
--
- struct _ts;
- 
- class CPythonInvoker : public ILanguageInvoker
 diff --git a/xbmc/interfaces/python/XBPython.h b/xbmc/interfaces/python/XBPython.h
 index 817ce13c3e..85f11919a6 100644
 --- a/xbmc/interfaces/python/XBPython.h
