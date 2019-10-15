@@ -1035,7 +1035,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/interfaces/legacy/wsgi/WsgiInputStream.h      |  4 +-
  xbmc/interfaces/legacy/wsgi/WsgiResponse.cpp       |  6 +-
  xbmc/interfaces/legacy/wsgi/WsgiResponse.h         |  4 +-
- xbmc/interfaces/python/AddonPythonInvoker.cpp      |  6 +-
  xbmc/interfaces/python/CallbackHandler.cpp         |  1 -
  xbmc/interfaces/python/CallbackHandler.h           |  4 +-
  xbmc/interfaces/python/ContextItemAddonInvoker.cpp |  9 ++-
@@ -24592,30 +24591,6 @@ index 7874203ded..5beac1ccf1 100644
  typedef struct HTTPPythonRequest
  {
    struct MHD_Connection *connection;
-diff --git a/xbmc/network/httprequesthandler/python/HTTPPythonWsgiInvoker.cpp b/xbmc/network/httprequesthandler/python/HTTPPythonWsgiInvoker.cpp
-index 60f2183c48..ae487a2d9d 100644
---- a/xbmc/network/httprequesthandler/python/HTTPPythonWsgiInvoker.cpp
-+++ b/xbmc/network/httprequesthandler/python/HTTPPythonWsgiInvoker.cpp
-@@ -8,16 +8,16 @@
- 
- #include "HTTPPythonWsgiInvoker.h"
- 
--#include "URL.h"
-+#include <utility>
-+
- #include "addons/Webinterface.h"
- #include "interfaces/legacy/wsgi/WsgiErrorStream.h"
- #include "interfaces/legacy/wsgi/WsgiInputStream.h"
- #include "interfaces/legacy/wsgi/WsgiResponse.h"
- #include "interfaces/python/swig.h"
-+#include "URL.h"
- #include "utils/URIUtils.h"
- 
--#include <utility>
--
- #define MODULE      "xbmc"
- 
- #define RUNSCRIPT_PREAMBLE \
 diff --git a/xbmc/network/httprequesthandler/python/HTTPPythonWsgiInvoker.h b/xbmc/network/httprequesthandler/python/HTTPPythonWsgiInvoker.h
 index 398ecca433..ae0ab922f2 100644
 --- a/xbmc/network/httprequesthandler/python/HTTPPythonWsgiInvoker.h
