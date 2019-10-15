@@ -533,7 +533,7 @@ index f0077a6bc8..2c72c75d3e 100644
  ifeq ($(OS),linux)
 -  ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),raspberry-pi gbm))
 +  ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),raspberry-pi aml gbm))
-     NATIVE += libffi meson ninja python3 setuptools
+     NATIVE += meson ninja setuptools
    endif
  endif
 diff --git a/tools/depends/target/Makefile b/tools/depends/target/Makefile
