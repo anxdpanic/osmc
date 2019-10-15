@@ -20067,18 +20067,6 @@ index 29cc422793..df84b1b908 100644
  class CLanguageInvokerThread;
  class ILanguageInvocationHandler;
  
-diff --git a/xbmc/interfaces/generic/LanguageInvokerThread.cpp b/xbmc/interfaces/generic/LanguageInvokerThread.cpp
-index 87359b00c4..c1000e28c6 100644
---- a/xbmc/interfaces/generic/LanguageInvokerThread.cpp
-+++ b/xbmc/interfaces/generic/LanguageInvokerThread.cpp
-@@ -7,7 +7,6 @@
-  */
- 
- #include "LanguageInvokerThread.h"
--
- #include "ScriptInvocationManager.h"
- 
- CLanguageInvokerThread::CLanguageInvokerThread(LanguageInvokerPtr invoker, CScriptInvocationManager *invocationManager, bool reuseable)
 diff --git a/xbmc/interfaces/generic/LanguageInvokerThread.h b/xbmc/interfaces/generic/LanguageInvokerThread.h
 index 81e4915ff5..72ef1a8cdf 100644
 --- a/xbmc/interfaces/generic/LanguageInvokerThread.h
