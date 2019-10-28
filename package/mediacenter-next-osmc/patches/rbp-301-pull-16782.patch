@@ -1,0 +1,76 @@
+From cb6c0231a554412b4683daaa0f53a276a3adf246 Mon Sep 17 00:00:00 2001
+From: ronie <ronie@kodi.tv>
+Date: Tue, 15 Oct 2019 02:08:05 +0200
+Subject: [PATCH] [Estuary] add scrollbar to settings dialogs
+
+---
+ addons/skin.estuary/xml/DialogAddonSettings.xml | 14 +++++++++++++-
+ addons/skin.estuary/xml/DialogSettings.xml      | 14 +++++++++++++-
+ 2 files changed, 26 insertions(+), 2 deletions(-)
+
+diff --git a/addons/skin.estuary/xml/DialogAddonSettings.xml b/addons/skin.estuary/xml/DialogAddonSettings.xml
+index 2f545688ff6d..ee19298b59eb 100644
+--- a/addons/skin.estuary/xml/DialogAddonSettings.xml
++++ b/addons/skin.estuary/xml/DialogAddonSettings.xml
+@@ -50,8 +50,9 @@
+ 				<top>100</top>
+ 				<width>1060</width>
+ 				<height>700</height>
++				<pagecontrol>60</pagecontrol>
+ 				<onleft>3</onleft>
+-				<onright>9000</onright>
++				<onright>60</onright>
+ 				<onup>5</onup>
+ 				<ondown>5</ondown>
+ 			</control>
+@@ -142,6 +143,17 @@
+ 				<textureradioofffocus>icons/settings.png</textureradioofffocus>
+ 				<textureradiooffnofocus>icons/settings.png</textureradiooffnofocus>
+ 			</control>
++			<control type="scrollbar" id="60">
++				<left>1489</left>
++				<top>100</top>
++				<width>12</width>
++				<height>700</height>
++				<orientation>vertical</orientation>
++				<onleft>5</onleft>
++				<onright>9000</onright>
++				<animation effect="fade" start="0" end="100" delay="300" time="320">WindowOpen</animation>
++				<animation effect="fade" start="100" end="0" time="150">WindowClose</animation>
++			</control>
+ 		</control>
+ 	</controls>
+ </window>
+diff --git a/addons/skin.estuary/xml/DialogSettings.xml b/addons/skin.estuary/xml/DialogSettings.xml
+index 33648603cb86..c0ebca09de8b 100644
+--- a/addons/skin.estuary/xml/DialogSettings.xml
++++ b/addons/skin.estuary/xml/DialogSettings.xml
+@@ -28,8 +28,9 @@
+ 				<top>100</top>
+ 				<width>1160</width>
+ 				<height>750</height>
++				<pagecontrol>60</pagecontrol>
+ 				<onleft>9000</onleft>
+-				<onright>9000</onright>
++				<onright>60</onright>
+ 				<onup>5</onup>
+ 				<ondown>5</ondown>
+ 			</control>
+@@ -84,6 +85,17 @@
+ 					<param name="label" value="" />
+ 				</include>
+ 			</control>
++			<control type="scrollbar" id="60">
++				<left>1189</left>
++				<top>100</top>
++				<width>12</width>
++				<height>750</height>
++				<orientation>vertical</orientation>
++				<onleft>5</onleft>
++				<onright>9000</onright>
++				<animation effect="fade" start="0" end="100" delay="300" time="320">WindowOpen</animation>
++				<animation effect="fade" start="100" end="0" time="150">WindowClose</animation>
++			</control>
+ 		</control>
+ 	</controls>
+ </window>

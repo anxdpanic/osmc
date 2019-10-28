@@ -1,0 +1,5743 @@
+From 439e8c62a6b52f9b64de862bc3633941216a61c8 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Sat, 19 Oct 2019 15:15:39 +0200
+Subject: [PATCH 1/3] [addons][game] change addon header to support
+ AddonInstance_Game on functions
+
+Required on next changes to support C++ header style
+---
+ .../include/kodi/kodi_game_dll.h              | 66 ++++++++++++-------
+ .../include/kodi/kodi_game_types.h            | 55 +++++++++-------
+ xbmc/games/addons/GameClient.cpp              | 51 ++++++++++----
+ xbmc/games/addons/GameClientInGameSaves.cpp   | 11 ++--
+ xbmc/games/addons/GameClientInGameSaves.h     |  4 +-
+ xbmc/games/addons/input/GameClientInput.cpp   | 30 +++++----
+ 6 files changed, 137 insertions(+), 80 deletions(-)
+
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_game_dll.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_game_dll.h
+index 4338606f4259..302e1bf5a147 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_game_dll.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_game_dll.h
+@@ -23,7 +23,7 @@ extern "C" {
+  *
+  * return the error, or GAME_ERROR_NO_ERROR if the game was loaded
+  */
+-GAME_ERROR LoadGame(const char* url);
++GAME_ERROR LoadGame(const AddonInstance_Game* instance, const char* url);
+ 
+ /*!
+  * \brief Load a game that requires multiple files
+@@ -34,7 +34,10 @@ GAME_ERROR LoadGame(const char* url);
+  *
+  * \return the error, or GAME_ERROR_NO_ERROR if the game was loaded
+  */
+-GAME_ERROR LoadGameSpecial(SPECIAL_GAME_TYPE type, const char** urls, size_t urlCount);
++GAME_ERROR LoadGameSpecial(const AddonInstance_Game* instance,
++                           SPECIAL_GAME_TYPE type,
++                           const char** urls,
++                           size_t urlCount);
+ 
+ /*!
+  * \brief Begin playing without a game file
+@@ -46,7 +49,7 @@ GAME_ERROR LoadGameSpecial(SPECIAL_GAME_TYPE type, const char** urls, size_t url
+  *
+  * \return the error, or GAME_ERROR_NO_ERROR if the game add-on was loaded
+  */
+-GAME_ERROR LoadStandalone(void);
++GAME_ERROR LoadStandalone(const AddonInstance_Game* instance);
+ 
+ /*!
+  * \brief Unload the current game
+@@ -54,7 +57,7 @@ GAME_ERROR LoadStandalone(void);
+  * \return the error, or GAME_ERROR_NO_ERROR if the game was unloaded
+  */
+ /*! Unloads a currently loaded game */
+-GAME_ERROR UnloadGame(void);
++GAME_ERROR UnloadGame(const AddonInstance_Game* instance);
+ 
+ /*!
+  * \brief Get timing information about the loaded game
+@@ -63,14 +66,14 @@ GAME_ERROR UnloadGame(void);
+  *
+  * \return the error, or GAME_ERROR_NO_ERROR if info was filled
+  */
+-GAME_ERROR GetGameTiming(game_system_timing* timing_info);
++GAME_ERROR GetGameTiming(const AddonInstance_Game* instance, game_system_timing* timing_info);
+ 
+ /*!
+  * \brief Get region of the loaded game
+  *
+  * \return the region, or GAME_REGION_UNKNOWN if unknown or no game is loaded
+  */
+-GAME_REGION GetRegion(void);
++GAME_REGION GetRegion(const AddonInstance_Game* instance);
+ 
+ /*!
+  * \brief Return true if the client requires the frontend to provide a game loop
+@@ -80,21 +83,21 @@ GAME_REGION GetRegion(void);
+  *
+  * \return true if the frontend should provide a game loop, false otherwise
+  */
+-bool RequiresGameLoop(void);
++bool RequiresGameLoop(const AddonInstance_Game* instance);
+ 
+ /*!
+  * \brief Run a single frame for add-ons that use a game loop
+  *
+  * \return the error, or GAME_ERROR_NO_ERROR if there was no error
+  */
+-GAME_ERROR RunFrame(void);
++GAME_ERROR RunFrame(const AddonInstance_Game* instance);
+ 
+ /*!
+  * \brief Reset the current game
+  *
+  * \return the error, or GAME_ERROR_NO_ERROR if the game was reset
+  */
+-GAME_ERROR Reset(void);
++GAME_ERROR Reset(const AddonInstance_Game* instance);
+ 
+ // --- Hardware rendering operations -------------------------------------------
+ 
+@@ -105,7 +108,7 @@ GAME_ERROR Reset(void);
+  *
+  * \return the error, or GAME_ERROR_NO_ERROR if the HW context was reset
+  */
+-GAME_ERROR HwContextReset(void);
++GAME_ERROR HwContextReset(const AddonInstance_Game* instance);
+ 
+ /*!
+  * \brief Called before the context is destroyed
+@@ -114,7 +117,7 @@ GAME_ERROR HwContextReset(void);
+  *
+  * \return the error, or GAME_ERROR_NO_ERROR if the HW context was destroyed
+  */
+-GAME_ERROR HwContextDestroy(void);
++GAME_ERROR HwContextDestroy(const AddonInstance_Game* instance);
+ 
+ // --- Input operations --------------------------------------------------------
+ 
+@@ -130,7 +133,9 @@ GAME_ERROR HwContextDestroy(void);
+  * \param feature_name The name of a feature in that profile
+  * \return true if input is accepted for the feature, false otherwise
+  */
+-bool HasFeature(const char* controller_id, const char* feature_name);
++bool HasFeature(const AddonInstance_Game* instance,
++                const char* controller_id,
++                const char* feature_name);
+ 
+ /*!
+  * \brief Get the input topology that specifies which controllers can be connected
+@@ -143,14 +148,14 @@ bool HasFeature(const char* controller_id, const char* feature_name);
+  * accept all controllers imported by addon.xml. The port ID is set to
+  * the DEFAULT_PORT_ID constant.
+  */
+-game_input_topology* GetTopology();
++game_input_topology* GetTopology(const AddonInstance_Game* instance);
+ 
+ /*!
+  * \brief Free the topology's resources
+  *
+  * \param topology The topology returned by GetTopology()
+  */
+-void FreeTopology(game_input_topology* topology);
++void FreeTopology(const AddonInstance_Game* instance, game_input_topology* topology);
+ 
+ /*!
+  * \brief Set the layouts for known controllers
+@@ -161,7 +166,9 @@ void FreeTopology(game_input_topology* topology);
+  * After loading the input topology, the frontend will call this with
+  * controller layouts for all controllers discovered in the topology.
+  */
+-void SetControllerLayouts(const game_controller_layout* controllers, unsigned int controller_count);
++void SetControllerLayouts(const AddonInstance_Game* instance,
++                          const game_controller_layout* controllers,
++                          unsigned int controller_count);
+ 
+ /*!
+  * \brief Enable/disable keyboard input using the specified controller
+@@ -171,7 +178,7 @@ void SetControllerLayouts(const game_controller_layout* controllers, unsigned in
+  *
+  * \return True if keyboard input was enabled, false otherwise
+  */
+-bool EnableKeyboard(bool enable, const char* controller_id);
++bool EnableKeyboard(const AddonInstance_Game* instance, bool enable, const char* controller_id);
+ 
+ /*!
+  * \brief Enable/disable mouse input using the specified controller
+@@ -181,7 +188,7 @@ bool EnableKeyboard(bool enable, const char* controller_id);
+  *
+  * \return True if mouse input was enabled, false otherwise
+  */
+-bool EnableMouse(bool enable, const char* controller_id);
++bool EnableMouse(const AddonInstance_Game* instance, bool enable, const char* controller_id);
+ 
+ /*!
+  * \brief Connect/disconnect a controller to a port on the virtual game console
+@@ -224,7 +231,10 @@ bool EnableMouse(bool enable, const char* controller_id);
+  * Any attempts to connect a controller to a port on a disconnected multitap
+  * will return false.
+  */
+-bool ConnectController(bool connect, const char* port_address, const char* controller_id);
++bool ConnectController(const AddonInstance_Game* instance,
++                       bool connect,
++                       const char* port_address,
++                       const char* controller_id);
+ 
+ /*!
+  * \brief Notify the add-on of an input event
+@@ -233,7 +243,7 @@ bool ConnectController(bool connect, const char* port_address, const char* contr
+  *
+  * \return true if the event was handled, false otherwise
+  */
+-bool InputEvent(const game_input_event* event);
++bool InputEvent(const AddonInstance_Game* instance, const game_input_event* event);
+ 
+ // --- Serialization operations ------------------------------------------------
+ 
+@@ -242,7 +252,7 @@ bool InputEvent(const game_input_event* event);
+  *
+  * \return the number of bytes, or 0 if serialization is not supported
+  */
+-size_t SerializeSize(void);
++size_t SerializeSize(const AddonInstance_Game* instance);
+ 
+ /*!
+  * \brief Serialize the state of the game
+@@ -252,7 +262,7 @@ size_t SerializeSize(void);
+  *
+  * \return the error, or GAME_ERROR_NO_ERROR if the game was serialized into the buffer
+  */
+-GAME_ERROR Serialize(uint8_t* data, size_t size);
++GAME_ERROR Serialize(const AddonInstance_Game* instance, uint8_t* data, size_t size);
+ 
+ /*!
+  * \brief Deserialize the game from the given state
+@@ -262,7 +272,7 @@ GAME_ERROR Serialize(uint8_t* data, size_t size);
+  *
+  * \return the error, or GAME_ERROR_NO_ERROR if the game deserialized
+  */
+-GAME_ERROR Deserialize(const uint8_t* data, size_t size);
++GAME_ERROR Deserialize(const AddonInstance_Game* instance, const uint8_t* data, size_t size);
+ 
+ // --- Cheat operations --------------------------------------------------------
+ 
+@@ -271,7 +281,7 @@ GAME_ERROR Deserialize(const uint8_t* data, size_t size);
+  *
+  * \return the error, or GAME_ERROR_NO_ERROR if the cheat system was reset
+  */
+-GAME_ERROR CheatReset(void);
++GAME_ERROR CheatReset(const AddonInstance_Game* instance);
+ 
+ /*!
+  * \brief Get a region of memory
+@@ -282,7 +292,10 @@ GAME_ERROR CheatReset(void);
+  *
+  * \return the error, or GAME_ERROR_NO_ERROR if data was set to a valid buffer
+  */
+-GAME_ERROR GetMemory(GAME_MEMORY type, uint8_t** data, size_t* size);
++GAME_ERROR GetMemory(const AddonInstance_Game* instance,
++                     GAME_MEMORY type,
++                     uint8_t** data,
++                     size_t* size);
+ 
+ /*!
+  * \brief Set a cheat code
+@@ -293,7 +306,10 @@ GAME_ERROR GetMemory(GAME_MEMORY type, uint8_t** data, size_t* size);
+  *
+  * \return the error, or GAME_ERROR_NO_ERROR if the cheat was set
+  */
+-GAME_ERROR SetCheat(unsigned int index, bool enabled, const char* code);
++GAME_ERROR SetCheat(const AddonInstance_Game* instance,
++                    unsigned int index,
++                    bool enabled,
++                    const char* code);
+ 
+ // --- Add-on helper implementation --------------------------------------------
+ 
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h
+index ec9d472dea7f..549b5f897f5e 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h
+@@ -657,6 +657,8 @@ typedef AddonProps_Game game_client_properties;
+ 
+ /*! Structure to transfer the methods from kodi_game_dll.h to Kodi */
+ 
++struct AddonInstance_Game;
++
+ typedef struct AddonToKodiFuncTable_Game
+ {
+   KODI_HANDLE kodiInstance;
+@@ -674,31 +676,34 @@ typedef struct AddonToKodiFuncTable_Game
+ 
+ typedef struct KodiToAddonFuncTable_Game
+ {
+-  GAME_ERROR  (__cdecl* LoadGame)(const char*);
+-  GAME_ERROR  (__cdecl* LoadGameSpecial)(SPECIAL_GAME_TYPE, const char**, size_t);
+-  GAME_ERROR  (__cdecl* LoadStandalone)(void);
+-  GAME_ERROR  (__cdecl* UnloadGame)(void);
+-  GAME_ERROR  (__cdecl* GetGameTiming)(game_system_timing*);
+-  GAME_REGION (__cdecl* GetRegion)(void);
+-  bool        (__cdecl* RequiresGameLoop)(void);
+-  GAME_ERROR  (__cdecl* RunFrame)(void);
+-  GAME_ERROR  (__cdecl* Reset)(void);
+-  GAME_ERROR  (__cdecl* HwContextReset)(void);
+-  GAME_ERROR  (__cdecl* HwContextDestroy)(void);
+-  bool        (__cdecl* HasFeature)(const char*, const char*);
+-  game_input_topology* (__cdecl* GetTopology)();
+-  void        (__cdecl* FreeTopology)(game_input_topology*);
+-  void        (__cdecl* SetControllerLayouts)(const game_controller_layout*, unsigned int);
+-  bool        (__cdecl* EnableKeyboard)(bool, const char*);
+-  bool        (__cdecl* EnableMouse)(bool, const char*);
+-  bool        (__cdecl* ConnectController)(bool, const char*, const char*);
+-  bool        (__cdecl* InputEvent)(const game_input_event*);
+-  size_t      (__cdecl* SerializeSize)(void);
+-  GAME_ERROR  (__cdecl* Serialize)(uint8_t*, size_t);
+-  GAME_ERROR  (__cdecl* Deserialize)(const uint8_t*, size_t);
+-  GAME_ERROR  (__cdecl* CheatReset)(void);
+-  GAME_ERROR  (__cdecl* GetMemory)(GAME_MEMORY, uint8_t**, size_t*);
+-  GAME_ERROR  (__cdecl* SetCheat)(unsigned int, bool, const char*);
++  GAME_ERROR(__cdecl* LoadGame)(const AddonInstance_Game*, const char*);
++  GAME_ERROR(__cdecl* LoadGameSpecial)
++  (const AddonInstance_Game*, SPECIAL_GAME_TYPE, const char**, size_t);
++  GAME_ERROR(__cdecl* LoadStandalone)(const AddonInstance_Game*);
++  GAME_ERROR(__cdecl* UnloadGame)(const AddonInstance_Game*);
++  GAME_ERROR(__cdecl* GetGameTiming)(const AddonInstance_Game*, game_system_timing*);
++  GAME_REGION(__cdecl* GetRegion)(const AddonInstance_Game*);
++  bool(__cdecl* RequiresGameLoop)(const AddonInstance_Game*);
++  GAME_ERROR(__cdecl* RunFrame)(const AddonInstance_Game*);
++  GAME_ERROR(__cdecl* Reset)(const AddonInstance_Game*);
++  GAME_ERROR(__cdecl* HwContextReset)(const AddonInstance_Game*);
++  GAME_ERROR(__cdecl* HwContextDestroy)(const AddonInstance_Game*);
++  bool(__cdecl* HasFeature)(const AddonInstance_Game*, const char*, const char*);
++  game_input_topology*(__cdecl* GetTopology)(const AddonInstance_Game*);
++  void(__cdecl* FreeTopology)(const AddonInstance_Game*, game_input_topology*);
++  void(__cdecl* SetControllerLayouts)(const AddonInstance_Game*,
++                                      const game_controller_layout*,
++                                      unsigned int);
++  bool(__cdecl* EnableKeyboard)(const AddonInstance_Game*, bool, const char*);
++  bool(__cdecl* EnableMouse)(const AddonInstance_Game*, bool, const char*);
++  bool(__cdecl* ConnectController)(const AddonInstance_Game*, bool, const char*, const char*);
++  bool(__cdecl* InputEvent)(const AddonInstance_Game*, const game_input_event*);
++  size_t(__cdecl* SerializeSize)(const AddonInstance_Game*);
++  GAME_ERROR(__cdecl* Serialize)(const AddonInstance_Game*, uint8_t*, size_t);
++  GAME_ERROR(__cdecl* Deserialize)(const AddonInstance_Game*, const uint8_t*, size_t);
++  GAME_ERROR(__cdecl* CheatReset)(const AddonInstance_Game*);
++  GAME_ERROR(__cdecl* GetMemory)(const AddonInstance_Game*, GAME_MEMORY, uint8_t**, size_t*);
++  GAME_ERROR(__cdecl* SetCheat)(const AddonInstance_Game*, unsigned int, bool, const char*);
+ } KodiToAddonFuncTable_Game;
+ 
+ typedef struct AddonInstance_Game
+diff --git a/xbmc/games/addons/GameClient.cpp b/xbmc/games/addons/GameClient.cpp
+index 71b14a584291..4b030156af6b 100644
+--- a/xbmc/games/addons/GameClient.cpp
++++ b/xbmc/games/addons/GameClient.cpp
+@@ -223,7 +223,10 @@ bool CGameClient::OpenFile(const CFileItem& file, RETRO::IStreamManager& streamM
+ 
+   GAME_ERROR error = GAME_ERROR_FAILED;
+ 
+-  try { LogError(error = m_struct.toAddon.LoadGame(path.c_str()), "LoadGame()"); }
++  try
++  {
++    LogError(error = m_struct.toAddon.LoadGame(&m_struct, path.c_str()), "LoadGame()");
++  }
+   catch (...) { LogException("LoadGame()"); }
+ 
+   if (error != GAME_ERROR_NO_ERROR)
+@@ -253,7 +256,10 @@ bool CGameClient::OpenStandalone(RETRO::IStreamManager& streamManager, IGameInpu
+ 
+   GAME_ERROR error = GAME_ERROR_FAILED;
+ 
+-  try { LogError(error = m_struct.toAddon.LoadStandalone(), "LoadStandalone()"); }
++  try
++  {
++    LogError(error = m_struct.toAddon.LoadStandalone(&m_struct), "LoadStandalone()");
++  }
+   catch (...) { LogException("LoadStandalone()"); }
+ 
+   if (error != GAME_ERROR_NO_ERROR)
+@@ -281,7 +287,7 @@ bool CGameClient::InitializeGameplay(const std::string& gamePath, RETRO::IStream
+     m_gamePath        = gamePath;
+     m_input           = input;
+ 
+-    m_inGameSaves.reset(new CGameClientInGameSaves(this, &m_struct.toAddon));
++    m_inGameSaves.reset(new CGameClientInGameSaves(this, &m_struct));
+     m_inGameSaves->Load();
+ 
+     return true;
+@@ -295,7 +301,7 @@ bool CGameClient::LoadGameInfo()
+   bool bRequiresGameLoop;
+   try
+   {
+-    bRequiresGameLoop = m_struct.toAddon.RequiresGameLoop();
++    bRequiresGameLoop = m_struct.toAddon.RequiresGameLoop(&m_struct);
+   }
+   catch (...)
+   {
+@@ -308,7 +314,10 @@ bool CGameClient::LoadGameInfo()
+   game_system_timing timingInfo = { };
+ 
+   bool bSuccess = false;
+-  try { bSuccess = LogError(m_struct.toAddon.GetGameTiming(&timingInfo), "GetGameTiming()"); }
++  try
++  {
++    bSuccess = LogError(m_struct.toAddon.GetGameTiming(&m_struct, &timingInfo), "GetGameTiming()");
++  }
+   catch (...) { LogException("GetGameTiming()"); }
+ 
+   if (!bSuccess)
+@@ -318,13 +327,16 @@ bool CGameClient::LoadGameInfo()
+   }
+ 
+   GAME_REGION region;
+-  try { region = m_struct.toAddon.GetRegion(); }
++  try
++  {
++    region = m_struct.toAddon.GetRegion(&m_struct);
++  }
+   catch (...) { LogException("GetRegion()"); return false; }
+ 
+   size_t serializeSize;
+   try
+   {
+-    serializeSize = m_struct.toAddon.SerializeSize();
++    serializeSize = m_struct.toAddon.SerializeSize(&m_struct);
+   }
+   catch (...)
+   {
+@@ -401,7 +413,10 @@ void CGameClient::Reset()
+ 
+   if (m_bIsPlaying)
+   {
+-    try { LogError(m_struct.toAddon.Reset(), "Reset()"); }
++    try
++    {
++      LogError(m_struct.toAddon.Reset(&m_struct), "Reset()");
++    }
+     catch (...) { LogException("Reset()"); }
+   }
+ }
+@@ -422,7 +437,10 @@ void CGameClient::CloseFile()
+ 
+     Input().Stop();
+ 
+-    try { LogError(m_struct.toAddon.UnloadGame(), "UnloadGame()"); }
++    try
++    {
++      LogError(m_struct.toAddon.UnloadGame(&m_struct), "UnloadGame()");
++    }
+     catch (...) { LogException("UnloadGame()"); }
+ 
+     Streams().Deinitialize();
+@@ -445,7 +463,10 @@ void CGameClient::RunFrame()
+ 
+   if (m_bIsPlaying)
+   {
+-    try { LogError(m_struct.toAddon.RunFrame(), "RunFrame()"); }
++    try
++    {
++      LogError(m_struct.toAddon.RunFrame(&m_struct), "RunFrame()");
++    }
+     catch (...) { LogException("RunFrame()"); }
+   }
+ }
+@@ -460,7 +481,10 @@ bool CGameClient::Serialize(uint8_t* data, size_t size)
+   bool bSuccess = false;
+   if (m_bIsPlaying)
+   {
+-    try { bSuccess = LogError(m_struct.toAddon.Serialize(data, size), "Serialize()"); }
++    try
++    {
++      bSuccess = LogError(m_struct.toAddon.Serialize(&m_struct, data, size), "Serialize()");
++    }
+     catch (...) { LogException("Serialize()"); }
+   }
+ 
+@@ -477,7 +501,10 @@ bool CGameClient::Deserialize(const uint8_t* data, size_t size)
+   bool bSuccess = false;
+   if (m_bIsPlaying)
+   {
+-    try { bSuccess = LogError(m_struct.toAddon.Deserialize(data, size), "Deserialize()"); }
++    try
++    {
++      bSuccess = LogError(m_struct.toAddon.Deserialize(&m_struct, data, size), "Deserialize()");
++    }
+     catch (...) { LogException("Deserialize()"); }
+   }
+ 
+diff --git a/xbmc/games/addons/GameClientInGameSaves.cpp b/xbmc/games/addons/GameClientInGameSaves.cpp
+index 6e102dbd7931..44af944aac42 100644
+--- a/xbmc/games/addons/GameClientInGameSaves.cpp
++++ b/xbmc/games/addons/GameClientInGameSaves.cpp
+@@ -26,9 +26,10 @@ using namespace GAME;
+ #define INGAME_SAVES_EXTENSION_SAVE_RAM ".sav"
+ #define INGAME_SAVES_EXTENSION_RTC      ".rtc"
+ 
+-CGameClientInGameSaves::CGameClientInGameSaves(CGameClient* addon, const KodiToAddonFuncTable_Game* dllStruct) :
+-  m_gameClient(addon),
+-  m_dllStruct(dllStruct)
++CGameClientInGameSaves::CGameClientInGameSaves(CGameClient* addon,
++                                               const AddonInstance_Game* dllStruct)
++  : m_gameClient(addon),
++    m_dllStruct(dllStruct)
+ {
+   assert(m_gameClient != nullptr);
+   assert(m_dllStruct != nullptr);
+@@ -75,7 +76,7 @@ void CGameClientInGameSaves::Load(GAME_MEMORY memoryType)
+ 
+   try
+   {
+-    m_dllStruct->GetMemory(memoryType, &gameMemory, &size);
++    m_dllStruct->toAddon.GetMemory(m_dllStruct, memoryType, &gameMemory, &size);
+   }
+   catch (...)
+   {
+@@ -116,7 +117,7 @@ void CGameClientInGameSaves::Save(GAME_MEMORY memoryType)
+ 
+   try
+   {
+-    m_dllStruct->GetMemory(memoryType, &gameMemory, &size);
++    m_dllStruct->toAddon.GetMemory(m_dllStruct, memoryType, &gameMemory, &size);
+   }
+   catch (...)
+   {
+diff --git a/xbmc/games/addons/GameClientInGameSaves.h b/xbmc/games/addons/GameClientInGameSaves.h
+index fd2eee4e665f..597fb6719056 100644
+--- a/xbmc/games/addons/GameClientInGameSaves.h
++++ b/xbmc/games/addons/GameClientInGameSaves.h
+@@ -40,7 +40,7 @@ namespace GAME
+      * \param addon The game client implementation.
+      * \param dllStruct The emulator or game for which the in-game saves are processed.
+      */
+-    CGameClientInGameSaves(CGameClient* addon, const KodiToAddonFuncTable_Game* dllStruct);
++    CGameClientInGameSaves(CGameClient* addon, const AddonInstance_Game* dllStruct);
+ 
+     /*!
+      * \brief Load in-game data.
+@@ -59,7 +59,7 @@ namespace GAME
+     void Save(GAME_MEMORY memoryType);
+ 
+     const CGameClient* const m_gameClient;
+-    const KodiToAddonFuncTable_Game* const m_dllStruct;
++    const AddonInstance_Game* const m_dllStruct;
+   };
+ }
+ }
+diff --git a/xbmc/games/addons/input/GameClientInput.cpp b/xbmc/games/addons/input/GameClientInput.cpp
+index a63d74cde3ca..b52680069a63 100644
+--- a/xbmc/games/addons/input/GameClientInput.cpp
++++ b/xbmc/games/addons/input/GameClientInput.cpp
+@@ -141,7 +141,7 @@ bool CGameClientInput::HasFeature(const std::string &controllerId, const std::st
+ 
+   try
+   {
+-    bHasFeature = m_struct.toAddon.HasFeature(controllerId.c_str(), featureName.c_str());
++    bHasFeature = m_struct.toAddon.HasFeature(&m_struct, controllerId.c_str(), featureName.c_str());
+   }
+   catch (...)
+   {
+@@ -168,7 +168,7 @@ bool CGameClientInput::InputEvent(const game_input_event &event)
+ 
+   try
+   {
+-    bHandled = m_struct.toAddon.InputEvent(&event);
++    bHandled = m_struct.toAddon.InputEvent(&m_struct, &event);
+   }
+   catch (...)
+   {
+@@ -184,7 +184,10 @@ void CGameClientInput::LoadTopology()
+ 
+   if (m_gameClient.Initialized())
+   {
+-    try { topologyStruct = m_struct.toAddon.GetTopology(); }
++    try
++    {
++      topologyStruct = m_struct.toAddon.GetTopology(&m_struct);
++    }
+     catch (...) { m_gameClient.LogException("GetTopology()"); }
+   }
+ 
+@@ -204,7 +207,10 @@ void CGameClientInput::LoadTopology()
+ 
+     playerLimit = topologyStruct->player_limit;
+ 
+-    try { m_struct.toAddon.FreeTopology(topologyStruct); }
++    try
++    {
++      m_struct.toAddon.FreeTopology(&m_struct, topologyStruct);
++    }
+     catch (...) { m_gameClient.LogException("FreeTopology()"); }
+   }
+ 
+@@ -244,7 +250,8 @@ void CGameClientInput::SetControllerLayouts(const ControllerVector &controllers)
+ 
+   try
+   {
+-    m_struct.toAddon.SetControllerLayouts(controllerStructs.data(), static_cast<unsigned int>(controllerStructs.size()));
++    m_struct.toAddon.SetControllerLayouts(&m_struct, controllerStructs.data(),
++                                          static_cast<unsigned int>(controllerStructs.size()));
+   }
+   catch (...)
+   {
+@@ -328,7 +335,7 @@ bool CGameClientInput::OpenKeyboard(const ControllerPtr &controller)
+     {
+       try
+       {
+-        bSuccess = m_struct.toAddon.EnableKeyboard(true, controller->ID().c_str());
++        bSuccess = m_struct.toAddon.EnableKeyboard(&m_struct, true, controller->ID().c_str());
+       }
+       catch (...)
+       {
+@@ -357,7 +364,7 @@ void CGameClientInput::CloseKeyboard()
+     {
+       try
+       {
+-        m_struct.toAddon.EnableKeyboard(false, nullptr);
++        m_struct.toAddon.EnableKeyboard(&m_struct, false, nullptr);
+       }
+       catch (...)
+       {
+@@ -392,7 +399,7 @@ bool CGameClientInput::OpenMouse(const ControllerPtr &controller)
+     {
+       try
+       {
+-        bSuccess = m_struct.toAddon.EnableMouse(true, controller->ID().c_str());
++        bSuccess = m_struct.toAddon.EnableMouse(&m_struct, true, controller->ID().c_str());
+       }
+       catch (...)
+       {
+@@ -421,7 +428,7 @@ void CGameClientInput::CloseMouse()
+     {
+       try
+       {
+-        m_struct.toAddon.EnableMouse(false, nullptr);
++        m_struct.toAddon.EnableMouse(&m_struct, false, nullptr);
+       }
+       catch (...)
+       {
+@@ -460,7 +467,8 @@ bool CGameClientInput::OpenJoystick(const std::string &portAddress, const Contro
+     {
+       try
+       {
+-        bSuccess = m_struct.toAddon.ConnectController(true, portAddress.c_str(), controller->ID().c_str());
++        bSuccess = m_struct.toAddon.ConnectController(&m_struct, true, portAddress.c_str(),
++                                                      controller->ID().c_str());
+       }
+       catch (...)
+       {
+@@ -504,7 +512,7 @@ void CGameClientInput::CloseJoystick(const std::string &portAddress)
+     {
+       try
+       {
+-        m_struct.toAddon.ConnectController(false, portAddress.c_str(), nullptr);
++        m_struct.toAddon.ConnectController(&m_struct, false, portAddress.c_str(), nullptr);
+       }
+       catch (...)
+       {
+
+From b1758b4adac471ccd834eab7f167ccae1ff51a66 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Sat, 19 Oct 2019 15:21:49 +0200
+Subject: [PATCH 2/3] [addons][game] change Game addon system to C++ interface
+
+---
+ .../include/kodi/CMakeLists.txt               |    3 -
+ .../kodi/addon-instance/CMakeLists.txt        |    1 +
+ .../include/kodi/addon-instance/Game.h        | 1302 +++++++++++++++++
+ .../include/kodi/kodi_game_dll.h              |  356 -----
+ .../include/kodi/kodi_game_types.h            |  719 ---------
+ .../include/kodi/libKODI_game.h               |  155 --
+ .../include/kodi/versions.h                   |    8 +-
+ xbmc/games/addons/GameClient.cpp              |    5 +-
+ xbmc/games/addons/GameClient.h                |    2 +-
+ xbmc/games/addons/GameClientInGameSaves.h     |    2 +-
+ xbmc/games/addons/GameClientProperties.cpp    |    5 +
+ xbmc/games/addons/GameClientProperties.h      |    4 +-
+ xbmc/games/addons/GameClientSubsystem.cpp     |    2 +-
+ xbmc/games/addons/GameClientTranslator.h      |    2 +-
+ .../games/addons/input/GameClientController.h |    2 +-
+ xbmc/games/addons/input/GameClientDevice.cpp  |    2 +-
+ xbmc/games/addons/input/GameClientInput.cpp   |    2 +-
+ .../games/addons/input/GameClientKeyboard.cpp |    2 +-
+ xbmc/games/addons/input/GameClientMouse.cpp   |    2 +-
+ xbmc/games/addons/input/GameClientPort.cpp    |    2 +-
+ .../addons/streams/GameClientStreamAudio.h    |    2 +-
+ .../streams/GameClientStreamSwFramebuffer.cpp |    2 +-
+ xbmc/games/addons/streams/GameClientStreams.h |    2 +-
+ 23 files changed, 1329 insertions(+), 1255 deletions(-)
+ create mode 100644 xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h
+ delete mode 100644 xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_game_dll.h
+ delete mode 100644 xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h
+ delete mode 100644 xbmc/addons/kodi-addon-dev-kit/include/kodi/libKODI_game.h
+
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/CMakeLists.txt b/xbmc/addons/kodi-addon-dev-kit/include/kodi/CMakeLists.txt
+index 6d644dbb3e67..07bdc66b4722 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/CMakeLists.txt
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/CMakeLists.txt
+@@ -5,10 +5,7 @@ set(HEADERS AddonBase.h
+             Network.h
+             StreamCodec.h
+             StreamCrypto.h
+-            kodi_game_dll.h
+-            kodi_game_types.h
+             kodi_vfs_types.h
+-            libKODI_game.h
+             libKODI_guilib.h
+             libXBMC_addon.h
+             libXBMC_pvr.h
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/CMakeLists.txt b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/CMakeLists.txt
+index 44aaf054f056..9e3646be0e7f 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/CMakeLists.txt
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/CMakeLists.txt
+@@ -1,5 +1,6 @@
+ set(HEADERS AudioDecoder.h
+             AudioEncoder.h
++            Game.h
+             ImageDecoder.h
+             Inputstream.h
+             Peripheral.h
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h
+new file mode 100644
+index 000000000000..5191a62b8a3e
+--- /dev/null
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h
+@@ -0,0 +1,1302 @@
++/*
++ *  Copyright (C) 2014-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#pragma once
++
++#include "../AddonBase.h"
++
++#ifdef BUILD_KODI_ADDON
++#include "XBMC_vkeys.h"
++#else
++#include "input/XBMC_vkeys.h"
++#endif
++
++namespace kodi
++{
++namespace addon
++{
++class CInstanceGame;
++}
++} // namespace kodi
++
++/*! Port ID used when topology is unknown */
++#define DEFAULT_PORT_ID "1"
++
++extern "C"
++{
++
++/// @name Add-on types
++///{
++/*! Game add-on error codes */
++typedef enum GAME_ERROR
++{
++  GAME_ERROR_NO_ERROR, // no error occurred
++  GAME_ERROR_UNKNOWN, // an unknown error occurred
++  GAME_ERROR_NOT_IMPLEMENTED, // the method that the frontend called is not implemented
++  GAME_ERROR_REJECTED, // the command was rejected by the game client
++  GAME_ERROR_INVALID_PARAMETERS, // the parameters of the method that was called are invalid for this operation
++  GAME_ERROR_FAILED, // the command failed
++  GAME_ERROR_NOT_LOADED, // no game is loaded
++  GAME_ERROR_RESTRICTED, // game requires restricted resources
++} GAME_ERROR;
++///}
++
++/// @name Audio stream
++///{
++typedef enum GAME_PCM_FORMAT
++{
++  GAME_PCM_FORMAT_UNKNOWN,
++  GAME_PCM_FORMAT_S16NE,
++} GAME_PCM_FORMAT;
++
++typedef enum GAME_AUDIO_CHANNEL
++{
++  GAME_CH_NULL, // Channel list terminator
++  GAME_CH_FL,
++  GAME_CH_FR,
++  GAME_CH_FC,
++  GAME_CH_LFE,
++  GAME_CH_BL,
++  GAME_CH_BR,
++  GAME_CH_FLOC,
++  GAME_CH_FROC,
++  GAME_CH_BC,
++  GAME_CH_SL,
++  GAME_CH_SR,
++  GAME_CH_TFL,
++  GAME_CH_TFR,
++  GAME_CH_TFC,
++  GAME_CH_TC,
++  GAME_CH_TBL,
++  GAME_CH_TBR,
++  GAME_CH_TBC,
++  GAME_CH_BLOC,
++  GAME_CH_BROC,
++} GAME_AUDIO_CHANNEL;
++
++typedef struct game_stream_audio_properties
++{
++  GAME_PCM_FORMAT format;
++  const GAME_AUDIO_CHANNEL* channel_map;
++} ATTRIBUTE_PACKED game_stream_audio_properties;
++
++typedef struct game_stream_audio_packet
++{
++  const uint8_t* data;
++  size_t size;
++} ATTRIBUTE_PACKED game_stream_audio_packet;
++///}
++
++/// @name Video stream
++///{
++typedef enum GAME_PIXEL_FORMAT
++{
++  GAME_PIXEL_FORMAT_UNKNOWN,
++  GAME_PIXEL_FORMAT_0RGB8888,
++  GAME_PIXEL_FORMAT_RGB565,
++  GAME_PIXEL_FORMAT_0RGB1555,
++} GAME_PIXEL_FORMAT;
++
++typedef enum GAME_VIDEO_ROTATION
++{
++  GAME_VIDEO_ROTATION_0,
++  GAME_VIDEO_ROTATION_90_CCW,
++  GAME_VIDEO_ROTATION_180_CCW,
++  GAME_VIDEO_ROTATION_270_CCW,
++} GAME_VIDEO_ROTATION;
++
++typedef struct game_stream_video_properties
++{
++  GAME_PIXEL_FORMAT format;
++  unsigned int nominal_width;
++  unsigned int nominal_height;
++  unsigned int max_width;
++  unsigned int max_height;
++  float aspect_ratio; // If aspect_ratio is <= 0.0, an aspect ratio of nominal_width / nominal_height is assumed
++} ATTRIBUTE_PACKED game_stream_video_properties;
++
++typedef struct game_stream_video_packet
++{
++  unsigned int width;
++  unsigned int height;
++  GAME_VIDEO_ROTATION rotation;
++  const uint8_t* data;
++  size_t size;
++} ATTRIBUTE_PACKED game_stream_video_packet;
++///}
++
++/// @name Hardware framebuffer stream
++///{
++typedef enum GAME_HW_CONTEXT_TYPE
++{
++  GAME_HW_CONTEXT_NONE,
++
++  // OpenGL 2.x. Driver can choose to use latest compatibility context
++  GAME_HW_CONTEXT_OPENGL,
++
++  // OpenGL ES 2.0
++  GAME_HW_CONTEXT_OPENGLES2,
++
++  // Modern desktop core GL context. Use major/minor fields to set GL version
++  GAME_HW_CONTEXT_OPENGL_CORE,
++
++  // OpenGL ES 3.0
++  GAME_HW_CONTEXT_OPENGLES3,
++
++  // OpenGL ES 3.1+. Set major/minor fields.
++  GAME_HW_CONTEXT_OPENGLES_VERSION,
++
++  // Vulkan
++  GAME_HW_CONTEXT_VULKAN
++} GAME_HW_CONTEXT_TYPE;
++
++typedef struct game_stream_hw_framebuffer_properties
++{
++  /*!
++   * The API to use.
++   */
++  GAME_HW_CONTEXT_TYPE context_type;
++
++  /*!
++   * Set if render buffers should have depth component attached.
++   *
++   * TODO: Obsolete
++   */
++  bool depth;
++
++  /*!
++   * Set if stencil buffers should be attached. If depth and stencil are true,
++   * a packed 24/8 buffer will be added. Only attaching stencil is invalid and
++   * will be ignored.
++   *
++   * TODO: Obsolete.
++   */
++  bool stencil;
++
++  /*!
++   * Use conventional bottom-left origin convention. If false, standard top-left
++   * origin semantics are used.
++   *
++   * TODO: Move to GL specific interface
++   */
++  bool bottom_left_origin;
++
++  /*!
++   * Major version number for core GL context or GLES 3.1+.
++   */
++  unsigned int version_major;
++
++  /*!
++   * Minor version number for core GL context or GLES 3.1+.
++   */
++  unsigned int version_minor;
++
++  /*!
++   * If this is true, the frontend will go very far to avoid resetting context
++   * in scenarios like toggling fullscreen, etc.
++   *
++   * TODO: Obsolete? Maybe frontend should just always assume this...
++   *
++   * The reset callback might still be called in extreme situations such as if
++   * the context is lost beyond recovery.
++   *
++   * For optimal stability, set this to false, and allow context to be reset at
++   * any time.
++   */
++  bool cache_context;
++
++  /*!
++   * Creates a debug context.
++   */
++  bool debug_context;
++} ATTRIBUTE_PACKED game_stream_hw_framebuffer_properties;
++
++typedef struct game_stream_hw_framebuffer_buffer
++{
++  uintptr_t framebuffer;
++} ATTRIBUTE_PACKED game_stream_hw_framebuffer_buffer;
++
++typedef struct game_stream_hw_framebuffer_packet
++{
++  uintptr_t framebuffer;
++} ATTRIBUTE_PACKED game_stream_hw_framebuffer_packet;
++
++typedef void (*game_proc_address_t)(void);
++///}
++
++/// @name Software framebuffer stream
++///{
++typedef game_stream_video_properties game_stream_sw_framebuffer_properties;
++
++typedef struct game_stream_sw_framebuffer_buffer
++{
++  GAME_PIXEL_FORMAT format;
++  uint8_t* data;
++  size_t size;
++} ATTRIBUTE_PACKED game_stream_sw_framebuffer_buffer;
++
++typedef game_stream_video_packet game_stream_sw_framebuffer_packet;
++///}
++
++/// @name Stream types
++///{
++typedef enum GAME_STREAM_TYPE
++{
++  GAME_STREAM_UNKNOWN,
++  GAME_STREAM_AUDIO,
++  GAME_STREAM_VIDEO,
++  GAME_STREAM_HW_FRAMEBUFFER,
++  GAME_STREAM_SW_FRAMEBUFFER,
++} GAME_STREAM_TYPE;
++
++/*!
++ * \brief Immutable stream metadata
++ *
++ * This metadata is provided when the stream is opened. If any stream
++ * properties change, a new stream must be opened.
++ */
++typedef struct game_stream_properties
++{
++  GAME_STREAM_TYPE type;
++  union {
++    game_stream_audio_properties audio;
++    game_stream_video_properties video;
++    game_stream_hw_framebuffer_properties hw_framebuffer;
++    game_stream_sw_framebuffer_properties sw_framebuffer;
++  };
++} ATTRIBUTE_PACKED game_stream_properties;
++
++/*!
++ * \brief Stream buffers for hardware rendering and zero-copy support
++ */
++typedef struct game_stream_buffer
++{
++  GAME_STREAM_TYPE type;
++  union {
++    game_stream_hw_framebuffer_buffer hw_framebuffer;
++    game_stream_sw_framebuffer_buffer sw_framebuffer;
++  };
++} ATTRIBUTE_PACKED game_stream_buffer;
++
++/*!
++ * \brief Stream packet and ephemeral metadata
++ *
++ * This packet contains stream data and accompanying metadata. The metadata
++ * is ephemeral, meaning it only applies to the current packet and can change
++ * from packet to packet in the same stream.
++ */
++typedef struct game_stream_packet
++{
++  GAME_STREAM_TYPE type;
++  union {
++    game_stream_audio_packet audio;
++    game_stream_video_packet video;
++    game_stream_hw_framebuffer_packet hw_framebuffer;
++    game_stream_sw_framebuffer_packet sw_framebuffer;
++  };
++} ATTRIBUTE_PACKED game_stream_packet;
++///}
++
++/// @name Game types
++///{
++
++/*! Returned from game_get_region() */
++typedef enum GAME_REGION
++{
++  GAME_REGION_UNKNOWN,
++  GAME_REGION_NTSC,
++  GAME_REGION_PAL,
++} GAME_REGION;
++
++/*!
++ * Special game types passed into game_load_game_special(). Only used when
++ * multiple ROMs are required.
++ */
++typedef enum SPECIAL_GAME_TYPE
++{
++  SPECIAL_GAME_TYPE_BSX,
++  SPECIAL_GAME_TYPE_BSX_SLOTTED,
++  SPECIAL_GAME_TYPE_SUFAMI_TURBO,
++  SPECIAL_GAME_TYPE_SUPER_GAME_BOY,
++} SPECIAL_GAME_TYPE;
++
++typedef enum GAME_MEMORY
++{
++  /*!
++   * Passed to game_get_memory_data/size(). If the memory type doesn't apply
++   * to the implementation NULL/0 can be returned.
++   */
++  GAME_MEMORY_MASK = 0xff,
++
++  /*!
++   * Regular save ram. This ram is usually found on a game cartridge, backed
++   * up by a battery. If save game data is too complex for a single memory
++   * buffer, the SYSTEM_DIRECTORY environment callback can be used.
++   */
++  GAME_MEMORY_SAVE_RAM = 0,
++
++  /*!
++   * Some games have a built-in clock to keep track of time. This memory is
++   * usually just a couple of bytes to keep track of time.
++   */
++  GAME_MEMORY_RTC = 1,
++
++  /*! System ram lets a frontend peek into a game systems main RAM */
++  GAME_MEMORY_SYSTEM_RAM = 2,
++
++  /*! Video ram lets a frontend peek into a game systems video RAM (VRAM) */
++  GAME_MEMORY_VIDEO_RAM = 3,
++
++  /*! Special memory types */
++  GAME_MEMORY_SNES_BSX_RAM = ((1 << 8) | GAME_MEMORY_SAVE_RAM),
++  GAME_MEMORY_SNES_BSX_PRAM = ((2 << 8) | GAME_MEMORY_SAVE_RAM),
++  GAME_MEMORY_SNES_SUFAMI_TURBO_A_RAM = ((3 << 8) | GAME_MEMORY_SAVE_RAM),
++  GAME_MEMORY_SNES_SUFAMI_TURBO_B_RAM = ((4 << 8) | GAME_MEMORY_SAVE_RAM),
++  GAME_MEMORY_SNES_GAME_BOY_RAM = ((5 << 8) | GAME_MEMORY_SAVE_RAM),
++  GAME_MEMORY_SNES_GAME_BOY_RTC = ((6 << 8) | GAME_MEMORY_RTC),
++} GAME_MEMORY;
++
++/*! ID values for SIMD CPU features */
++typedef enum GAME_SIMD
++{
++  GAME_SIMD_SSE = (1 << 0),
++  GAME_SIMD_SSE2 = (1 << 1),
++  GAME_SIMD_VMX = (1 << 2),
++  GAME_SIMD_VMX128 = (1 << 3),
++  GAME_SIMD_AVX = (1 << 4),
++  GAME_SIMD_NEON = (1 << 5),
++  GAME_SIMD_SSE3 = (1 << 6),
++  GAME_SIMD_SSSE3 = (1 << 7),
++  GAME_SIMD_MMX = (1 << 8),
++  GAME_SIMD_MMXEXT = (1 << 9),
++  GAME_SIMD_SSE4 = (1 << 10),
++  GAME_SIMD_SSE42 = (1 << 11),
++  GAME_SIMD_AVX2 = (1 << 12),
++  GAME_SIMD_VFPU = (1 << 13),
++} GAME_SIMD;
++///}
++
++/// @name Input types
++///{
++
++typedef enum GAME_INPUT_EVENT_SOURCE
++{
++  GAME_INPUT_EVENT_DIGITAL_BUTTON,
++  GAME_INPUT_EVENT_ANALOG_BUTTON,
++  GAME_INPUT_EVENT_AXIS,
++  GAME_INPUT_EVENT_ANALOG_STICK,
++  GAME_INPUT_EVENT_ACCELEROMETER,
++  GAME_INPUT_EVENT_KEY,
++  GAME_INPUT_EVENT_RELATIVE_POINTER,
++  GAME_INPUT_EVENT_ABSOLUTE_POINTER,
++  GAME_INPUT_EVENT_MOTOR,
++} GAME_INPUT_EVENT_SOURCE;
++
++typedef enum GAME_KEY_MOD
++{
++  GAME_KEY_MOD_NONE = 0x0000,
++
++  GAME_KEY_MOD_SHIFT = 0x0001,
++  GAME_KEY_MOD_CTRL = 0x0002,
++  GAME_KEY_MOD_ALT = 0x0004,
++  GAME_KEY_MOD_META = 0x0008,
++  GAME_KEY_MOD_SUPER = 0x0010,
++
++  GAME_KEY_MOD_NUMLOCK = 0x0100,
++  GAME_KEY_MOD_CAPSLOCK = 0x0200,
++  GAME_KEY_MOD_SCROLLOCK = 0x0400,
++} GAME_KEY_MOD;
++
++/*!
++ * \brief Type of port on the virtual game console
++ */
++typedef enum GAME_PORT_TYPE
++{
++  GAME_PORT_UNKNOWN,
++  GAME_PORT_KEYBOARD,
++  GAME_PORT_MOUSE,
++  GAME_PORT_CONTROLLER,
++} GAME_PORT_TYPE;
++
++typedef struct game_controller_layout
++{
++  char* controller_id;
++  bool provides_input; // False for multitaps
++  char** digital_buttons;
++  unsigned int digital_button_count;
++  char** analog_buttons;
++  unsigned int analog_button_count;
++  char** analog_sticks;
++  unsigned int analog_stick_count;
++  char** accelerometers;
++  unsigned int accelerometer_count;
++  char** keys;
++  unsigned int key_count;
++  char** rel_pointers;
++  unsigned int rel_pointer_count;
++  char** abs_pointers;
++  unsigned int abs_pointer_count;
++  char** motors;
++  unsigned int motor_count;
++} ATTRIBUTE_PACKED game_controller_layout;
++
++struct AddonGameControllerLayout
++{
++  /*! \cond PRIVATE */
++  explicit AddonGameControllerLayout() = default;
++  AddonGameControllerLayout(const game_controller_layout& layout)
++  {
++    controller_id = layout.controller_id;
++    provides_input = layout.provides_input;
++    for (unsigned int i = 0; i < layout.digital_button_count; ++i)
++      digital_buttons.push_back(layout.digital_buttons[i]);
++    for (unsigned int i = 0; i < layout.analog_button_count; ++i)
++      analog_buttons.push_back(layout.analog_buttons[i]);
++    for (unsigned int i = 0; i < layout.analog_stick_count; ++i)
++      analog_sticks.push_back(layout.analog_sticks[i]);
++    for (unsigned int i = 0; i < layout.accelerometer_count; ++i)
++      accelerometers.push_back(layout.accelerometers[i]);
++    for (unsigned int i = 0; i < layout.key_count; ++i)
++      keys.push_back(layout.keys[i]);
++    for (unsigned int i = 0; i < layout.rel_pointer_count; ++i)
++      rel_pointers.push_back(layout.rel_pointers[i]);
++    for (unsigned int i = 0; i < layout.abs_pointer_count; ++i)
++      abs_pointers.push_back(layout.abs_pointers[i]);
++    for (unsigned int i = 0; i < layout.motor_count; ++i)
++      motors.push_back(layout.motors[i]);
++  }
++  /*! \endcond */
++
++  /// @brief
++  std::string controller_id;
++
++  /// @brief False for multitaps
++  bool provides_input;
++
++  /// @brief
++  std::vector<std::string> digital_buttons;
++
++  /// @brief
++  std::vector<std::string> analog_buttons;
++
++  /// @brief
++  std::vector<std::string> analog_sticks;
++
++  /// @brief
++  std::vector<std::string> accelerometers;
++
++  /// @brief
++  std::vector<std::string> keys;
++
++  /// @brief
++  std::vector<std::string> rel_pointers;
++
++  /// @brief
++  std::vector<std::string> abs_pointers;
++
++  /// @brief
++  std::vector<std::string> motors;
++};
++
++struct game_input_port;
++
++/*!
++ * \brief Device that can provide input
++ */
++typedef struct game_input_device
++{
++  const char* controller_id; // ID used in the Kodi controller API
++  const char* port_address;
++  game_input_port* available_ports;
++  unsigned int port_count;
++} ATTRIBUTE_PACKED game_input_device;
++
++/*!
++ * \brief Port that can provide input
++ *
++ * Ports can accept multiple devices and devices can have multiple ports, so
++ * the topology of possible configurations is a tree structure of alternating
++ * port and device nodes.
++ */
++typedef struct game_input_port
++{
++  GAME_PORT_TYPE type;
++  const char* port_id; // Required for GAME_PORT_CONTROLLER type
++  game_input_device* accepted_devices;
++  unsigned int device_count;
++} ATTRIBUTE_PACKED game_input_port;
++
++/*!
++ * \brief The input topology is the possible ways to connect input devices
++ *
++ * This represents the logical topology, which is the possible connections that
++ * the game client's logic can handle. It is strictly a subset of the physical
++ * topology. Loops are not allowed.
++ */
++typedef struct game_input_topology
++{
++  game_input_port* ports; //! The list of ports on the virtual game console
++  unsigned int port_count; //! The number of ports
++  int player_limit; //! A limit on the number of input-providing devices, or -1 for no limit
++} ATTRIBUTE_PACKED game_input_topology;
++
++typedef struct game_digital_button_event
++{
++  bool pressed;
++} ATTRIBUTE_PACKED game_digital_button_event;
++
++typedef struct game_analog_button_event
++{
++  float magnitude;
++} ATTRIBUTE_PACKED game_analog_button_event;
++
++typedef struct game_axis_event
++{
++  float position;
++} ATTRIBUTE_PACKED game_axis_event;
++
++typedef struct game_analog_stick_event
++{
++  float x;
++  float y;
++} ATTRIBUTE_PACKED game_analog_stick_event;
++
++typedef struct game_accelerometer_event
++{
++  float x;
++  float y;
++  float z;
++} ATTRIBUTE_PACKED game_accelerometer_event;
++
++typedef struct game_key_event
++{
++  bool pressed;
++
++  /*!
++   * If the keypress generates a printing character, the unicode value
++   * contains the character generated. If the key is a non-printing character,
++   * e.g. a function or arrow key, the unicode value is zero.
++   */
++  uint32_t unicode;
++
++  GAME_KEY_MOD modifiers;
++} ATTRIBUTE_PACKED game_key_event;
++
++typedef struct game_rel_pointer_event
++{
++  int x;
++  int y;
++} ATTRIBUTE_PACKED game_rel_pointer_event;
++
++typedef struct game_abs_pointer_event
++{
++  bool pressed;
++  float x;
++  float y;
++} ATTRIBUTE_PACKED game_abs_pointer_event;
++
++typedef struct game_motor_event
++{
++  float magnitude;
++} ATTRIBUTE_PACKED game_motor_event;
++
++typedef struct game_input_event
++{
++  GAME_INPUT_EVENT_SOURCE type;
++  const char* controller_id;
++  GAME_PORT_TYPE port_type;
++  const char* port_address;
++  const char* feature_name;
++  union {
++    struct game_digital_button_event digital_button;
++    struct game_analog_button_event analog_button;
++    struct game_axis_event axis;
++    struct game_analog_stick_event analog_stick;
++    struct game_accelerometer_event accelerometer;
++    struct game_key_event key;
++    struct game_rel_pointer_event rel_pointer;
++    struct game_abs_pointer_event abs_pointer;
++    struct game_motor_event motor;
++  };
++} ATTRIBUTE_PACKED game_input_event;
++///}
++
++/// @name Environment types
++///{
++struct game_system_timing
++{
++  double fps; // FPS of video content.
++  double sample_rate; // Sampling rate of audio.
++};
++///}
++
++/*!
++ * @brief Game properties
++ *
++  * Not to be used outside this header.
++ */
++typedef struct AddonProps_Game
++{
++  /*!
++    * The path of the game client being loaded.
++    */
++  const char* game_client_dll_path;
++
++  /*!
++    * Paths to proxy DLLs used to load the game client.
++    */
++  const char** proxy_dll_paths;
++
++  /*!
++    * Number of proxy DLL paths provided.
++    */
++  unsigned int proxy_dll_count;
++
++  /*!
++  * The "system" directories of the frontend. These directories can be used to
++  * store system-specific ROMs such as BIOSes, configuration data, etc.
++  */
++  const char** resource_directories;
++
++  /*!
++   * Number of resource directories provided
++   */
++  unsigned int resource_directory_count;
++
++  /*!
++   * The writable directory of the frontend. This directory can be used to store
++   * SRAM, memory cards, high scores, etc, if the game client cannot use the
++   * regular memory interface, GetMemoryData().
++   */
++  const char* profile_directory;
++
++  /*!
++   * The value of the <supports_vfs> property from addon.xml
++   */
++  bool supports_vfs;
++
++  /*!
++   * The extensions in the <extensions> property from addon.xml
++   */
++  const char** extensions;
++
++  /*!
++   * Number of extensions provided
++   */
++  unsigned int extension_count;
++} AddonProps_Game;
++
++typedef AddonProps_Game game_client_properties;
++
++/*! Structure to transfer the methods from kodi_game_dll.h to Kodi */
++
++struct AddonInstance_Game;
++
++/*!
++ * @brief Game callbacks
++ *
++ * Not to be used outside this header.
++ */
++typedef struct AddonToKodiFuncTable_Game
++{
++  KODI_HANDLE kodiInstance;
++
++  void (*CloseGame)(void* kodiInstance);
++  void* (*OpenStream)(void*, const game_stream_properties*);
++  bool (*GetStreamBuffer)(void*, void*, unsigned int, unsigned int, game_stream_buffer*);
++  void (*AddStreamData)(void*, void*, const game_stream_packet*);
++  void (*ReleaseStreamBuffer)(void*, void*, game_stream_buffer*);
++  void (*CloseStream)(void*, void*);
++  game_proc_address_t (*HwGetProcAddress)(void* kodiInstance, const char* symbol);
++  bool (*InputEvent)(void* kodiInstance, const game_input_event* event);
++} AddonToKodiFuncTable_Game;
++
++/*!
++ * @brief Game function hooks
++ *
++ * Not to be used outside this header.
++ */
++typedef struct KodiToAddonFuncTable_Game
++{
++  kodi::addon::CInstanceGame* addonInstance;
++
++  GAME_ERROR(__cdecl* LoadGame)(const AddonInstance_Game*, const char*);
++  GAME_ERROR(__cdecl* LoadGameSpecial)
++  (const AddonInstance_Game*, SPECIAL_GAME_TYPE, const char**, size_t);
++  GAME_ERROR(__cdecl* LoadStandalone)(const AddonInstance_Game*);
++  GAME_ERROR(__cdecl* UnloadGame)(const AddonInstance_Game*);
++  GAME_ERROR(__cdecl* GetGameTiming)(const AddonInstance_Game*, game_system_timing*);
++  GAME_REGION(__cdecl* GetRegion)(const AddonInstance_Game*);
++  bool(__cdecl* RequiresGameLoop)(const AddonInstance_Game*);
++  GAME_ERROR(__cdecl* RunFrame)(const AddonInstance_Game*);
++  GAME_ERROR(__cdecl* Reset)(const AddonInstance_Game*);
++  GAME_ERROR(__cdecl* HwContextReset)(const AddonInstance_Game*);
++  GAME_ERROR(__cdecl* HwContextDestroy)(const AddonInstance_Game*);
++  bool(__cdecl* HasFeature)(const AddonInstance_Game*, const char*, const char*);
++  game_input_topology*(__cdecl* GetTopology)(const AddonInstance_Game*);
++  void(__cdecl* FreeTopology)(const AddonInstance_Game*, game_input_topology*);
++  void(__cdecl* SetControllerLayouts)(const AddonInstance_Game*,
++                                      const game_controller_layout*,
++                                      unsigned int);
++  bool(__cdecl* EnableKeyboard)(const AddonInstance_Game*, bool, const char*);
++  bool(__cdecl* EnableMouse)(const AddonInstance_Game*, bool, const char*);
++  bool(__cdecl* ConnectController)(const AddonInstance_Game*, bool, const char*, const char*);
++  bool(__cdecl* InputEvent)(const AddonInstance_Game*, const game_input_event*);
++  size_t(__cdecl* SerializeSize)(const AddonInstance_Game*);
++  GAME_ERROR(__cdecl* Serialize)(const AddonInstance_Game*, uint8_t*, size_t);
++  GAME_ERROR(__cdecl* Deserialize)(const AddonInstance_Game*, const uint8_t*, size_t);
++  GAME_ERROR(__cdecl* CheatReset)(const AddonInstance_Game*);
++  GAME_ERROR(__cdecl* GetMemory)(const AddonInstance_Game*, GAME_MEMORY, uint8_t**, size_t*);
++  GAME_ERROR(__cdecl* SetCheat)(const AddonInstance_Game*, unsigned int, bool, const char*);
++} KodiToAddonFuncTable_Game;
++
++/*!
++ * @brief Game instance
++ *
++ * Not to be used outside this header.
++ */
++typedef struct AddonInstance_Game
++{
++  AddonProps_Game props;
++  AddonToKodiFuncTable_Game toKodi;
++  KodiToAddonFuncTable_Game toAddon;
++} AddonInstance_Game;
++
++} /* extern "C" */
++
++namespace kodi
++{
++namespace addon
++{
++
++class CInstanceGame : public IAddonInstance
++{
++public:
++  CInstanceGame()
++    : IAddonInstance(ADDON_INSTANCE_GAME)
++  {
++    if (CAddonBase::m_interface->globalSingleInstance != nullptr)
++      throw std::logic_error("kodi::addon::CInstanceGame: Creation of more as one in single "
++                             "instance way is not allowed!");
++
++    SetAddonStruct(CAddonBase::m_interface->firstKodiInstance);
++    CAddonBase::m_interface->globalSingleInstance = this;
++  }
++
++  ~CInstanceGame() override = default;
++
++  // --- Game operations ---------------------------------------------------------
++
++  virtual GAME_ERROR LoadGame(const std::string& url)
++  {
++    return GAME_ERROR_NOT_IMPLEMENTED;
++  }
++
++  virtual GAME_ERROR LoadGameSpecial(SPECIAL_GAME_TYPE type, const std::vector<std::string>& urls)
++  {
++    return GAME_ERROR_NOT_IMPLEMENTED;
++  }
++
++  virtual GAME_ERROR LoadStandalone()
++  {
++    return GAME_ERROR_NOT_IMPLEMENTED;
++  }
++
++  virtual GAME_ERROR UnloadGame()
++  {
++    return GAME_ERROR_NOT_IMPLEMENTED;
++  }
++
++  virtual GAME_ERROR GetGameTiming(game_system_timing& timing_info)
++  {
++    return GAME_ERROR_NOT_IMPLEMENTED;
++  }
++
++  virtual GAME_REGION GetRegion()
++  {
++    return GAME_REGION_UNKNOWN;
++  }
++
++  virtual bool RequiresGameLoop()
++  {
++    return false;
++  }
++
++  virtual GAME_ERROR RunFrame()
++  {
++    return GAME_ERROR_NOT_IMPLEMENTED;
++  }
++
++  virtual GAME_ERROR Reset()
++  {
++    return GAME_ERROR_NOT_IMPLEMENTED;
++  }
++
++  // --- Hardware rendering operations -------------------------------------------
++
++  virtual GAME_ERROR HwContextReset()
++  {
++    return GAME_ERROR_NOT_IMPLEMENTED;
++  }
++
++  virtual GAME_ERROR HwContextDestroy()
++  {
++    return GAME_ERROR_NOT_IMPLEMENTED;
++  }
++
++  // --- Input operations --------------------------------------------------------
++
++  virtual bool HasFeature(const std::string& controller_id, const std::string& feature_name)
++  {
++    return false;
++  }
++
++  virtual game_input_topology* GetTopology()
++  {
++    return nullptr;
++  }
++
++  virtual void FreeTopology(game_input_topology* topology)
++  {
++  }
++
++  virtual void SetControllerLayouts(const std::vector<AddonGameControllerLayout>& controllers)
++  {
++  }
++
++  virtual bool EnableKeyboard(bool enable, const std::string& controller_id)
++  {
++    return false;
++  }
++
++  virtual bool EnableMouse(bool enable, const std::string& controller_id)
++  {
++    return false;
++  }
++
++  virtual bool ConnectController(bool connect,
++                                 const std::string& port_address,
++                                 const std::string& controller_id)
++  {
++    return false;
++  }
++
++  virtual bool InputEvent(const game_input_event& event)
++  {
++    return false;
++  }
++
++  // --- Serialization operations ------------------------------------------------
++
++  virtual size_t SerializeSize()
++  {
++    return 0;
++  }
++
++  virtual GAME_ERROR Serialize(uint8_t* data, size_t size)
++  {
++    return GAME_ERROR_NOT_IMPLEMENTED;
++  }
++
++  virtual GAME_ERROR Deserialize(const uint8_t* data, size_t size)
++  {
++    return GAME_ERROR_NOT_IMPLEMENTED;
++  }
++
++  // --- Cheat operations --------------------------------------------------------
++
++  virtual GAME_ERROR CheatReset()
++  {
++    return GAME_ERROR_NOT_IMPLEMENTED;
++  }
++
++  virtual GAME_ERROR GetMemory(GAME_MEMORY type, uint8_t*& data, size_t& size)
++  {
++    return GAME_ERROR_NOT_IMPLEMENTED;
++  }
++
++  virtual GAME_ERROR SetCheat(unsigned int index, bool enabled, const std::string& code)
++  {
++    return GAME_ERROR_NOT_IMPLEMENTED;
++  }
++
++  // --- Game callbacks --------------------------------------------------------
++
++  void CloseGame(void) { m_instanceData->toKodi.CloseGame(m_instanceData->toKodi.kodiInstance); }
++
++  class CStream
++  {
++  public:
++    CStream() = default;
++
++    CStream(const game_stream_properties& properties)
++    {
++      Open(properties);
++    }
++
++    ~CStream()
++    {
++      Close();
++    }
++
++    bool Open(const game_stream_properties& properties)
++    {
++      if (!CAddonBase::m_interface->globalSingleInstance)
++        return false;
++
++      if (m_handle)
++      {
++        kodi::Log(ADDON_LOG_INFO, "kodi::addon::CInstanceGame::CStream already becomes reopened");
++        Close();
++      }
++
++      AddonToKodiFuncTable_Game& cb =
++          dynamic_cast<CInstanceGame*>(CAddonBase::m_interface->globalSingleInstance)
++              ->m_instanceData->toKodi;
++      m_handle = cb.OpenStream(cb.kodiInstance, &properties);
++      return m_handle != nullptr;
++    }
++
++    void Close()
++    {
++      if (!m_handle || !CAddonBase::m_interface->globalSingleInstance)
++        return;
++
++      AddonToKodiFuncTable_Game& cb =
++          dynamic_cast<CInstanceGame*>(CAddonBase::m_interface->globalSingleInstance)
++              ->m_instanceData->toKodi;
++      cb.CloseStream(cb.kodiInstance, m_handle);
++      m_handle = nullptr;
++    }
++
++    bool GetBuffer(unsigned int width, unsigned int height, game_stream_buffer& buffer)
++    {
++      if (!m_handle || !CAddonBase::m_interface->globalSingleInstance)
++        return false;
++
++      AddonToKodiFuncTable_Game& cb =
++          dynamic_cast<CInstanceGame*>(CAddonBase::m_interface->globalSingleInstance)
++              ->m_instanceData->toKodi;
++      return cb.GetStreamBuffer(cb.kodiInstance, m_handle, width, height, &buffer);
++    }
++
++    void AddData(const game_stream_packet& packet)
++    {
++      if (!m_handle || !CAddonBase::m_interface->globalSingleInstance)
++        return;
++
++      AddonToKodiFuncTable_Game& cb =
++          dynamic_cast<CInstanceGame*>(CAddonBase::m_interface->globalSingleInstance)
++              ->m_instanceData->toKodi;
++      cb.AddStreamData(cb.kodiInstance, m_handle, &packet);
++    }
++
++    void ReleaseBuffer(game_stream_buffer& buffer)
++    {
++      if (!m_handle || !CAddonBase::m_interface->globalSingleInstance)
++        return;
++
++      AddonToKodiFuncTable_Game& cb =
++          dynamic_cast<CInstanceGame*>(CAddonBase::m_interface->globalSingleInstance)
++              ->m_instanceData->toKodi;
++      cb.ReleaseStreamBuffer(cb.kodiInstance, m_handle, &buffer);
++    }
++
++    bool IsOpen() const { return m_handle != nullptr; }
++
++  private:
++    void* m_handle = nullptr;
++  };
++
++  // -- Hardware rendering callbacks -------------------------------------------
++
++  game_proc_address_t HwGetProcAddress(const char* sym)
++  {
++    return m_instanceData->toKodi.HwGetProcAddress(m_instanceData->toKodi.kodiInstance, sym);
++  }
++
++  // --- Input callbacks -------------------------------------------------------
++
++  bool KodiInputEvent(const game_input_event& event)
++  {
++    return m_instanceData->toKodi.InputEvent(m_instanceData->toKodi.kodiInstance, &event);
++  }
++
++  // --- Props callbacks -------------------------------------------------------
++
++  std::string GameClientDllPath() const
++  {
++    return m_instanceData->props.game_client_dll_path;
++  }
++
++  bool ProxyDllPaths(std::vector<std::string>& paths)
++  {
++    for (unsigned int i = 0; i < m_instanceData->props.proxy_dll_count; ++i)
++    {
++      if (m_instanceData->props.proxy_dll_paths[i] != nullptr)
++        paths.push_back(m_instanceData->props.proxy_dll_paths[i]);
++    }
++    return !paths.empty();
++  }
++
++  bool ResourceDirectories(std::vector<std::string>& dirs)
++  {
++    for (unsigned int i = 0; i < m_instanceData->props.resource_directory_count; ++i)
++    {
++      if (m_instanceData->props.resource_directories[i] != nullptr)
++        dirs.push_back(m_instanceData->props.resource_directories[i]);
++    }
++    return !dirs.empty();
++  }
++
++  std::string ProfileDirectory() const
++  {
++    return m_instanceData->props.profile_directory;
++  }
++
++  bool SupportsVFS() const
++  {
++    return m_instanceData->props.supports_vfs;
++  }
++
++  bool Extensions(std::vector<std::string>& extensions)
++  {
++    for (unsigned int i = 0; i < m_instanceData->props.extension_count; ++i)
++    {
++      if (m_instanceData->props.extensions[i] != nullptr)
++        extensions.push_back(m_instanceData->props.extensions[i]);
++    }
++    return !extensions.empty();
++  }
++
++private:
++  void SetAddonStruct(KODI_HANDLE instance)
++  {
++    if (instance == nullptr)
++      throw std::logic_error("kodi::addon::CInstanceGame: Creation with empty addon structure not"
++                             "allowed, table must be given from Kodi!");
++
++    m_instanceData = static_cast<AddonInstance_Game*>(instance);
++    m_instanceData->toAddon.addonInstance = this;
++
++    m_instanceData->toAddon.LoadGame = ADDON_LoadGame;
++    m_instanceData->toAddon.LoadGameSpecial = ADDON_LoadGameSpecial;
++    m_instanceData->toAddon.LoadStandalone = ADDON_LoadStandalone;
++    m_instanceData->toAddon.UnloadGame = ADDON_UnloadGame;
++    m_instanceData->toAddon.GetGameTiming = ADDON_GetGameTiming;
++    m_instanceData->toAddon.GetRegion = ADDON_GetRegion;
++    m_instanceData->toAddon.RequiresGameLoop = ADDON_RequiresGameLoop;
++    m_instanceData->toAddon.RunFrame = ADDON_RunFrame;
++    m_instanceData->toAddon.Reset = ADDON_Reset;
++
++    m_instanceData->toAddon.HwContextReset = ADDON_HwContextReset;
++    m_instanceData->toAddon.HwContextDestroy = ADDON_HwContextDestroy;
++
++    m_instanceData->toAddon.HasFeature = ADDON_HasFeature;
++    m_instanceData->toAddon.GetTopology = ADDON_GetTopology;
++    m_instanceData->toAddon.FreeTopology = ADDON_FreeTopology;
++    m_instanceData->toAddon.SetControllerLayouts = ADDON_SetControllerLayouts;
++    m_instanceData->toAddon.EnableKeyboard = ADDON_EnableKeyboard;
++    m_instanceData->toAddon.EnableMouse = ADDON_EnableMouse;
++    m_instanceData->toAddon.ConnectController = ADDON_ConnectController;
++    m_instanceData->toAddon.InputEvent = ADDON_InputEvent;
++
++    m_instanceData->toAddon.SerializeSize = ADDON_SerializeSize;
++    m_instanceData->toAddon.Serialize = ADDON_Serialize;
++    m_instanceData->toAddon.Deserialize = ADDON_Deserialize;
++
++    m_instanceData->toAddon.CheatReset = ADDON_CheatReset;
++    m_instanceData->toAddon.GetMemory = ADDON_GetMemory;
++    m_instanceData->toAddon.SetCheat = ADDON_SetCheat;
++  }
++
++  // --- Game operations ---------------------------------------------------------
++
++  inline static GAME_ERROR ADDON_LoadGame(const AddonInstance_Game* instance, const char* url)
++  {
++    return instance->toAddon.addonInstance->LoadGame(url);
++  }
++
++  inline static GAME_ERROR ADDON_LoadGameSpecial(const AddonInstance_Game* instance,
++                                                 SPECIAL_GAME_TYPE type,
++                                                 const char** urls,
++                                                 size_t urlCount)
++  {
++    std::vector<std::string> urlList;
++    for (size_t i = 0; i < urlCount; ++i)
++    {
++      if (urls[i] != nullptr)
++        urlList.push_back(urls[i]);
++    }
++
++    return instance->toAddon.addonInstance->LoadGameSpecial(type, urlList);
++  }
++
++  inline static GAME_ERROR ADDON_LoadStandalone(const AddonInstance_Game* instance)
++  {
++    return instance->toAddon.addonInstance->LoadStandalone();
++  }
++
++  inline static GAME_ERROR ADDON_UnloadGame(const AddonInstance_Game* instance)
++  {
++    return instance->toAddon.addonInstance->UnloadGame();
++  }
++
++  inline static GAME_ERROR ADDON_GetGameTiming(const AddonInstance_Game* instance,
++                                               game_system_timing* timing_info)
++  {
++    return instance->toAddon.addonInstance->GetGameTiming(*timing_info);
++  }
++
++  inline static GAME_REGION ADDON_GetRegion(const AddonInstance_Game* instance)
++  {
++    return instance->toAddon.addonInstance->GetRegion();
++  }
++
++  inline static bool ADDON_RequiresGameLoop(const AddonInstance_Game* instance)
++  {
++    return instance->toAddon.addonInstance->RequiresGameLoop();
++  }
++
++  inline static GAME_ERROR ADDON_RunFrame(const AddonInstance_Game* instance)
++  {
++    return instance->toAddon.addonInstance->RunFrame();
++  }
++
++  inline static GAME_ERROR ADDON_Reset(const AddonInstance_Game* instance)
++  {
++    return instance->toAddon.addonInstance->Reset();
++  }
++
++
++  // --- Hardware rendering operations -------------------------------------------
++
++  inline static GAME_ERROR ADDON_HwContextReset(const AddonInstance_Game* instance)
++  {
++    return instance->toAddon.addonInstance->HwContextReset();
++  }
++
++  inline static GAME_ERROR ADDON_HwContextDestroy(const AddonInstance_Game* instance)
++  {
++    return instance->toAddon.addonInstance->HwContextDestroy();
++  }
++
++
++  // --- Input operations --------------------------------------------------------
++
++  inline static bool ADDON_HasFeature(const AddonInstance_Game* instance,
++                                      const char* controller_id,
++                                      const char* feature_name)
++  {
++    return instance->toAddon.addonInstance->HasFeature(controller_id, feature_name);
++  }
++
++  inline static game_input_topology* ADDON_GetTopology(const AddonInstance_Game* instance)
++  {
++    return instance->toAddon.addonInstance->GetTopology();
++  }
++
++  inline static void ADDON_FreeTopology(const AddonInstance_Game* instance,
++                                        game_input_topology* topology)
++  {
++    instance->toAddon.addonInstance->FreeTopology(topology);
++  }
++
++  inline static void ADDON_SetControllerLayouts(const AddonInstance_Game* instance,
++                                                const game_controller_layout* controllers,
++                                                unsigned int controller_count)
++  {
++    if (controllers == nullptr)
++      return;
++
++    std::vector<AddonGameControllerLayout> controllerList;
++    for (unsigned int i = 0; i < controller_count; ++i)
++      controllerList.push_back(controllers[i]);
++
++    instance->toAddon.addonInstance->SetControllerLayouts(controllerList);
++  }
++
++  inline static bool ADDON_EnableKeyboard(const AddonInstance_Game* instance,
++                                          bool enable,
++                                          const char* controller_id)
++  {
++    return instance->toAddon.addonInstance->EnableKeyboard(enable, controller_id);
++  }
++
++  inline static bool ADDON_EnableMouse(const AddonInstance_Game* instance,
++                                       bool enable,
++                                       const char* controller_id)
++  {
++    return instance->toAddon.addonInstance->EnableMouse(enable, controller_id);
++  }
++
++  inline static bool ADDON_ConnectController(const AddonInstance_Game* instance,
++                                             bool connect,
++                                             const char* port_address,
++                                             const char* controller_id)
++  {
++    return instance->toAddon.addonInstance->ConnectController(connect, port_address, controller_id);
++  }
++
++  inline static bool ADDON_InputEvent(const AddonInstance_Game* instance,
++                                      const game_input_event* event)
++  {
++    return instance->toAddon.addonInstance->InputEvent(*event);
++  }
++
++
++  // --- Serialization operations ------------------------------------------------
++
++  inline static size_t ADDON_SerializeSize(const AddonInstance_Game* instance)
++  {
++    return instance->toAddon.addonInstance->SerializeSize();
++  }
++
++  inline static GAME_ERROR ADDON_Serialize(const AddonInstance_Game* instance,
++                                           uint8_t* data,
++                                           size_t size)
++  {
++    return instance->toAddon.addonInstance->Serialize(data, size);
++  }
++
++  inline static GAME_ERROR ADDON_Deserialize(const AddonInstance_Game* instance,
++                                             const uint8_t* data,
++                                             size_t size)
++  {
++    return instance->toAddon.addonInstance->Deserialize(data, size);
++  }
++
++
++  // --- Cheat operations --------------------------------------------------------
++
++  inline static GAME_ERROR ADDON_CheatReset(const AddonInstance_Game* instance)
++  {
++    return instance->toAddon.addonInstance->CheatReset();
++  }
++
++  inline static GAME_ERROR ADDON_GetMemory(const AddonInstance_Game* instance,
++                                           GAME_MEMORY type,
++                                           uint8_t** data,
++                                           size_t* size)
++  {
++    return instance->toAddon.addonInstance->GetMemory(type, *data, *size);
++  }
++
++  inline static GAME_ERROR ADDON_SetCheat(const AddonInstance_Game* instance,
++                                          unsigned int index,
++                                          bool enabled,
++                                          const char* code)
++  {
++    return instance->toAddon.addonInstance->SetCheat(index, enabled, code);
++  }
++
++  AddonInstance_Game* m_instanceData;
++};
++
++} /* namespace addon */
++} /* namespace kodi */
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_game_dll.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_game_dll.h
+deleted file mode 100644
+index 302e1bf5a147..000000000000
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_game_dll.h
++++ /dev/null
+@@ -1,356 +0,0 @@
+-/*
+- *  Copyright (C) 2014-2018 Team Kodi
+- *  This file is part of Kodi - https://kodi.tv
+- *
+- *  SPDX-License-Identifier: GPL-2.0-or-later
+- *  See LICENSES/README.md for more information.
+- */
+-
+-#pragma once
+-
+-#include "kodi_game_types.h"
+-
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-
+-// --- Game operations ---------------------------------------------------------
+-
+-/*!
+- * \brief Load a game
+- *
+- * \param url The URL to load
+- *
+- * return the error, or GAME_ERROR_NO_ERROR if the game was loaded
+- */
+-GAME_ERROR LoadGame(const AddonInstance_Game* instance, const char* url);
+-
+-/*!
+- * \brief Load a game that requires multiple files
+- *
+- * \param type The game type
+- * \param urls An array of urls
+- * \param urlCount The number of urls in the array
+- *
+- * \return the error, or GAME_ERROR_NO_ERROR if the game was loaded
+- */
+-GAME_ERROR LoadGameSpecial(const AddonInstance_Game* instance,
+-                           SPECIAL_GAME_TYPE type,
+-                           const char** urls,
+-                           size_t urlCount);
+-
+-/*!
+- * \brief Begin playing without a game file
+- *
+- * If the add-on supports standalone mode, it must add the <supports_standalone>
+- * tag to the extension point in addon.xml:
+- *
+- *     <supports_no_game>false</supports_no_game>
+- *
+- * \return the error, or GAME_ERROR_NO_ERROR if the game add-on was loaded
+- */
+-GAME_ERROR LoadStandalone(const AddonInstance_Game* instance);
+-
+-/*!
+- * \brief Unload the current game
+- *
+- * \return the error, or GAME_ERROR_NO_ERROR if the game was unloaded
+- */
+-/*! Unloads a currently loaded game */
+-GAME_ERROR UnloadGame(const AddonInstance_Game* instance);
+-
+-/*!
+- * \brief Get timing information about the loaded game
+- *
+- * \param[out] timing_info The info structure to fill
+- *
+- * \return the error, or GAME_ERROR_NO_ERROR if info was filled
+- */
+-GAME_ERROR GetGameTiming(const AddonInstance_Game* instance, game_system_timing* timing_info);
+-
+-/*!
+- * \brief Get region of the loaded game
+- *
+- * \return the region, or GAME_REGION_UNKNOWN if unknown or no game is loaded
+- */
+-GAME_REGION GetRegion(const AddonInstance_Game* instance);
+-
+-/*!
+- * \brief Return true if the client requires the frontend to provide a game loop
+- *
+- * The game loop is a thread that calls RunFrame() in a loop at a rate
+- * determined by the playback speed and the client's FPS.
+- *
+- * \return true if the frontend should provide a game loop, false otherwise
+- */
+-bool RequiresGameLoop(const AddonInstance_Game* instance);
+-
+-/*!
+- * \brief Run a single frame for add-ons that use a game loop
+- *
+- * \return the error, or GAME_ERROR_NO_ERROR if there was no error
+- */
+-GAME_ERROR RunFrame(const AddonInstance_Game* instance);
+-
+-/*!
+- * \brief Reset the current game
+- *
+- * \return the error, or GAME_ERROR_NO_ERROR if the game was reset
+- */
+-GAME_ERROR Reset(const AddonInstance_Game* instance);
+-
+-// --- Hardware rendering operations -------------------------------------------
+-
+-/*!
+- * \brief Invalidates the current HW context and reinitializes GPU resources
+- *
+- * Any GL state is lost, and must not be deinitialized explicitly.
+- *
+- * \return the error, or GAME_ERROR_NO_ERROR if the HW context was reset
+- */
+-GAME_ERROR HwContextReset(const AddonInstance_Game* instance);
+-
+-/*!
+- * \brief Called before the context is destroyed
+- *
+- * Resources can be deinitialized at this step.
+- *
+- * \return the error, or GAME_ERROR_NO_ERROR if the HW context was destroyed
+- */
+-GAME_ERROR HwContextDestroy(const AddonInstance_Game* instance);
+-
+-// --- Input operations --------------------------------------------------------
+-
+-/*!
+- * \brief Check if input is accepted for a feature on the controller
+- *
+- * If only a subset of the controller profile is used, this can return false
+- * for unsupported features to not absorb their input.
+- *
+- * If the entire controller profile is used, this should always return true.
+- *
+- * \param controller_id The ID of the controller profile
+- * \param feature_name The name of a feature in that profile
+- * \return true if input is accepted for the feature, false otherwise
+- */
+-bool HasFeature(const AddonInstance_Game* instance,
+-                const char* controller_id,
+-                const char* feature_name);
+-
+-/*!
+- * \brief Get the input topology that specifies which controllers can be connected
+- *
+- * \return The input topology, or null to use the default
+- *
+- * If this returns non-null, topology must be freed using FreeTopology().
+- *
+- * If this returns null, the topology will default to a single port that can
+- * accept all controllers imported by addon.xml. The port ID is set to
+- * the DEFAULT_PORT_ID constant.
+- */
+-game_input_topology* GetTopology(const AddonInstance_Game* instance);
+-
+-/*!
+- * \brief Free the topology's resources
+- *
+- * \param topology The topology returned by GetTopology()
+- */
+-void FreeTopology(const AddonInstance_Game* instance, game_input_topology* topology);
+-
+-/*!
+- * \brief Set the layouts for known controllers
+- *
+- * \param controllers The controller layouts
+- * \param controller_count The number of items in the array
+- *
+- * After loading the input topology, the frontend will call this with
+- * controller layouts for all controllers discovered in the topology.
+- */
+-void SetControllerLayouts(const AddonInstance_Game* instance,
+-                          const game_controller_layout* controllers,
+-                          unsigned int controller_count);
+-
+-/*!
+- * \brief Enable/disable keyboard input using the specified controller
+- *
+- * \param enable True to enable input, false otherwise
+- * \param controller_id The controller ID if enabling, or unused if disabling
+- *
+- * \return True if keyboard input was enabled, false otherwise
+- */
+-bool EnableKeyboard(const AddonInstance_Game* instance, bool enable, const char* controller_id);
+-
+-/*!
+- * \brief Enable/disable mouse input using the specified controller
+- *
+- * \param enable True to enable input, false otherwise
+- * \param controller_id The controller ID if enabling, or unused if disabling
+- *
+- * \return True if mouse input was enabled, false otherwise
+- */
+-bool EnableMouse(const AddonInstance_Game* instance, bool enable, const char* controller_id);
+-
+-/*!
+- * \brief Connect/disconnect a controller to a port on the virtual game console
+- *
+- * \param connect True to connect a controller, false to disconnect
+- * \param port_address The address of the port
+- * \param controller_id The controller ID if connecting, or unused if disconnecting
+- * \return True if the \p controller was (dis-)connected to the port, false otherwise
+- *
+- * The address is a string that allows traversal of the controller topology.
+- * It is formed by alternating port IDs and controller IDs separated by "/".
+- *
+- * For example, assume that the topology represented in XML for Snes9x is:
+- *
+- *     <logicaltopology>
+- *       <port type="controller" id="1">
+- *         <accepts controller="game.controller.snes"/>
+- *         <accepts controller="game.controller.snes.multitap">
+- *           <port type="controller" id="1">
+- *             <accepts controller="game.controller.snes"/>
+- *           </port>
+- *           <port type="controller" id="2">
+- *             <accepts controller="game.controller.snes"/>
+- *           </port>
+- *           ...
+- *         </accepts>
+- *       </port>
+- *     </logicaltopology>
+- *
+- * To connect a multitap to the console's first port, the multitap's controller
+- * info is set using the port address:
+- *
+- *     /1
+- *
+- * To connect a SNES controller to the second port of the multitap, the
+- * controller info is next set using the address:
+- *
+- *     /1/game.controller.multitap/2
+- *
+- * Any attempts to connect a controller to a port on a disconnected multitap
+- * will return false.
+- */
+-bool ConnectController(const AddonInstance_Game* instance,
+-                       bool connect,
+-                       const char* port_address,
+-                       const char* controller_id);
+-
+-/*!
+- * \brief Notify the add-on of an input event
+- *
+- * \param event The input event
+- *
+- * \return true if the event was handled, false otherwise
+- */
+-bool InputEvent(const AddonInstance_Game* instance, const game_input_event* event);
+-
+-// --- Serialization operations ------------------------------------------------
+-
+-/*!
+- * \brief Get the number of bytes required to serialize the game
+- *
+- * \return the number of bytes, or 0 if serialization is not supported
+- */
+-size_t SerializeSize(const AddonInstance_Game* instance);
+-
+-/*!
+- * \brief Serialize the state of the game
+- *
+- * \param data The buffer receiving the serialized game data
+- * \param size The size of the buffer
+- *
+- * \return the error, or GAME_ERROR_NO_ERROR if the game was serialized into the buffer
+- */
+-GAME_ERROR Serialize(const AddonInstance_Game* instance, uint8_t* data, size_t size);
+-
+-/*!
+- * \brief Deserialize the game from the given state
+- *
+- * \param data A buffer containing the game's new state
+- * \param size The size of the buffer
+- *
+- * \return the error, or GAME_ERROR_NO_ERROR if the game deserialized
+- */
+-GAME_ERROR Deserialize(const AddonInstance_Game* instance, const uint8_t* data, size_t size);
+-
+-// --- Cheat operations --------------------------------------------------------
+-
+-/*!
+- * \brief Reset the cheat system
+- *
+- * \return the error, or GAME_ERROR_NO_ERROR if the cheat system was reset
+- */
+-GAME_ERROR CheatReset(const AddonInstance_Game* instance);
+-
+-/*!
+- * \brief Get a region of memory
+- *
+- * \param type The type of memory to retrieve
+- * \param data Set to the region of memory; must remain valid until UnloadGame() is called
+- * \param size Set to the size of the region of memory
+- *
+- * \return the error, or GAME_ERROR_NO_ERROR if data was set to a valid buffer
+- */
+-GAME_ERROR GetMemory(const AddonInstance_Game* instance,
+-                     GAME_MEMORY type,
+-                     uint8_t** data,
+-                     size_t* size);
+-
+-/*!
+- * \brief Set a cheat code
+- *
+- * \param index
+- * \param enabled
+- * \param code
+- *
+- * \return the error, or GAME_ERROR_NO_ERROR if the cheat was set
+- */
+-GAME_ERROR SetCheat(const AddonInstance_Game* instance,
+-                    unsigned int index,
+-                    bool enabled,
+-                    const char* code);
+-
+-// --- Add-on helper implementation --------------------------------------------
+-
+-/*!
+- * \brief Called by Kodi to assign the function pointers of this add-on to pClient
+- *
+- * Note that get_addon() is defined here, so it will be available in all
+- * compiled game clients.
+- */
+-void __declspec(dllexport) get_addon(void* ptr)
+-{
+-  AddonInstance_Game* pClient = static_cast<AddonInstance_Game*>(ptr);
+-
+-  pClient->toAddon.LoadGame                 = LoadGame;
+-  pClient->toAddon.LoadGameSpecial          = LoadGameSpecial;
+-  pClient->toAddon.LoadStandalone           = LoadStandalone;
+-  pClient->toAddon.UnloadGame               = UnloadGame;
+-  pClient->toAddon.GetGameTiming            = GetGameTiming;
+-  pClient->toAddon.GetRegion                = GetRegion;
+-  pClient->toAddon.RequiresGameLoop         = RequiresGameLoop;
+-  pClient->toAddon.RunFrame                 = RunFrame;
+-  pClient->toAddon.Reset                    = Reset;
+-  pClient->toAddon.HwContextReset           = HwContextReset;
+-  pClient->toAddon.HwContextDestroy         = HwContextDestroy;
+-  pClient->toAddon.HasFeature               = HasFeature;
+-  pClient->toAddon.GetTopology              = GetTopology;
+-  pClient->toAddon.FreeTopology             = FreeTopology;
+-  pClient->toAddon.SetControllerLayouts     = SetControllerLayouts;
+-  pClient->toAddon.EnableKeyboard           = EnableKeyboard;
+-  pClient->toAddon.EnableMouse              = EnableMouse;
+-  pClient->toAddon.ConnectController        = ConnectController;
+-  pClient->toAddon.InputEvent               = InputEvent;
+-  pClient->toAddon.SerializeSize            = SerializeSize;
+-  pClient->toAddon.Serialize                = Serialize;
+-  pClient->toAddon.Deserialize              = Deserialize;
+-  pClient->toAddon.CheatReset               = CheatReset;
+-  pClient->toAddon.GetMemory                = GetMemory;
+-  pClient->toAddon.SetCheat                 = SetCheat;
+-}
+-
+-#ifdef __cplusplus
+-}
+-#endif
+-
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h
+deleted file mode 100644
+index 549b5f897f5e..000000000000
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h
++++ /dev/null
+@@ -1,719 +0,0 @@
+-/*
+- *  Copyright (C) 2014-2018 Team Kodi
+- *  This file is part of Kodi - https://kodi.tv
+- *
+- *  SPDX-License-Identifier: GPL-2.0-or-later
+- *  See LICENSES/README.md for more information.
+- */
+-
+-#pragma once
+-
+-#include "versions.h"
+-#include "xbmc_addon_types.h"
+-
+-#include <stddef.h>
+-#include <stdint.h>
+-
+-#ifndef TARGET_WINDOWS
+-  #ifndef __cdecl
+-    #define __cdecl
+-  #endif
+-  #ifndef __declspec
+-    #define __declspec(X)
+-  #endif
+-#endif
+-
+-#undef ATTRIBUTE_PACKED
+-#undef PRAGMA_PACK_BEGIN
+-#undef PRAGMA_PACK_END
+-
+-#if defined(__GNUC__)
+-  #define ATTRIBUTE_PACKED __attribute__ ((packed))
+-  #define PRAGMA_PACK 0
+-#endif
+-
+-#if !defined(ATTRIBUTE_PACKED)
+-  #define ATTRIBUTE_PACKED
+-  #define PRAGMA_PACK 1
+-#endif
+-
+-#ifdef BUILD_KODI_ADDON
+-#include "XBMC_vkeys.h"
+-#else
+-#include "input/XBMC_vkeys.h"
+-#endif
+-
+-/*! Port ID used when topology is unknown */
+-#define DEFAULT_PORT_ID  "1"
+-
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-
+-/// @name Add-on types
+-///{
+-/*! Game add-on error codes */
+-typedef enum GAME_ERROR
+-{
+-  GAME_ERROR_NO_ERROR,               // no error occurred
+-  GAME_ERROR_UNKNOWN,                // an unknown error occurred
+-  GAME_ERROR_NOT_IMPLEMENTED,        // the method that the frontend called is not implemented
+-  GAME_ERROR_REJECTED,               // the command was rejected by the game client
+-  GAME_ERROR_INVALID_PARAMETERS,     // the parameters of the method that was called are invalid for this operation
+-  GAME_ERROR_FAILED,                 // the command failed
+-  GAME_ERROR_NOT_LOADED,             // no game is loaded
+-  GAME_ERROR_RESTRICTED,             // game requires restricted resources
+-} GAME_ERROR;
+-///}
+-
+-/// @name Audio stream
+-///{
+-typedef enum GAME_PCM_FORMAT
+-{
+-  GAME_PCM_FORMAT_UNKNOWN,
+-  GAME_PCM_FORMAT_S16NE,
+-} GAME_PCM_FORMAT;
+-
+-typedef enum GAME_AUDIO_CHANNEL
+-{
+-  GAME_CH_NULL, // Channel list terminator
+-  GAME_CH_FL,
+-  GAME_CH_FR,
+-  GAME_CH_FC,
+-  GAME_CH_LFE,
+-  GAME_CH_BL,
+-  GAME_CH_BR,
+-  GAME_CH_FLOC,
+-  GAME_CH_FROC,
+-  GAME_CH_BC,
+-  GAME_CH_SL,
+-  GAME_CH_SR,
+-  GAME_CH_TFL,
+-  GAME_CH_TFR,
+-  GAME_CH_TFC,
+-  GAME_CH_TC,
+-  GAME_CH_TBL,
+-  GAME_CH_TBR,
+-  GAME_CH_TBC,
+-  GAME_CH_BLOC,
+-  GAME_CH_BROC,
+-} GAME_AUDIO_CHANNEL;
+-
+-typedef struct game_stream_audio_properties
+-{
+-  GAME_PCM_FORMAT format;
+-  const GAME_AUDIO_CHANNEL* channel_map;
+-} ATTRIBUTE_PACKED game_stream_audio_properties;
+-
+-typedef struct game_stream_audio_packet
+-{
+-  const uint8_t *data;
+-  size_t size;
+-} ATTRIBUTE_PACKED game_stream_audio_packet;
+-///}
+-
+-/// @name Video stream
+-///{
+-typedef enum GAME_PIXEL_FORMAT
+-{
+-  GAME_PIXEL_FORMAT_UNKNOWN,
+-  GAME_PIXEL_FORMAT_0RGB8888,
+-  GAME_PIXEL_FORMAT_RGB565,
+-  GAME_PIXEL_FORMAT_0RGB1555,
+-} GAME_PIXEL_FORMAT;
+-
+-typedef enum GAME_VIDEO_ROTATION
+-{
+-  GAME_VIDEO_ROTATION_0,
+-  GAME_VIDEO_ROTATION_90_CCW,
+-  GAME_VIDEO_ROTATION_180_CCW,
+-  GAME_VIDEO_ROTATION_270_CCW,
+-} GAME_VIDEO_ROTATION;
+-
+-typedef struct game_stream_video_properties
+-{
+-  GAME_PIXEL_FORMAT format;
+-  unsigned int nominal_width;
+-  unsigned int nominal_height;
+-  unsigned int max_width;
+-  unsigned int max_height;
+-  float aspect_ratio; // If aspect_ratio is <= 0.0, an aspect ratio of nominal_width / nominal_height is assumed
+-} ATTRIBUTE_PACKED game_stream_video_properties;
+-
+-typedef struct game_stream_video_packet
+-{
+-  unsigned int width;
+-  unsigned int height;
+-  GAME_VIDEO_ROTATION rotation;
+-  const uint8_t *data;
+-  size_t size;
+-} ATTRIBUTE_PACKED game_stream_video_packet;
+-///}
+-
+-/// @name Hardware framebuffer stream
+-///{
+-typedef enum GAME_HW_CONTEXT_TYPE
+-{
+-  GAME_HW_CONTEXT_NONE,
+-
+-  // OpenGL 2.x. Driver can choose to use latest compatibility context
+-  GAME_HW_CONTEXT_OPENGL,
+-
+-  // OpenGL ES 2.0
+-  GAME_HW_CONTEXT_OPENGLES2,
+-
+-  // Modern desktop core GL context. Use major/minor fields to set GL version
+-  GAME_HW_CONTEXT_OPENGL_CORE,
+-
+-  // OpenGL ES 3.0
+-  GAME_HW_CONTEXT_OPENGLES3,
+-
+-  // OpenGL ES 3.1+. Set major/minor fields.
+-  GAME_HW_CONTEXT_OPENGLES_VERSION,
+-
+-  // Vulkan
+-  GAME_HW_CONTEXT_VULKAN
+-} GAME_HW_CONTEXT_TYPE;
+-
+-typedef struct game_stream_hw_framebuffer_properties
+-{
+-  /*!
+-   * The API to use.
+-   */
+-  GAME_HW_CONTEXT_TYPE context_type;
+-
+-  /*!
+-   * Set if render buffers should have depth component attached.
+-   *
+-   * TODO: Obsolete
+-   */
+-  bool depth;
+-
+-  /*!
+-   * Set if stencil buffers should be attached. If depth and stencil are true,
+-   * a packed 24/8 buffer will be added. Only attaching stencil is invalid and
+-   * will be ignored.
+-   *
+-   * TODO: Obsolete.
+-   */
+-  bool stencil;
+-
+-  /*!
+-   * Use conventional bottom-left origin convention. If false, standard top-left
+-   * origin semantics are used.
+-   *
+-   * TODO: Move to GL specific interface
+-   */
+-  bool bottom_left_origin;
+-
+-  /*!
+-   * Major version number for core GL context or GLES 3.1+.
+-   */
+-  unsigned int version_major;
+-
+-  /*!
+-   * Minor version number for core GL context or GLES 3.1+.
+-   */
+-  unsigned int version_minor;
+-
+-  /*!
+-   * If this is true, the frontend will go very far to avoid resetting context
+-   * in scenarios like toggling fullscreen, etc.
+-   *
+-   * TODO: Obsolete? Maybe frontend should just always assume this...
+-   *
+-   * The reset callback might still be called in extreme situations such as if
+-   * the context is lost beyond recovery.
+-   *
+-   * For optimal stability, set this to false, and allow context to be reset at
+-   * any time.
+-   */
+-  bool cache_context;
+-
+-  /*!
+-   * Creates a debug context.
+-   */
+-  bool debug_context;
+-} ATTRIBUTE_PACKED game_stream_hw_framebuffer_properties;
+-
+-typedef struct game_stream_hw_framebuffer_buffer
+-{
+-  uintptr_t framebuffer;
+-} ATTRIBUTE_PACKED game_stream_hw_framebuffer_buffer;
+-
+-typedef struct game_stream_hw_framebuffer_packet
+-{
+-  uintptr_t framebuffer;
+-} ATTRIBUTE_PACKED game_stream_hw_framebuffer_packet;
+-
+-typedef void (*game_proc_address_t)(void);
+-///}
+-
+-/// @name Software framebuffer stream
+-///{
+-typedef game_stream_video_properties game_stream_sw_framebuffer_properties;
+-
+-typedef struct game_stream_sw_framebuffer_buffer
+-{
+-  GAME_PIXEL_FORMAT format;
+-  uint8_t *data;
+-  size_t size;
+-} ATTRIBUTE_PACKED game_stream_sw_framebuffer_buffer;
+-
+-typedef game_stream_video_packet game_stream_sw_framebuffer_packet;
+-///}
+-
+-/// @name Stream types
+-///{
+-typedef enum GAME_STREAM_TYPE
+-{
+-  GAME_STREAM_UNKNOWN,
+-  GAME_STREAM_AUDIO,
+-  GAME_STREAM_VIDEO,
+-  GAME_STREAM_HW_FRAMEBUFFER,
+-  GAME_STREAM_SW_FRAMEBUFFER,
+-} GAME_STREAM_TYPE;
+-
+-/*!
+- * \brief Immutable stream metadata
+- *
+- * This metadata is provided when the stream is opened. If any stream
+- * properties change, a new stream must be opened.
+- */
+-typedef struct game_stream_properties
+-{
+-  GAME_STREAM_TYPE type;
+-  union
+-  {
+-    game_stream_audio_properties audio;
+-    game_stream_video_properties video;
+-    game_stream_hw_framebuffer_properties hw_framebuffer;
+-    game_stream_sw_framebuffer_properties sw_framebuffer;
+-  };
+-} ATTRIBUTE_PACKED game_stream_properties;
+-
+-/*!
+- * \brief Stream buffers for hardware rendering and zero-copy support
+- */
+-typedef struct game_stream_buffer
+-{
+-  GAME_STREAM_TYPE type;
+-  union
+-  {
+-    game_stream_hw_framebuffer_buffer hw_framebuffer;
+-    game_stream_sw_framebuffer_buffer sw_framebuffer;
+-  };
+-} ATTRIBUTE_PACKED game_stream_buffer;
+-
+-/*!
+- * \brief Stream packet and ephemeral metadata
+- *
+- * This packet contains stream data and accompanying metadata. The metadata
+- * is ephemeral, meaning it only applies to the current packet and can change
+- * from packet to packet in the same stream.
+- */
+-typedef struct game_stream_packet
+-{
+-  GAME_STREAM_TYPE type;
+-  union
+-  {
+-    game_stream_audio_packet audio;
+-    game_stream_video_packet video;
+-    game_stream_hw_framebuffer_packet hw_framebuffer;
+-    game_stream_sw_framebuffer_packet sw_framebuffer;
+-  };
+-} ATTRIBUTE_PACKED game_stream_packet;
+-///}
+-
+-/// @name Game types
+-///{
+-
+-/*! Returned from game_get_region() */
+-typedef enum GAME_REGION
+-{
+-  GAME_REGION_UNKNOWN,
+-  GAME_REGION_NTSC,
+-  GAME_REGION_PAL,
+-} GAME_REGION;
+-
+-/*!
+- * Special game types passed into game_load_game_special(). Only used when
+- * multiple ROMs are required.
+- */
+-typedef enum SPECIAL_GAME_TYPE
+-{
+-  SPECIAL_GAME_TYPE_BSX,
+-  SPECIAL_GAME_TYPE_BSX_SLOTTED,
+-  SPECIAL_GAME_TYPE_SUFAMI_TURBO,
+-  SPECIAL_GAME_TYPE_SUPER_GAME_BOY,
+-} SPECIAL_GAME_TYPE;
+-
+-typedef enum GAME_MEMORY
+-{
+-  /*!
+-   * Passed to game_get_memory_data/size(). If the memory type doesn't apply
+-   * to the implementation NULL/0 can be returned.
+-   */
+-  GAME_MEMORY_MASK                   = 0xff,
+-
+-  /*!
+-   * Regular save ram. This ram is usually found on a game cartridge, backed
+-   * up by a battery. If save game data is too complex for a single memory
+-   * buffer, the SYSTEM_DIRECTORY environment callback can be used.
+-   */
+-  GAME_MEMORY_SAVE_RAM               = 0,
+-
+-  /*!
+-   * Some games have a built-in clock to keep track of time. This memory is
+-   * usually just a couple of bytes to keep track of time.
+-   */
+-  GAME_MEMORY_RTC                    = 1,
+-
+-  /*! System ram lets a frontend peek into a game systems main RAM */
+-  GAME_MEMORY_SYSTEM_RAM             = 2,
+-
+-  /*! Video ram lets a frontend peek into a game systems video RAM (VRAM) */
+-  GAME_MEMORY_VIDEO_RAM              = 3,
+-
+-  /*! Special memory types */
+-  GAME_MEMORY_SNES_BSX_RAM           = ((1 << 8) | GAME_MEMORY_SAVE_RAM),
+-  GAME_MEMORY_SNES_BSX_PRAM          = ((2 << 8) | GAME_MEMORY_SAVE_RAM),
+-  GAME_MEMORY_SNES_SUFAMI_TURBO_A_RAM= ((3 << 8) | GAME_MEMORY_SAVE_RAM),
+-  GAME_MEMORY_SNES_SUFAMI_TURBO_B_RAM= ((4 << 8) | GAME_MEMORY_SAVE_RAM),
+-  GAME_MEMORY_SNES_GAME_BOY_RAM      = ((5 << 8) | GAME_MEMORY_SAVE_RAM),
+-  GAME_MEMORY_SNES_GAME_BOY_RTC      = ((6 << 8) | GAME_MEMORY_RTC),
+-} GAME_MEMORY;
+-
+-/*! ID values for SIMD CPU features */
+-typedef enum GAME_SIMD
+-{
+-  GAME_SIMD_SSE                      = (1 << 0),
+-  GAME_SIMD_SSE2                     = (1 << 1),
+-  GAME_SIMD_VMX                      = (1 << 2),
+-  GAME_SIMD_VMX128                   = (1 << 3),
+-  GAME_SIMD_AVX                      = (1 << 4),
+-  GAME_SIMD_NEON                     = (1 << 5),
+-  GAME_SIMD_SSE3                     = (1 << 6),
+-  GAME_SIMD_SSSE3                    = (1 << 7),
+-  GAME_SIMD_MMX                      = (1 << 8),
+-  GAME_SIMD_MMXEXT                   = (1 << 9),
+-  GAME_SIMD_SSE4                     = (1 << 10),
+-  GAME_SIMD_SSE42                    = (1 << 11),
+-  GAME_SIMD_AVX2                     = (1 << 12),
+-  GAME_SIMD_VFPU                     = (1 << 13),
+-} GAME_SIMD;
+-///}
+-
+-/// @name Input types
+-///{
+-
+-typedef enum GAME_INPUT_EVENT_SOURCE
+-{
+-  GAME_INPUT_EVENT_DIGITAL_BUTTON,
+-  GAME_INPUT_EVENT_ANALOG_BUTTON,
+-  GAME_INPUT_EVENT_AXIS,
+-  GAME_INPUT_EVENT_ANALOG_STICK,
+-  GAME_INPUT_EVENT_ACCELEROMETER,
+-  GAME_INPUT_EVENT_KEY,
+-  GAME_INPUT_EVENT_RELATIVE_POINTER,
+-  GAME_INPUT_EVENT_ABSOLUTE_POINTER,
+-  GAME_INPUT_EVENT_MOTOR,
+-} GAME_INPUT_EVENT_SOURCE;
+-
+-typedef enum GAME_KEY_MOD
+-{
+-  GAME_KEY_MOD_NONE = 0x0000,
+-
+-  GAME_KEY_MOD_SHIFT = 0x0001,
+-  GAME_KEY_MOD_CTRL = 0x0002,
+-  GAME_KEY_MOD_ALT = 0x0004,
+-  GAME_KEY_MOD_META = 0x0008,
+-  GAME_KEY_MOD_SUPER = 0x0010,
+-
+-  GAME_KEY_MOD_NUMLOCK = 0x0100,
+-  GAME_KEY_MOD_CAPSLOCK = 0x0200,
+-  GAME_KEY_MOD_SCROLLOCK = 0x0400,
+-} GAME_KEY_MOD;
+-
+-/*!
+- * \brief Type of port on the virtual game console
+- */
+-typedef enum GAME_PORT_TYPE
+-{
+-  GAME_PORT_UNKNOWN,
+-  GAME_PORT_KEYBOARD,
+-  GAME_PORT_MOUSE,
+-  GAME_PORT_CONTROLLER,
+-} GAME_PORT_TYPE;
+-
+-typedef struct game_controller_layout
+-{
+-  char*        controller_id;
+-  bool         provides_input; // False for multitaps
+-  char**       digital_buttons;
+-  unsigned int digital_button_count;
+-  char**       analog_buttons;
+-  unsigned int analog_button_count;
+-  char**       analog_sticks;
+-  unsigned int analog_stick_count;
+-  char**       accelerometers;
+-  unsigned int accelerometer_count;
+-  char**       keys;
+-  unsigned int key_count;
+-  char**       rel_pointers;
+-  unsigned int rel_pointer_count;
+-  char**       abs_pointers;
+-  unsigned int abs_pointer_count;
+-  char**       motors;
+-  unsigned int motor_count;
+-} ATTRIBUTE_PACKED game_controller_layout;
+-
+-struct game_input_port;
+-
+-/*!
+- * \brief Device that can provide input
+- */
+-typedef struct game_input_device
+-{
+-  const char*      controller_id; // ID used in the Kodi controller API
+-  const char*      port_address;
+-  game_input_port* available_ports;
+-  unsigned int     port_count;
+-} ATTRIBUTE_PACKED game_input_device;
+-
+-/*!
+- * \brief Port that can provide input
+- *
+- * Ports can accept multiple devices and devices can have multiple ports, so
+- * the topology of possible configurations is a tree structure of alternating
+- * port and device nodes.
+- */
+-typedef struct game_input_port
+-{
+-  GAME_PORT_TYPE     type;
+-  const char*        port_id; // Required for GAME_PORT_CONTROLLER type
+-  game_input_device* accepted_devices;
+-  unsigned int       device_count;
+-} ATTRIBUTE_PACKED game_input_port;
+-
+-/*!
+- * \brief The input topology is the possible ways to connect input devices
+- *
+- * This represents the logical topology, which is the possible connections that
+- * the game client's logic can handle. It is strictly a subset of the physical
+- * topology. Loops are not allowed.
+- */
+-typedef struct game_input_topology
+-{
+-  game_input_port *ports; //! The list of ports on the virtual game console
+-  unsigned int port_count; //! The number of ports
+-  int player_limit; //! A limit on the number of input-providing devices, or -1 for no limit
+-} ATTRIBUTE_PACKED game_input_topology;
+-
+-typedef struct game_digital_button_event
+-{
+-  bool         pressed;
+-} ATTRIBUTE_PACKED game_digital_button_event;
+-
+-typedef struct game_analog_button_event
+-{
+-  float        magnitude;
+-} ATTRIBUTE_PACKED game_analog_button_event;
+-
+-typedef struct game_axis_event
+-{
+-  float        position;
+-} ATTRIBUTE_PACKED game_axis_event;
+-
+-typedef struct game_analog_stick_event
+-{
+-  float        x;
+-  float        y;
+-} ATTRIBUTE_PACKED game_analog_stick_event;
+-
+-typedef struct game_accelerometer_event
+-{
+-  float        x;
+-  float        y;
+-  float        z;
+-} ATTRIBUTE_PACKED game_accelerometer_event;
+-
+-typedef struct game_key_event
+-{
+-  bool         pressed;
+-
+-  /*!
+-   * If the keypress generates a printing character, the unicode value
+-   * contains the character generated. If the key is a non-printing character,
+-   * e.g. a function or arrow key, the unicode value is zero.
+-   */
+-  uint32_t unicode;
+-
+-  GAME_KEY_MOD modifiers;
+-} ATTRIBUTE_PACKED game_key_event;
+-
+-typedef struct game_rel_pointer_event
+-{
+-  int          x;
+-  int          y;
+-} ATTRIBUTE_PACKED game_rel_pointer_event;
+-
+-typedef struct game_abs_pointer_event
+-{
+-  bool         pressed;
+-  float        x;
+-  float        y;
+-} ATTRIBUTE_PACKED game_abs_pointer_event;
+-
+-typedef struct game_motor_event
+-{
+-  float        magnitude;
+-} ATTRIBUTE_PACKED game_motor_event;
+-
+-typedef struct game_input_event
+-{
+-  GAME_INPUT_EVENT_SOURCE type;
+-  const char*             controller_id;
+-  GAME_PORT_TYPE          port_type;
+-  const char*             port_address;
+-  const char*             feature_name;
+-  union
+-  {
+-    struct game_digital_button_event digital_button;
+-    struct game_analog_button_event  analog_button;
+-    struct game_axis_event           axis;
+-    struct game_analog_stick_event   analog_stick;
+-    struct game_accelerometer_event  accelerometer;
+-    struct game_key_event            key;
+-    struct game_rel_pointer_event    rel_pointer;
+-    struct game_abs_pointer_event    abs_pointer;
+-    struct game_motor_event          motor;
+-  };
+-} ATTRIBUTE_PACKED game_input_event;
+-///}
+-
+-/// @name Environment types
+-///{
+-struct game_system_timing
+-{
+-  double fps;                   // FPS of video content.
+-  double sample_rate;           // Sampling rate of audio.
+-};
+-///}
+-
+-/*! Properties passed to the ADDON_Create() method of a game client */
+-typedef struct AddonProps_Game
+-{
+-  /*!
+-   * The path of the game client being loaded.
+-   */
+-  const char* game_client_dll_path;
+-
+-  /*!
+-   * Paths to proxy DLLs used to load the game client.
+-   */
+-  const char** proxy_dll_paths;
+-
+-  /*!
+-   * Number of proxy DLL paths provided.
+-   */
+-  unsigned int proxy_dll_count;
+-
+-  /*!
+-   * The "system" directories of the frontend. These directories can be used to
+-   * store system-specific ROMs such as BIOSes, configuration data, etc.
+-   */
+-  const char** resource_directories;
+-
+-  /*!
+-   * Number of resource directories provided
+-   */
+-  unsigned int resource_directory_count;
+-
+-  /*!
+-   * The writable directory of the frontend. This directory can be used to store
+-   * SRAM, memory cards, high scores, etc, if the game client cannot use the
+-   * regular memory interface, GetMemoryData().
+-   */
+-  const char* profile_directory;
+-
+-  /*!
+-   * The value of the <supports_vfs> property from addon.xml
+-   */
+-  bool supports_vfs;
+-
+-  /*!
+-   * The extensions in the <extensions> property from addon.xml
+-   */
+-  const char** extensions;
+-
+-  /*!
+-   * Number of extensions provided
+-   */
+-  unsigned int extension_count;
+-} AddonProps_Game;
+-
+-typedef AddonProps_Game game_client_properties;
+-
+-/*! Structure to transfer the methods from kodi_game_dll.h to Kodi */
+-
+-struct AddonInstance_Game;
+-
+-typedef struct AddonToKodiFuncTable_Game
+-{
+-  KODI_HANDLE kodiInstance;
+-
+-  void (*CloseGame)(void* kodiInstance);
+-  void* (*OpenStream)(void*, const game_stream_properties*);
+-  bool (*GetStreamBuffer)(void*, void*, unsigned int, unsigned int, game_stream_buffer*);
+-  void (*AddStreamData)(void*, void*, const game_stream_packet*);
+-  void (*ReleaseStreamBuffer)(void*, void*, game_stream_buffer*);
+-  void (*CloseStream)(void*, void*);
+-  game_proc_address_t (*HwGetProcAddress)(void* kodiInstance, const char* symbol);
+-  bool (*InputEvent)(void* kodiInstance, const game_input_event* event);
+-
+-} AddonToKodiFuncTable_Game;
+-
+-typedef struct KodiToAddonFuncTable_Game
+-{
+-  GAME_ERROR(__cdecl* LoadGame)(const AddonInstance_Game*, const char*);
+-  GAME_ERROR(__cdecl* LoadGameSpecial)
+-  (const AddonInstance_Game*, SPECIAL_GAME_TYPE, const char**, size_t);
+-  GAME_ERROR(__cdecl* LoadStandalone)(const AddonInstance_Game*);
+-  GAME_ERROR(__cdecl* UnloadGame)(const AddonInstance_Game*);
+-  GAME_ERROR(__cdecl* GetGameTiming)(const AddonInstance_Game*, game_system_timing*);
+-  GAME_REGION(__cdecl* GetRegion)(const AddonInstance_Game*);
+-  bool(__cdecl* RequiresGameLoop)(const AddonInstance_Game*);
+-  GAME_ERROR(__cdecl* RunFrame)(const AddonInstance_Game*);
+-  GAME_ERROR(__cdecl* Reset)(const AddonInstance_Game*);
+-  GAME_ERROR(__cdecl* HwContextReset)(const AddonInstance_Game*);
+-  GAME_ERROR(__cdecl* HwContextDestroy)(const AddonInstance_Game*);
+-  bool(__cdecl* HasFeature)(const AddonInstance_Game*, const char*, const char*);
+-  game_input_topology*(__cdecl* GetTopology)(const AddonInstance_Game*);
+-  void(__cdecl* FreeTopology)(const AddonInstance_Game*, game_input_topology*);
+-  void(__cdecl* SetControllerLayouts)(const AddonInstance_Game*,
+-                                      const game_controller_layout*,
+-                                      unsigned int);
+-  bool(__cdecl* EnableKeyboard)(const AddonInstance_Game*, bool, const char*);
+-  bool(__cdecl* EnableMouse)(const AddonInstance_Game*, bool, const char*);
+-  bool(__cdecl* ConnectController)(const AddonInstance_Game*, bool, const char*, const char*);
+-  bool(__cdecl* InputEvent)(const AddonInstance_Game*, const game_input_event*);
+-  size_t(__cdecl* SerializeSize)(const AddonInstance_Game*);
+-  GAME_ERROR(__cdecl* Serialize)(const AddonInstance_Game*, uint8_t*, size_t);
+-  GAME_ERROR(__cdecl* Deserialize)(const AddonInstance_Game*, const uint8_t*, size_t);
+-  GAME_ERROR(__cdecl* CheatReset)(const AddonInstance_Game*);
+-  GAME_ERROR(__cdecl* GetMemory)(const AddonInstance_Game*, GAME_MEMORY, uint8_t**, size_t*);
+-  GAME_ERROR(__cdecl* SetCheat)(const AddonInstance_Game*, unsigned int, bool, const char*);
+-} KodiToAddonFuncTable_Game;
+-
+-typedef struct AddonInstance_Game
+-{
+-  AddonProps_Game props;
+-  AddonToKodiFuncTable_Game toKodi;
+-  KodiToAddonFuncTable_Game toAddon;
+-} AddonInstance_Game;
+-
+-#ifdef __cplusplus
+-}
+-#endif
+-
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/libKODI_game.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/libKODI_game.h
+deleted file mode 100644
+index 2e6459b486ac..000000000000
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/libKODI_game.h
++++ /dev/null
+@@ -1,155 +0,0 @@
+-/*
+- *  Copyright (C) 2014-2018 Team Kodi
+- *  This file is part of Kodi - https://kodi.tv
+- *
+- *  SPDX-License-Identifier: GPL-2.0-or-later
+- *  See LICENSES/README.md for more information.
+- */
+-
+-#pragma once
+-
+-#include "libXBMC_addon.h"
+-#include "kodi_game_types.h"
+-
+-#include <string>
+-#include <stdio.h>
+-
+-#if defined(ANDROID)
+-  #include <sys/stat.h>
+-#endif
+-
+-class CHelper_libKODI_game
+-{
+-public:
+-  CHelper_libKODI_game(void) :
+-    m_handle(nullptr),
+-    m_callbacks(nullptr)
+-  {
+-  }
+-
+-  ~CHelper_libKODI_game(void)
+-  {
+-  }
+-
+-  /*!
+-    * @brief Resolve all callback methods
+-    * @param handle Pointer to the add-on
+-    * @return True when all methods were resolved, false otherwise.
+-    */
+-  bool RegisterMe(void* handle)
+-  {
+-    m_handle = static_cast<AddonCB*>(handle);
+-    if (m_handle)
+-      m_callbacks = (AddonInstance_Game*)m_handle->GameLib_RegisterMe(m_handle->addonData);
+-    if (!m_callbacks)
+-      fprintf(stderr, "libKODI_game-ERROR: GameLib_RegisterMe can't get callback table from Kodi !!!\n");
+-
+-    return m_callbacks != nullptr;
+-  }
+-
+-  // --- Game callbacks --------------------------------------------------------
+-
+-  /*!
+-   * \brief Requests the frontend to stop the current game
+-   */
+-  void CloseGame(void)
+-  {
+-    m_callbacks->toKodi.CloseGame(m_callbacks->toKodi.kodiInstance);
+-  }
+-
+-  /*!
+-   * \brief Create a stream for gameplay data
+-   *
+-   * \param properties The stream properties
+-   *
+-   * \return A stream handle, or NULL on failure
+-   */
+-  void* OpenStream(const game_stream_properties &properties)
+-  {
+-    return m_callbacks->toKodi.OpenStream(m_callbacks->toKodi.kodiInstance, &properties);
+-  }
+-
+-  /*!
+-   * \brief Get a buffer for zero-copy stream data
+-   *
+-   * \param stream The stream handle
+-   * \param width The framebuffer width, or 0 for no width specified
+-   * \param height The framebuffer height, or 0 for no height specified
+-   * \param[out] buffer The buffer, or unmodified if false is returned
+-   *
+-   * If this returns true, buffer must be freed using ReleaseStreamBuffer().
+-   *
+-   * \return True if buffer was set, false otherwise
+-   */
+-  bool GetStreamBuffer(void *stream, unsigned int width, unsigned int height, game_stream_buffer &buffer)
+-  {
+-    return m_callbacks->toKodi.GetStreamBuffer(m_callbacks->toKodi.kodiInstance, stream, width, height, &buffer);
+-  }
+-
+-  /*!
+-   * \brief Add a data packet to a stream
+-   *
+-   * \param stream The target stream
+-   * \param packet The data packet
+-   */
+-  void AddStreamData(void *stream, const game_stream_packet &packet)
+-  {
+-    m_callbacks->toKodi.AddStreamData(m_callbacks->toKodi.kodiInstance, stream, &packet);
+-  }
+-
+-  /*!
+-   * \brief Free an allocated buffer
+-   *
+-   * \param stream The stream handle
+-   * \param buffer The buffer returned from GetStreamBuffer()
+-   */
+-  void ReleaseStreamBuffer(void *stream, game_stream_buffer &buffer)
+-  {
+-    m_callbacks->toKodi.ReleaseStreamBuffer(m_callbacks->toKodi.kodiInstance, stream, &buffer);
+-  }
+-
+-  /*!
+-   * \brief Free the specified stream
+-   *
+-   * \param stream The stream to close
+-   */
+-  void CloseStream(void *stream)
+-  {
+-    m_callbacks->toKodi.CloseStream(m_callbacks->toKodi.kodiInstance, stream);
+-  }
+-
+-  // -- Hardware rendering callbacks -------------------------------------------
+-
+-  /*!
+-   * \brief Get a symbol from the hardware context
+-   *
+-   * \param sym The symbol's name
+-   *
+-   * \return A function pointer for the specified symbol
+-   */
+-  game_proc_address_t HwGetProcAddress(const char* sym)
+-  {
+-    return m_callbacks->toKodi.HwGetProcAddress(m_callbacks->toKodi.kodiInstance, sym);
+-  }
+-
+-  // --- Input callbacks -------------------------------------------------------
+-
+-  /*!
+-   * \brief Notify the port of an input event
+-   *
+-   * \param event The input event
+-   *
+-   * Input events can arrive for the following sources:
+-   *   - GAME_INPUT_EVENT_MOTOR
+-   *
+-   * \return true if the event was handled, false otherwise
+-   */
+-  bool InputEvent(const game_input_event& event)
+-  {
+-    return m_callbacks->toKodi.InputEvent(m_callbacks->toKodi.kodiInstance, &event);
+-  }
+-
+-private:
+-  AddonCB* m_handle;
+-  AddonInstance_Game* m_callbacks;
+-};
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
+index 0983af735a3a..30feba121a23 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
+@@ -76,12 +76,10 @@
+ #define ADDON_INSTANCE_VERSION_AUDIOENCODER_XML_ID    "kodi.binary.instance.audioencoder"
+ #define ADDON_INSTANCE_VERSION_AUDIOENCODER_DEPENDS   "addon-instance/AudioEncoder.h"
+ 
+-#define ADDON_INSTANCE_VERSION_GAME                   "1.1.0"
+-#define ADDON_INSTANCE_VERSION_GAME_MIN               "1.1.0"
++#define ADDON_INSTANCE_VERSION_GAME                   "2.0.0"
++#define ADDON_INSTANCE_VERSION_GAME_MIN               "2.0.0"
+ #define ADDON_INSTANCE_VERSION_GAME_XML_ID            "kodi.binary.instance.game"
+-#define ADDON_INSTANCE_VERSION_GAME_DEPENDS           "kodi_game_dll.h" \
+-                                                      "kodi_game_types.h" \
+-                                                      "libKODI_game.h"
++#define ADDON_INSTANCE_VERSION_GAME_DEPENDS           "addon-instance/Game.h"
+ 
+ #define ADDON_INSTANCE_VERSION_IMAGEDECODER           "2.0.0"
+ #define ADDON_INSTANCE_VERSION_IMAGEDECODER_MIN       "2.0.0"
+diff --git a/xbmc/games/addons/GameClient.cpp b/xbmc/games/addons/GameClient.cpp
+index 4b030156af6b..947f1d1b9c84 100644
+--- a/xbmc/games/addons/GameClient.cpp
++++ b/xbmc/games/addons/GameClient.cpp
+@@ -168,7 +168,8 @@ bool CGameClient::Initialize(void)
+   m_struct.toKodi.HwGetProcAddress = cb_hw_get_proc_address;
+   m_struct.toKodi.InputEvent = cb_input_event;
+ 
+-  if (Create(ADDON_INSTANCE_GAME, &m_struct, &m_struct.props) == ADDON_STATUS_OK)
++  if (CreateInstance(ADDON_INSTANCE_GAME, StringUtils::Format("%p", static_cast<void*>(this)),
++                     &m_struct, nullptr) == ADDON_STATUS_OK)
+   {
+     Input().Initialize();
+     LogAddonProperties();
+@@ -182,7 +183,7 @@ void CGameClient::Unload()
+ {
+   Input().Deinitialize();
+ 
+-  Destroy();
++  DestroyInstance(StringUtils::Format("%p", static_cast<void*>(this)));
+ }
+ 
+ bool CGameClient::OpenFile(const CFileItem& file, RETRO::IStreamManager& streamManager, IGameInputCallback *input)
+diff --git a/xbmc/games/addons/GameClient.h b/xbmc/games/addons/GameClient.h
+index ba1a8f73f09d..5a89950c245d 100644
+--- a/xbmc/games/addons/GameClient.h
++++ b/xbmc/games/addons/GameClient.h
+@@ -10,7 +10,7 @@
+ 
+ #include "GameClientSubsystem.h"
+ #include "addons/binary-addons/AddonDll.h"
+-#include "addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h"
++#include "addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h"
+ #include "threads/CriticalSection.h"
+ 
+ #include <atomic>
+diff --git a/xbmc/games/addons/GameClientInGameSaves.h b/xbmc/games/addons/GameClientInGameSaves.h
+index 597fb6719056..bb460aabfc6c 100644
+--- a/xbmc/games/addons/GameClientInGameSaves.h
++++ b/xbmc/games/addons/GameClientInGameSaves.h
+@@ -8,7 +8,7 @@
+ 
+ #pragma once
+ 
+-#include "addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h"
++#include "addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h"
+ 
+ #include <string>
+ 
+diff --git a/xbmc/games/addons/GameClientProperties.cpp b/xbmc/games/addons/GameClientProperties.cpp
+index db5536431900..7d5ba3dc19b6 100644
+--- a/xbmc/games/addons/GameClientProperties.cpp
++++ b/xbmc/games/addons/GameClientProperties.cpp
+@@ -79,6 +79,7 @@ const char* CGameClientProperties::GetLibraryPath(void)
+     // Get the parent add-on's real path
+     std::string strLibPath = m_parent.CAddonDll::LibPath();
+     m_strLibraryPath = CSpecialProtocol::TranslatePath(strLibPath);
++    URIUtils::RemoveSlashAtEnd(m_strLibraryPath);
+   }
+   return m_strLibraryPath.c_str();
+ }
+@@ -117,6 +118,7 @@ const char** CGameClientProperties::GetResourceDirectories(void)
+         std::shared_ptr<CGameResource> resource = std::static_pointer_cast<CGameResource>(addon);
+ 
+         std::string resourcePath = resource->GetFullPath("");
++        URIUtils::RemoveSlashAtEnd(resourcePath);
+ 
+         char* resourceDir = new char[resourcePath.length() + 1];
+         std::strcpy(resourceDir, resourcePath.c_str());
+@@ -168,7 +170,10 @@ unsigned int CGameClientProperties::GetResourceDirectoryCount(void) const
+ const char* CGameClientProperties::GetProfileDirectory(void)
+ {
+   if (m_strProfileDirectory.empty())
++  {
+     m_strProfileDirectory = CSpecialProtocol::TranslatePath(m_parent.Profile());
++    URIUtils::RemoveSlashAtEnd(m_strProfileDirectory);
++  }
+ 
+   return m_strProfileDirectory.c_str();
+ }
+diff --git a/xbmc/games/addons/GameClientProperties.h b/xbmc/games/addons/GameClientProperties.h
+index 0b3175bcb163..d5cdd2bae4e2 100644
+--- a/xbmc/games/addons/GameClientProperties.h
++++ b/xbmc/games/addons/GameClientProperties.h
+@@ -9,7 +9,7 @@
+ #pragma once
+ 
+ #include "addons/Addon.h"
+-#include "addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h"
++#include "addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h"
+ #include "games/GameTypes.h"
+ 
+ #include <string>
+@@ -28,7 +28,7 @@ class CGameClient;
+  * \ingroup games
+  * \brief C++ wrapper for properties to pass to the DLL
+  *
+- * Game client properties declared in kodi_game_types.h.
++ * Game client properties declared in addon-instance/Game.h.
+  */
+ class CGameClientProperties
+ {
+diff --git a/xbmc/games/addons/GameClientSubsystem.cpp b/xbmc/games/addons/GameClientSubsystem.cpp
+index d5879a0d6f03..4e44c41d4697 100644
+--- a/xbmc/games/addons/GameClientSubsystem.cpp
++++ b/xbmc/games/addons/GameClientSubsystem.cpp
+@@ -10,7 +10,7 @@
+ 
+ #include "GameClient.h"
+ #include "GameClientProperties.h"
+-#include "addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h"
++#include "addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h"
+ #include "games/addons/input/GameClientInput.h"
+ #include "games/addons/streams/GameClientStreams.h"
+ 
+diff --git a/xbmc/games/addons/GameClientTranslator.h b/xbmc/games/addons/GameClientTranslator.h
+index 24c8b90bb8ed..007e383b9765 100644
+--- a/xbmc/games/addons/GameClientTranslator.h
++++ b/xbmc/games/addons/GameClientTranslator.h
+@@ -8,7 +8,7 @@
+ 
+ #pragma once
+ 
+-#include "addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h"
++#include "addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h"
+ #include "cores/RetroPlayer/streams/RetroPlayerStreamTypes.h"
+ #include "games/controllers/ControllerTypes.h"
+ #include "input/keyboard/KeyboardTypes.h"
+diff --git a/xbmc/games/addons/input/GameClientController.h b/xbmc/games/addons/input/GameClientController.h
+index 68d649dbb1a0..552605d61eaf 100644
+--- a/xbmc/games/addons/input/GameClientController.h
++++ b/xbmc/games/addons/input/GameClientController.h
+@@ -20,7 +20,7 @@
+ 
+ #pragma once
+ 
+-#include "addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h"
++#include "addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h"
+ #include "games/controllers/ControllerTypes.h"
+ 
+ #include <vector>
+diff --git a/xbmc/games/addons/input/GameClientDevice.cpp b/xbmc/games/addons/input/GameClientDevice.cpp
+index 7636909a9ec8..a6cd3ead3ee1 100644
+--- a/xbmc/games/addons/input/GameClientDevice.cpp
++++ b/xbmc/games/addons/input/GameClientDevice.cpp
+@@ -10,7 +10,7 @@
+ 
+ #include "GameClientPort.h"
+ #include "ServiceBroker.h"
+-#include "addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h"
++#include "addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h"
+ #include "games/GameServices.h"
+ #include "games/controllers/Controller.h"
+ #include "games/controllers/ControllerTopology.h"
+diff --git a/xbmc/games/addons/input/GameClientInput.cpp b/xbmc/games/addons/input/GameClientInput.cpp
+index b52680069a63..5a85d0f8aad4 100644
+--- a/xbmc/games/addons/input/GameClientInput.cpp
++++ b/xbmc/games/addons/input/GameClientInput.cpp
+@@ -16,7 +16,7 @@
+ #include "GameClientPort.h"
+ #include "GameClientTopology.h"
+ #include "ServiceBroker.h"
+-#include "addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h"
++#include "addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h"
+ #include "games/GameServices.h"
+ #include "games/addons/GameClient.h"
+ #include "games/addons/GameClientCallbacks.h"
+diff --git a/xbmc/games/addons/input/GameClientKeyboard.cpp b/xbmc/games/addons/input/GameClientKeyboard.cpp
+index 38c60c5768a5..8182ca73ca76 100644
+--- a/xbmc/games/addons/input/GameClientKeyboard.cpp
++++ b/xbmc/games/addons/input/GameClientKeyboard.cpp
+@@ -9,7 +9,7 @@
+ #include "GameClientKeyboard.h"
+ 
+ #include "GameClientInput.h"
+-#include "addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h"
++#include "addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h"
+ #include "games/addons/GameClient.h"
+ #include "games/addons/GameClientTranslator.h"
+ #include "input/keyboard/interfaces/IKeyboardInputProvider.h"
+diff --git a/xbmc/games/addons/input/GameClientMouse.cpp b/xbmc/games/addons/input/GameClientMouse.cpp
+index fd0e8e7ebaca..60b66d295670 100644
+--- a/xbmc/games/addons/input/GameClientMouse.cpp
++++ b/xbmc/games/addons/input/GameClientMouse.cpp
+@@ -9,7 +9,7 @@
+ #include "GameClientMouse.h"
+ 
+ #include "GameClientInput.h"
+-#include "addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h"
++#include "addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h"
+ #include "games/addons/GameClient.h"
+ #include "input/mouse/interfaces/IMouseInputProvider.h"
+ 
+diff --git a/xbmc/games/addons/input/GameClientPort.cpp b/xbmc/games/addons/input/GameClientPort.cpp
+index 6110fecef02c..d3534eb1b191 100644
+--- a/xbmc/games/addons/input/GameClientPort.cpp
++++ b/xbmc/games/addons/input/GameClientPort.cpp
+@@ -9,7 +9,7 @@
+ #include "GameClientPort.h"
+ 
+ #include "GameClientDevice.h"
+-#include "addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h"
++#include "addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h"
+ #include "games/addons/GameClientTranslator.h"
+ #include "games/controllers/Controller.h"
+ #include "games/controllers/ControllerTopology.h"
+diff --git a/xbmc/games/addons/streams/GameClientStreamAudio.h b/xbmc/games/addons/streams/GameClientStreamAudio.h
+index c07ae6d16e38..8c44a8f1975b 100644
+--- a/xbmc/games/addons/streams/GameClientStreamAudio.h
++++ b/xbmc/games/addons/streams/GameClientStreamAudio.h
+@@ -9,7 +9,7 @@
+ #pragma once
+ 
+ #include "IGameClientStream.h"
+-#include "addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h"
++#include "addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h"
+ 
+ #include <vector>
+ 
+diff --git a/xbmc/games/addons/streams/GameClientStreamSwFramebuffer.cpp b/xbmc/games/addons/streams/GameClientStreamSwFramebuffer.cpp
+index 5ae8ec4e5c47..f103d008caed 100644
+--- a/xbmc/games/addons/streams/GameClientStreamSwFramebuffer.cpp
++++ b/xbmc/games/addons/streams/GameClientStreamSwFramebuffer.cpp
+@@ -8,7 +8,7 @@
+ 
+ #include "GameClientStreamSwFramebuffer.h"
+ 
+-#include "addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h"
++#include "addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h"
+ #include "cores/RetroPlayer/streams/RetroPlayerVideo.h"
+ #include "games/addons/GameClientTranslator.h"
+ 
+diff --git a/xbmc/games/addons/streams/GameClientStreams.h b/xbmc/games/addons/streams/GameClientStreams.h
+index 3387274ad3d7..caded4513ece 100644
+--- a/xbmc/games/addons/streams/GameClientStreams.h
++++ b/xbmc/games/addons/streams/GameClientStreams.h
+@@ -8,7 +8,7 @@
+ 
+ #pragma once
+ 
+-#include "addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h"
++#include "addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h"
+ #include "cores/RetroPlayer/streams/RetroPlayerStreamTypes.h"
+ 
+ #include <map>
+
+From 2fafc7d03766997c16ab273b6e0e2411d7ba41b8 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Sun, 11 Aug 2019 23:22:17 +0200
+Subject: [PATCH 3/3] [addons][game] add initial doxygen documentation
+
+---
+ .../include/kodi/addon-instance/Game.h        | 1697 +++++++++++++----
+ 1 file changed, 1378 insertions(+), 319 deletions(-)
+
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h
+index 5191a62b8a3e..2c916144332c 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/Game.h
+@@ -16,6 +16,16 @@
+ #include "input/XBMC_vkeys.h"
+ #endif
+ 
++//==============================================================================
++/// @addtogroup cpp_kodi_addon_game
++///
++/// To use on Libretro and for stand-alone games or emulators that does not use
++/// the Libretro API.
++///
++/// Possible examples could be, Nvidia GameStream via Limelight or WINE capture
++/// could possible through the Game API.
++///
++
+ namespace kodi
+ {
+ namespace addon
+@@ -24,405 +34,786 @@ class CInstanceGame;
+ }
+ } // namespace kodi
+ 
+-/*! Port ID used when topology is unknown */
+-#define DEFAULT_PORT_ID "1"
+-
+ extern "C"
+ {
+ 
+-/// @name Add-on types
+-///{
+-/*! Game add-on error codes */
++//==============================================================================
++/// \defgroup cpp_kodi_addon_game_Defs Definitions, structures and enumerators
++/// \ingroup cpp_kodi_addon_game
++/// @brief **Game add-on instance definition values**
++//------------------------------------------------------------------------------
++
++//==============================================================================
++/// \ingroup cpp_kodi_addon_game_Defs
++/// @brief **Port ID used when topology is unknown**
++#define DEFAULT_PORT_ID "1"
++//------------------------------------------------------------------------------
++
++//==============================================================================
++/// \ingroup cpp_kodi_addon_game_Defs
++/// @brief **Game add-on error codes**
++///
++/// Used as return values on most Game related functions.
++///
+ typedef enum GAME_ERROR
+ {
+-  GAME_ERROR_NO_ERROR, // no error occurred
+-  GAME_ERROR_UNKNOWN, // an unknown error occurred
+-  GAME_ERROR_NOT_IMPLEMENTED, // the method that the frontend called is not implemented
+-  GAME_ERROR_REJECTED, // the command was rejected by the game client
+-  GAME_ERROR_INVALID_PARAMETERS, // the parameters of the method that was called are invalid for this operation
+-  GAME_ERROR_FAILED, // the command failed
+-  GAME_ERROR_NOT_LOADED, // no game is loaded
+-  GAME_ERROR_RESTRICTED, // game requires restricted resources
+-} GAME_ERROR;
+-///}
++  /// @brief no error occurred
++  GAME_ERROR_NO_ERROR,
++
++  /// @brief an unknown error occurred
++  GAME_ERROR_UNKNOWN,
++
++  /// @brief the method that the frontend called is not implemented
++  GAME_ERROR_NOT_IMPLEMENTED,
+ 
+-/// @name Audio stream
+-///{
++  /// @brief the command was rejected by the game client
++  GAME_ERROR_REJECTED,
++
++  /// @brief the parameters of the method that was called are invalid for this operation
++  GAME_ERROR_INVALID_PARAMETERS,
++
++  /// @brief the command failed
++  GAME_ERROR_FAILED,
++
++  /// @brief no game is loaded
++  GAME_ERROR_NOT_LOADED,
++
++  /// @brief game requires restricted resources
++  GAME_ERROR_RESTRICTED,
++} GAME_ERROR;
++//------------------------------------------------------------------------------
++
++//--==----==----==----==----==----==----==----==----==----==----==----==----==--
++/// \defgroup cpp_kodi_addon_game_Defs_AudioStream 1. Audio stream
++/// \ingroup cpp_kodi_addon_game_Defs
++/// @brief **The for Audio stream used data system**
++///
++/// Used to give Addon currently used audio stream configuration on Kodi and
++/// arrays to give related data to Kodi on callbacks.
++///
++//@{
++
++//==============================================================================
++/// @brief **Stream Format**
++///
++/// From Kodi requested specified audio sample format.
++///
+ typedef enum GAME_PCM_FORMAT
+ {
+   GAME_PCM_FORMAT_UNKNOWN,
++
++  /// @brief S16NE sample format
+   GAME_PCM_FORMAT_S16NE,
+ } GAME_PCM_FORMAT;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief **Audio channel**
++///
++/// Channel identification flags.
++///
+ typedef enum GAME_AUDIO_CHANNEL
+ {
+-  GAME_CH_NULL, // Channel list terminator
++  /// @brief Channel list terminator
++  GAME_CH_NULL,
++
++  /// @brief Channel front left
+   GAME_CH_FL,
++
++  /// @brief Channel front right
+   GAME_CH_FR,
++
++  /// @brief Channel front center
+   GAME_CH_FC,
++
++  /// @brief Channel Low Frequency Effects / Subwoofer
+   GAME_CH_LFE,
++
++  /// @brief Channel back left
+   GAME_CH_BL,
++
++  /// @brief Channel back right
+   GAME_CH_BR,
++
++  /// @brief Channel front left over center
+   GAME_CH_FLOC,
++
++  /// @brief Channel front right over center
+   GAME_CH_FROC,
++
++  /// @brief Channel back center
+   GAME_CH_BC,
++
++  /// @brief Channel surround/side left
+   GAME_CH_SL,
++
++  /// @brief Channel surround/side right
+   GAME_CH_SR,
++
++  /// @brief Channel top front left
+   GAME_CH_TFL,
++
++  /// @brief Channel top front right
+   GAME_CH_TFR,
++
++  /// @brief Channel top front center
+   GAME_CH_TFC,
++
++  /// @brief Channel top center
+   GAME_CH_TC,
++
++  /// @brief Channel top back left
+   GAME_CH_TBL,
++
++  /// @brief Channel top back right
+   GAME_CH_TBR,
++
++  /// @brief Channel top back center
+   GAME_CH_TBC,
++
++  /// @brief Channel bacl left over center
+   GAME_CH_BLOC,
++
++  /// @brief Channel back right over center
+   GAME_CH_BROC,
+ } GAME_AUDIO_CHANNEL;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief **Game audio stream properties**
++///
++/// Used by Kodi to pass the currently required audio stream settings to the addon
++///
+ typedef struct game_stream_audio_properties
+ {
+   GAME_PCM_FORMAT format;
+   const GAME_AUDIO_CHANNEL* channel_map;
+ } ATTRIBUTE_PACKED game_stream_audio_properties;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief **Audio stream packet**
++///
++/// This packet contains audio stream data passed to Kodi.
++///
+ typedef struct game_stream_audio_packet
+ {
+-  const uint8_t* data;
++  /// @brief Pointer for audio stream data given to Kodi
++  const uint8_t *data;
++
++  /// @brief Size of data array
+   size_t size;
+ } ATTRIBUTE_PACKED game_stream_audio_packet;
+-///}
+-
+-/// @name Video stream
+-///{
++//------------------------------------------------------------------------------
++
++//@}
++
++//--==----==----==----==----==----==----==----==----==----==----==----==----==--
++/// \defgroup cpp_kodi_addon_game_Defs_VideoStream 2. Video stream
++/// \ingroup cpp_kodi_addon_game_Defs
++/// @brief **The for Video stream used data system**
++///
++/// Used to give Addon currently used video stream configuration on Kodi and
++/// arrays to give related data to Kodi on callbacks.
++///
++//@{
++
++//==============================================================================
++/// @brief **Pixel format**
++///
++/// From Kodi requested specified video RGB color model format.
++///
+ typedef enum GAME_PIXEL_FORMAT
+ {
+   GAME_PIXEL_FORMAT_UNKNOWN,
++
++  /// @brief 0RGB8888 Format
+   GAME_PIXEL_FORMAT_0RGB8888,
++
++  /// @brief RGB565 Format
+   GAME_PIXEL_FORMAT_RGB565,
++
++  /// @brief 0RGB1555 Format
+   GAME_PIXEL_FORMAT_0RGB1555,
+ } GAME_PIXEL_FORMAT;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief **Video rotation position**
++///
++/// To define position how video becomes shown.
++///
+ typedef enum GAME_VIDEO_ROTATION
+ {
++  /// @brief 0° and Without rotation
+   GAME_VIDEO_ROTATION_0,
++
++  /// @brief rotate 90° counterclockwise
+   GAME_VIDEO_ROTATION_90_CCW,
++
++  /// @brief rotate 180° counterclockwise
+   GAME_VIDEO_ROTATION_180_CCW,
++
++  /// @brief rotate 270° counterclockwise
+   GAME_VIDEO_ROTATION_270_CCW,
+ } GAME_VIDEO_ROTATION;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief **Game video stream properties**
++///
++/// Used by Kodi to pass the currently required video stream settings to the addon
++///
+ typedef struct game_stream_video_properties
+ {
++  /// @brief The to used pixel format
+   GAME_PIXEL_FORMAT format;
++
++  /// @brief The nominal used width
+   unsigned int nominal_width;
++
++  /// @brief The nominal used height
+   unsigned int nominal_height;
++
++  /// @brief The maximal used width
+   unsigned int max_width;
++
++  /// @brief The maximal used height
+   unsigned int max_height;
+-  float aspect_ratio; // If aspect_ratio is <= 0.0, an aspect ratio of nominal_width / nominal_height is assumed
++
++  /// @brief On video stream used aspect ration
++  ///
++  /// @note If aspect_ratio is <= 0.0, an aspect ratio of nominal_width / nominal_height is assumed
++  float aspect_ratio;
+ } ATTRIBUTE_PACKED game_stream_video_properties;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief **Video stream packet**
++///
++/// This packet contains video stream data passed to Kodi.
++///
+ typedef struct game_stream_video_packet
+ {
++  /// @brief Video height
+   unsigned int width;
++
++  /// @brief Video width
+   unsigned int height;
++
++  /// @brief Width @ref GAME_VIDEO_ROTATION defined rotation angle.
+   GAME_VIDEO_ROTATION rotation;
+-  const uint8_t* data;
++
++  /// @brief Pointer for video stream data given to Kodi
++  const uint8_t *data;
++
++  /// @brief Size of data array
+   size_t size;
+ } ATTRIBUTE_PACKED game_stream_video_packet;
+-///}
++//------------------------------------------------------------------------------
++
++//@}
+ 
+-/// @name Hardware framebuffer stream
+-///{
++//--==----==----==----==----==----==----==----==----==----==----==----==----==--
++/// \defgroup cpp_kodi_addon_game_Defs_HardwareFramebuffer 3. Hardware framebuffer stream
++/// \ingroup cpp_kodi_addon_game_Defs
++/// @brief **Hardware framebuffer stream data**
++///
++//@{
++
++//==============================================================================
++/// @brief **Hardware framebuffer type**
++///
+ typedef enum GAME_HW_CONTEXT_TYPE
+ {
++  /// @brief None context
+   GAME_HW_CONTEXT_NONE,
+ 
+-  // OpenGL 2.x. Driver can choose to use latest compatibility context
++  /// @brief OpenGL 2.x. Driver can choose to use latest compatibility context
+   GAME_HW_CONTEXT_OPENGL,
+ 
+-  // OpenGL ES 2.0
++  /// @brief OpenGL ES 2.0
+   GAME_HW_CONTEXT_OPENGLES2,
+ 
+-  // Modern desktop core GL context. Use major/minor fields to set GL version
++  /// @brief Modern desktop core GL context. Use major/minor fields to set GL version
+   GAME_HW_CONTEXT_OPENGL_CORE,
+ 
+-  // OpenGL ES 3.0
++  /// @brief OpenGL ES 3.0
+   GAME_HW_CONTEXT_OPENGLES3,
+ 
+-  // OpenGL ES 3.1+. Set major/minor fields.
++  /// @brief OpenGL ES 3.1+. Set major/minor fields.
+   GAME_HW_CONTEXT_OPENGLES_VERSION,
+ 
+-  // Vulkan
++  /// @brief Vulkan
+   GAME_HW_CONTEXT_VULKAN
+ } GAME_HW_CONTEXT_TYPE;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief **Hardware framebuffer properties**
++///
+ typedef struct game_stream_hw_framebuffer_properties
+ {
+-  /*!
+-   * The API to use.
+-   */
++  /// @brief The API to use.
++  ///
+   GAME_HW_CONTEXT_TYPE context_type;
+ 
+-  /*!
+-   * Set if render buffers should have depth component attached.
+-   *
+-   * TODO: Obsolete
+-   */
++  /// @brief Set if render buffers should have depth component attached.
++  ///
++  /// @todo: Obsolete
++  ///
+   bool depth;
+ 
+-  /*!
+-   * Set if stencil buffers should be attached. If depth and stencil are true,
+-   * a packed 24/8 buffer will be added. Only attaching stencil is invalid and
+-   * will be ignored.
+-   *
+-   * TODO: Obsolete.
+-   */
++  /// @brief Set if stencil buffers should be attached.
++  ///
++  /// If depth and stencil are true, a packed 24/8 buffer will be added.
++  /// Only attaching stencil is invalid and will be ignored.
++  ///
++  /// @todo: Obsolete.
++  ///
+   bool stencil;
+ 
+-  /*!
+-   * Use conventional bottom-left origin convention. If false, standard top-left
+-   * origin semantics are used.
+-   *
+-   * TODO: Move to GL specific interface
+-   */
++  /// @brief Use conventional bottom-left origin convention.
++  ///
++  /// If false, standard top-left origin semantics are used.
++  ///
++  /// @todo: Move to GL specific interface
++  ///
+   bool bottom_left_origin;
+ 
+-  /*!
+-   * Major version number for core GL context or GLES 3.1+.
+-   */
++  /// @brief Major version number for core GL context or GLES 3.1+.
+   unsigned int version_major;
+ 
+-  /*!
+-   * Minor version number for core GL context or GLES 3.1+.
+-   */
++  /// @brief Minor version number for core GL context or GLES 3.1+.
+   unsigned int version_minor;
+ 
+-  /*!
+-   * If this is true, the frontend will go very far to avoid resetting context
+-   * in scenarios like toggling fullscreen, etc.
+-   *
+-   * TODO: Obsolete? Maybe frontend should just always assume this...
+-   *
+-   * The reset callback might still be called in extreme situations such as if
+-   * the context is lost beyond recovery.
+-   *
+-   * For optimal stability, set this to false, and allow context to be reset at
+-   * any time.
+-   */
++  /// @brief If this is true, the frontend will go very far to avoid resetting context
++  /// in scenarios like toggling fullscreen, etc.
++  ///
++  /// @todo: Obsolete? Maybe frontend should just always assume this...
++  ///
++  /// The reset callback might still be called in extreme situations such as if
++  /// the context is lost beyond recovery.
++  ///
++  /// For optimal stability, set this to false, and allow context to be reset at
++  /// any time.
++  ///
+   bool cache_context;
+ 
+-  /*!
+-   * Creates a debug context.
+-   */
++  /// @brief Creates a debug context.
+   bool debug_context;
+ } ATTRIBUTE_PACKED game_stream_hw_framebuffer_properties;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief **Hardware framebuffer buffer**
++///
+ typedef struct game_stream_hw_framebuffer_buffer
+ {
++  /// @brief
+   uintptr_t framebuffer;
+ } ATTRIBUTE_PACKED game_stream_hw_framebuffer_buffer;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief **Hardware framebuffer packet**
++///
+ typedef struct game_stream_hw_framebuffer_packet
+ {
++  /// @brief
+   uintptr_t framebuffer;
+ } ATTRIBUTE_PACKED game_stream_hw_framebuffer_packet;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief **Hardware framebuffer process function address**
++///
+ typedef void (*game_proc_address_t)(void);
+-///}
+-
+-/// @name Software framebuffer stream
+-///{
++//------------------------------------------------------------------------------
++
++//@}
++
++//--==----==----==----==----==----==----==----==----==----==----==----==----==--
++/// \defgroup cpp_kodi_addon_game_Defs_SoftwareFramebuffer 4. Software framebuffer stream
++/// \ingroup cpp_kodi_addon_game_Defs
++/// @brief **Software framebuffer stream data**
++///
++//@{
++
++//==============================================================================
++/// @brief **Game video stream properties**
++///
++/// Used by Kodi to pass the currently required video stream settings to the addon
++///
+ typedef game_stream_video_properties game_stream_sw_framebuffer_properties;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief **Hardware framebuffer type**
++///
+ typedef struct game_stream_sw_framebuffer_buffer
+ {
+   GAME_PIXEL_FORMAT format;
+-  uint8_t* data;
++  uint8_t *data;
+   size_t size;
+ } ATTRIBUTE_PACKED game_stream_sw_framebuffer_buffer;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief **Video stream packet**
++///
++/// This packet contains video stream data passed to Kodi.
++///
+ typedef game_stream_video_packet game_stream_sw_framebuffer_packet;
+-///}
++//------------------------------------------------------------------------------
++
++//@}
+ 
+-/// @name Stream types
+-///{
++//--==----==----==----==----==----==----==----==----==----==----==----==----==--
++/// \defgroup cpp_kodi_addon_game_Defs_StreamTypes 5. Stream types
++/// \ingroup cpp_kodi_addon_game_Defs
++/// @brief **Stream types data**
++///
++//@{
++
++//==============================================================================
++/// @brief **Game stream types**
++///
+ typedef enum GAME_STREAM_TYPE
+ {
++  /// @brief Unknown
+   GAME_STREAM_UNKNOWN,
++
++  /// @brief Audio stream
+   GAME_STREAM_AUDIO,
++
++  /// @brief Video stream
+   GAME_STREAM_VIDEO,
++
++  /// @brief Hardware framebuffer
+   GAME_STREAM_HW_FRAMEBUFFER,
++
++  /// @brief Software framebuffer
+   GAME_STREAM_SW_FRAMEBUFFER,
+ } GAME_STREAM_TYPE;
+-
+-/*!
+- * \brief Immutable stream metadata
+- *
+- * This metadata is provided when the stream is opened. If any stream
+- * properties change, a new stream must be opened.
+- */
++//------------------------------------------------------------------------------
++
++//==============================================================================
++/// @brief **Immutable stream metadata**
++///
++/// This metadata is provided when the stream is opened. If any stream
++/// properties change, a new stream must be opened.
++///
+ typedef struct game_stream_properties
+ {
++  /// @brief
+   GAME_STREAM_TYPE type;
+-  union {
++  union
++  {
++    /// @brief
+     game_stream_audio_properties audio;
++
++    /// @brief
+     game_stream_video_properties video;
++
++    /// @brief
+     game_stream_hw_framebuffer_properties hw_framebuffer;
++
++    /// @brief
+     game_stream_sw_framebuffer_properties sw_framebuffer;
+   };
+ } ATTRIBUTE_PACKED game_stream_properties;
++//------------------------------------------------------------------------------
+ 
+-/*!
+- * \brief Stream buffers for hardware rendering and zero-copy support
+- */
++//==============================================================================
++/// @brief **Stream buffers for hardware rendering and zero-copy support**
++///
+ typedef struct game_stream_buffer
+ {
++  /// @brief
+   GAME_STREAM_TYPE type;
+-  union {
++  union
++  {
++    /// @brief
+     game_stream_hw_framebuffer_buffer hw_framebuffer;
++
++    /// @brief
+     game_stream_sw_framebuffer_buffer sw_framebuffer;
+   };
+ } ATTRIBUTE_PACKED game_stream_buffer;
+-
+-/*!
+- * \brief Stream packet and ephemeral metadata
+- *
+- * This packet contains stream data and accompanying metadata. The metadata
+- * is ephemeral, meaning it only applies to the current packet and can change
+- * from packet to packet in the same stream.
+- */
++//------------------------------------------------------------------------------
++
++//==============================================================================
++/// @brief **Stream packet and ephemeral metadata**
++///
++/// This packet contains stream data and accompanying metadata. The metadata
++/// is ephemeral, meaning it only applies to the current packet and can change
++/// from packet to packet in the same stream.
++///
+ typedef struct game_stream_packet
+ {
++  /// @brief
+   GAME_STREAM_TYPE type;
+-  union {
++  union
++  {
++    /// @brief
+     game_stream_audio_packet audio;
++
++    /// @brief
+     game_stream_video_packet video;
++
++    /// @brief
+     game_stream_hw_framebuffer_packet hw_framebuffer;
++
++    /// @brief
+     game_stream_sw_framebuffer_packet sw_framebuffer;
+   };
+ } ATTRIBUTE_PACKED game_stream_packet;
+-///}
++//------------------------------------------------------------------------------
++
++//@}
+ 
+-/// @name Game types
+-///{
++//--==----==----==----==----==----==----==----==----==----==----==----==----==--
++/// \defgroup cpp_kodi_addon_game_Defs_GameTypes 6. Game types
++/// \ingroup cpp_kodi_addon_game_Defs
++/// @brief **Game types data**
++///
++//@{
+ 
+-/*! Returned from game_get_region() */
++//==============================================================================
++/// @brief **Game reguin definition**
++///
++/// Returned from game_get_region()
+ typedef enum GAME_REGION
+ {
++  /// @brief Game region unknown
+   GAME_REGION_UNKNOWN,
++
++  /// @brief Game region NTSC
+   GAME_REGION_NTSC,
++
++  /// @brief Game region PAL
+   GAME_REGION_PAL,
+ } GAME_REGION;
++//------------------------------------------------------------------------------
+ 
+-/*!
+- * Special game types passed into game_load_game_special(). Only used when
+- * multiple ROMs are required.
+- */
++//==============================================================================
++/// @brief **Special game types passed into game_load_game_special().**
++///
++/// @remark Only used when multiple ROMs are required.
++///
+ typedef enum SPECIAL_GAME_TYPE
+ {
++  /// @brief Game Type BSX
+   SPECIAL_GAME_TYPE_BSX,
++
++  /// @brief Game Type BSX slotted
+   SPECIAL_GAME_TYPE_BSX_SLOTTED,
++
++  /// @brief Game Type sufami turbo
+   SPECIAL_GAME_TYPE_SUFAMI_TURBO,
++
++  /// @brief Game Type super game boy
+   SPECIAL_GAME_TYPE_SUPER_GAME_BOY,
+ } SPECIAL_GAME_TYPE;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief **Game Memory**
++///
+ typedef enum GAME_MEMORY
+ {
+-  /*!
+-   * Passed to game_get_memory_data/size(). If the memory type doesn't apply
+-   * to the implementation NULL/0 can be returned.
+-   */
++  /// @brief Passed to game_get_memory_data/size(). If the memory type doesn't apply
++  /// to the implementation NULL/0 can be returned.
+   GAME_MEMORY_MASK = 0xff,
+ 
+-  /*!
+-   * Regular save ram. This ram is usually found on a game cartridge, backed
+-   * up by a battery. If save game data is too complex for a single memory
+-   * buffer, the SYSTEM_DIRECTORY environment callback can be used.
+-   */
++  /// @brief Regular save ram.
++  ///
++  /// This ram is usually found on a game cartridge, backed
++  /// up by a battery. If save game data is too complex for a single memory
++  /// buffer, the SYSTEM_DIRECTORY environment callback can be used.
+   GAME_MEMORY_SAVE_RAM = 0,
+ 
+-  /*!
+-   * Some games have a built-in clock to keep track of time. This memory is
+-   * usually just a couple of bytes to keep track of time.
+-   */
++  /// @brief Some games have a built-in clock to keep track of time.
++  ///
++  /// This memory is usually just a couple of bytes to keep track of time.
+   GAME_MEMORY_RTC = 1,
+ 
+-  /*! System ram lets a frontend peek into a game systems main RAM */
++  /// @brief System ram lets a frontend peek into a game systems main RAM
+   GAME_MEMORY_SYSTEM_RAM = 2,
+ 
+-  /*! Video ram lets a frontend peek into a game systems video RAM (VRAM) */
++  /// @brief Video ram lets a frontend peek into a game systems video RAM (VRAM)
+   GAME_MEMORY_VIDEO_RAM = 3,
+ 
+-  /*! Special memory types */
++  /// @brief Special memory type
+   GAME_MEMORY_SNES_BSX_RAM = ((1 << 8) | GAME_MEMORY_SAVE_RAM),
++
++  /// @brief Special memory type
+   GAME_MEMORY_SNES_BSX_PRAM = ((2 << 8) | GAME_MEMORY_SAVE_RAM),
++
++  /// @brief Special memory type
+   GAME_MEMORY_SNES_SUFAMI_TURBO_A_RAM = ((3 << 8) | GAME_MEMORY_SAVE_RAM),
++
++  /// @brief Special memory type
+   GAME_MEMORY_SNES_SUFAMI_TURBO_B_RAM = ((4 << 8) | GAME_MEMORY_SAVE_RAM),
++
++  /// @brief Special memory type
+   GAME_MEMORY_SNES_GAME_BOY_RAM = ((5 << 8) | GAME_MEMORY_SAVE_RAM),
++
++  /// @brief Special memory type
+   GAME_MEMORY_SNES_GAME_BOY_RTC = ((6 << 8) | GAME_MEMORY_RTC),
+ } GAME_MEMORY;
++//------------------------------------------------------------------------------
+ 
+-/*! ID values for SIMD CPU features */
++//==============================================================================
++/// @brief **ID values for SIMD CPU features**
+ typedef enum GAME_SIMD
+ {
++  /// @brief SIMD CPU SSE
+   GAME_SIMD_SSE = (1 << 0),
++
++  /// @brief SIMD CPU SSE2
+   GAME_SIMD_SSE2 = (1 << 1),
++
++  /// @brief SIMD CPU VMX
+   GAME_SIMD_VMX = (1 << 2),
++
++  /// @brief SIMD CPU VMX128
+   GAME_SIMD_VMX128 = (1 << 3),
++
++  /// @brief SIMD CPU AVX
+   GAME_SIMD_AVX = (1 << 4),
++
++  /// @brief SIMD CPU NEON
+   GAME_SIMD_NEON = (1 << 5),
++
++  /// @brief SIMD CPU SSE3
+   GAME_SIMD_SSE3 = (1 << 6),
++
++  /// @brief SIMD CPU SSSE3
+   GAME_SIMD_SSSE3 = (1 << 7),
++
++  /// @brief SIMD CPU MMX
+   GAME_SIMD_MMX = (1 << 8),
++
++  /// @brief SIMD CPU MMXEXT
+   GAME_SIMD_MMXEXT = (1 << 9),
++
++  /// @brief SIMD CPU SSE4
+   GAME_SIMD_SSE4 = (1 << 10),
++
++  /// @brief SIMD CPU SSE42
+   GAME_SIMD_SSE42 = (1 << 11),
++
++  /// @brief SIMD CPU AVX2
+   GAME_SIMD_AVX2 = (1 << 12),
++
++  /// @brief SIMD CPU VFPU
+   GAME_SIMD_VFPU = (1 << 13),
+ } GAME_SIMD;
+-///}
++//------------------------------------------------------------------------------
++
++//@}
+ 
+-/// @name Input types
+-///{
++//--==----==----==----==----==----==----==----==----==----==----==----==----==--
++/// \defgroup cpp_kodi_addon_game_Defs_InputTypes 7. Input types
++/// \ingroup cpp_kodi_addon_game_Defs
++/// @brief **Input types**
++///
++//@{
+ 
++//==============================================================================
++/// @brief
+ typedef enum GAME_INPUT_EVENT_SOURCE
+ {
++  /// @brief
+   GAME_INPUT_EVENT_DIGITAL_BUTTON,
++
++  /// @brief
+   GAME_INPUT_EVENT_ANALOG_BUTTON,
++
++  /// @brief
+   GAME_INPUT_EVENT_AXIS,
++
++  /// @brief
+   GAME_INPUT_EVENT_ANALOG_STICK,
++
++  /// @brief
+   GAME_INPUT_EVENT_ACCELEROMETER,
++
++  /// @brief
+   GAME_INPUT_EVENT_KEY,
++
++  /// @brief
+   GAME_INPUT_EVENT_RELATIVE_POINTER,
++
++  /// @brief
+   GAME_INPUT_EVENT_ABSOLUTE_POINTER,
++
++  /// @brief
+   GAME_INPUT_EVENT_MOTOR,
+ } GAME_INPUT_EVENT_SOURCE;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief
+ typedef enum GAME_KEY_MOD
+ {
++  /// @brief
+   GAME_KEY_MOD_NONE = 0x0000,
+ 
++  /// @brief
+   GAME_KEY_MOD_SHIFT = 0x0001,
++
++  /// @brief
+   GAME_KEY_MOD_CTRL = 0x0002,
++
++  /// @brief
+   GAME_KEY_MOD_ALT = 0x0004,
++
++  /// @brief
+   GAME_KEY_MOD_META = 0x0008,
++
++  /// @brief
+   GAME_KEY_MOD_SUPER = 0x0010,
+ 
++  /// @brief
+   GAME_KEY_MOD_NUMLOCK = 0x0100,
++
++  /// @brief
+   GAME_KEY_MOD_CAPSLOCK = 0x0200,
++
++  /// @brief
+   GAME_KEY_MOD_SCROLLOCK = 0x0400,
+ } GAME_KEY_MOD;
++//------------------------------------------------------------------------------
+ 
+-/*!
+- * \brief Type of port on the virtual game console
+- */
++//==============================================================================
++/// @brief Type of port on the virtual game console
+ typedef enum GAME_PORT_TYPE
+ {
++  /// @brief Game port unknown
+   GAME_PORT_UNKNOWN,
++
++  /// @brief Game port Keyboard
+   GAME_PORT_KEYBOARD,
++
++  /// @brief Game port mouse
+   GAME_PORT_MOUSE,
++
++  /// @brief Game port controller
+   GAME_PORT_CONTROLLER,
+ } GAME_PORT_TYPE;
++//------------------------------------------------------------------------------
+ 
++/*! \cond PRIVATE */
++/*!
++  * @brief "C" Game add-on controller layout.
++  *
++  * Structure used to interface in "C" between Kodi and Addon.
++  *
++  * See @ref AddonGameControllerLayout for description of values.
++  */
+ typedef struct game_controller_layout
+ {
+   char* controller_id;
+@@ -444,7 +835,10 @@ typedef struct game_controller_layout
+   char** motors;
+   unsigned int motor_count;
+ } ATTRIBUTE_PACKED game_controller_layout;
++ /*! \endcond */
+ 
++//==============================================================================
++/// @brief
+ struct AddonGameControllerLayout
+ {
+   /*! \cond PRIVATE */
+@@ -502,138 +896,255 @@ struct AddonGameControllerLayout
+   /// @brief
+   std::vector<std::string> motors;
+ };
++//------------------------------------------------------------------------------
+ 
+ struct game_input_port;
+ 
+-/*!
+- * \brief Device that can provide input
+- */
++//==============================================================================
++/// @brief Device that can provide input
+ typedef struct game_input_device
+ {
+-  const char* controller_id; // ID used in the Kodi controller API
++  /// @brief ID used in the Kodi controller API
++  const char* controller_id;
++
++  /// @brief
+   const char* port_address;
++
++  /// @brief
+   game_input_port* available_ports;
++
++  /// @brief
+   unsigned int port_count;
+ } ATTRIBUTE_PACKED game_input_device;
+-
+-/*!
+- * \brief Port that can provide input
+- *
+- * Ports can accept multiple devices and devices can have multiple ports, so
+- * the topology of possible configurations is a tree structure of alternating
+- * port and device nodes.
+- */
++//------------------------------------------------------------------------------
++
++//==============================================================================
++/// @brief Port that can provide input
++///
++/// Ports can accept multiple devices and devices can have multiple ports, so
++/// the topology of possible configurations is a tree structure of alternating
++/// port and device nodes.
++///
+ typedef struct game_input_port
+ {
++  /// @brief
+   GAME_PORT_TYPE type;
+-  const char* port_id; // Required for GAME_PORT_CONTROLLER type
++
++  /// @brief Required for GAME_PORT_CONTROLLER type
++  const char* port_id;
++
++  /// @brief
+   game_input_device* accepted_devices;
++
++  /// @brief
+   unsigned int device_count;
+ } ATTRIBUTE_PACKED game_input_port;
+-
+-/*!
+- * \brief The input topology is the possible ways to connect input devices
+- *
+- * This represents the logical topology, which is the possible connections that
+- * the game client's logic can handle. It is strictly a subset of the physical
+- * topology. Loops are not allowed.
+- */
++//------------------------------------------------------------------------------
++
++//==============================================================================
++/// @brief The input topology is the possible ways to connect input devices
++///
++/// This represents the logical topology, which is the possible connections that
++/// the game client's logic can handle. It is strictly a subset of the physical
++/// topology. Loops are not allowed.
++///
+ typedef struct game_input_topology
+ {
+-  game_input_port* ports; //! The list of ports on the virtual game console
+-  unsigned int port_count; //! The number of ports
+-  int player_limit; //! A limit on the number of input-providing devices, or -1 for no limit
++  /// @brief The list of ports on the virtual game console
++  game_input_port *ports;
++
++  /// @brief The number of ports
++  unsigned int port_count;
++
++  /// @brief A limit on the number of input-providing devices, or -1 for no limit
++  int player_limit;
+ } ATTRIBUTE_PACKED game_input_topology;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief
+ typedef struct game_digital_button_event
+ {
++  /// @brief
+   bool pressed;
+ } ATTRIBUTE_PACKED game_digital_button_event;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief
+ typedef struct game_analog_button_event
+ {
++  /// @brief
+   float magnitude;
+ } ATTRIBUTE_PACKED game_analog_button_event;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief
+ typedef struct game_axis_event
+ {
++  /// @brief
+   float position;
+ } ATTRIBUTE_PACKED game_axis_event;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief
+ typedef struct game_analog_stick_event
+ {
++  /// @brief
+   float x;
++
++  /// @brief
+   float y;
+ } ATTRIBUTE_PACKED game_analog_stick_event;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief
+ typedef struct game_accelerometer_event
+ {
++  /// @brief
+   float x;
++
++  /// @brief
+   float y;
++
++  /// @brief
+   float z;
+ } ATTRIBUTE_PACKED game_accelerometer_event;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief
+ typedef struct game_key_event
+ {
++  /// @brief
+   bool pressed;
+ 
+-  /*!
+-   * If the keypress generates a printing character, the unicode value
+-   * contains the character generated. If the key is a non-printing character,
+-   * e.g. a function or arrow key, the unicode value is zero.
+-   */
++  /// @brief If the keypress generates a printing character
++  ///
++  /// The unicode value contains the character generated. If the key is a
++  /// non-printing character, e.g. a function or arrow key, the unicode value
++  /// is zero.
+   uint32_t unicode;
+ 
++  /// @brief
+   GAME_KEY_MOD modifiers;
+ } ATTRIBUTE_PACKED game_key_event;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief
+ typedef struct game_rel_pointer_event
+ {
++  /// @brief
+   int x;
++
++  /// @brief
+   int y;
+ } ATTRIBUTE_PACKED game_rel_pointer_event;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief
+ typedef struct game_abs_pointer_event
+ {
++  /// @brief
+   bool pressed;
++
++  /// @brief
+   float x;
++
++  /// @brief
+   float y;
+ } ATTRIBUTE_PACKED game_abs_pointer_event;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief
+ typedef struct game_motor_event
+ {
++  /// @brief
+   float magnitude;
+ } ATTRIBUTE_PACKED game_motor_event;
++//------------------------------------------------------------------------------
+ 
++//==============================================================================
++/// @brief
+ typedef struct game_input_event
+ {
++  /// @brief
+   GAME_INPUT_EVENT_SOURCE type;
++
++  /// @brief
+   const char* controller_id;
++
++  /// @brief
+   GAME_PORT_TYPE port_type;
++
++  /// @brief
+   const char* port_address;
++
++  /// @brief
+   const char* feature_name;
+   union {
++    /// @brief
+     struct game_digital_button_event digital_button;
++
++    /// @brief
+     struct game_analog_button_event analog_button;
++
++    /// @brief
+     struct game_axis_event axis;
++
++    /// @brief
+     struct game_analog_stick_event analog_stick;
++
++    /// @brief
+     struct game_accelerometer_event accelerometer;
++
++    /// @brief
+     struct game_key_event key;
++
++    /// @brief
+     struct game_rel_pointer_event rel_pointer;
++
++    /// @brief
+     struct game_abs_pointer_event abs_pointer;
++
++    /// @brief
+     struct game_motor_event motor;
+   };
+ } ATTRIBUTE_PACKED game_input_event;
+-///}
++//------------------------------------------------------------------------------
++
++//@}
+ 
+-/// @name Environment types
+-///{
++//--==----==----==----==----==----==----==----==----==----==----==----==----==--
++/// \defgroup cpp_kodi_addon_game_Defs_EnvironmentTypes 8. Environment types
++/// \ingroup cpp_kodi_addon_game_Defs
++/// @brief **Environment types**
++///
++//@{
++
++//==============================================================================
++/// @brief Game system timing
++///
+ struct game_system_timing
+ {
+-  double fps; // FPS of video content.
+-  double sample_rate; // Sampling rate of audio.
++  /// @brief FPS of video content.
++  double fps;
++
++  /// @brief Sampling rate of audio.
++  double sample_rate;
+ };
+-///}
++//------------------------------------------------------------------------------
++
++//@}
++
++
++//--==----==----==----==----==----==----==----==----==----==----==----==----==--
+ 
+ /*!
+  * @brief Game properties
+@@ -774,9 +1285,63 @@ namespace kodi
+ namespace addon
+ {
+ 
++//==============================================================================
++///
++/// \addtogroup cpp_kodi_addon_game
++/// @brief \cpp_class{ kodi::addon::CInstanceGame }
++/// **Game add-on instance**
++///
++/// This class is created at addon by Kodi.
++///
++//------------------------------------------------------------------------------
+ class CInstanceGame : public IAddonInstance
+ {
+ public:
++  //============================================================================
++  ///
++  /// @defgroup cpp_kodi_addon_game_Base 1. Basic functions
++  /// @ingroup cpp_kodi_addon_game
++  /// @brief **Functions to manage the addon and get basic information about it**
++  ///
++  ///
++  //@{
++
++  //============================================================================
++  ///
++  /// @brief Game class constructor
++  ///
++  /// Used by an add-on that only supports only Game and only in one instance.
++  ///
++  /// This class is created at addon by Kodi.
++  ///
++  ///
++  /// --------------------------------------------------------------------------
++  ///
++  ///
++  /// **Here's example about the use of this:**
++  /// ~~~~~~~~~~~~~{.cpp}
++  /// #include <kodi/addon-instance/Game.h>
++  /// ...
++  ///
++  /// class ATTRIBUTE_HIDDEN CGameExample
++  ///   : public kodi::addon::CAddonBase,
++  ///     public kodi::addon::CInstanceGame
++  /// {
++  /// public:
++  ///   CGameExample()
++  ///   {
++  ///   }
++  ///
++  ///   virtual ~CGameExample();
++  ///   {
++  ///   }
++  ///
++  ///   ...
++  /// };
++  ///
++  /// ADDONCREATOR(CGameExample)
++  /// ~~~~~~~~~~~~~
++  ///
+   CInstanceGame()
+     : IAddonInstance(ADDON_INSTANCE_GAME)
+   {
+@@ -787,148 +1352,283 @@ class CInstanceGame : public IAddonInstance
+     SetAddonStruct(CAddonBase::m_interface->firstKodiInstance);
+     CAddonBase::m_interface->globalSingleInstance = this;
+   }
++  //----------------------------------------------------------------------------
+ 
++  //============================================================================
++  ///
++  /// @brief Destructor
++  ///
+   ~CInstanceGame() override = default;
+-
+-  // --- Game operations ---------------------------------------------------------
+-
+-  virtual GAME_ERROR LoadGame(const std::string& url)
+-  {
+-    return GAME_ERROR_NOT_IMPLEMENTED;
+-  }
+-
+-  virtual GAME_ERROR LoadGameSpecial(SPECIAL_GAME_TYPE type, const std::vector<std::string>& urls)
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief **Callback to Kodi Function**<br>The path of the game client being loaded.
++  ///
++  /// @return the used game client Dll path
++  ///
++  /// @remarks Only called from addon itself
++  ///
++  std::string GameClientDllPath() const
+   {
+-    return GAME_ERROR_NOT_IMPLEMENTED;
++    return m_instanceData->props.game_client_dll_path;
+   }
+-
+-  virtual GAME_ERROR LoadStandalone()
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief **Callback to Kodi Function**<br>Paths to proxy DLLs used to load the game client.
++  ///
++  /// @param[out] paths vector list to store available dll paths
++  /// @return true if success and dll paths present
++  ///
++  /// @remarks Only called from addon itself
++  ///
++  bool ProxyDllPaths(std::vector<std::string>& paths)
+   {
+-    return GAME_ERROR_NOT_IMPLEMENTED;
++    for (unsigned int i = 0; i < m_instanceData->props.proxy_dll_count; ++i)
++    {
++      if (m_instanceData->props.proxy_dll_paths[i] != nullptr)
++        paths.push_back(m_instanceData->props.proxy_dll_paths[i]);
++    }
++    return !paths.empty();
+   }
+-
+-  virtual GAME_ERROR UnloadGame()
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief **Callback to Kodi Function**<br>The "system" directories of the frontend
++  ///
++  /// These directories can be used to store system-specific ROMs such as
++  /// BIOSes, configuration data, etc.
++  ///
++  /// @return the used resource directory
++  ///
++  /// @remarks Only called from addon itself
++  ///
++  bool ResourceDirectories(std::vector<std::string>& dirs)
+   {
+-    return GAME_ERROR_NOT_IMPLEMENTED;
++    for (unsigned int i = 0; i < m_instanceData->props.resource_directory_count; ++i)
++    {
++      if (m_instanceData->props.resource_directories[i] != nullptr)
++        dirs.push_back(m_instanceData->props.resource_directories[i]);
++    }
++    return !dirs.empty();
+   }
+-
+-  virtual GAME_ERROR GetGameTiming(game_system_timing& timing_info)
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief **Callback to Kodi Function**<br>The writable directory of the frontend
++  ///
++  /// This directory can be used to store SRAM, memory cards, high scores,
++  /// etc, if the game client cannot use the regular memory interface,
++  /// GetMemoryData().
++  ///
++  /// @return the used profile directory
++  ///
++  /// @remarks Only called from addon itself
++  ///
++  std::string ProfileDirectory() const
+   {
+-    return GAME_ERROR_NOT_IMPLEMENTED;
++    return m_instanceData->props.profile_directory;
+   }
+-
+-  virtual GAME_REGION GetRegion()
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief **Callback to Kodi Function**<br>The value of the <supports_vfs> property from addon.xml
++  ///
++  /// @return true if VFS is supported
++  ///
++  /// @remarks Only called from addon itself
++  ///
++  bool SupportsVFS() const
+   {
+-    return GAME_REGION_UNKNOWN;
++    return m_instanceData->props.supports_vfs;
+   }
+-
+-  virtual bool RequiresGameLoop()
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief **Callback to Kodi Function**<br>The extensions in the <extensions> property from addon.xml
++  ///
++  /// @param[out] extensions vector list to store available extension
++  /// @return true if success and extensions present
++  ///
++  /// @remarks Only called from addon itself
++  ///
++  bool Extensions(std::vector<std::string>& extensions)
+   {
+-    return false;
++    for (unsigned int i = 0; i < m_instanceData->props.extension_count; ++i)
++    {
++      if (m_instanceData->props.extensions[i] != nullptr)
++        extensions.push_back(m_instanceData->props.extensions[i]);
++    }
++    return !extensions.empty();
+   }
+-
+-  virtual GAME_ERROR RunFrame()
++  //----------------------------------------------------------------------------
++
++  //@}
++
++//--==----==----==----==----==----==----==----==----==----==----==----==----==--
++
++  //============================================================================
++  ///
++  /// @defgroup cpp_kodi_addon_game_Operation 2. Game operations
++  /// @ingroup cpp_kodi_addon_game
++  /// @brief **Game operations**
++  ///
++  /// These are mandatory functions for using this addon to get the available
++  /// channels.
++  ///
++  //@{
++
++  //============================================================================
++  ///
++  /// @brief Load a game
++  ///
++  /// @param[in] url The URL to load
++  /// @return the error, or @ref GAME_ERROR_NO_ERROR if the game was loaded
++  ///
++  virtual GAME_ERROR LoadGame(const std::string& url)
+   {
+     return GAME_ERROR_NOT_IMPLEMENTED;
+   }
+-
+-  virtual GAME_ERROR Reset()
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief Load a game that requires multiple files
++  ///
++  /// @param[in] type The game type
++  /// @param[in] urls An array of urls
++  /// @return the error, or @ref GAME_ERROR_NO_ERROR if the game was loaded
++  ///
++  virtual GAME_ERROR LoadGameSpecial(SPECIAL_GAME_TYPE type, const std::vector<std::string>& urls)
+   {
+     return GAME_ERROR_NOT_IMPLEMENTED;
+   }
+-
+-  // --- Hardware rendering operations -------------------------------------------
+-
+-  virtual GAME_ERROR HwContextReset()
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief Begin playing without a game file
++  ///
++  /// If the add-on supports standalone mode, it must add the <supports_standalone>
++  /// tag to the extension point in addon.xml:
++  ///
++  ///     <supports_no_game>false</supports_no_game>
++  ///
++  /// @return the error, or @ref GAME_ERROR_NO_ERROR if the game add-on was loaded
++  ///
++  virtual GAME_ERROR LoadStandalone()
+   {
+     return GAME_ERROR_NOT_IMPLEMENTED;
+   }
+-
+-  virtual GAME_ERROR HwContextDestroy()
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief Unload the current game
++  ///
++  /// Unloads a currently loaded game
++  ///
++  /// @return the error, or @ref GAME_ERROR_NO_ERROR if the game was unloaded
++  ///
++  virtual GAME_ERROR UnloadGame()
+   {
+     return GAME_ERROR_NOT_IMPLEMENTED;
+   }
+-
+-  // --- Input operations --------------------------------------------------------
+-
+-  virtual bool HasFeature(const std::string& controller_id, const std::string& feature_name)
+-  {
+-    return false;
+-  }
+-
+-  virtual game_input_topology* GetTopology()
+-  {
+-    return nullptr;
+-  }
+-
+-  virtual void FreeTopology(game_input_topology* topology)
+-  {
+-  }
+-
+-  virtual void SetControllerLayouts(const std::vector<AddonGameControllerLayout>& controllers)
+-  {
+-  }
+-
+-  virtual bool EnableKeyboard(bool enable, const std::string& controller_id)
+-  {
+-    return false;
+-  }
+-
+-  virtual bool EnableMouse(bool enable, const std::string& controller_id)
+-  {
+-    return false;
+-  }
+-
+-  virtual bool ConnectController(bool connect,
+-                                 const std::string& port_address,
+-                                 const std::string& controller_id)
+-  {
+-    return false;
+-  }
+-
+-  virtual bool InputEvent(const game_input_event& event)
+-  {
+-    return false;
+-  }
+-
+-  // --- Serialization operations ------------------------------------------------
+-
+-  virtual size_t SerializeSize()
+-  {
+-    return 0;
+-  }
+-
+-  virtual GAME_ERROR Serialize(uint8_t* data, size_t size)
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief Get timing information about the loaded game
++  ///
++  /// @param[out] timing_info The info structure to fill
++  ///
++  /// @return the error, or @ref GAME_ERROR_NO_ERROR if info was filled
++  ///
++  virtual GAME_ERROR GetGameTiming(game_system_timing& timing_info)
+   {
+     return GAME_ERROR_NOT_IMPLEMENTED;
+   }
+-
+-  virtual GAME_ERROR Deserialize(const uint8_t* data, size_t size)
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief Get region of the loaded game
++  ///
++  /// @return the region, or @ref GAME_REGION_UNKNOWN if unknown or no game is loaded
++  ///
++  virtual GAME_REGION GetRegion()
+   {
+-    return GAME_ERROR_NOT_IMPLEMENTED;
++    return GAME_REGION_UNKNOWN;
+   }
+-
+-  // --- Cheat operations --------------------------------------------------------
+-
+-  virtual GAME_ERROR CheatReset()
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief Return true if the client requires the frontend to provide a game loop
++  ///
++  /// The game loop is a thread that calls RunFrame() in a loop at a rate
++  /// determined by the playback speed and the client's FPS.
++  ///
++  /// @return true if the frontend should provide a game loop, false otherwise
++  ///
++  virtual bool RequiresGameLoop()
+   {
+-    return GAME_ERROR_NOT_IMPLEMENTED;
++    return false;
+   }
+-
+-  virtual GAME_ERROR GetMemory(GAME_MEMORY type, uint8_t*& data, size_t& size)
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief Run a single frame for add-ons that use a game loop
++  ///
++  /// @return the error, or @ref GAME_ERROR_NO_ERROR if there was no error
++  ///
++  virtual GAME_ERROR RunFrame()
+   {
+     return GAME_ERROR_NOT_IMPLEMENTED;
+   }
+-
+-  virtual GAME_ERROR SetCheat(unsigned int index, bool enabled, const std::string& code)
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief Reset the current game
++  ///
++  /// @return the error, or @ref GAME_ERROR_NO_ERROR if the game was reset
++  ///
++  virtual GAME_ERROR Reset()
+   {
+     return GAME_ERROR_NOT_IMPLEMENTED;
+   }
+-
+-  // --- Game callbacks --------------------------------------------------------
+-
++  //----------------------------------------------------------------------------
++
++  //==========================================================================
++  ///
++  /// @brief **Callback to Kodi Function**<br>Requests the frontend to stop the current game
++  ///
++  /// @remarks Only called from addon itself
++  ///
+   void CloseGame(void) { m_instanceData->toKodi.CloseGame(m_instanceData->toKodi.kodiInstance); }
+-
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @defgroup cpp_kodi_addon_game_Operation_CStream Class: CStream
++  /// @ingroup cpp_kodi_addon_game_Operation
++  /// @brief \cpp_class{ kodi::addon::CInstanceGame::CStream }
++  /// **Game stream handler**
++  ///
++  /// This class will be integrated into the addon, which can then open it if
++  /// necessary for the processing of an audio or video stream.
++  ///
++  ///
++  /// @note Callback to Kodi class
++  //@{
+   class CStream
+   {
+   public:
+@@ -944,6 +1644,16 @@ class CInstanceGame : public IAddonInstance
+       Close();
+     }
+ 
++    //==========================================================================
++    ///
++    /// @ingroup cpp_kodi_addon_game_Operation_CStream
++    /// @brief Create a stream for gameplay data
++    ///
++    /// @param[in] properties The stream properties
++    /// @return A stream handle, or `nullptr` on failure
++    ///
++    /// @remarks Only called from addon itself
++    ///
+     bool Open(const game_stream_properties& properties)
+     {
+       if (!CAddonBase::m_interface->globalSingleInstance)
+@@ -961,7 +1671,15 @@ class CInstanceGame : public IAddonInstance
+       m_handle = cb.OpenStream(cb.kodiInstance, &properties);
+       return m_handle != nullptr;
+     }
+-
++    //--------------------------------------------------------------------------
++
++    //==========================================================================
++    ///
++    /// @ingroup cpp_kodi_addon_game_Operation_CStream
++    /// @brief Free the specified stream
++    ///
++    /// @remarks Only called from addon itself
++    ///
+     void Close()
+     {
+       if (!m_handle || !CAddonBase::m_interface->globalSingleInstance)
+@@ -973,7 +1691,22 @@ class CInstanceGame : public IAddonInstance
+       cb.CloseStream(cb.kodiInstance, m_handle);
+       m_handle = nullptr;
+     }
+-
++    //--------------------------------------------------------------------------
++
++    //==========================================================================
++    ///
++    /// @ingroup cpp_kodi_addon_game_Operation_CStream
++    /// @brief Get a buffer for zero-copy stream data
++    ///
++    /// @param[in] width The framebuffer width, or 0 for no width specified
++    /// @param[in] height The framebuffer height, or 0 for no height specified
++    /// @param[out] buffer The buffer, or unmodified if false is returned
++    /// @return True if buffer was set, false otherwise
++    ///
++    /// @note If this returns true, buffer must be freed using \ref ReleaseBuffer().
++    ///
++    /// @remarks Only called from addon itself
++    ///
+     bool GetBuffer(unsigned int width, unsigned int height, game_stream_buffer& buffer)
+     {
+       if (!m_handle || !CAddonBase::m_interface->globalSingleInstance)
+@@ -984,7 +1717,17 @@ class CInstanceGame : public IAddonInstance
+               ->m_instanceData->toKodi;
+       return cb.GetStreamBuffer(cb.kodiInstance, m_handle, width, height, &buffer);
+     }
+-
++    //--------------------------------------------------------------------------
++
++    //==========================================================================
++    ///
++    /// @ingroup cpp_kodi_addon_game_Operation_CStream
++    /// @brief Add a data packet to a stream
++    ///
++    /// @param[in] packet The data packet
++    ///
++    /// @remarks Only called from addon itself
++    ///
+     void AddData(const game_stream_packet& packet)
+     {
+       if (!m_handle || !CAddonBase::m_interface->globalSingleInstance)
+@@ -995,7 +1738,17 @@ class CInstanceGame : public IAddonInstance
+               ->m_instanceData->toKodi;
+       cb.AddStreamData(cb.kodiInstance, m_handle, &packet);
+     }
+-
++    //--------------------------------------------------------------------------
++
++    //==========================================================================
++    ///
++    /// @ingroup cpp_kodi_addon_game_Operation_CStream
++    /// @brief Free an allocated buffer
++    ///
++    /// @param[in] buffer The buffer returned from GetStreamBuffer()
++    ///
++    /// @remarks Only called from addon itself
++    ///
+     void ReleaseBuffer(game_stream_buffer& buffer)
+     {
+       if (!m_handle || !CAddonBase::m_interface->globalSingleInstance)
+@@ -1006,73 +1759,379 @@ class CInstanceGame : public IAddonInstance
+               ->m_instanceData->toKodi;
+       cb.ReleaseStreamBuffer(cb.kodiInstance, m_handle, &buffer);
+     }
+-
++    //--------------------------------------------------------------------------
++
++    //==========================================================================
++    ///
++    /// @ingroup cpp_kodi_addon_game_Operation_CStream
++    /// @brief To check stream open was OK, e.g. after use of constructor
++    ///
++    /// @return true if stream was successfully opened
++    ///
++    /// @remarks Only called from addon itself
++    ///
+     bool IsOpen() const { return m_handle != nullptr; }
++    //--------------------------------------------------------------------------
+ 
+   private:
+     void* m_handle = nullptr;
+   };
++  //@}
++
++  //@}
++
++//--==----==----==----==----==----==----==----==----==----==----==----==----==--
++
++  //============================================================================
++  ///
++  /// @defgroup cpp_kodi_addon_game_HardwareRendering 3. Hardware rendering operations
++  /// @ingroup cpp_kodi_addon_game
++  /// @brief **Hardware rendering operations**
++  ///
++  //@{
++
++  //============================================================================
++  ///
++  /// @brief Invalidates the current HW context and reinitializes GPU resources
++  ///
++  /// Any GL state is lost, and must not be deinitialized explicitly.
++  ///
++  /// @return the error, or @ref GAME_ERROR_NO_ERROR if the HW context was reset
++  ///
++  virtual GAME_ERROR HwContextReset()
++  {
++    return GAME_ERROR_NOT_IMPLEMENTED;
++  }
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief Called before the context is destroyed
++  ///
++  /// Resources can be deinitialized at this step.
++  ///
++  /// @return the error, or @ref GAME_ERROR_NO_ERROR if the HW context was destroyed
++  ///
++  virtual GAME_ERROR HwContextDestroy()
++  {
++    return GAME_ERROR_NOT_IMPLEMENTED;
++  }
+ 
+-  // -- Hardware rendering callbacks -------------------------------------------
+-
++  //============================================================================
++  ///
++  /// @brief **Callback to Kodi Function**<br>Get a symbol from the hardware context
++  ///
++  /// @param[in] sym The symbol's name
++  ///
++  /// @return A function pointer for the specified symbol
++  ///
++  /// @remarks Only called from addon itself
++  ///
+   game_proc_address_t HwGetProcAddress(const char* sym)
+   {
+     return m_instanceData->toKodi.HwGetProcAddress(m_instanceData->toKodi.kodiInstance, sym);
+   }
+-
+-  // --- Input callbacks -------------------------------------------------------
+-
++  //----------------------------------------------------------------------------
++
++  //@}
++
++//--==----==----==----==----==----==----==----==----==----==----==----==----==--
++
++  //============================================================================
++  ///
++  /// @defgroup cpp_kodi_addon_game_InputOperations 4. Input operations
++  /// @ingroup cpp_kodi_addon_game
++  /// @brief **Input operations**
++  ///
++  //@{
++
++  //============================================================================
++  ///
++  /// @brief Check if input is accepted for a feature on the controller
++  ///
++  /// If only a subset of the controller profile is used, this can return false
++  /// for unsupported features to not absorb their input.
++  ///
++  /// If the entire controller profile is used, this should always return true.
++  ///
++  /// @param[in] controller_id The ID of the controller profile
++  /// @param[in] feature_name The name of a feature in that profile
++  /// @return true if input is accepted for the feature, false otherwise
++  ///
++  virtual bool HasFeature(const std::string& controller_id, const std::string& feature_name)
++  {
++    return false;
++  }
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief Get the input topology that specifies which controllers can be connected
++  ///
++  /// @return The input topology, or null to use the default
++  ///
++  /// If this returns non-null, topology must be freed using FreeTopology().
++  ///
++  /// If this returns null, the topology will default to a single port that can
++  /// accept all controllers imported by addon.xml. The port ID is set to
++  /// the @ref DEFAULT_PORT_ID constant.
++  ///
++  virtual game_input_topology* GetTopology()
++  {
++    return nullptr;
++  }
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief Free the topology's resources
++  ///
++  /// @param[in] topology The topology returned by GetTopology()
++    ///
++  virtual void FreeTopology(game_input_topology* topology)
++  {
++  }
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief Set the layouts for known controllers
++  ///
++  /// @param[in] controllers The controller layouts
++  ///
++  /// After loading the input topology, the frontend will call this with
++  /// controller layouts for all controllers discovered in the topology.
++  ///
++  virtual void SetControllerLayouts(const std::vector<AddonGameControllerLayout>& controllers)
++  {
++  }
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief Enable/disable keyboard input using the specified controller
++  ///
++  /// @param[in] enable True to enable input, false otherwise
++  /// @param[in] controller_id The controller ID if enabling, or unused if disabling
++  ///
++  /// @return True if keyboard input was enabled, false otherwise
++  ///
++  virtual bool EnableKeyboard(bool enable, const std::string& controller_id)
++  {
++    return false;
++  }
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief Enable/disable mouse input using the specified controller
++  ///
++  /// @param[in] enable True to enable input, false otherwise
++  /// @param[in] controller_id The controller ID if enabling, or unused if disabling
++  ///
++  /// @return True if mouse input was enabled, false otherwise
++  ///
++  virtual bool EnableMouse(bool enable, const std::string& controller_id)
++  {
++    return false;
++  }
++  //--------------------------------------------------------------------------
++
++  //==========================================================================
++  ///
++  /// @brief Connect/disconnect a controller to a port on the virtual game console
++  ///
++  /// @param[in] connect True to connect a controller, false to disconnect
++  /// @param[in] port_address The address of the port
++  /// @param[in] controller_id The controller ID if connecting, or unused if disconnecting
++  /// @return True if the \p controller was (dis-)connected to the port, false otherwise
++  ///
++  /// The address is a string that allows traversal of the controller topology.
++  /// It is formed by alternating port IDs and controller IDs separated by "/".
++  ///
++  /// For example, assume that the topology represented in XML for Snes9x is:
++  ///
++  /// ~~~~~~~~~~~~~{.xml}
++  ///     <logicaltopology>
++  ///       <port type="controller" id="1">
++  ///         <accepts controller="game.controller.snes"/>
++  ///         <accepts controller="game.controller.snes.multitap">
++  ///           <port type="controller" id="1">
++  ///             <accepts controller="game.controller.snes"/>
++  ///           </port>
++  ///           <port type="controller" id="2">
++  ///             <accepts controller="game.controller.snes"/>
++  ///           </port>
++  ///           ...
++  ///         </accepts>
++  ///       </port>
++  ///     </logicaltopology>
++  /// ~~~~~~~~~~~~~
++  ///
++  /// To connect a multitap to the console's first port, the multitap's controller
++  /// info is set using the port address:
++  ///
++  ///     1
++  ///
++  /// To connect a SNES controller to the second port of the multitap, the
++  /// controller info is next set using the address:
++  ///
++  ///     1/game.controller.multitap/2
++  ///
++  /// Any attempts to connect a controller to a port on a disconnected multitap
++  /// will return false.
++  ///
++  virtual bool ConnectController(bool connect,
++                                 const std::string& port_address,
++                                 const std::string& controller_id)
++  {
++    return false;
++  }
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief Notify the add-on of an input event
++  ///
++  /// @param[in] event The input event
++  ///
++  /// @return true if the event was handled, false otherwise
++  ///
++  virtual bool InputEvent(const game_input_event& event)
++  {
++    return false;
++  }
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief **Callback to Kodi Function**<br>Notify the port of an input event
++  ///
++  /// @param[in] event The input event
++  /// @return true if the event was handled, false otherwise
++  ///
++  /// @note Input events can arrive for the following sources:
++  ///   - \ref GAME_INPUT_EVENT_MOTOR
++  ///
++  /// @remarks Only called from addon itself
++  ///
+   bool KodiInputEvent(const game_input_event& event)
+   {
+     return m_instanceData->toKodi.InputEvent(m_instanceData->toKodi.kodiInstance, &event);
+   }
+-
+-  // --- Props callbacks -------------------------------------------------------
+-
+-  std::string GameClientDllPath() const
++  //----------------------------------------------------------------------------
++
++  //@}
++
++//--==----==----==----==----==----==----==----==----==----==----==----==----==--
++
++  //============================================================================
++  ///
++  /// @defgroup cpp_kodi_addon_game_SerializationOperations 5. Serialization operations
++  /// @ingroup cpp_kodi_addon_game
++  /// @brief **Serialization operations**
++  ///
++  //@{
++
++  //============================================================================
++  ///
++  /// @brief Get the number of bytes required to serialize the game
++  ///
++  /// @return the number of bytes, or 0 if serialization is not supported
++  ///
++  virtual size_t SerializeSize()
+   {
+-    return m_instanceData->props.game_client_dll_path;
++    return 0;
+   }
+-
+-  bool ProxyDllPaths(std::vector<std::string>& paths)
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief Serialize the state of the game
++  ///
++  /// @param[in] data The buffer receiving the serialized game data
++  /// @param[in] size The size of the buffer
++  ///
++  /// @return the error, or @ref GAME_ERROR_NO_ERROR if the game was serialized into the buffer
++  ///
++  virtual GAME_ERROR Serialize(uint8_t* data, size_t size)
+   {
+-    for (unsigned int i = 0; i < m_instanceData->props.proxy_dll_count; ++i)
+-    {
+-      if (m_instanceData->props.proxy_dll_paths[i] != nullptr)
+-        paths.push_back(m_instanceData->props.proxy_dll_paths[i]);
+-    }
+-    return !paths.empty();
++    return GAME_ERROR_NOT_IMPLEMENTED;
+   }
+-
+-  bool ResourceDirectories(std::vector<std::string>& dirs)
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief Deserialize the game from the given state
++  ///
++  /// @param[in] data A buffer containing the game's new state
++  /// @param[in] size The size of the buffer
++  ///
++  /// @return the error, or @ref GAME_ERROR_NO_ERROR if the game deserialized
++  ///
++  virtual GAME_ERROR Deserialize(const uint8_t* data, size_t size)
+   {
+-    for (unsigned int i = 0; i < m_instanceData->props.resource_directory_count; ++i)
+-    {
+-      if (m_instanceData->props.resource_directories[i] != nullptr)
+-        dirs.push_back(m_instanceData->props.resource_directories[i]);
+-    }
+-    return !dirs.empty();
++    return GAME_ERROR_NOT_IMPLEMENTED;
+   }
+-
+-  std::string ProfileDirectory() const
++  //----------------------------------------------------------------------------
++
++  //@}
++
++//--==----==----==----==----==----==----==----==----==----==----==----==----==--
++
++  //============================================================================
++  ///
++  /// @defgroup cpp_kodi_addon_game_CheatOperations 6. Cheat operations
++  /// @ingroup cpp_kodi_addon_game
++  /// @brief **Cheat operations**
++  ///
++  //@{
++
++  //============================================================================
++  ///
++  /// @brief Reset the cheat system
++  ///
++  /// @return the error, or @ref GAME_ERROR_NO_ERROR if the cheat system was reset
++  ///
++  virtual GAME_ERROR CheatReset()
+   {
+-    return m_instanceData->props.profile_directory;
++    return GAME_ERROR_NOT_IMPLEMENTED;
+   }
+-
+-  bool SupportsVFS() const
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief Get a region of memory
++  ///
++  /// @param[in] type The type of memory to retrieve
++  /// @param[in] data Set to the region of memory; must remain valid until UnloadGame() is called
++  /// @param[in] size Set to the size of the region of memory
++  ///
++  /// @return the error, or @ref GAME_ERROR_NO_ERROR if data was set to a valid buffer
++  ///
++  virtual GAME_ERROR GetMemory(GAME_MEMORY type, uint8_t*& data, size_t& size)
+   {
+-    return m_instanceData->props.supports_vfs;
++    return GAME_ERROR_NOT_IMPLEMENTED;
+   }
+-
+-  bool Extensions(std::vector<std::string>& extensions)
++  //----------------------------------------------------------------------------
++
++  //============================================================================
++  ///
++  /// @brief Set a cheat code
++  ///
++  /// @param[in] index
++  /// @param[in] enabled
++  /// @param[in] code
++  ///
++  /// @return the error, or @ref GAME_ERROR_NO_ERROR if the cheat was set
++  ///
++  virtual GAME_ERROR SetCheat(unsigned int index, bool enabled, const std::string& code)
+   {
+-    for (unsigned int i = 0; i < m_instanceData->props.extension_count; ++i)
+-    {
+-      if (m_instanceData->props.extensions[i] != nullptr)
+-        extensions.push_back(m_instanceData->props.extensions[i]);
+-    }
+-    return !extensions.empty();
++    return GAME_ERROR_NOT_IMPLEMENTED;
+   }
++  //----------------------------------------------------------------------------
++
++  //@}
+ 
+ private:
+   void SetAddonStruct(KODI_HANDLE instance)
