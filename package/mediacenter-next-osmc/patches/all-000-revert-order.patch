@@ -1535,7 +1535,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/utils/BitstreamStats.cpp                      |  1 -
  xbmc/utils/BooleanLogic.cpp                        |  3 +-
  xbmc/utils/BooleanLogic.h                          |  7 ++-
- xbmc/utils/CPUInfo.h                               |  7 +--
  xbmc/utils/CharsetConverter.cpp                    | 14 ++---
  xbmc/utils/CharsetConverter.h                      |  6 +-
  xbmc/utils/CharsetDetection.cpp                    |  6 +-
@@ -31917,26 +31916,6 @@ index f0e5c7c64c..9681832baa 100644
  typedef enum {
    BooleanLogicOperationOr = 0,
    BooleanLogicOperationAnd
-diff --git a/xbmc/utils/CPUInfo.h b/xbmc/utils/CPUInfo.h
-index f1a19c8811..306a7e634c 100644
---- a/xbmc/utils/CPUInfo.h
-+++ b/xbmc/utils/CPUInfo.h
-@@ -8,12 +8,11 @@
- 
- #pragma once
- 
--#include "threads/SystemClock.h"
--
--#include <map>
- #include <stdio.h>
--#include <string>
- #include <time.h>
-+#include <string>
-+#include <map>
-+#include "threads/SystemClock.h"
- 
- #ifdef TARGET_WINDOWS
- // avoid inclusion of <windows.h> and others
 diff --git a/xbmc/utils/CharsetConverter.cpp b/xbmc/utils/CharsetConverter.cpp
 index 2837cffbdf..b51cb76a5c 100644
 --- a/xbmc/utils/CharsetConverter.cpp
