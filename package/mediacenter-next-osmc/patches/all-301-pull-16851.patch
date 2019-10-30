@@ -444,9 +444,9 @@ index 98dbceb7de99..b0afdf3f8775 100644
 --- a/xbmc/utils/CPUInfo.cpp
 +++ b/xbmc/utils/CPUInfo.cpp
 @@ -8,9 +8,6 @@
+  */
  
  #include "CPUInfo.h"
- 
 -#include "ServiceBroker.h"
 -#include "settings/AdvancedSettings.h"
 -#include "settings/SettingsComponent.h"
