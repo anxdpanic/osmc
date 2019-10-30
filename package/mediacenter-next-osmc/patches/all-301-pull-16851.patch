@@ -7,27 +7,6 @@ Subject: [PATCH 1/4] CPUInfoWin32: remove _M_ARM gaurd
  xbmc/platform/win32/CPUInfoWin32.cpp | 2 --
  1 file changed, 2 deletions(-)
 
-diff --git a/xbmc/platform/win32/CPUInfoWin32.cpp b/xbmc/platform/win32/CPUInfoWin32.cpp
-index 213f74db3583..ebb8239ed65c 100644
---- a/xbmc/platform/win32/CPUInfoWin32.cpp
-+++ b/xbmc/platform/win32/CPUInfoWin32.cpp
-@@ -125,7 +125,6 @@ CCPUInfoWin32::CCPUInfoWin32()
-   else
-     m_cpuQueryLoad = nullptr;
- 
--#ifndef _M_ARM
-   int CPUInfo[4]; // receives EAX, EBX, ECD and EDX in that order
- 
-   __cpuid(CPUInfo, 0);
-@@ -164,7 +163,6 @@ CCPUInfoWin32::CCPUInfoWin32()
-     if (CPUInfo[CPUINFO_EDX] & CPUID_80000001_EDX_3DNOWEXT)
-       m_cpuFeatures |= CPU_FEATURE_3DNOWEXT;
-   }
--#endif // ! _M_ARM
- 
-   // Set MMX2 when SSE is present as SSE is a superset of MMX2 and Intel doesn't set the MMX2 cap
-   if (m_cpuFeatures & CPU_FEATURE_SSE)
-
 From a67b08fe758bd3c2661f4dc79e383e21ffa597ca Mon Sep 17 00:00:00 2001
 From: Lukas Rusak <lorusak@gmail.com>
 Date: Wed, 30 Oct 2019 10:25:47 -0700
