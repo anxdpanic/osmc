@@ -427,18 +427,6 @@ index ebb8239ed65c..a717e6209a9b 100644
 +
 +  return true;
 +}
-diff --git a/xbmc/platform/win32/CPUInfoWin32.h b/xbmc/platform/win32/CPUInfoWin32.h
-index 996de4efaffe..69bfac2f79a2 100644
---- a/xbmc/platform/win32/CPUInfoWin32.h
-+++ b/xbmc/platform/win32/CPUInfoWin32.h
-@@ -19,6 +19,7 @@ class CCPUInfoWin32 : public CCPUInfo
- 
-   int GetUsedPercentage() override;
-   float GetCPUFrequency() override;
-+  bool GetTemperature(CTemperature& temperature) override;
- 
- private:
-   // avoid inclusion of <windows.h> and others
 diff --git a/xbmc/utils/CPUInfo.cpp b/xbmc/utils/CPUInfo.cpp
 index 98dbceb7de99..b0afdf3f8775 100644
 --- a/xbmc/utils/CPUInfo.cpp
