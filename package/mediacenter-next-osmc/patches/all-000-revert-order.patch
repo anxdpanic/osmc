@@ -1404,7 +1404,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  .../win32/powermanagement/Win32PowerSyscall.cpp    |  6 +-
  .../win32/powermanagement/Win32PowerSyscall.h      |  1 -
  .../win32/powermanagement/WinIdleTimer.cpp         |  1 -
- .../win32/storage/Win32StorageProvider.cpp         |  8 +--
  xbmc/platform/win32/storage/Win32StorageProvider.h |  5 +-
  xbmc/platform/win32/sys/socket.h                   |  2 +-
  xbmc/playlists/PlayList.cpp                        | 13 ++---
@@ -29133,29 +29132,6 @@ index 350a2504eb..3c61185803 100644
  #include "Application.h"
  
  void CWinIdleTimer::StartZero()
-diff --git a/xbmc/platform/win32/storage/Win32StorageProvider.cpp b/xbmc/platform/win32/storage/Win32StorageProvider.cpp
-index d0c182ace0..340f8d7c93 100644
---- a/xbmc/platform/win32/storage/Win32StorageProvider.cpp
-+++ b/xbmc/platform/win32/storage/Win32StorageProvider.cpp
-@@ -6,15 +6,13 @@
-  *  See LICENSES/README.md for more information.
-  */
- #include "Win32StorageProvider.h"
--
--#include "filesystem/SpecialProtocol.h"
- #include "guilib/LocalizeStrings.h"
-+#include "filesystem/SpecialProtocol.h"
-+#include "platform/win32/CharsetConverter.h"
- #include "storage/MediaManager.h"
- #include "utils/JobManager.h"
--#include "utils/StringUtils.h"
- #include "utils/log.h"
--
--#include "platform/win32/CharsetConverter.h"
-+#include "utils/StringUtils.h"
- 
- #include <SetupAPI.h>
- #include <ShlObj.h>
 diff --git a/xbmc/platform/win32/storage/Win32StorageProvider.h b/xbmc/platform/win32/storage/Win32StorageProvider.h
 index 74fdeccc3a..5ba9fe1aa3 100644
 --- a/xbmc/platform/win32/storage/Win32StorageProvider.h
