@@ -62,7 +62,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/SeekHandler.cpp                               | 16 +++---
  xbmc/SeekHandler.h                                 |  8 +--
  xbmc/ServiceBroker.cpp                             |  1 -
- xbmc/ServiceManager.cpp                            | 23 ++++----
  xbmc/ServiceManager.h                              |  3 +-
  xbmc/TextureCache.cpp                              | 13 ++---
  xbmc/TextureCache.h                                |  7 +--
@@ -332,7 +331,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  .../VideoPlayer/DVDCodecs/Video/DVDVideoCodec.cpp  |  2 -
  .../Video/DVDVideoCodecAndroidMediaCodec.cpp       | 44 +++++++--------
  .../Video/DVDVideoCodecAndroidMediaCodec.h         | 24 ++++----
- .../DVDCodecs/Video/DVDVideoCodecDRMPRIME.h        |  5 +-
  .../VideoPlayer/DVDCodecs/Video/DVDVideoPPFFmpeg.h |  1 -
  xbmc/cores/VideoPlayer/DVDCodecs/Video/MMALCodec.h | 19 +++----
  .../cores/VideoPlayer/DVDCodecs/Video/MMALFFmpeg.h |  6 +-
@@ -3120,53 +3118,6 @@ index 988fc27998..8f5b5a49e2 100644
  #include "Application.h"
  #include "profiles/ProfileManager.h"
  #include "settings/SettingsComponent.h"
-diff --git a/xbmc/ServiceManager.cpp b/xbmc/ServiceManager.cpp
-index a999cfce90..3dbf13983a 100644
---- a/xbmc/ServiceManager.cpp
-+++ b/xbmc/ServiceManager.cpp
-@@ -7,31 +7,30 @@
-  */
- 
- #include "ServiceManager.h"
--
--#include "ContextMenuManager.h"
--#include "DatabaseManager.h"
--#include "PlayListPlayer.h"
- #include "addons/BinaryAddonCache.h"
--#include "addons/RepositoryUpdater.h"
- #include "addons/VFSEntry.h"
- #include "addons/binary-addons/BinaryAddonManager.h"
-+#include "addons/RepositoryUpdater.h"
-+#include "ContextMenuManager.h"
- #include "cores/DataCacheCore.h"
--#include "cores/RetroPlayer/guibridge/GUIGameRenderManager.h"
- #include "cores/playercorefactory/PlayerCoreFactory.h"
-+#include "cores/RetroPlayer/guibridge/GUIGameRenderManager.h"
- #include "favourites/FavouritesService.h"
--#include "games/GameServices.h"
- #include "games/controllers/ControllerManager.h"
-+#include "games/GameServices.h"
-+#include "peripherals/Peripherals.h"
-+#include "PlayListPlayer.h"
-+#include "profiles/ProfileManager.h"
-+#include "utils/log.h"
- #include "input/InputManager.h"
- #include "interfaces/generic/ScriptInvocationManager.h"
- #include "interfaces/python/XBPython.h"
--#include "network/Network.h"
--#include "peripherals/Peripherals.h"
--#include "powermanagement/PowerManager.h"
--#include "profiles/ProfileManager.h"
- #include "pvr/PVRManager.h"
-+#include "network/Network.h"
- #include "utils/FileExtensionProvider.h"
--#include "utils/log.h"
-+#include "powermanagement/PowerManager.h"
- #include "weather/WeatherManager.h"
-+#include "DatabaseManager.h"
- 
- using namespace KODI;
- 
 diff --git a/xbmc/ServiceManager.h b/xbmc/ServiceManager.h
 index ee5925ee9b..d73f9c2575 100644
 --- a/xbmc/ServiceManager.h
@@ -8180,25 +8131,6 @@ index 39fee530d3..9d3fd1bbcd 100644
  
  class CJNISurface;
  class CJNISurfaceTexture;
-diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
-index cc51c809bb..8d399eb5bc 100644
---- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
-+++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
-@@ -8,12 +8,11 @@
- 
- #pragma once
- 
--#include "cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodec.h"
-+#include <memory>
- #include "cores/VideoPlayer/DVDStreamInfo.h"
-+#include "cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodec.h"
- #include "cores/VideoPlayer/Process/VideoBuffer.h"
- 
--#include <memory>
--
- class CDVDVideoCodecDRMPRIME
-   : public CDVDVideoCodec
- {
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoPPFFmpeg.h b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoPPFFmpeg.h
 index 386a4c7d67..34b2968dfa 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoPPFFmpeg.h
