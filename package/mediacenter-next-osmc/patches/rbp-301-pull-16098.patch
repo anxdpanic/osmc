@@ -1,12 +1,1928 @@
-From 1d9761517780f7d121e04433741d7416525976dc Mon Sep 17 00:00:00 2001
-From: Greg McCarthy <greg@gjmccarthy.co.uk>
-Date: Wed, 30 Oct 2019 08:46:24 +0000
-Subject: [PATCH] Rework patch
+From 83746c28bf8b829ab7c1b5325b833cf287db18a1 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Thu, 17 Oct 2019 13:40:05 -0700
+Subject: [PATCH 1/3] win32: remove check for sse2 during init
 
 ---
- xbmc/utils/CPUInfo.cpp | 1033 ++----------------------------------------------
- 1 file changed, 42 insertions(+), 991 deletions(-)
+ xbmc/platform/win32/WinMain.cpp | 8 --------
+ 1 file changed, 8 deletions(-)
 
+diff --git a/xbmc/platform/win32/WinMain.cpp b/xbmc/platform/win32/WinMain.cpp
+index 18c6b266fe7b..d59ec4b83dd9 100644
+--- a/xbmc/platform/win32/WinMain.cpp
++++ b/xbmc/platform/win32/WinMain.cpp
+@@ -12,7 +12,6 @@
+ #include "platform/xbmc.h"
+ #include "threads/Thread.h"
+ #include "threads/platform/win/Win32Exception.h"
+-#include "utils/CPUInfo.h"
+ #include "utils/CharsetConverter.h" // Required to initialize converters before usage
+ 
+ #include "platform/win32/CharsetConverter.h"
+@@ -75,13 +74,6 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR commandLine, INT)
+     return 0;
+   }
+ 
+-  if ((g_cpuInfo.GetCPUFeatures() & CPU_FEATURE_SSE2) == 0)
+-  {
+-    MessageBox(NULL, L"No SSE2 support detected", ToW(appName + ": Fatal Error").c_str(), MB_OK | MB_ICONERROR);
+-    ReleaseMutex(appRunningMutex);
+-    return 0;
+-  }
+-
+   //Initialize COM
+   CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+ 
+
+From 7379da327b82b2a94d1160fe91014cc65a65e173 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Tue, 7 May 2019 15:06:54 -0700
+Subject: [PATCH 2/3] CCPUInfo: split platforms and rework
+
+---
+ xbmc/Application.cpp                          |   15 +-
+ xbmc/ServiceBroker.cpp                        |   16 +
+ xbmc/ServiceBroker.h                          |    6 +
+ xbmc/ServiceManager.cpp                       |    6 +-
+ xbmc/cores/FFmpeg.h                           |    3 +-
+ .../DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp   |    2 +-
+ .../VideoPlayer/DVDCodecs/Video/DXVA.cpp      |    9 +-
+ .../windows/RendererShaders.cpp               |    4 +-
+ xbmc/guilib/guiinfo/SystemGUIInfo.cpp         |   14 +-
+ xbmc/platform/Platform.cpp                    |    5 +-
+ xbmc/platform/android/CMakeLists.txt          |    5 +-
+ xbmc/platform/android/CPUInfoAndroid.cpp      |   33 +
+ xbmc/platform/android/CPUInfoAndroid.h        |   22 +
+ xbmc/platform/darwin/ios/CMakeLists.txt       |    6 +-
+ xbmc/platform/darwin/ios/CPUInfoIos.cpp       |   75 ++
+ xbmc/platform/darwin/ios/CPUInfoIos.h         |   29 +
+ xbmc/platform/darwin/osx/CMakeLists.txt       |    2 +
+ xbmc/platform/darwin/osx/CPUInfoOsx.cpp       |  124 ++
+ xbmc/platform/darwin/osx/CPUInfoOsx.h         |   28 +
+ xbmc/platform/freebsd/CMakeLists.txt          |    8 +-
+ xbmc/platform/freebsd/CPUInfoFreebsd.cpp      |  139 +++
+ xbmc/platform/freebsd/CPUInfoFreebsd.h        |   22 +
+ xbmc/platform/linux/CMakeLists.txt            |    6 +-
+ xbmc/platform/linux/CPUInfoLinux.cpp          |  286 +++++
+ xbmc/platform/linux/CPUInfoLinux.h            |   23 +
+ xbmc/platform/linux/RBP.h                     |    6 +-
+ xbmc/platform/posix/PlatformPosix.cpp         |    2 +
+ xbmc/platform/win10/CMakeLists.txt            |    8 +-
+ xbmc/platform/win10/CPUInfoWin10.cpp          |  119 ++
+ xbmc/platform/win10/CPUInfoWin10.h            |   22 +
+ xbmc/platform/win32/CMakeLists.txt            |    2 +
+ xbmc/platform/win32/CPUInfoWin32.cpp          |  289 +++++
+ xbmc/platform/win32/CPUInfoWin32.h            |   33 +
+ xbmc/platform/win32/WinMain.cpp               |    1 +
+ xbmc/rendering/MatrixGL.cpp                   |   12 +-
+ xbmc/utils/CPUInfo.cpp                        | 1011 +----------------
+ xbmc/utils/CPUInfo.h                          |  197 ++--
+ xbmc/utils/SystemInfo.cpp                     |   18 +-
+ xbmc/utils/test/TestCPUInfo.cpp               |   93 +-
+ xbmc/windows/GUIWindowDebugInfo.cpp           |    4 +-
+ 40 files changed, 1508 insertions(+), 1197 deletions(-)
+ create mode 100644 xbmc/platform/android/CPUInfoAndroid.cpp
+ create mode 100644 xbmc/platform/android/CPUInfoAndroid.h
+ create mode 100644 xbmc/platform/darwin/ios/CPUInfoIos.cpp
+ create mode 100644 xbmc/platform/darwin/ios/CPUInfoIos.h
+ create mode 100644 xbmc/platform/darwin/osx/CPUInfoOsx.cpp
+ create mode 100644 xbmc/platform/darwin/osx/CPUInfoOsx.h
+ create mode 100644 xbmc/platform/freebsd/CPUInfoFreebsd.cpp
+ create mode 100644 xbmc/platform/freebsd/CPUInfoFreebsd.h
+ create mode 100644 xbmc/platform/linux/CPUInfoLinux.cpp
+ create mode 100644 xbmc/platform/linux/CPUInfoLinux.h
+ create mode 100644 xbmc/platform/win10/CPUInfoWin10.cpp
+ create mode 100644 xbmc/platform/win10/CPUInfoWin10.h
+ create mode 100644 xbmc/platform/win32/CPUInfoWin32.cpp
+ create mode 100644 xbmc/platform/win32/CPUInfoWin32.h
+
+diff --git a/xbmc/Application.cpp b/xbmc/Application.cpp
+index 3dbe288631a1..9ec42b943d95 100644
+--- a/xbmc/Application.cpp
++++ b/xbmc/Application.cpp
+@@ -474,11 +474,14 @@ bool CApplication::Create(const CAppParamParser &params)
+ 
+   CLog::Log(LOGNOTICE, "FFmpeg version/source: %s", av_version_info());
+ 
+-  std::string cpuModel(g_cpuInfo.getCPUModel());
++  std::string cpuModel(CServiceBroker::GetCPUInfo()->GetCPUModel());
+   if (!cpuModel.empty())
+-    CLog::Log(LOGNOTICE, "Host CPU: %s, %d core%s available", cpuModel.c_str(), g_cpuInfo.getCPUCount(), (g_cpuInfo.getCPUCount() == 1) ? "" : "s");
++    CLog::Log(LOGNOTICE, "Host CPU: %s, %d core%s available", cpuModel.c_str(),
++              CServiceBroker::GetCPUInfo()->GetCPUCount(),
++              (CServiceBroker::GetCPUInfo()->GetCPUCount() == 1) ? "" : "s");
+   else
+-    CLog::Log(LOGNOTICE, "%d CPU core%s available", g_cpuInfo.getCPUCount(), (g_cpuInfo.getCPUCount() == 1) ? "" : "s");
++    CLog::Log(LOGNOTICE, "%d CPU core%s available", CServiceBroker::GetCPUInfo()->GetCPUCount(),
++              (CServiceBroker::GetCPUInfo()->GetCPUCount() == 1) ? "" : "s");
+ 
+   //! @todo - move to CPlatformXXX ???
+ #if defined(TARGET_WINDOWS)
+@@ -497,7 +500,7 @@ bool CApplication::Create(const CAppParamParser &params)
+ #endif
+ 
+ #if defined(__arm__) || defined(__aarch64__)
+-  if (g_cpuInfo.GetCPUFeatures() & CPU_FEATURE_NEON)
++  if (CServiceBroker::GetCPUInfo()->GetCPUFeatures() & CPU_FEATURE_NEON)
+     CLog::Log(LOGNOTICE, "ARM Features: Neon enabled");
+   else
+     CLog::Log(LOGNOTICE, "ARM Features: Neon disabled");
+@@ -2493,6 +2496,8 @@ bool CApplication::Cleanup()
+     m_pSettingsComponent->Deinit();
+     m_pSettingsComponent.reset();
+ 
++    CServiceBroker::UnregisterCPUInfo();
++
+     return true;
+   }
+   catch (...)
+@@ -4069,7 +4074,7 @@ void CApplication::Process()
+     ProcessSlow();
+   }
+ #if !defined(TARGET_DARWIN)
+-  g_cpuInfo.getUsedPercentage(); // must call it to recalculate pct values
++  CServiceBroker::GetCPUInfo()->GetUsedPercentage(); // must call it to recalculate pct values
+ #endif
+ }
+ 
+diff --git a/xbmc/ServiceBroker.cpp b/xbmc/ServiceBroker.cpp
+index 44601f3f2aa9..5d60cf8d2375 100644
+--- a/xbmc/ServiceBroker.cpp
++++ b/xbmc/ServiceBroker.cpp
+@@ -268,3 +268,19 @@ CDecoderFilterManager* CServiceBroker::GetDecoderFilterManager()
+ {
+   return m_decoderFilterManager;
+ }
++
++std::shared_ptr<CCPUInfo> CServiceBroker::m_cpuInfo;
++std::shared_ptr<CCPUInfo> CServiceBroker::GetCPUInfo()
++{
++  return m_cpuInfo;
++}
++
++void CServiceBroker::RegisterCPUInfo(std::shared_ptr<CCPUInfo> cpuInfo)
++{
++  m_cpuInfo = cpuInfo;
++}
++
++void CServiceBroker::UnregisterCPUInfo()
++{
++  m_cpuInfo.reset();
++}
+diff --git a/xbmc/ServiceBroker.h b/xbmc/ServiceBroker.h
+index 2b89f4ad68d5..8f5ca91c8109 100644
+--- a/xbmc/ServiceBroker.h
++++ b/xbmc/ServiceBroker.h
+@@ -54,6 +54,7 @@ class CAppInboundProtocol;
+ class CSettingsComponent;
+ class CDecoderFilterManager;
+ class CMediaManager;
++class CCPUInfo;
+ 
+ namespace KODI
+ {
+@@ -133,6 +134,10 @@ class CServiceBroker
+   static void RegisterDecoderFilterManager(CDecoderFilterManager* manager);
+   static CDecoderFilterManager* GetDecoderFilterManager();
+ 
++  static std::shared_ptr<CCPUInfo> GetCPUInfo();
++  static void RegisterCPUInfo(std::shared_ptr<CCPUInfo> cpuInfo);
++  static void UnregisterCPUInfo();
++
+ private:
+   static std::shared_ptr<ANNOUNCEMENT::CAnnouncementManager> m_pAnnouncementManager;
+   static CGUIComponent* m_pGUI;
+@@ -141,4 +146,5 @@ class CServiceBroker
+   static std::shared_ptr<CAppInboundProtocol> m_pAppPort;
+   static CSettingsComponent* m_pSettingsComponent;
+   static CDecoderFilterManager* m_decoderFilterManager;
++  static std::shared_ptr<CCPUInfo> m_cpuInfo;
+ };
+diff --git a/xbmc/ServiceManager.cpp b/xbmc/ServiceManager.cpp
+index 25c9f4190398..dc66133f7067 100644
+--- a/xbmc/ServiceManager.cpp
++++ b/xbmc/ServiceManager.cpp
+@@ -87,6 +87,9 @@ void CServiceManager::DeinitTesting()
+ 
+ bool CServiceManager::InitStageOne()
+ {
++  m_Platform.reset(CPlatform::CreateInstance());
++  m_Platform->Init();
++
+ #ifdef HAS_PYTHON
+   m_XBPython.reset(new XBPython());
+   CScriptInvocationManager::GetInstance().RegisterLanguageInvocationHandler(m_XBPython.get(), ".py");
+@@ -105,9 +108,6 @@ bool CServiceManager::InitStageTwo(const CAppParamParser &params, const std::str
+   // Initialize the addon database (must be before the addon manager is init'd)
+   m_databaseManager.reset(new CDatabaseManager);
+ 
+-  m_Platform.reset(CPlatform::CreateInstance());
+-  m_Platform->Init();
+-
+   m_binaryAddonManager.reset(new ADDON::CBinaryAddonManager()); /* Need to constructed before, GetRunningInstance() of binary CAddonDll need to call them */
+   m_addonMgr.reset(new ADDON::CAddonMgr());
+   if (!m_addonMgr->Init())
+diff --git a/xbmc/cores/FFmpeg.h b/xbmc/cores/FFmpeg.h
+index 7b37c0e3de50..e1194d19e9e1 100644
+--- a/xbmc/cores/FFmpeg.h
++++ b/xbmc/cores/FFmpeg.h
+@@ -8,6 +8,7 @@
+ 
+ #pragma once
+ 
++#include "ServiceBroker.h"
+ #include "utils/CPUInfo.h"
+ 
+ extern "C" {
+@@ -22,7 +23,7 @@ extern "C" {
+ 
+ inline int PPCPUFlags()
+ {
+-  unsigned int cpuFeatures = g_cpuInfo.GetCPUFeatures();
++  unsigned int cpuFeatures = CServiceBroker::GetCPUInfo()->GetCPUFeatures();
+   int flags = 0;
+ 
+   if (cpuFeatures & CPU_FEATURE_MMX)
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp
+index 3b5d1756d79a..ed2bdd3de400 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp
+@@ -364,7 +364,7 @@ bool CDVDVideoCodecFFmpeg::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options
+     }
+     else
+     {
+-      int num_threads = g_cpuInfo.getCPUCount() * 3 / 2;
++      int num_threads = CServiceBroker::GetCPUInfo()->GetCPUCount() * 3 / 2;
+       num_threads = std::max(1, std::min(num_threads, 16));
+       m_pCodecContext->thread_count = num_threads;
+       m_pCodecContext->thread_safe_callbacks = 1;
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DXVA.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DXVA.cpp
+index 717c19d00e99..d01ec84d28a3 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DXVA.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DXVA.cpp
+@@ -11,6 +11,7 @@
+ #define FF_API_OLD_SAMPLE_FMT 0
+ 
+ #include "DXVA.h"
++
+ #include "ServiceBroker.h"
+ #include "cores/VideoPlayer/DVDCodecs/DVDCodecUtils.h"
+ #include "cores/VideoPlayer/DVDCodecs/DVDFactoryCodec.h"
+@@ -21,7 +22,7 @@
+ #include "settings/AdvancedSettings.h"
+ #include "settings/Settings.h"
+ #include "settings/SettingsComponent.h"
+-#include "system.h"
++#include "utils/CPUInfo.h"
+ #include "utils/StringUtils.h"
+ #include "utils/SystemInfo.h"
+ #include "utils/log.h"
+@@ -31,6 +32,8 @@
+ #include <dxva.h>
+ #include <initguid.h>
+ 
++#include "system.h"
++
+ using namespace DXVA;
+ using namespace Microsoft::WRL;
+ 
+@@ -1167,10 +1170,10 @@ bool CDecoder::Open(AVCodecContext* avctx, AVCodecContext* mainctx, enum AVPixel
+     {
+       m_surface_alignment = 128;
+       // a driver may use multi-thread decoding internally
+-      m_refs += CSysInfo::GetCPUCount();
++      m_refs += CServiceBroker::GetCPUInfo()->GetCPUCount();
+     }
+     else
+-      m_refs += CSysInfo::GetCPUCount() / 2;
++      m_refs += CServiceBroker::GetCPUInfo()->GetCPUCount() / 2;
+     // by specification hevc decoder can hold up to 8 unique refs
+     m_refs += avctx->refs ? avctx->refs : 8;
+     break;
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererShaders.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererShaders.cpp
+index 0997fd518972..fbfc800405d5 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererShaders.cpp
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererShaders.cpp
+@@ -374,9 +374,9 @@ bool CRendererShaders::CRenderBufferImpl::UploadFromGPU()
+ 
+   void* (*copy_func)(void* d, const void* s, size_t size) =
+ #if defined(HAVE_SSE2)
+-    ((g_cpuInfo.GetCPUFeatures() & CPU_FEATURE_SSE4) != 0) ? gpu_memcpy :
++      ((CServiceBroker::GetCPUInfo()->GetCPUFeatures() & CPU_FEATURE_SSE4) != 0) ? gpu_memcpy :
+ #endif
+-    memcpy;
++                                                                                 memcpy;
+ 
+   auto* s_y = static_cast<uint8_t*>(mapGPU.pData);
+   auto* s_uv = static_cast<uint8_t*>(mapGPU.pData) + m_sDesc.Height * mapGPU.RowPitch;
+diff --git a/xbmc/guilib/guiinfo/SystemGUIInfo.cpp b/xbmc/guilib/guiinfo/SystemGUIInfo.cpp
+index 299b004a4bcf..3043ff98f7e8 100644
+--- a/xbmc/guilib/guiinfo/SystemGUIInfo.cpp
++++ b/xbmc/guilib/guiinfo/SystemGUIInfo.cpp
+@@ -55,7 +55,7 @@ std::string CSystemGUIInfo::GetSystemHeatInfo(int info) const
+   {
+     m_lastSysHeatInfoTime = CTimeUtils::GetFrameTime();
+ #if defined(TARGET_POSIX)
+-    g_cpuInfo.getTemperature(m_cpuTemp);
++    CServiceBroker::GetCPUInfo()->GetTemperature(m_cpuTemp);
+     m_gpuTemp = GetGPUTemperature();
+ #endif
+   }
+@@ -72,9 +72,9 @@ std::string CSystemGUIInfo::GetSystemHeatInfo(int info) const
+       break;
+     case SYSTEM_CPU_USAGE:
+ #if defined(TARGET_DARWIN) || defined(TARGET_WINDOWS)
+-      text = StringUtils::Format("%d%%", g_cpuInfo.getUsedPercentage());
++      text = StringUtils::Format("%d%%", CServiceBroker::GetCPUInfo()->GetUsedPercentage());
+ #else
+-      text = StringUtils::Format("%s", g_cpuInfo.GetCoresUsageString().c_str());
++      text = StringUtils::Format("%s", CServiceBroker::GetCPUInfo()->GetCoresUsageString().c_str());
+ #endif
+       break;
+   }
+@@ -283,7 +283,9 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
+       return true;
+     }
+     case SYSTEM_GET_CORE_USAGE:
+-      value = StringUtils::Format("%4.2f", g_cpuInfo.GetCoreInfo(std::atoi(info.GetData3().c_str())).m_fPct);
++      value = StringUtils::Format("%4.2f", CServiceBroker::GetCPUInfo()
++                                               ->GetCoreInfo(std::atoi(info.GetData3().c_str()))
++                                               .m_usagePercent);
+       return true;
+     case SYSTEM_RENDER_VENDOR:
+       value = CServiceBroker::GetRenderSystem()->GetRenderVendor();
+@@ -398,7 +400,7 @@ bool CSystemGUIInfo::GetInt(int& value, const CGUIListItem *gitem, int contextWi
+       return true;
+     }
+     case SYSTEM_CPU_USAGE:
+-      value = g_cpuInfo.getUsedPercentage();
++      value = CServiceBroker::GetCPUInfo()->GetUsedPercentage();
+       return true;
+     case SYSTEM_BATTERY_LEVEL:
+       value = CServiceBroker::GetPowerManager().BatteryLevel();
+@@ -578,7 +580,7 @@ bool CSystemGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int context
+       value = g_application.GlobalIdleTime() >= static_cast<int>(info.GetData1());
+       return true;
+     case SYSTEM_HAS_CORE_ID:
+-      value = g_cpuInfo.HasCoreId(info.GetData1());
++      value = CServiceBroker::GetCPUInfo()->HasCoreId(info.GetData1());
+       return true;
+     case SYSTEM_DATE:
+     {
+diff --git a/xbmc/platform/Platform.cpp b/xbmc/platform/Platform.cpp
+index 93171f8b0eda..cfd88baa1623 100644
+--- a/xbmc/platform/Platform.cpp
++++ b/xbmc/platform/Platform.cpp
+@@ -8,6 +8,9 @@
+ 
+ #include "Platform.h"
+ 
++#include "ServiceBroker.h"
++#include "utils/CPUInfo.h"
++
+ // Override for platform ports
+ #if !defined(PLATFORM_OVERRIDE)
+ 
+@@ -26,6 +29,6 @@ CPlatform::~CPlatform() = default;
+ 
+ void CPlatform::Init()
+ {
+-  // nothing for now
++  CServiceBroker::RegisterCPUInfo(CCPUInfo::GetCPUInfo());
+ }
+ 
+diff --git a/xbmc/platform/android/CMakeLists.txt b/xbmc/platform/android/CMakeLists.txt
+index e20ff907aa7c..68cd68a5c486 100644
+--- a/xbmc/platform/android/CMakeLists.txt
++++ b/xbmc/platform/android/CMakeLists.txt
+@@ -1,3 +1,6 @@
+-set(SOURCES MemUtils.cpp)
++set(SOURCES CPUInfoAndroid.cpp
++            MemUtils.cpp)
++
++set(HEADERS CPUInfoAndroid.h)
+ 
+ core_add_library(androidsupport)
+diff --git a/xbmc/platform/android/CPUInfoAndroid.cpp b/xbmc/platform/android/CPUInfoAndroid.cpp
+new file mode 100644
+index 000000000000..3c854e8ae2de
+--- /dev/null
++++ b/xbmc/platform/android/CPUInfoAndroid.cpp
+@@ -0,0 +1,33 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#include "CPUInfoAndroid.h"
++
++#include "utils/Temperature.h"
++
++#include "platform/android/activity/AndroidFeatures.h"
++
++std::shared_ptr<CCPUInfo> CCPUInfo::GetCPUInfo()
++{
++  return std::make_shared<CCPUInfoAndroid>();
++}
++
++CCPUInfoAndroid::CCPUInfoAndroid()
++{
++  m_cpuCount = CAndroidFeatures::GetCPUCount();
++
++  for (int i = 0; i < m_cpuCount; i++)
++  {
++    CoreInfo core;
++    core.m_id = i;
++    m_cores.emplace_back(core);
++  }
++
++  if (CAndroidFeatures::HasNeon())
++    m_cpuFeatures |= CPU_FEATURE_NEON;
++}
+diff --git a/xbmc/platform/android/CPUInfoAndroid.h b/xbmc/platform/android/CPUInfoAndroid.h
+new file mode 100644
+index 000000000000..6937390d4014
+--- /dev/null
++++ b/xbmc/platform/android/CPUInfoAndroid.h
+@@ -0,0 +1,22 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#pragma once
++
++#include "utils/CPUInfo.h"
++#include "utils/Temperature.h"
++
++class CCPUInfoAndroid : public CCPUInfoLinux
++{
++public:
++  CCPUInfoAndroid();
++  ~CCPUInfoAndroid() = default;
++
++  int GetUsedPercentage() override { return 0; }
++  float GetCPUFrequency() override { return 0; }
++};
+diff --git a/xbmc/platform/darwin/ios/CMakeLists.txt b/xbmc/platform/darwin/ios/CMakeLists.txt
+index 188c3e7ca689..6214b00bb712 100644
+--- a/xbmc/platform/darwin/ios/CMakeLists.txt
++++ b/xbmc/platform/darwin/ios/CMakeLists.txt
+@@ -1,9 +1,11 @@
+-set(SOURCES IOSEAGLView.mm
++set(SOURCES CPUInfoIos.cpp
++            IOSEAGLView.mm
+             IOSExternalTouchController.mm
+             IOSScreenManager.mm
+             XBMCController.mm)
+ 
+-set(HEADERS IOSEAGLView.h
++set(HEADERS CPUInfoIos.h
++            IOSEAGLView.h
+             IOSExternalTouchController.h
+             IOSScreenManager.h
+             XBMCApplication.h
+diff --git a/xbmc/platform/darwin/ios/CPUInfoIos.cpp b/xbmc/platform/darwin/ios/CPUInfoIos.cpp
+new file mode 100644
+index 000000000000..780b3836144b
+--- /dev/null
++++ b/xbmc/platform/darwin/ios/CPUInfoIos.cpp
+@@ -0,0 +1,75 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#include "CPUInfoIos.h"
++
++#include "utils/Temperature.h"
++
++#include "platform/posix/PosixResourceCounter.h"
++
++#include <array>
++#include <string>
++
++#include <mach-o/arch.h>
++#include <sys/sysctl.h>
++#include <sys/types.h>
++
++std::shared_ptr<CCPUInfo> CCPUInfo::GetCPUInfo()
++{
++  return std::make_shared<CCPUInfoIos>();
++}
++
++CCPUInfoIos::CCPUInfoIos() : m_resourceCounter(new CPosixResourceCounter())
++{
++  int count = 0;
++  size_t countLength = sizeof(count);
++  if (sysctlbyname("hw.activecpu", &count, &countLength, nullptr, 0) == 0)
++    m_cpuCount = count;
++  else
++    m_cpuCount = 1;
++
++  std::array<char, 512> buffer;
++  size_t length = buffer.size();
++  if (sysctlbyname("machdep.cpu.brand_string", buffer.data(), &length, nullptr, 0) == 0)
++    m_cpuModel = buffer.data();
++
++  buffer = {};
++  if (sysctlbyname("machdep.cpu.vendor", buffer.data(), &length, nullptr, 0) == 0)
++    m_cpuVendor = buffer.data();
++
++  for (int core = 0; core < m_cpuCount; core++)
++  {
++    CoreInfo coreInfo;
++    coreInfo.m_id = core;
++    m_cores.emplace_back(coreInfo);
++  }
++
++  m_cpuFeatures |= CPU_FEATURE_NEON;
++}
++
++int CCPUInfoIos::GetUsedPercentage()
++{
++  if (!m_nextUsedReadTime.IsTimePast())
++    return m_lastUsedPercentage;
++
++  m_lastUsedPercentage = m_resourceCounter->GetCPUUsage();
++  m_nextUsedReadTime.Set(MINIMUM_TIME_BETWEEN_READS);
++
++  return m_lastUsedPercentage;
++}
++
++float CCPUInfoIos::GetCPUFrequency()
++{
++  // Get CPU frequency, scaled to MHz.
++  long long hz = 0;
++  size_t len = sizeof(hz);
++  if (sysctlbyname("hw.cpufrequency", &hz, &len, nullptr, 0) < 0)
++    return 0.f;
++
++  return hz / 1000000.0;
++}
+diff --git a/xbmc/platform/darwin/ios/CPUInfoIos.h b/xbmc/platform/darwin/ios/CPUInfoIos.h
+new file mode 100644
+index 000000000000..785761dbe5e9
+--- /dev/null
++++ b/xbmc/platform/darwin/ios/CPUInfoIos.h
+@@ -0,0 +1,29 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#pragma once
++
++#include "utils/CPUInfo.h"
++#include "utils/Temperature.h"
++
++#include <memory>
++
++class CPosixResourceCounter;
++
++class CCPUInfoIos : public CCPUInfo
++{
++public:
++  CCPUInfoIos();
++  ~CCPUInfoIos() = default;
++
++  int GetUsedPercentage() override;
++  float GetCPUFrequency() override;
++
++private:
++  std::unique_ptr<CPosixResourceCounter> m_resourceCounter;
++};
+diff --git a/xbmc/platform/darwin/osx/CMakeLists.txt b/xbmc/platform/darwin/osx/CMakeLists.txt
+index 35468dc62a8c..9759e303c4c8 100644
+--- a/xbmc/platform/darwin/osx/CMakeLists.txt
++++ b/xbmc/platform/darwin/osx/CMakeLists.txt
+@@ -1,10 +1,12 @@
+ set(SOURCES CocoaInterface.mm
++            CPUInfoOsx.cpp
+             HotKeyController.m
+             OSXTextInputResponder.mm
+             smc.c
+             XBMCHelper.cpp)
+ 
+ set(HEADERS CocoaInterface.h
++            CPUInfoOsx.h
+             HotKeyController.h
+             OSXTextInputResponder.h
+             smc.h
+diff --git a/xbmc/platform/darwin/osx/CPUInfoOsx.cpp b/xbmc/platform/darwin/osx/CPUInfoOsx.cpp
+new file mode 100644
+index 000000000000..689543680c23
+--- /dev/null
++++ b/xbmc/platform/darwin/osx/CPUInfoOsx.cpp
+@@ -0,0 +1,124 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#include "CPUInfoOsx.h"
++
++#include "utils/Temperature.h"
++
++#include "platform/darwin/osx/smc.h"
++#include "platform/posix/PosixResourceCounter.h"
++
++#include <array>
++#include <string>
++
++#include <sys/sysctl.h>
++#include <sys/types.h>
++
++std::shared_ptr<CCPUInfo> CCPUInfo::GetCPUInfo()
++{
++  return std::make_shared<CCPUInfoOsx>();
++}
++
++CCPUInfoOsx::CCPUInfoOsx() : m_resourceCounter(new CPosixResourceCounter())
++{
++  int count = 0;
++  size_t countLength = sizeof(count);
++  if (sysctlbyname("hw.activecpu", &count, &countLength, nullptr, 0) == 0)
++    m_cpuCount = count;
++  else
++    m_cpuCount = 1;
++
++  std::array<char, 512> buffer;
++  size_t bufferLength = buffer.size();
++  if (sysctlbyname("machdep.cpu.brand_string", buffer.data(), &bufferLength, nullptr, 0) == 0)
++    m_cpuModel = buffer.data();
++
++  buffer = {};
++  if (sysctlbyname("machdep.cpu.vendor", buffer.data(), &bufferLength, nullptr, 0) == 0)
++    m_cpuVendor = buffer.data();
++
++  for (int core = 0; core < m_cpuCount; core++)
++  {
++    CoreInfo coreInfo;
++    coreInfo.m_id = core;
++    m_cores.emplace_back(coreInfo);
++  }
++
++  buffer = {};
++  if (sysctlbyname("machdep.cpu.features", buffer.data(), &bufferLength, nullptr, 0) == 0)
++  {
++    std::string features = buffer.data();
++
++    if (features.find("MMX") != std::string::npos)
++      m_cpuFeatures |= CPU_FEATURE_MMX;
++
++    if (features.find("MMXEXT") != std::string::npos)
++      m_cpuFeatures |= CPU_FEATURE_MMX2;
++
++    if (features.find("SSE") != std::string::npos)
++      m_cpuFeatures |= CPU_FEATURE_SSE;
++
++    if (features.find("SSE2") != std::string::npos)
++      m_cpuFeatures |= CPU_FEATURE_SSE2;
++
++    if (features.find("SSE3") != std::string::npos)
++      m_cpuFeatures |= CPU_FEATURE_SSE3;
++
++    if (features.find("SSSE3") != std::string::npos)
++      m_cpuFeatures |= CPU_FEATURE_SSSE3;
++
++    if (features.find("SSE4.1") != std::string::npos)
++      m_cpuFeatures |= CPU_FEATURE_SSE4;
++
++    if (features.find("SSE4.2") != std::string::npos)
++      m_cpuFeatures |= CPU_FEATURE_SSE42;
++
++    if (features.find("3DNOW") != std::string::npos)
++      m_cpuFeatures |= CPU_FEATURE_3DNOW;
++
++    if (features.find("3DNOWEXT") != std::string::npos)
++      m_cpuFeatures |= CPU_FEATURE_3DNOWEXT;
++  }
++  else
++    m_cpuFeatures |= CPU_FEATURE_MMX;
++
++  // Set MMX2 when SSE is present as SSE is a superset of MMX2 and Intel doesn't set the MMX2 cap
++  if (m_cpuFeatures & CPU_FEATURE_SSE)
++    m_cpuFeatures |= CPU_FEATURE_MMX2;
++}
++
++int CCPUInfoOsx::GetUsedPercentage()
++{
++  if (!m_nextUsedReadTime.IsTimePast())
++    return m_lastUsedPercentage;
++
++  m_lastUsedPercentage = m_resourceCounter->GetCPUUsage();
++  m_nextUsedReadTime.Set(MINIMUM_TIME_BETWEEN_READS);
++
++  return m_lastUsedPercentage;
++}
++
++float CCPUInfoOsx::GetCPUFrequency()
++{
++  // Get CPU frequency, scaled to MHz.
++  long long hz = 0;
++  size_t len = sizeof(hz);
++  if (sysctlbyname("hw.cpufrequency", &hz, &len, NULL, 0) == -1)
++    return 0.f;
++
++  return hz / 1000000.0;
++}
++
++bool CCPUInfoOsx::GetTemperature(CTemperature& temperature)
++{
++  int value = SMCGetTemperature(SMC_KEY_CPU_TEMP);
++
++  temperature = CTemperature::CreateFromCelsius(value);
++
++  return true;
++}
+diff --git a/xbmc/platform/darwin/osx/CPUInfoOsx.h b/xbmc/platform/darwin/osx/CPUInfoOsx.h
+new file mode 100644
+index 000000000000..5ded61f1a5b6
+--- /dev/null
++++ b/xbmc/platform/darwin/osx/CPUInfoOsx.h
+@@ -0,0 +1,28 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#pragma once
++
++#include "utils/CPUInfo.h"
++#include "utils/Temperature.h"
++
++class CPosixResourceCounter;
++
++class CCPUInfoOsx : public CCPUInfo
++{
++public:
++  CCPUInfoOsx();
++  ~CCPUInfoOsx() = default;
++
++  int GetUsedPercentage() override;
++  float GetCPUFrequency() override;
++  bool GetTemperature(CTemperature& temperature) override;
++
++private:
++  std::unique_ptr<CPosixResourceCounter> m_resourceCounter;
++};
+diff --git a/xbmc/platform/freebsd/CMakeLists.txt b/xbmc/platform/freebsd/CMakeLists.txt
+index 568ca387237e..95afcf0f5f96 100644
+--- a/xbmc/platform/freebsd/CMakeLists.txt
++++ b/xbmc/platform/freebsd/CMakeLists.txt
+@@ -1,8 +1,10 @@
+-set(SOURCES MemUtils.cpp
++set(SOURCES CPUInfoFreebsd.cpp
+             ../linux/OptionalsReg.cpp
+-            ../linux/TimeUtils.cpp)
++            ../linux/TimeUtils.cpp
++            MemUtils.cpp)
+ 
+-set(HEADERS ../linux/OptionalsReg.h
++set(HEADERS CPUInfoFreebsd.h
++            ../linux/OptionalsReg.h
+             ../linux/PlatformConstants.h
+             ../linux/TimeUtils.h)
+ 
+diff --git a/xbmc/platform/freebsd/CPUInfoFreebsd.cpp b/xbmc/platform/freebsd/CPUInfoFreebsd.cpp
+new file mode 100644
+index 000000000000..001939486acc
+--- /dev/null
++++ b/xbmc/platform/freebsd/CPUInfoFreebsd.cpp
+@@ -0,0 +1,139 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#include "CPUInfoFreebsd.h"
++
++#include "utils/Temperature.h"
++#include "utils/log.h"
++
++#include <array>
++#include <vector>
++
++#include <sys/resource.h>
++#include <sys/sysctl.h>
++#include <sys/types.h>
++
++namespace
++{
++
++struct CpuData
++{
++public:
++  std::size_t GetActiveTime() const { return state[CP_USER] + state[CP_NICE] + state[CP_SYS]; }
++
++  std::size_t GetIdleTime() const { return state[CP_INTR] + state[CP_IDLE]; }
++
++  std::size_t GetTotalTime() const { return GetActiveTime() + GetIdleTime(); }
++
++  std::size_t state[CPUSTATES];
++};
++
++} // namespace
++
++std::shared_ptr<CCPUInfo> CCPUInfo::GetCPUInfo()
++{
++  return std::make_shared<CCPUInfoFreebsd>();
++}
++
++CCPUInfoFreebsd::CCPUInfoFreebsd()
++{
++  int count = 0;
++  size_t countLength = sizeof(count);
++  if (sysctlbyname("hw.ncpu", &count, &countLength, nullptr, 0) == 0)
++    m_cpuCount = count;
++  else
++    m_cpuCount = 1;
++
++  std::array<char, 512> cpuModel;
++  size_t length = cpuModel.size();
++  if (sysctlbyname("hw.model", cpuModel.data(), &length, nullptr, 0) == 0)
++    m_cpuModel = cpuModel.data();
++
++  for (int i = 0; i < m_cpuCount; i++)
++  {
++    CoreInfo core;
++    core.m_id = i;
++    m_cores.emplace_back(core);
++  }
++}
++
++int CCPUInfoFreebsd::GetUsedPercentage()
++{
++  int result = 0;
++
++  if (!m_nextUsedReadTime.IsTimePast())
++    return m_lastUsedPercentage;
++
++  size_t len = sizeof(long);
++
++  if (sysctlbyname("kern.cp_times", nullptr, &len, nullptr, 0) != 0)
++    return false;
++
++  std::vector<long> cptimes(len);
++  size_t cptimesLength = cptimes.size();
++  if (sysctlbyname("kern.cp_times", cptimes.data(), &cptimesLength, nullptr, 0) != 0)
++    return false;
++
++  size_t activeTime{0};
++  size_t idleTime{0};
++  size_t totalTime{0};
++
++  std::vector<CpuData> cpuData;
++
++  for (int i = 0; i < m_cpuCount; i++)
++  {
++    CpuData info;
++
++    for (int state = 0; state < CPUSTATES; state++)
++    {
++      info.state[state] = cptimes[i * CPUSTATES + state];
++    }
++
++    activeTime += info.GetActiveTime();
++    idleTime += info.GetIdleTime();
++    totalTime += info.GetTotalTime();
++
++    cpuData.emplace_back(info);
++  }
++
++  activeTime -= m_activeTime;
++  idleTime -= m_idleTime;
++  totalTime -= m_totalTime;
++
++  m_activeTime += activeTime;
++  m_idleTime += idleTime;
++  m_totalTime += totalTime;
++
++  m_lastUsedPercentage = activeTime * 100.0f / totalTime;
++  m_nextUsedReadTime.Set(MINIMUM_TIME_BETWEEN_READS);
++
++  for (size_t core = 0; core < cpuData.size(); core++)
++  {
++    auto activeTime = cpuData[core].GetActiveTime() - m_cores[core].m_activeTime;
++    auto idleTime = cpuData[core].GetIdleTime() - m_cores[core].m_idleTime;
++    auto totalTime = cpuData[core].GetTotalTime() - m_cores[core].m_totalTime;
++
++    m_cores[core].m_usagePercent = activeTime * 100.0f / totalTime;
++
++    m_cores[core].m_activeTime += activeTime;
++    m_cores[core].m_idleTime += idleTime;
++    m_cores[core].m_totalTime += totalTime;
++  }
++
++  return static_cast<int>(m_lastUsedPercentage);
++}
++
++float CCPUInfoFreebsd::GetCPUFrequency()
++{
++  int hz = 0;
++  size_t len = sizeof(hz);
++  if (sysctlbyname("dev.cpu.0.freq", &hz, &len, nullptr, 0) != 0)
++    hz = 0;
++
++  return static_cast<float>(hz);
++}
+diff --git a/xbmc/platform/freebsd/CPUInfoFreebsd.h b/xbmc/platform/freebsd/CPUInfoFreebsd.h
+new file mode 100644
+index 000000000000..c33ba2098547
+--- /dev/null
++++ b/xbmc/platform/freebsd/CPUInfoFreebsd.h
+@@ -0,0 +1,22 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#pragma once
++
++#include "utils/CPUInfo.h"
++#include "utils/Temperature.h"
++
++class CCPUInfoFreebsd : public CCPUInfo
++{
++public:
++  CCPUInfoFreebsd();
++  ~CCPUInfoFreebsd() = default;
++
++  int GetUsedPercentage() override;
++  float GetCPUFrequency() override;
++};
+diff --git a/xbmc/platform/linux/CMakeLists.txt b/xbmc/platform/linux/CMakeLists.txt
+index 7961f6f32633..653227d9444f 100644
+--- a/xbmc/platform/linux/CMakeLists.txt
++++ b/xbmc/platform/linux/CMakeLists.txt
+@@ -1,8 +1,10 @@
+-set(SOURCES OptionalsReg.cpp
++set(SOURCES CPUInfoLinux.cpp
+             MemUtils.cpp
++            OptionalsReg.cpp
+             TimeUtils.cpp)
+ 
+-set(HEADERS OptionalsReg.h
++set(HEADERS CPUInfoLinux.h
++            OptionalsReg.h
+             PlatformConstants.h
+             TimeUtils.h)
+ 
+diff --git a/xbmc/platform/linux/CPUInfoLinux.cpp b/xbmc/platform/linux/CPUInfoLinux.cpp
+new file mode 100644
+index 000000000000..9b107353e7da
+--- /dev/null
++++ b/xbmc/platform/linux/CPUInfoLinux.cpp
+@@ -0,0 +1,286 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#include "CPUInfoLinux.h"
++
++#include "utils/StringUtils.h"
++#include "utils/SysfsUtils.h"
++#include "utils/Temperature.h"
++
++#include <fstream>
++#include <sstream>
++#include <vector>
++
++#if defined(HAS_NEON)
++#include <asm/hwcap.h>
++#include <sys/auxv.h>
++#else
++#include <cpuid.h>
++#endif
++
++#include <unistd.h>
++
++namespace
++{
++enum CpuStates
++{
++  STATE_USER,
++  STATE_NICE,
++  STATE_SYSTEM,
++  STATE_IDLE,
++  STATE_IOWAIT,
++  STATE_IRQ,
++  STATE_SOFTIRQ,
++  STATE_STEAL,
++  STATE_GUEST,
++  STATE_GUEST_NICE,
++  STATE_MAX
++};
++
++struct CpuData
++{
++public:
++  std::size_t GetActiveTime() const
++  {
++    return state[STATE_USER] + state[STATE_NICE] + state[STATE_SYSTEM] + state[STATE_IRQ] +
++           state[STATE_SOFTIRQ] + state[STATE_STEAL] + state[STATE_GUEST] + state[STATE_GUEST_NICE];
++  }
++
++  std::size_t GetIdleTime() const { return state[STATE_IDLE] + state[STATE_IOWAIT]; }
++
++  std::size_t GetTotalTime() const { return GetActiveTime() + GetIdleTime(); }
++
++  std::string cpu;
++  std::size_t state[STATE_MAX];
++};
++} // namespace
++
++std::shared_ptr<CCPUInfo> CCPUInfo::GetCPUInfo()
++{
++  return std::make_shared<CCPUInfoLinux>();
++}
++
++CCPUInfoLinux::CCPUInfoLinux()
++{
++  // new socs use the sysfs soc interface to describe the hardware
++  if (SysfsUtils::Has("/sys/bus/soc/devices/soc0"))
++  {
++    std::string machine;
++    std::string family;
++    std::string socId;
++    if (SysfsUtils::Has("/sys/bus/soc/devices/soc0/machine"))
++      SysfsUtils::GetString("/sys/bus/soc/devices/soc0/machine", machine);
++    if (SysfsUtils::Has("/sys/bus/soc/devices/soc0/family"))
++      SysfsUtils::GetString("/sys/bus/soc/devices/soc0/family", family);
++    if (SysfsUtils::Has("/sys/bus/soc/devices/soc0/soc_id"))
++      SysfsUtils::GetString("/sys/bus/soc/devices/soc0/soc_id", socId);
++    if (m_cpuHardware.empty() && !machine.empty())
++      m_cpuHardware = machine;
++    if (!family.empty() && !socId.empty())
++      m_cpuSoC = family + " " + socId;
++  }
++
++  m_cpuCount = sysconf(_SC_NPROCESSORS_ONLN);
++
++  for (int core = 0; core < m_cpuCount; core++)
++  {
++    CoreInfo coreInfo;
++    coreInfo.m_id = core;
++    m_cores.emplace_back(coreInfo);
++  }
++
++#if !defined(HAS_NEON)
++  unsigned int eax;
++  unsigned int ebx;
++  unsigned int ecx;
++  unsigned int edx;
++
++  m_cpuVendor.clear();
++
++  if (__get_cpuid(CPUID_INFOTYPE_MANUFACTURER, &eax, &ebx, &ecx, &edx))
++  {
++    m_cpuVendor.append(reinterpret_cast<const char*>(&ebx), 4);
++    m_cpuVendor.append(reinterpret_cast<const char*>(&edx), 4);
++    m_cpuVendor.append(reinterpret_cast<const char*>(&ecx), 4);
++  }
++
++  if (__get_cpuid(CPUID_INFOTYPE_EXTENDED_IMPLEMENTED, &eax, &ebx, &ecx, &edx))
++  {
++    if (eax >= CPUID_INFOTYPE_PROCESSOR_3)
++    {
++      m_cpuModel.clear();
++
++      if (__get_cpuid(CPUID_INFOTYPE_PROCESSOR_1, &eax, &ebx, &ecx, &edx))
++      {
++        m_cpuModel.append(reinterpret_cast<const char*>(&eax), 4);
++        m_cpuModel.append(reinterpret_cast<const char*>(&ebx), 4);
++        m_cpuModel.append(reinterpret_cast<const char*>(&ecx), 4);
++        m_cpuModel.append(reinterpret_cast<const char*>(&edx), 4);
++      }
++
++      if (__get_cpuid(CPUID_INFOTYPE_PROCESSOR_2, &eax, &ebx, &ecx, &edx))
++      {
++        m_cpuModel.append(reinterpret_cast<const char*>(&eax), 4);
++        m_cpuModel.append(reinterpret_cast<const char*>(&ebx), 4);
++        m_cpuModel.append(reinterpret_cast<const char*>(&ecx), 4);
++        m_cpuModel.append(reinterpret_cast<const char*>(&edx), 4);
++      }
++
++      if (__get_cpuid(CPUID_INFOTYPE_PROCESSOR_3, &eax, &ebx, &ecx, &edx))
++      {
++        m_cpuModel.append(reinterpret_cast<const char*>(&eax), 4);
++        m_cpuModel.append(reinterpret_cast<const char*>(&ebx), 4);
++        m_cpuModel.append(reinterpret_cast<const char*>(&ecx), 4);
++        m_cpuModel.append(reinterpret_cast<const char*>(&edx), 4);
++      }
++    }
++  }
++
++  if (__get_cpuid(CPUID_INFOTYPE_STANDARD, &eax, &eax, &ecx, &edx))
++  {
++    if (edx & CPUID_00000001_EDX_MMX)
++      m_cpuFeatures |= CPU_FEATURE_MMX;
++
++    if (edx & CPUID_00000001_EDX_SSE)
++      m_cpuFeatures |= CPU_FEATURE_SSE;
++
++    if (edx & CPUID_00000001_EDX_SSE2)
++      m_cpuFeatures |= CPU_FEATURE_SSE2;
++
++    if (ecx & CPUID_00000001_ECX_SSE3)
++      m_cpuFeatures |= CPU_FEATURE_SSE3;
++
++    if (ecx & CPUID_00000001_ECX_SSSE3)
++      m_cpuFeatures |= CPU_FEATURE_SSSE3;
++
++    if (ecx & CPUID_00000001_ECX_SSE4)
++      m_cpuFeatures |= CPU_FEATURE_SSE4;
++
++    if (ecx & CPUID_00000001_ECX_SSE42)
++      m_cpuFeatures |= CPU_FEATURE_SSE42;
++  }
++
++  if (__get_cpuid(CPUID_INFOTYPE_EXTENDED_IMPLEMENTED, &eax, &eax, &ecx, &edx))
++  {
++    if (eax >= CPUID_INFOTYPE_EXTENDED)
++    {
++      if (edx & CPUID_80000001_EDX_MMX)
++        m_cpuFeatures |= CPU_FEATURE_MMX;
++
++      if (edx & CPUID_80000001_EDX_MMX2)
++        m_cpuFeatures |= CPU_FEATURE_MMX2;
++
++      if (edx & CPUID_80000001_EDX_3DNOW)
++        m_cpuFeatures |= CPU_FEATURE_3DNOW;
++
++      if (edx & CPUID_80000001_EDX_3DNOWEXT)
++        m_cpuFeatures |= CPU_FEATURE_3DNOWEXT;
++    }
++  }
++#endif
++
++#if defined(HAS_NEON) && !defined(__LP64__)
++  if (getauxval(AT_HWCAP) & HWCAP_NEON)
++#endif
++#if defined(HAS_NEON)
++    m_cpuFeatures |= CPU_FEATURE_NEON;
++#endif
++
++  // Set MMX2 when SSE is present as SSE is a superset of MMX2 and Intel doesn't set the MMX2 cap
++  if (m_cpuFeatures & CPU_FEATURE_SSE)
++    m_cpuFeatures |= CPU_FEATURE_MMX2;
++}
++
++int CCPUInfoLinux::GetUsedPercentage()
++{
++  if (!m_nextUsedReadTime.IsTimePast())
++    return m_lastUsedPercentage;
++
++  std::vector<CpuData> cpuData;
++
++  std::ifstream infile("/proc/stat");
++  std::string line;
++  for (std::string line; std::getline(infile, line);)
++  {
++    if (line.find("cpu") != std::string::npos)
++    {
++      std::istringstream ss(line);
++      CpuData info;
++
++      ss >> info.cpu;
++
++      for (int i = 0; i < STATE_MAX; i++)
++      {
++        ss >> info.state[i];
++      }
++
++      cpuData.emplace_back(info);
++    }
++  }
++
++  auto activeTime = cpuData.front().GetActiveTime() - m_activeTime;
++  auto idleTime = cpuData.front().GetIdleTime() - m_idleTime;
++  auto totalTime = cpuData.front().GetTotalTime() - m_totalTime;
++
++  m_activeTime += activeTime;
++  m_idleTime += idleTime;
++  m_totalTime += totalTime;
++
++  m_lastUsedPercentage = activeTime * 100.0f / totalTime;
++  m_nextUsedReadTime.Set(MINIMUM_TIME_BETWEEN_READS);
++
++  cpuData.erase(cpuData.begin());
++
++  for (std::size_t core = 0; core < cpuData.size(); core++)
++  {
++    auto activeTime = cpuData[core].GetActiveTime() - m_cores[core].m_activeTime;
++    auto idleTime = cpuData[core].GetIdleTime() - m_cores[core].m_idleTime;
++    auto totalTime = cpuData[core].GetTotalTime() - m_cores[core].m_totalTime;
++
++    m_cores[core].m_usagePercent = activeTime * 100.0f / totalTime;
++
++    m_cores[core].m_activeTime += activeTime;
++    m_cores[core].m_idleTime += idleTime;
++    m_cores[core].m_totalTime += totalTime;
++  }
++
++  return static_cast<int>(m_lastUsedPercentage);
++}
++
++float CCPUInfoLinux::GetCPUFrequency()
++{
++  int value{-1};
++  if (SysfsUtils::Has("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq"))
++    SysfsUtils::GetInt("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq", value);
++
++  value /= 1000.0;
++
++  return value;
++}
++
++bool CCPUInfoLinux::GetTemperature(CTemperature& temperature)
++{
++  if (!SysfsUtils::Has("/sys/class/hwmon/hwmon0/temp1_input"))
++    return CCPUInfo::GetTemperature(temperature);
++
++  int value{-1};
++  char scale{'c'};
++
++  SysfsUtils::GetInt("/sys/class/hwmon/hwmon0/temp1_input", value);
++  value = value / 1000.0;
++  scale = 'c';
++
++  if (scale == 'C' || scale == 'c')
++    temperature = CTemperature::CreateFromCelsius(value);
++  else if (scale == 'F' || scale == 'f')
++    temperature = CTemperature::CreateFromFahrenheit(value);
++
++  temperature.SetValid(true);
++
++  return true;
++}
+diff --git a/xbmc/platform/linux/CPUInfoLinux.h b/xbmc/platform/linux/CPUInfoLinux.h
+new file mode 100644
+index 000000000000..ad1354653a27
+--- /dev/null
++++ b/xbmc/platform/linux/CPUInfoLinux.h
+@@ -0,0 +1,23 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#pragma once
++
++#include "utils/CPUInfo.h"
++#include "utils/Temperature.h"
++
++class CCPUInfoLinux : public CCPUInfo
++{
++public:
++  CCPUInfoLinux();
++  ~CCPUInfoLinux() = default;
++
++  int GetUsedPercentage() override;
++  float GetCPUFrequency() override;
++  bool GetTemperature(CTemperature& temperature) override;
++};
+diff --git a/xbmc/platform/linux/RBP.h b/xbmc/platform/linux/RBP.h
+index 82d55afc2294..f56e7b5f9176 100644
+--- a/xbmc/platform/linux/RBP.h
++++ b/xbmc/platform/linux/RBP.h
+@@ -20,10 +20,10 @@
+ 
+ #include "DllBCM.h"
+ #include "OMXCore.h"
+-#include "utils/CPUInfo.h"
++#include "ServiceBroker.h"
+ #include "threads/CriticalSection.h"
+ #include "threads/Event.h"
+-
++#include "utils/CPUInfo.h"
+ 
+ class AVRpiZcFrameGeometry
+ {
+@@ -83,7 +83,7 @@ class CRBP
+   int GetArmMem() { return m_arm_mem; }
+   int GetGpuMem() { return m_gpu_mem; }
+   bool GetCodecMpg2() { return m_codec_mpg2_enabled; }
+-  int RaspberryPiVersion() { return g_cpuInfo.getCPUCount() == 1 ? 1 : 2; };
++  int RaspberryPiVersion() { return CServiceBroker::GetCPUInfo()->GetCPUCount() == 1 ? 1 : 2; };
+   bool GetCodecWvc1() { return m_codec_wvc1_enabled; }
+   void GetDisplaySize(int &width, int &height);
+   DISPMANX_DISPLAY_HANDLE_T OpenDisplay(uint32_t device);
+diff --git a/xbmc/platform/posix/PlatformPosix.cpp b/xbmc/platform/posix/PlatformPosix.cpp
+index 9ad74c906e9a..0a061a84989d 100644
+--- a/xbmc/platform/posix/PlatformPosix.cpp
++++ b/xbmc/platform/posix/PlatformPosix.cpp
+@@ -12,6 +12,8 @@ std::atomic_flag CPlatformPosix::ms_signalFlag;
+ 
+ void CPlatformPosix::Init()
+ {
++  CPlatform::Init();
++
+   // Initialize to "set" state
+   ms_signalFlag.test_and_set();
+ }
+diff --git a/xbmc/platform/win10/CMakeLists.txt b/xbmc/platform/win10/CMakeLists.txt
+index b8b36d399c28..80b078168f5b 100644
+--- a/xbmc/platform/win10/CMakeLists.txt
++++ b/xbmc/platform/win10/CMakeLists.txt
+@@ -1,4 +1,5 @@
+-set(SOURCES input/RemoteControlXbox.cpp
++set(SOURCES CPUInfoWin10.cpp
++            input/RemoteControlXbox.cpp
+             Environment.cpp
+             Win10App.cpp
+             MessagePrinter.cpp
+@@ -9,8 +10,9 @@ set(SOURCES input/RemoteControlXbox.cpp
+             ../win32/pch.cpp
+             ../win32/WIN32Util.cpp)
+ 
+-set(HEADERS input/RemoteControlXbox.h
+-            AsyncHelpers.h
++set(HEADERS AsyncHelpers.h
++            CPUInfoWin10.h
++            input/RemoteControlXbox.h
+             Win10App.h
+             ../win32/CharsetConverter.h
+             ../win32/dirent.h
+diff --git a/xbmc/platform/win10/CPUInfoWin10.cpp b/xbmc/platform/win10/CPUInfoWin10.cpp
+new file mode 100644
+index 000000000000..4885ef6cf114
+--- /dev/null
++++ b/xbmc/platform/win10/CPUInfoWin10.cpp
+@@ -0,0 +1,119 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#include "CPUInfoWin10.h"
++
++#include "ServiceBroker.h"
++#include "settings/AdvancedSettings.h"
++#include "settings/SettingsComponent.h"
++#include "utils/StringUtils.h"
++#include "utils/SysfsUtils.h"
++#include "utils/Temperature.h"
++
++#include <winrt/Windows.Foundation.Metadata.h>
++#include <winrt/Windows.System.Diagnostics.h>
++
++namespace
++{
++const unsigned int CPUINFO_EAX{0};
++const unsigned int CPUINFO_EBX{1};
++const unsigned int CPUINFO_ECX{2};
++const unsigned int CPUINFO_EDX{3};
++} // namespace
++
++std::shared_ptr<CCPUInfo> CCPUInfo::GetCPUInfo()
++{
++  return std::make_shared<CCPUInfoWin10>();
++}
++
++CCPUInfoWin10::CCPUInfoWin10()
++{
++  SYSTEM_INFO siSysInfo;
++  GetNativeSystemInfo(&siSysInfo);
++  m_cpuCount = siSysInfo.dwNumberOfProcessors;
++  m_cpuModel = "Unknown";
++
++  int CPUInfo[4]; // receives EAX, EBX, ECD and EDX in that order
++
++  __cpuid(CPUInfo, 0);
++  int MaxStdInfoType = CPUInfo[0];
++
++  if (MaxStdInfoType >= CPUID_INFOTYPE_STANDARD)
++  {
++    __cpuid(CPUInfo, CPUID_INFOTYPE_STANDARD);
++    if (CPUInfo[CPUINFO_EDX] & CPUID_00000001_EDX_MMX)
++      m_cpuFeatures |= CPU_FEATURE_MMX;
++    if (CPUInfo[CPUINFO_EDX] & CPUID_00000001_EDX_SSE)
++      m_cpuFeatures |= CPU_FEATURE_SSE;
++    if (CPUInfo[CPUINFO_EDX] & CPUID_00000001_EDX_SSE2)
++      m_cpuFeatures |= CPU_FEATURE_SSE2;
++    if (CPUInfo[CPUINFO_ECX] & CPUID_00000001_ECX_SSE3)
++      m_cpuFeatures |= CPU_FEATURE_SSE3;
++    if (CPUInfo[CPUINFO_ECX] & CPUID_00000001_ECX_SSSE3)
++      m_cpuFeatures |= CPU_FEATURE_SSSE3;
++    if (CPUInfo[CPUINFO_ECX] & CPUID_00000001_ECX_SSE4)
++      m_cpuFeatures |= CPU_FEATURE_SSE4;
++    if (CPUInfo[CPUINFO_ECX] & CPUID_00000001_ECX_SSE42)
++      m_cpuFeatures |= CPU_FEATURE_SSE42;
++  }
++
++  __cpuid(CPUInfo, 0x80000000);
++  int MaxExtInfoType = CPUInfo[0];
++
++  if (MaxExtInfoType >= CPUID_INFOTYPE_EXTENDED)
++  {
++    __cpuid(CPUInfo, CPUID_INFOTYPE_EXTENDED);
++
++    if (CPUInfo[CPUINFO_EDX] & CPUID_80000001_EDX_MMX)
++      m_cpuFeatures |= CPU_FEATURE_MMX;
++    if (CPUInfo[CPUINFO_EDX] & CPUID_80000001_EDX_MMX2)
++      m_cpuFeatures |= CPU_FEATURE_MMX2;
++    if (CPUInfo[CPUINFO_EDX] & CPUID_80000001_EDX_3DNOW)
++      m_cpuFeatures |= CPU_FEATURE_3DNOW;
++    if (CPUInfo[CPUINFO_EDX] & CPUID_80000001_EDX_3DNOWEXT)
++      m_cpuFeatures |= CPU_FEATURE_3DNOWEXT;
++  }
++
++  // Set MMX2 when SSE is present as SSE is a superset of MMX2 and Intel doesn't set the MMX2 cap
++  if (m_cpuFeatures & CPU_FEATURE_SSE)
++    m_cpuFeatures |= CPU_FEATURE_MMX2;
++}
++
++int CCPUInfoWin10::GetUsedPercentage()
++{
++  if (!m_nextUsedReadTime.IsTimePast())
++    return m_lastUsedPercentage;
++
++  if (!winrt::Windows::Foundation::Metadata::ApiInformation::IsTypePresent(
++          L"Windows.System.Diagnostics.SystemDiagnosticInfo"))
++  {
++    return 0;
++  }
++
++  auto diagnostic =
++      winrt::Windows::System::Diagnostics::SystemDiagnosticInfo::GetForCurrentSystem();
++  auto usage = diagnostic.CpuUsage();
++  auto report = usage.GetReport();
++
++  auto user = report.UserTime().count();
++  auto idle = report.IdleTime().count();
++  auto system = report.KernelTime().count() - idle;
++
++  auto activeTime = (user + system) - m_activeTime;
++  auto idleTime = idle - m_idleTime;
++  auto totalTime = (user + idle + system) - m_totalTime;
++
++  m_activeTime += activeTime;
++  m_idleTime += idleTime;
++  m_totalTime += totalTime;
++
++  m_lastUsedPercentage = activeTime * 100.0f / totalTime;
++  m_nextUsedReadTime.Set(MINIMUM_TIME_BETWEEN_READS);
++
++  return static_cast<int>(m_lastUsedPercentage);
++}
+diff --git a/xbmc/platform/win10/CPUInfoWin10.h b/xbmc/platform/win10/CPUInfoWin10.h
+new file mode 100644
+index 000000000000..220f38d6eedf
+--- /dev/null
++++ b/xbmc/platform/win10/CPUInfoWin10.h
+@@ -0,0 +1,22 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#pragma once
++
++#include "utils/CPUInfo.h"
++#include "utils/Temperature.h"
++
++class CCPUInfoWin10 : public CCPUInfo
++{
++public:
++  CCPUInfoWin10();
++  ~CCPUInfoWin10() = default;
++
++  int GetUsedPercentage() override;
++  float GetCPUFrequency() override { return 0; }
++};
+diff --git a/xbmc/platform/win32/CMakeLists.txt b/xbmc/platform/win32/CMakeLists.txt
+index 1b9f21ebd361..06ca19a31211 100644
+--- a/xbmc/platform/win32/CMakeLists.txt
++++ b/xbmc/platform/win32/CMakeLists.txt
+@@ -1,4 +1,5 @@
+ set(SOURCES CharsetConverter.cpp
++            CPUInfoWin32.cpp
+             Environment.cpp
+             MemUtils.cpp
+             MessagePrinter.cpp
+@@ -9,6 +10,7 @@ set(SOURCES CharsetConverter.cpp
+             WindowHelper.cpp)
+ 
+ set(HEADERS CharsetConverter.h
++            CPUInfoWin32.h
+             dirent.h
+             dxerr.h
+             IMMNotificationClient.h
+diff --git a/xbmc/platform/win32/CPUInfoWin32.cpp b/xbmc/platform/win32/CPUInfoWin32.cpp
+new file mode 100644
+index 000000000000..213f74db3583
+--- /dev/null
++++ b/xbmc/platform/win32/CPUInfoWin32.cpp
+@@ -0,0 +1,289 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#include "CPUInfoWin32.h"
++
++#include "ServiceBroker.h"
++#include "settings/AdvancedSettings.h"
++#include "settings/SettingsComponent.h"
++#include "utils/StringUtils.h"
++#include "utils/SysfsUtils.h"
++#include "utils/Temperature.h"
++
++#include "platform/win32/CharsetConverter.h"
++
++#include <algorithm>
++
++#include <Pdh.h>
++#include <PdhMsg.h>
++#include <intrin.h>
++
++#pragma comment(lib, "Pdh.lib")
++
++namespace
++{
++const unsigned int CPUINFO_EAX{0};
++const unsigned int CPUINFO_EBX{1};
++const unsigned int CPUINFO_ECX{2};
++const unsigned int CPUINFO_EDX{3};
++} // namespace
++
++using KODI::PLATFORM::WINDOWS::FromW;
++
++std::shared_ptr<CCPUInfo> CCPUInfo::GetCPUInfo()
++{
++  return std::make_shared<CCPUInfoWin32>();
++}
++
++CCPUInfoWin32::CCPUInfoWin32()
++{
++
++  HKEY hKeyCpuRoot;
++
++  if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"HARDWARE\\DESCRIPTION\\System\\CentralProcessor", 0,
++                    KEY_READ, &hKeyCpuRoot) == ERROR_SUCCESS)
++  {
++    DWORD num = 0;
++    wchar_t subKeyName[200]; // more than enough
++    DWORD subKeyNameLen = sizeof(subKeyName) / sizeof(wchar_t);
++    while (RegEnumKeyExW(hKeyCpuRoot, num++, subKeyName, &subKeyNameLen, nullptr, nullptr, nullptr,
++                         nullptr) == ERROR_SUCCESS)
++    {
++      HKEY hCpuKey;
++      if (RegOpenKeyExW(hKeyCpuRoot, subKeyName, 0, KEY_QUERY_VALUE, &hCpuKey) == ERROR_SUCCESS)
++      {
++        CoreInfo cpuCore;
++        bool vendorfound = false;
++        bool modelfound = false;
++        if (swscanf_s(subKeyName, L"%i", &cpuCore.m_id) != 1)
++          cpuCore.m_id = num - 1;
++        wchar_t buf[300]; // more than enough
++        DWORD bufSize = sizeof(buf);
++        DWORD valType;
++        if (!modelfound &&
++            RegQueryValueExW(hCpuKey, L"ProcessorNameString", nullptr, &valType, LPBYTE(buf),
++                             &bufSize) == ERROR_SUCCESS &&
++            valType == REG_SZ)
++        {
++          m_cpuModel = FromW(buf, bufSize / sizeof(wchar_t));
++          m_cpuModel =
++              m_cpuModel.substr(0, m_cpuModel.find(char(0))); // remove extra null terminations
++          StringUtils::RemoveDuplicatedSpacesAndTabs(m_cpuModel);
++          StringUtils::Trim(m_cpuModel);
++          modelfound = true;
++        }
++        bufSize = sizeof(buf);
++        if (!vendorfound &&
++            RegQueryValueExW(hCpuKey, L"VendorIdentifier", nullptr, &valType, LPBYTE(buf),
++                             &bufSize) == ERROR_SUCCESS &&
++            valType == REG_SZ)
++        {
++          m_cpuVendor = FromW(buf, bufSize / sizeof(wchar_t));
++          m_cpuVendor =
++              m_cpuVendor.substr(0, m_cpuVendor.find(char(0))); // remove extra null terminations
++          vendorfound = true;
++        }
++        RegCloseKey(hCpuKey);
++
++        m_cores.push_back(cpuCore);
++        m_coreCounters.push_back(nullptr);
++      }
++      subKeyNameLen = sizeof(subKeyName) / sizeof(wchar_t); // restore length value
++    }
++    RegCloseKey(hKeyCpuRoot);
++  }
++
++  SYSTEM_INFO siSysInfo;
++  GetNativeSystemInfo(&siSysInfo);
++  m_cpuCount = siSysInfo.dwNumberOfProcessors;
++
++  if (PdhOpenQueryW(nullptr, 0, &m_cpuQueryFreq) == ERROR_SUCCESS)
++  {
++    if (PdhAddEnglishCounterW(m_cpuQueryFreq, L"\\Processor Information(0,0)\\Processor Frequency",
++                              0, &m_cpuFreqCounter) != ERROR_SUCCESS)
++      m_cpuFreqCounter = nullptr;
++  }
++  else
++    m_cpuQueryFreq = nullptr;
++
++  if (PdhOpenQueryW(nullptr, 0, &m_cpuQueryLoad) == ERROR_SUCCESS)
++  {
++    for (size_t i = 0; i < m_cores.size(); i++)
++    {
++      if (i < m_coreCounters.size() &&
++          PdhAddEnglishCounterW(
++              m_cpuQueryLoad, StringUtils::Format(L"\\Processor(%d)\\%% Idle Time", int(i)).c_str(),
++              0, &m_coreCounters[i]) != ERROR_SUCCESS)
++        m_coreCounters[i] = nullptr;
++    }
++  }
++  else
++    m_cpuQueryLoad = nullptr;
++
++#ifndef _M_ARM
++  int CPUInfo[4]; // receives EAX, EBX, ECD and EDX in that order
++
++  __cpuid(CPUInfo, 0);
++  int MaxStdInfoType = CPUInfo[0];
++
++  if (MaxStdInfoType >= CPUID_INFOTYPE_STANDARD)
++  {
++    __cpuid(CPUInfo, CPUID_INFOTYPE_STANDARD);
++    if (CPUInfo[CPUINFO_EDX] & CPUID_00000001_EDX_MMX)
++      m_cpuFeatures |= CPU_FEATURE_MMX;
++    if (CPUInfo[CPUINFO_EDX] & CPUID_00000001_EDX_SSE)
++      m_cpuFeatures |= CPU_FEATURE_SSE;
++    if (CPUInfo[CPUINFO_EDX] & CPUID_00000001_EDX_SSE2)
++      m_cpuFeatures |= CPU_FEATURE_SSE2;
++    if (CPUInfo[CPUINFO_ECX] & CPUID_00000001_ECX_SSE3)
++      m_cpuFeatures |= CPU_FEATURE_SSE3;
++    if (CPUInfo[CPUINFO_ECX] & CPUID_00000001_ECX_SSSE3)
++      m_cpuFeatures |= CPU_FEATURE_SSSE3;
++    if (CPUInfo[CPUINFO_ECX] & CPUID_00000001_ECX_SSE4)
++      m_cpuFeatures |= CPU_FEATURE_SSE4;
++    if (CPUInfo[CPUINFO_ECX] & CPUID_00000001_ECX_SSE42)
++      m_cpuFeatures |= CPU_FEATURE_SSE42;
++  }
++
++  __cpuid(CPUInfo, CPUID_INFOTYPE_EXTENDED_IMPLEMENTED);
++  if (CPUInfo[0] >= CPUID_INFOTYPE_EXTENDED)
++  {
++    __cpuid(CPUInfo, CPUID_INFOTYPE_EXTENDED);
++
++    if (CPUInfo[CPUINFO_EDX] & CPUID_80000001_EDX_MMX)
++      m_cpuFeatures |= CPU_FEATURE_MMX;
++    if (CPUInfo[CPUINFO_EDX] & CPUID_80000001_EDX_MMX2)
++      m_cpuFeatures |= CPU_FEATURE_MMX2;
++    if (CPUInfo[CPUINFO_EDX] & CPUID_80000001_EDX_3DNOW)
++      m_cpuFeatures |= CPU_FEATURE_3DNOW;
++    if (CPUInfo[CPUINFO_EDX] & CPUID_80000001_EDX_3DNOWEXT)
++      m_cpuFeatures |= CPU_FEATURE_3DNOWEXT;
++  }
++#endif // ! _M_ARM
++
++  // Set MMX2 when SSE is present as SSE is a superset of MMX2 and Intel doesn't set the MMX2 cap
++  if (m_cpuFeatures & CPU_FEATURE_SSE)
++    m_cpuFeatures |= CPU_FEATURE_MMX2;
++}
++
++CCPUInfoWin32::~CCPUInfoWin32()
++{
++  if (m_cpuQueryFreq)
++    PdhCloseQuery(m_cpuQueryFreq);
++
++  if (m_cpuQueryLoad)
++    PdhCloseQuery(m_cpuQueryLoad);
++}
++
++int CCPUInfoWin32::GetUsedPercentage()
++{
++  int result = 0;
++
++  if (!m_nextUsedReadTime.IsTimePast())
++    return m_lastUsedPercentage;
++
++  FILETIME idleTimestamp;
++  FILETIME kernelTimestamp;
++  FILETIME userTimestamp;
++  if (GetSystemTimes(&idleTimestamp, &kernelTimestamp, &userTimestamp) == 0)
++    return m_lastUsedPercentage;
++
++  size_t kernelTime = 0;
++  size_t userTime = 0;
++  size_t activeTime = 0;
++  size_t idleTime = 0;
++  size_t totalTime = 0;
++
++  idleTime = (static_cast<size_t>(idleTimestamp.dwHighDateTime) << 32) +
++             static_cast<size_t>(idleTimestamp.dwLowDateTime);
++  kernelTime = (static_cast<size_t>(kernelTimestamp.dwHighDateTime) << 32) +
++               static_cast<size_t>(kernelTimestamp.dwLowDateTime);
++  userTime = (static_cast<size_t>(userTimestamp.dwHighDateTime) << 32) +
++             static_cast<size_t>(userTimestamp.dwLowDateTime);
++  if (userTime + kernelTime + idleTime == 0)
++    return m_lastUsedPercentage;
++
++  // Teturned "kernelTime" includes "idleTime"
++  activeTime = static_cast<size_t>(userTime + kernelTime - idleTime);
++  totalTime = static_cast<size_t>(userTime + kernelTime);
++
++  activeTime -= m_activeTime;
++  idleTime -= m_idleTime;
++  totalTime -= m_totalTime;
++
++  m_activeTime += activeTime;
++  m_idleTime += idleTime;
++  m_totalTime += totalTime;
++
++  m_lastUsedPercentage = activeTime * 100.0f / totalTime;
++  m_nextUsedReadTime.Set(MINIMUM_TIME_BETWEEN_READS);
++
++  if (m_cpuFreqCounter && PdhCollectQueryData(m_cpuQueryLoad) == ERROR_SUCCESS)
++  {
++    size_t i = 0;
++    for (auto& core : m_cores)
++    {
++      PDH_RAW_COUNTER cnt;
++      DWORD cntType;
++      PDH_HCOUNTER coreCounter;
++      if (i < m_coreCounters.size())
++        coreCounter = m_coreCounters[i];
++      if (coreCounter && PdhGetRawCounterValue(coreCounter, &cntType, &cnt) == ERROR_SUCCESS &&
++          (cnt.CStatus == PDH_CSTATUS_VALID_DATA || cnt.CStatus == PDH_CSTATUS_NEW_DATA))
++      {
++        const LONGLONG coreTotal = cnt.SecondValue;
++        const LONGLONG coreIdle = cnt.FirstValue;
++        const LONGLONG deltaTotal = coreTotal - core.m_totalTime;
++        const LONGLONG deltaIdle = coreIdle - core.m_idleTime;
++        const double load = (double(deltaTotal - deltaIdle) * 100.0) / double(deltaTotal);
++
++        // win32 has some problems with calculation of load if load close to zero
++        if (load < 0)
++          core.m_usagePercent = 0;
++        else
++          core.m_usagePercent = load;
++        if (load >= 0 ||
++            deltaTotal > 5 * 10 * 1000 *
++                             1000) // do not update (smooth) values for 5 seconds on negative loads
++        {
++          core.m_totalTime = coreTotal;
++          core.m_idleTime = coreIdle;
++        }
++      }
++      else
++        core.m_usagePercent = double(m_lastUsedPercentage); // use CPU average as fallback
++
++      i++;
++    }
++  }
++  else
++    for (auto& core : m_cores)
++      core.m_usagePercent = double(m_lastUsedPercentage); // use CPU average as fallback
++
++
++  result = static_cast<int>(m_lastUsedPercentage);
++
++  return result;
++}
++
++float CCPUInfoWin32::GetCPUFrequency()
++{
++  // Get CPU frequency, scaled to MHz.
++  if (m_cpuFreqCounter && PdhCollectQueryData(m_cpuQueryFreq) == ERROR_SUCCESS)
++  {
++    PDH_RAW_COUNTER cnt;
++    DWORD cntType;
++    if (PdhGetRawCounterValue(m_cpuFreqCounter, &cntType, &cnt) == ERROR_SUCCESS &&
++        (cnt.CStatus == PDH_CSTATUS_VALID_DATA || cnt.CStatus == PDH_CSTATUS_NEW_DATA))
++    {
++      return float(cnt.FirstValue);
++    }
++  }
++
++  return 0;
++}
+diff --git a/xbmc/platform/win32/CPUInfoWin32.h b/xbmc/platform/win32/CPUInfoWin32.h
+new file mode 100644
+index 000000000000..996de4efaffe
+--- /dev/null
++++ b/xbmc/platform/win32/CPUInfoWin32.h
+@@ -0,0 +1,33 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#pragma once
++
++#include "utils/CPUInfo.h"
++#include "utils/Temperature.h"
++
++class CCPUInfoWin32 : public CCPUInfo
++{
++public:
++  CCPUInfoWin32();
++  ~CCPUInfoWin32();
++
++  int GetUsedPercentage() override;
++  float GetCPUFrequency() override;
++
++private:
++  // avoid inclusion of <windows.h> and others
++  typedef void* HANDLE;
++  typedef HANDLE PDH_HQUERY;
++  typedef HANDLE PDH_HCOUNTER;
++
++  PDH_HQUERY m_cpuQueryFreq{nullptr};
++  PDH_HQUERY m_cpuQueryLoad{nullptr};
++  PDH_HCOUNTER m_cpuFreqCounter{nullptr};
++  std::vector<PDH_HCOUNTER> m_coreCounters;
++};
+diff --git a/xbmc/platform/win32/WinMain.cpp b/xbmc/platform/win32/WinMain.cpp
+index d59ec4b83dd9..51fecd30f1e5 100644
+--- a/xbmc/platform/win32/WinMain.cpp
++++ b/xbmc/platform/win32/WinMain.cpp
+@@ -8,6 +8,7 @@
+ 
+ #include "AppParamParser.h"
+ #include "CompileInfo.h"
++#include "ServiceBroker.h"
+ #include "platform/Environment.h"
+ #include "platform/xbmc.h"
+ #include "threads/Thread.h"
+diff --git a/xbmc/rendering/MatrixGL.cpp b/xbmc/rendering/MatrixGL.cpp
+index fc82cb35c9ad..ebddae3a29e2 100644
+--- a/xbmc/rendering/MatrixGL.cpp
++++ b/xbmc/rendering/MatrixGL.cpp
+@@ -7,6 +7,8 @@
+  */
+ 
+ #include "MatrixGL.h"
++
++#include "ServiceBroker.h"
+ #include "utils/TransformMatrix.h"
+ 
+ #if defined(HAS_NEON) && !defined(__LP64__)
+@@ -132,11 +134,11 @@ void CMatrixGL::Rotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
+ void CMatrixGL::MultMatrixf(const CMatrixGL &matrix) noexcept
+ {
+ #if defined(HAS_NEON) && !defined(__LP64__)
+-    if ((g_cpuInfo.GetCPUFeatures() & CPU_FEATURE_NEON) == CPU_FEATURE_NEON)
+-    {
+-      Matrix4Mul(m_pMatrix, matrix.m_pMatrix);
+-      return;
+-    }
++  if ((CServiceBroker::GetCPUInfo()->GetCPUFeatures() & CPU_FEATURE_NEON) == CPU_FEATURE_NEON)
++  {
++    Matrix4Mul(m_pMatrix, matrix.m_pMatrix);
++    return;
++  }
+ #endif
+     GLfloat a = (matrix.m_pMatrix[0]  * m_pMatrix[0]) + (matrix.m_pMatrix[1]  * m_pMatrix[4]) + (matrix.m_pMatrix[2]  * m_pMatrix[8])  + (matrix.m_pMatrix[3]  * m_pMatrix[12]);
+     GLfloat b = (matrix.m_pMatrix[0]  * m_pMatrix[1]) + (matrix.m_pMatrix[1]  * m_pMatrix[5]) + (matrix.m_pMatrix[2]  * m_pMatrix[9])  + (matrix.m_pMatrix[3]  * m_pMatrix[13]);
 diff --git a/xbmc/utils/CPUInfo.cpp b/xbmc/utils/CPUInfo.cpp
 index 111a293615..3737b65277 100644
 --- a/xbmc/utils/CPUInfo.cpp
@@ -1086,6 +3002,668 @@ index 111a293615..3737b65277 100644
 -}
 -
 -CCPUInfo g_cpuInfo;
--- 
-2.16.4
+diff --git a/xbmc/utils/CPUInfo.h b/xbmc/utils/CPUInfo.h
+index f1a19c8811ca..dc298a52a94d 100644
+--- a/xbmc/utils/CPUInfo.h
++++ b/xbmc/utils/CPUInfo.h
+@@ -9,127 +9,110 @@
+ #pragma once
+ 
+ #include "threads/SystemClock.h"
++#include "utils/Temperature.h"
+ 
+-#include <map>
+-#include <stdio.h>
++#include <memory>
+ #include <string>
+-#include <time.h>
+-
+-#ifdef TARGET_WINDOWS
+-// avoid inclusion of <windows.h> and others
+-typedef void* HANDLE;
+-typedef HANDLE PDH_HQUERY;
+-typedef HANDLE PDH_HCOUNTER;
+-#endif
+-class CTemperature;
+-#if defined(TARGET_DARWIN)
+-class CPosixResourceCounter;
+-#endif
+-
+-#define CPU_FEATURE_MMX      1 << 0
+-#define CPU_FEATURE_MMX2     1 << 1
+-#define CPU_FEATURE_SSE      1 << 2
+-#define CPU_FEATURE_SSE2     1 << 3
+-#define CPU_FEATURE_SSE3     1 << 4
+-#define CPU_FEATURE_SSSE3    1 << 5
+-#define CPU_FEATURE_SSE4     1 << 6
+-#define CPU_FEATURE_SSE42    1 << 7
+-#define CPU_FEATURE_3DNOW    1 << 8
+-#define CPU_FEATURE_3DNOWEXT 1 << 9
+-#define CPU_FEATURE_ALTIVEC  1 << 10
+-#define CPU_FEATURE_NEON     1 << 11
++#include <vector>
++
++enum CpuFeature
++{
++  CPU_FEATURE_MMX = 1 << 0,
++  CPU_FEATURE_MMX2 = 1 << 1,
++  CPU_FEATURE_SSE = 1 << 2,
++  CPU_FEATURE_SSE2 = 1 << 3,
++  CPU_FEATURE_SSE3 = 1 << 4,
++  CPU_FEATURE_SSSE3 = 1 << 5,
++  CPU_FEATURE_SSE4 = 1 << 6,
++  CPU_FEATURE_SSE42 = 1 << 7,
++  CPU_FEATURE_3DNOW = 1 << 8,
++  CPU_FEATURE_3DNOWEXT = 1 << 9,
++  CPU_FEATURE_ALTIVEC = 1 << 10,
++  CPU_FEATURE_NEON = 1 << 11,
++};
+ 
+ struct CoreInfo
+ {
+-  int    m_id = 0;
+-  double m_fSpeed = .0;
+-  double m_fPct = .0;
+-#ifdef TARGET_POSIX
+-  unsigned long long m_user = 0LL;
+-  unsigned long long m_nice = 0LL;
+-  unsigned long long m_system = 0LL;
+-  unsigned long long m_io = 0LL;
+-#elif defined(TARGET_WINDOWS)
+-  PDH_HCOUNTER m_coreCounter = NULL;
+-  unsigned long long m_total = 0;
+-#endif
+-  unsigned long long m_idle = 0LL;
+-  std::string m_strVendor;
+-  std::string m_strModel;
+-  std::string m_strBogoMips;
+-  std::string m_strSoC;
+-  std::string m_strHardware;
+-  std::string m_strRevision;
+-  std::string m_strSerial;
+-  bool operator<(const CoreInfo& other) const { return m_id < other.m_id; }
++  int m_id = 0;
++  double m_usagePercent = 0.0;
++  std::size_t m_activeTime = 0;
++  std::size_t m_idleTime = 0;
++  std::size_t m_totalTime = 0;
+ };
+ 
+ class CCPUInfo
+ {
+ public:
+-  CCPUInfo(void);
+-  ~CCPUInfo();
+-
+-  int getUsedPercentage();
+-  int getCPUCount() const { return m_cpuCount; }
+-  float getCPUFrequency();
+-  bool getTemperature(CTemperature& temperature);
+-  std::string& getCPUModel() { return m_cpuModel; }
+-  std::string& getCPUBogoMips() { return m_cpuBogoMips; }
+-  std::string& getCPUSoC() { return m_cpuSoC; }
+-  std::string& getCPUHardware() { return m_cpuHardware; }
+-  std::string& getCPURevision() { return m_cpuRevision; }
+-  std::string& getCPUSerial() { return m_cpuSerial; }
+-
+-  const CoreInfo &GetCoreInfo(int nCoreId);
+-  bool HasCoreId(int nCoreId) const;
+-
++  // Defines to help with calls to CPUID
++  const unsigned int CPUID_INFOTYPE_MANUFACTURER = 0x00000000;
++  const unsigned int CPUID_INFOTYPE_STANDARD = 0x00000001;
++  const unsigned int CPUID_INFOTYPE_EXTENDED_IMPLEMENTED = 0x80000000;
++  const unsigned int CPUID_INFOTYPE_EXTENDED = 0x80000001;
++  const unsigned int CPUID_INFOTYPE_PROCESSOR_1 = 0x80000002;
++  const unsigned int CPUID_INFOTYPE_PROCESSOR_2 = 0x80000003;
++  const unsigned int CPUID_INFOTYPE_PROCESSOR_3 = 0x80000004;
++
++  // Standard Features
++  // Bitmasks for the values returned by a call to cpuid with eax=0x00000001
++  const unsigned int CPUID_00000001_ECX_SSE3 = (1 << 0);
++  const unsigned int CPUID_00000001_ECX_SSSE3 = (1 << 9);
++  const unsigned int CPUID_00000001_ECX_SSE4 = (1 << 19);
++  const unsigned int CPUID_00000001_ECX_SSE42 = (1 << 20);
++
++  const unsigned int CPUID_00000001_EDX_MMX = (1 << 23);
++  const unsigned int CPUID_00000001_EDX_SSE = (1 << 25);
++  const unsigned int CPUID_00000001_EDX_SSE2 = (1 << 26);
++
++  // Extended Features
++  // Bitmasks for the values returned by a call to cpuid with eax=0x80000001
++  const unsigned int CPUID_80000001_EDX_MMX2 = (1 << 22);
++  const unsigned int CPUID_80000001_EDX_MMX = (1 << 23);
++  const unsigned int CPUID_80000001_EDX_3DNOWEXT = (1 << 30);
++  const unsigned int CPUID_80000001_EDX_3DNOW = (1 << 31);
++
++  // In milliseconds
++  const int MINIMUM_TIME_BETWEEN_READS{500};
++
++  static std::shared_ptr<CCPUInfo> GetCPUInfo();
++
++  virtual int GetUsedPercentage() = 0;
++  virtual float GetCPUFrequency() = 0;
++  virtual bool GetTemperature(CTemperature& temperature);
++
++  bool HasCoreId(int coreId) const;
++  const CoreInfo GetCoreInfo(int coreId);
+   std::string GetCoresUsageString() const;
+ 
+   unsigned int GetCPUFeatures() const { return m_cpuFeatures; }
+-
+-private:
+-  CCPUInfo(const CCPUInfo&) = delete;
+-  CCPUInfo& operator=(const CCPUInfo&) = delete;
+-  bool readProcStat(unsigned long long& user, unsigned long long& nice, unsigned long long& system,
+-                    unsigned long long& idle, unsigned long long& io);
+-  void ReadCPUFeatures();
+-  static bool HasNeon();
+-
+-#ifdef TARGET_POSIX
+-  FILE* m_fProcStat;
+-  FILE* m_fProcTemperature;
+-  FILE* m_fCPUFreq;
+-  bool m_cpuInfoForFreq;
+-#if defined(TARGET_DARWIN)
+-  CPosixResourceCounter *m_pResourceCounter;
+-#endif
+-#elif defined(TARGET_WINDOWS)
+-  PDH_HQUERY m_cpuQueryFreq;
+-  PDH_HQUERY m_cpuQueryLoad;
+-  PDH_HCOUNTER m_cpuFreqCounter;
+-#endif
+-
+-  unsigned long long m_userTicks;
+-  unsigned long long m_niceTicks;
+-  unsigned long long m_systemTicks;
+-  unsigned long long m_idleTicks;
+-  unsigned long long m_ioTicks;
+-
+-  int          m_lastUsedPercentage;
++  int GetCPUCount() const { return m_cpuCount; }
++  std::string GetCPUModel() { return m_cpuModel; }
++  std::string GetCPUBogoMips() { return m_cpuBogoMips; }
++  std::string GetCPUSoC() { return m_cpuSoC; }
++  std::string GetCPUHardware() { return m_cpuHardware; }
++  std::string GetCPURevision() { return m_cpuRevision; }
++  std::string GetCPUSerial() { return m_cpuSerial; }
++
++protected:
++  CCPUInfo() = default;
++  virtual ~CCPUInfo() = default;
++
++  int m_lastUsedPercentage;
+   XbmcThreads::EndTime m_nextUsedReadTime;
+-  std::string  m_cpuModel;
+-  std::string  m_cpuBogoMips;
+-  std::string  m_cpuSoC;
+-  std::string  m_cpuHardware;
+-  std::string  m_cpuRevision;
+-  std::string  m_cpuSerial;
+-  int          m_cpuCount;
++  std::string m_cpuVendor{"N/A"};
++  std::string m_cpuModel{"N/A"};
++  std::string m_cpuBogoMips{"N/A"};
++  std::string m_cpuSoC{"N/A"};
++  std::string m_cpuHardware{"N/A"};
++  std::string m_cpuRevision{"N/A"};
++  std::string m_cpuSerial{"N/A"};
++
++  double m_usagePercent{0.0};
++  std::size_t m_activeTime{0};
++  std::size_t m_idleTime{0};
++  std::size_t m_totalTime{0};
++
++  int m_cpuCount;
+   unsigned int m_cpuFeatures;
+ 
+-  std::map<int, CoreInfo> m_cores;
+-
++  std::vector<CoreInfo> m_cores;
+ };
+-
+-extern CCPUInfo g_cpuInfo;
+-
+diff --git a/xbmc/utils/SystemInfo.cpp b/xbmc/utils/SystemInfo.cpp
+index 0328c42c5aab..d81beb02a9ff 100644
+--- a/xbmc/utils/SystemInfo.cpp
++++ b/xbmc/utils/SystemInfo.cpp
+@@ -300,7 +300,7 @@ std::string CSysInfoJob::GetBatteryLevel()
+ double CSysInfoJob::GetCPUFrequency()
+ {
+ #if defined (TARGET_POSIX) || defined(TARGET_WINDOWS)
+-  return double (g_cpuInfo.getCPUFrequency());
++  return double(CServiceBroker::GetCPUInfo()->GetCPUFrequency());
+ #else
+   return 0;
+ #endif
+@@ -487,39 +487,39 @@ bool CSysInfo::GetDiskSpace(std::string drive,int& iTotal, int& iTotalFree, int&
+ 
+ std::string CSysInfo::GetCPUModel()
+ {
+-  return "CPU: " + g_cpuInfo.getCPUModel();
++  return "CPU: " + CServiceBroker::GetCPUInfo()->GetCPUModel();
+ }
+ 
+ std::string CSysInfo::GetCPUBogoMips()
+ {
+-  return "BogoMips: " + g_cpuInfo.getCPUBogoMips();
++  return "BogoMips: " + CServiceBroker::GetCPUInfo()->GetCPUBogoMips();
+ }
+ 
+ std::string CSysInfo::GetCPUSoC()
+ {
+-  if (!g_cpuInfo.getCPUSoC().empty())
+-    return "SoC: " + g_cpuInfo.getCPUSoC();
++  if (!CServiceBroker::GetCPUInfo()->GetCPUSoC().empty())
++    return "SoC: " + CServiceBroker::GetCPUInfo()->GetCPUSoC();
+   return "";
+ }
+ 
+ std::string CSysInfo::GetCPUHardware()
+ {
+-  return "Hardware: " + g_cpuInfo.getCPUHardware();
++  return "Hardware: " + CServiceBroker::GetCPUInfo()->GetCPUHardware();
+ }
+ 
+ std::string CSysInfo::GetCPURevision()
+ {
+-  return "Revision: " + g_cpuInfo.getCPURevision();
++  return "Revision: " + CServiceBroker::GetCPUInfo()->GetCPURevision();
+ }
+ 
+ std::string CSysInfo::GetCPUSerial()
+ {
+-  return "Serial: " + g_cpuInfo.getCPUSerial();
++  return "Serial: " + CServiceBroker::GetCPUInfo()->GetCPUSerial();
+ }
+ 
+ int CSysInfo::GetCPUCount()
+ {
+-  return g_cpuInfo.getCPUCount();
++  return CServiceBroker::GetCPUInfo()->GetCPUCount();
+ }
+ 
+ std::string CSysInfo::GetKernelName(bool emptyIfUnknown /*= false*/)
+diff --git a/xbmc/utils/test/TestCPUInfo.cpp b/xbmc/utils/test/TestCPUInfo.cpp
+index 703f7593faf6..d395eb41bb7c 100644
+--- a/xbmc/utils/test/TestCPUInfo.cpp
++++ b/xbmc/utils/test/TestCPUInfo.cpp
+@@ -22,109 +22,80 @@
+ 
+ #include <gtest/gtest.h>
+ 
+-TEST(TestCPUInfo, getUsedPercentage)
++struct TestCPUInfo : public ::testing::Test
+ {
+-  EXPECT_GE(g_cpuInfo.getUsedPercentage(), 0);
+-}
++  TestCPUInfo() { CServiceBroker::RegisterCPUInfo(CCPUInfo::GetCPUInfo()); }
++
++  ~TestCPUInfo() { CServiceBroker::UnregisterCPUInfo(); }
++};
+ 
+-TEST(TestCPUInfo, getCPUCount)
++TEST_F(TestCPUInfo, GetUsedPercentage)
+ {
+-  EXPECT_GT(g_cpuInfo.getCPUCount(), 0);
++  EXPECT_GE(CServiceBroker::GetCPUInfo()->GetUsedPercentage(), 0);
+ }
+ 
+-TEST(TestCPUInfo, getCPUFrequency)
++TEST_F(TestCPUInfo, GetCPUCount)
+ {
+-  EXPECT_GE(g_cpuInfo.getCPUFrequency(), 0.f);
++  EXPECT_GT(CServiceBroker::GetCPUInfo()->GetCPUCount(), 0);
+ }
+ 
+-namespace
+-{
+-class TemporarySetting
++TEST_F(TestCPUInfo, GetCPUFrequency)
+ {
+-public:
+-
+-  TemporarySetting(std::string &setting, const char *newValue) :
+-    m_Setting(setting),
+-    m_OldValue(setting)
+-  {
+-    m_Setting = newValue;
+-  }
+-
+-  ~TemporarySetting()
+-  {
+-    m_Setting = m_OldValue;
+-  }
+-
+-private:
+-
+-  std::string &m_Setting;
+-  std::string m_OldValue;
+-};
++  EXPECT_GE(CServiceBroker::GetCPUInfo()->GetCPUFrequency(), 0.f);
+ }
+ 
+-//Disabled for windows because there is no implementation to get the CPU temp and there will probably never be one
+-#ifndef TARGET_WINDOWS
+-TEST(TestCPUInfo, getTemperature)
++TEST_F(TestCPUInfo, GetTemperature)
+ {
+-  TemporarySetting command(CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_cpuTempCmd, "echo '50 c'");
++  CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_cpuTempCmd = "echo '50 c'";
+   CTemperature t;
+-  EXPECT_TRUE(g_cpuInfo.getTemperature(t));
++  EXPECT_TRUE(CServiceBroker::GetCPUInfo()->GetTemperature(t));
+   EXPECT_TRUE(t.IsValid());
+ }
+-#endif
+ 
+-TEST(TestCPUInfo, getCPUModel)
++TEST_F(TestCPUInfo, GetCPUModel)
+ {
+-  std::string s = g_cpuInfo.getCPUModel();
++  std::string s = CServiceBroker::GetCPUInfo()->GetCPUModel();
+   EXPECT_STRNE("", s.c_str());
+ }
+ 
+-TEST(TestCPUInfo, getCPUBogoMips)
++TEST_F(TestCPUInfo, GetCPUBogoMips)
+ {
+-  std::string s = g_cpuInfo.getCPUBogoMips();
++  std::string s = CServiceBroker::GetCPUInfo()->GetCPUBogoMips();
+   EXPECT_STRNE("", s.c_str());
+ }
+ 
+-TEST(TestCPUInfo, getCPUHardware)
++TEST_F(TestCPUInfo, GetCPUHardware)
+ {
+-  std::string s = g_cpuInfo.getCPUHardware();
++  std::string s = CServiceBroker::GetCPUInfo()->GetCPUHardware();
+   EXPECT_STRNE("", s.c_str());
+ }
+ 
+-TEST(TestCPUInfo, getCPURevision)
++TEST_F(TestCPUInfo, GetCPURevision)
+ {
+-  std::string s = g_cpuInfo.getCPURevision();
++  std::string s = CServiceBroker::GetCPUInfo()->GetCPURevision();
+   EXPECT_STRNE("", s.c_str());
+ }
+ 
+-TEST(TestCPUInfo, getCPUSerial)
++TEST_F(TestCPUInfo, GetCPUSerial)
+ {
+-  std::string s = g_cpuInfo.getCPUSerial();
++  std::string s = CServiceBroker::GetCPUInfo()->GetCPUSerial();
+   EXPECT_STRNE("", s.c_str());
+ }
+ 
+-TEST(TestCPUInfo, CoreInfo)
++TEST_F(TestCPUInfo, CoreInfo)
+ {
+-  ASSERT_TRUE(g_cpuInfo.HasCoreId(0));
+-  const CoreInfo c = g_cpuInfo.GetCoreInfo(0);
+-  EXPECT_FALSE(c.m_strModel.empty());
++  ASSERT_TRUE(CServiceBroker::GetCPUInfo()->HasCoreId(0));
++  const CoreInfo c = CServiceBroker::GetCPUInfo()->GetCoreInfo(0);
++  EXPECT_TRUE(c.m_id == 0);
+ }
+ 
+-TEST(TestCPUInfo, GetCoresUsageString)
++TEST_F(TestCPUInfo, GetCoresUsageString)
+ {
+-  EXPECT_STRNE("", g_cpuInfo.GetCoresUsageString().c_str());
++  EXPECT_STRNE("", CServiceBroker::GetCPUInfo()->GetCoresUsageString().c_str());
+ }
+ 
+-TEST(TestCPUInfo, GetCPUFeatures)
++TEST_F(TestCPUInfo, GetCPUFeatures)
+ {
+-  unsigned int a = g_cpuInfo.GetCPUFeatures();
++  unsigned int a = CServiceBroker::GetCPUInfo()->GetCPUFeatures();
+   (void)a;
+ }
+-
+-TEST(TestCPUInfo, getUsedPercentage_output)
+-{
+-  CCPUInfo c;
+-  Sleep(1); //! @todo Support option from main that sets this parameter
+-  int r = c.getUsedPercentage();
+-  std::cout << "Percentage: " << testing::PrintToString(r) << std::endl;
+-}
+diff --git a/xbmc/windows/GUIWindowDebugInfo.cpp b/xbmc/windows/GUIWindowDebugInfo.cpp
+index b8bfeff8ae8f..3598cd937da4 100644
+--- a/xbmc/windows/GUIWindowDebugInfo.cpp
++++ b/xbmc/windows/GUIWindowDebugInfo.cpp
+@@ -63,7 +63,7 @@ void CGUIWindowDebugInfo::Process(unsigned int currentTime, CDirtyRegionList &di
+ {
+   CServiceBroker::GetWinSystem()->GetGfxContext().SetRenderingResolution(CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo(), false);
+ 
+-  g_cpuInfo.getUsedPercentage(); // must call it to recalculate pct values
++  CServiceBroker::GetCPUInfo()->GetUsedPercentage(); // must call it to recalculate pct values
+ 
+   static int yShift = 20;
+   static int xShift = 40;
+@@ -94,7 +94,7 @@ void CGUIWindowDebugInfo::Process(unsigned int currentTime, CDirtyRegionList &di
+     KODI::MEMORY::MemoryStatus stat;
+     KODI::MEMORY::GetMemoryStatus(&stat);
+     std::string profiling = CGUIControlProfiler::IsRunning() ? " (profiling)" : "";
+-    std::string strCores = g_cpuInfo.GetCoresUsageString();
++    std::string strCores = CServiceBroker::GetCPUInfo()->GetCoresUsageString();
+     std::string lcAppName = CCompileInfo::GetAppName();
+     StringUtils::ToLower(lcAppName);
+ #if !defined(TARGET_POSIX)
 
+From e0111336ff2646c372aaed36d877c71acf55bc23 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Wed, 8 May 2019 20:56:00 -0700
+Subject: [PATCH 3/3] CSystemInfo: cleanup duplicate methods
+
+---
+ xbmc/platform/android/CPUInfoAndroid.h   |  2 +-
+ xbmc/platform/freebsd/CPUInfoFreebsd.cpp |  2 -
+ xbmc/utils/SystemInfo.cpp                | 67 +++---------------------
+ xbmc/utils/SystemInfo.h                  |  9 ----
+ xbmc/windows/GUIWindowSystemInfo.cpp     | 15 +++---
+ 5 files changed, 17 insertions(+), 78 deletions(-)
+
+diff --git a/xbmc/platform/android/CPUInfoAndroid.h b/xbmc/platform/android/CPUInfoAndroid.h
+index 6937390d4014..2ec2e6f7a84f 100644
+--- a/xbmc/platform/android/CPUInfoAndroid.h
++++ b/xbmc/platform/android/CPUInfoAndroid.h
+@@ -11,7 +11,7 @@
+ #include "utils/CPUInfo.h"
+ #include "utils/Temperature.h"
+ 
+-class CCPUInfoAndroid : public CCPUInfoLinux
++class CCPUInfoAndroid : public CCPUInfo
+ {
+ public:
+   CCPUInfoAndroid();
+diff --git a/xbmc/platform/freebsd/CPUInfoFreebsd.cpp b/xbmc/platform/freebsd/CPUInfoFreebsd.cpp
+index 001939486acc..e7f43445e529 100644
+--- a/xbmc/platform/freebsd/CPUInfoFreebsd.cpp
++++ b/xbmc/platform/freebsd/CPUInfoFreebsd.cpp
+@@ -64,8 +64,6 @@ CCPUInfoFreebsd::CCPUInfoFreebsd()
+ 
+ int CCPUInfoFreebsd::GetUsedPercentage()
+ {
+-  int result = 0;
+-
+   if (!m_nextUsedReadTime.IsTimePast())
+     return m_lastUsedPercentage;
+ 
+diff --git a/xbmc/utils/SystemInfo.cpp b/xbmc/utils/SystemInfo.cpp
+index d81beb02a9ff..1f0bc32f16fc 100644
+--- a/xbmc/utils/SystemInfo.cpp
++++ b/xbmc/utils/SystemInfo.cpp
+@@ -15,18 +15,18 @@
+ #else
+ #include <sys/utsname.h>
+ #endif
+-#include "guilib/guiinfo/GUIInfoLabels.h"
++#include "CompileInfo.h"
++#include "ServiceBroker.h"
+ #include "filesystem/CurlFile.h"
+ #include "filesystem/File.h"
++#include "guilib/LocalizeStrings.h"
++#include "guilib/guiinfo/GUIInfoLabels.h"
+ #include "network/Network.h"
+-#include "ServiceBroker.h"
++#include "platform/Filesystem.h"
+ #include "rendering/RenderSystem.h"
+-#include "guilib/LocalizeStrings.h"
+-#include "CPUInfo.h"
+-#include "CompileInfo.h"
+ #include "settings/Settings.h"
+ #include "settings/SettingsComponent.h"
+-#include "platform/Filesystem.h"
++#include "utils/CPUInfo.h"
+ #include "utils/log.h"
+ 
+ #ifdef TARGET_WINDOWS
+@@ -251,7 +251,8 @@ bool CSysInfoJob::DoWork()
+   m_info.systemTotalUptime = GetSystemUpTime(true);
+   m_info.internetState     = GetInternetState();
+   m_info.videoEncoder      = GetVideoEncoder();
+-  m_info.cpuFrequency      = GetCPUFreqInfo();
++  m_info.cpuFrequency =
++      StringUtils::Format("%4.0f MHz", CServiceBroker::GetCPUInfo()->GetCPUFrequency());
+   m_info.osVersionInfo     = CSysInfo::GetOsPrettyNameWithVersion() + " (kernel: " + CSysInfo::GetKernelName() + " " + CSysInfo::GetKernelVersionFull() + ")";
+   m_info.macAddress        = GetMACAddress();
+   m_info.batteryLevel      = GetBatteryLevel();
+@@ -263,12 +264,6 @@ const CSysData &CSysInfoJob::GetData() const
+   return m_info;
+ }
+ 
+-std::string CSysInfoJob::GetCPUFreqInfo()
+-{
+-  double CPUFreq = GetCPUFrequency();
+-  return StringUtils::Format("%4.0f MHz", CPUFreq);
+-}
+-
+ CSysData::INTERNET_STATE CSysInfoJob::GetInternetState()
+ {
+   // Internet connection state!
+@@ -297,15 +292,6 @@ std::string CSysInfoJob::GetBatteryLevel()
+   return StringUtils::Format("%d%%", CServiceBroker::GetPowerManager().BatteryLevel());
+ }
+ 
+-double CSysInfoJob::GetCPUFrequency()
+-{
+-#if defined (TARGET_POSIX) || defined(TARGET_WINDOWS)
+-  return double(CServiceBroker::GetCPUInfo()->GetCPUFrequency());
+-#else
+-  return 0;
+-#endif
+-}
+-
+ bool CSysInfoJob::SystemUpTime(int iInputMinutes, int &iMinutes, int &iHours, int &iDays)
+ {
+   iHours = 0; iDays = 0;
+@@ -485,43 +471,6 @@ bool CSysInfo::GetDiskSpace(std::string drive,int& iTotal, int& iTotalFree, int&
+   return true;
+ }
+ 
+-std::string CSysInfo::GetCPUModel()
+-{
+-  return "CPU: " + CServiceBroker::GetCPUInfo()->GetCPUModel();
+-}
+-
+-std::string CSysInfo::GetCPUBogoMips()
+-{
+-  return "BogoMips: " + CServiceBroker::GetCPUInfo()->GetCPUBogoMips();
+-}
+-
+-std::string CSysInfo::GetCPUSoC()
+-{
+-  if (!CServiceBroker::GetCPUInfo()->GetCPUSoC().empty())
+-    return "SoC: " + CServiceBroker::GetCPUInfo()->GetCPUSoC();
+-  return "";
+-}
+-
+-std::string CSysInfo::GetCPUHardware()
+-{
+-  return "Hardware: " + CServiceBroker::GetCPUInfo()->GetCPUHardware();
+-}
+-
+-std::string CSysInfo::GetCPURevision()
+-{
+-  return "Revision: " + CServiceBroker::GetCPUInfo()->GetCPURevision();
+-}
+-
+-std::string CSysInfo::GetCPUSerial()
+-{
+-  return "Serial: " + CServiceBroker::GetCPUInfo()->GetCPUSerial();
+-}
+-
+-int CSysInfo::GetCPUCount()
+-{
+-  return CServiceBroker::GetCPUInfo()->GetCPUCount();
+-}
+-
+ std::string CSysInfo::GetKernelName(bool emptyIfUnknown /*= false*/)
+ {
+   static std::string kernelName;
+diff --git a/xbmc/utils/SystemInfo.h b/xbmc/utils/SystemInfo.h
+index 812873442b6c..a061064a4363 100644
+--- a/xbmc/utils/SystemInfo.h
++++ b/xbmc/utils/SystemInfo.h
+@@ -56,9 +56,7 @@ class CSysInfoJob : public CJob
+   static CSysData::INTERNET_STATE GetInternetState();
+ private:
+   static bool SystemUpTime(int iInputMinutes, int &iMinutes, int &iHours, int &iDays);
+-  static double GetCPUFrequency();
+   static std::string GetSystemUpTime(bool bTotalUptime);
+-  static std::string GetCPUFreqInfo();
+   static std::string GetMACAddress();
+   static std::string GetVideoEncoder();
+   static std::string GetBatteryLevel();
+@@ -120,13 +118,6 @@ class CSysInfo : public CInfoLoader, public ISubSettings
+   static int GetKernelBitness(void);
+   static int GetXbmcBitness(void);
+   static const std::string& GetKernelCpuFamily(void);
+-  std::string GetCPUModel();
+-  std::string GetCPUBogoMips();
+-  std::string GetCPUSoC();
+-  std::string GetCPUHardware();
+-  std::string GetCPURevision();
+-  std::string GetCPUSerial();
+-  static int GetCPUCount();
+   static std::string GetManufacturerName(void);
+   static std::string GetModelName(void);
+   bool GetDiskSpace(std::string drive,int& iTotal, int& iTotalFree, int& iTotalUsed, int& iPercentFree, int& iPercentUsed);
+diff --git a/xbmc/windows/GUIWindowSystemInfo.cpp b/xbmc/windows/GUIWindowSystemInfo.cpp
+index 0f22ff5878fd..e73004d0bbe8 100644
+--- a/xbmc/windows/GUIWindowSystemInfo.cpp
++++ b/xbmc/windows/GUIWindowSystemInfo.cpp
+@@ -17,6 +17,7 @@
+ #include "guilib/guiinfo/GUIInfoLabels.h"
+ #include "pvr/PVRManager.h"
+ #include "storage/MediaManager.h"
++#include "utils/CPUInfo.h"
+ #include "utils/StringUtils.h"
+ #include "utils/SystemInfo.h"
+ 
+@@ -145,14 +146,14 @@ void CGUIWindowSystemInfo::FrameMove()
+   else if (m_section == CONTROL_BT_HARDWARE)
+   {
+     SET_CONTROL_LABEL(40,g_localizeStrings.Get(20160));
+-    SET_CONTROL_LABEL(i++, g_sysinfo.GetCPUModel());
++    SET_CONTROL_LABEL(i++, "CPU: " + CServiceBroker::GetCPUInfo()->GetCPUModel());
+ #if defined(__arm__) && defined(TARGET_LINUX)
+-    SET_CONTROL_LABEL(i++, g_sysinfo.GetCPUBogoMips());
+-    if (!g_sysinfo.GetCPUSoC().empty())
+-      SET_CONTROL_LABEL(i++, g_sysinfo.GetCPUSoC());
+-    SET_CONTROL_LABEL(i++, g_sysinfo.GetCPUHardware());
+-    SET_CONTROL_LABEL(i++, g_sysinfo.GetCPURevision());
+-    SET_CONTROL_LABEL(i++, g_sysinfo.GetCPUSerial());
++    SET_CONTROL_LABEL(i++, "BogoMips: " + CServiceBroker::GetCPUInfo()->GetCPUBogoMips());
++    if (!CServiceBroker::GetCPUInfo()->GetCPUSoC().empty())
++      SET_CONTROL_LABEL(i++, "SoC: " + CServiceBroker::GetCPUInfo()->GetCPUSoC());
++    SET_CONTROL_LABEL(i++, "Hardware: " + CServiceBroker::GetCPUInfo()->GetCPUHardware());
++    SET_CONTROL_LABEL(i++, "Revision: " + CServiceBroker::GetCPUInfo()->GetCPURevision());
++    SET_CONTROL_LABEL(i++, "Serial: " + CServiceBroker::GetCPUInfo()->GetCPUSerial());
+ #endif
+     SetControlLabel(i++, "%s %s", 22011, SYSTEM_CPU_TEMPERATURE);
+ #if (!defined(__arm__) && !defined(__aarch64__)) || defined(TARGET_RASPBERRY_PI)
