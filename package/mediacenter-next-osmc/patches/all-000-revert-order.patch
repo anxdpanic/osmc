@@ -1680,7 +1680,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/video/jobs/VideoLibraryScanningJob.h          |  4 +-
  xbmc/video/tags/IVideoInfoTagLoader.h              |  1 -
  xbmc/video/tags/VideoInfoTagLoaderFactory.cpp      |  5 +-
- xbmc/video/tags/VideoTagLoaderFFmpeg.cpp           |  4 +-
  xbmc/video/tags/VideoTagLoaderNFO.cpp              |  7 +--
  xbmc/video/tags/VideoTagLoaderPlugin.cpp           |  1 -
  xbmc/video/test/TestVideoInfoScanner.cpp           |  3 +-
@@ -35035,24 +35034,6 @@ index 8b868fdad3..dd6340b6e3 100644
 +#include "ServiceBroker.h"
  #include "settings/Settings.h"
  #include "settings/SettingsComponent.h"
- 
-diff --git a/xbmc/video/tags/VideoTagLoaderFFmpeg.cpp b/xbmc/video/tags/VideoTagLoaderFFmpeg.cpp
-index b2152d5eb2..dc851b05b8 100644
---- a/xbmc/video/tags/VideoTagLoaderFFmpeg.cpp
-+++ b/xbmc/video/tags/VideoTagLoaderFFmpeg.cpp
-@@ -8,11 +8,11 @@
- 
- #include "VideoTagLoaderFFmpeg.h"
- 
--#include "FileItem.h"
--#include "NfoFile.h"
- #include "addons/Scraper.h"
-+#include "FileItem.h"
- #include "cores/FFmpeg.h"
- #include "filesystem/File.h"
-+#include "NfoFile.h"
- #include "utils/StringUtils.h"
- #include "video/VideoInfoTag.h"
  
 diff --git a/xbmc/video/tags/VideoTagLoaderNFO.cpp b/xbmc/video/tags/VideoTagLoaderNFO.cpp
 index d918b3642a..1ca311f49e 100644
