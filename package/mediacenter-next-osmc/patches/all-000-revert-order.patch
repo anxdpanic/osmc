@@ -535,7 +535,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/filesystem/BlurayCallback.cpp                 |  2 +-
  xbmc/filesystem/BlurayDirectory.cpp                | 22 ++++----
  xbmc/filesystem/BlurayFile.cpp                     |  2 -
- xbmc/filesystem/CDDADirectory.cpp                  |  5 +-
  xbmc/filesystem/CDDAFile.cpp                       |  6 +-
  xbmc/filesystem/CacheStrategy.h                    |  3 +-
  xbmc/filesystem/CircularCache.cpp                  |  7 +--
@@ -634,7 +633,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  .../DirectoryNodeTvShowsOverview.cpp               |  3 +-
  .../VideoDatabaseDirectory/QueryParams.cpp         |  1 -
  xbmc/filesystem/VideoDatabaseFile.cpp              |  1 -
- xbmc/filesystem/VirtualDirectory.cpp               | 11 ++--
  xbmc/filesystem/XbtDirectory.cpp                   |  5 +-
  xbmc/filesystem/XbtDirectory.h                     |  4 +-
  xbmc/filesystem/XbtFile.cpp                        | 11 ++--
@@ -656,13 +654,10 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/games/addons/GameClient.cpp                   | 11 ++--
  xbmc/games/addons/GameClientInGameSaves.cpp        |  4 +-
  xbmc/games/addons/GameClientProperties.cpp         |  5 +-
- xbmc/games/addons/GameClientProperties.h           |  2 +-
  xbmc/games/addons/GameClientSubsystem.cpp          |  1 -
  xbmc/games/addons/input/GameClientController.cpp   |  1 -
- xbmc/games/addons/input/GameClientDevice.cpp       |  7 +--
  xbmc/games/addons/input/GameClientDevice.h         |  2 +-
  xbmc/games/addons/input/GameClientHardware.cpp     |  1 -
- xbmc/games/addons/input/GameClientInput.cpp        |  5 +-
  xbmc/games/addons/input/GameClientInput.h          |  2 +-
  xbmc/games/addons/input/GameClientJoystick.cpp     |  1 -
  xbmc/games/addons/input/GameClientKeyboard.cpp     |  1 -
@@ -672,7 +667,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/games/addons/input/GameClientTopology.cpp     |  1 -
  xbmc/games/addons/input/GameClientTopology.h       |  2 +-
  .../games/addons/streams/GameClientStreamAudio.cpp |  1 -
- .../streams/GameClientStreamSwFramebuffer.cpp      |  1 -
  .../games/addons/streams/GameClientStreamVideo.cpp |  1 -
  xbmc/games/addons/streams/GameClientStreams.cpp    |  1 -
  xbmc/games/controllers/Controller.cpp              |  5 +-
@@ -12329,46 +12323,6 @@ index 4b987de423..c1f6519592 100644
  #include <assert.h>
  
  namespace XFILE
-diff --git a/xbmc/filesystem/CDDADirectory.cpp b/xbmc/filesystem/CDDADirectory.cpp
-index e012b9b8cc..e4d83240d5 100644
---- a/xbmc/filesystem/CDDADirectory.cpp
-+++ b/xbmc/filesystem/CDDADirectory.cpp
-@@ -7,10 +7,9 @@
-  */
- 
- #include "CDDADirectory.h"
--
--#include "File.h"
--#include "FileItem.h"
- #include "music/MusicDatabase.h"
-+#include "FileItem.h"
-+#include "File.h"
- #include "storage/MediaManager.h"
- #include "utils/StringUtils.h"
- 
-diff --git a/xbmc/filesystem/CDDAFile.cpp b/xbmc/filesystem/CDDAFile.cpp
-index 7fbb301c76..f0ce69e6e0 100644
---- a/xbmc/filesystem/CDDAFile.cpp
-+++ b/xbmc/filesystem/CDDAFile.cpp
-@@ -7,16 +7,14 @@
-  */
- 
- #include "CDDAFile.h"
--
-+#include <sys/stat.h>
- #include "URL.h"
- #include "storage/MediaManager.h"
--#include "utils/URIUtils.h"
- #include "utils/log.h"
-+#include "utils/URIUtils.h"
- 
- #include <algorithm>
- 
--#include <sys/stat.h>
--
- using namespace MEDIA_DETECT;
- using namespace XFILE;
- 
 diff --git a/xbmc/filesystem/CacheStrategy.h b/xbmc/filesystem/CacheStrategy.h
 index 232be1fdb4..48038252e3 100644
 --- a/xbmc/filesystem/CacheStrategy.h
@@ -14083,32 +14037,6 @@ index a45e25c647..9f4af2955c 100644
  #include "URL.h"
  #include "utils/StringUtils.h"
  #include "utils/URIUtils.h"
-diff --git a/xbmc/filesystem/VirtualDirectory.cpp b/xbmc/filesystem/VirtualDirectory.cpp
-index 38665a6190..5aa65ba5e2 100644
---- a/xbmc/filesystem/VirtualDirectory.cpp
-+++ b/xbmc/filesystem/VirtualDirectory.cpp
-@@ -7,16 +7,15 @@
-  */
- 
- #include "VirtualDirectory.h"
--
--#include "Directory.h"
- #include "DirectoryFactory.h"
--#include "FileItem.h"
--#include "SourcesDirectory.h"
- #include "URL.h"
- #include "Util.h"
--#include "storage/MediaManager.h"
--#include "utils/StringUtils.h"
- #include "utils/URIUtils.h"
-+#include "utils/StringUtils.h"
-+#include "Directory.h"
-+#include "SourcesDirectory.h"
-+#include "storage/MediaManager.h"
-+#include "FileItem.h"
- 
- using namespace XFILE;
- 
 diff --git a/xbmc/filesystem/XbtDirectory.cpp b/xbmc/filesystem/XbtDirectory.cpp
 index 5c7d39555c..afd96c3ee5 100644
 --- a/xbmc/filesystem/XbtDirectory.cpp
@@ -14563,20 +14491,6 @@ index 6af954cfac..fd60faefcd 100644
  
  #include <cstring>
  
-diff --git a/xbmc/games/addons/GameClientProperties.h b/xbmc/games/addons/GameClientProperties.h
-index 0b3175bcb1..6959caa7b5 100644
---- a/xbmc/games/addons/GameClientProperties.h
-+++ b/xbmc/games/addons/GameClientProperties.h
-@@ -8,8 +8,8 @@
- 
- #pragma once
- 
--#include "addons/Addon.h"
- #include "addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h"
-+#include "addons/Addon.h"
- #include "games/GameTypes.h"
- 
- #include <string>
 diff --git a/xbmc/games/addons/GameClientSubsystem.cpp b/xbmc/games/addons/GameClientSubsystem.cpp
 index d5879a0d6f..112ff323e2 100644
 --- a/xbmc/games/addons/GameClientSubsystem.cpp
@@ -14601,29 +14515,6 @@ index 5b93ee4562..842a3f96e1 100644
  #include "GameClientInput.h"
  #include "games/controllers/Controller.h"
  #include "games/controllers/ControllerFeature.h"
-diff --git a/xbmc/games/addons/input/GameClientDevice.cpp b/xbmc/games/addons/input/GameClientDevice.cpp
-index 7636909a9e..0faf74908b 100644
---- a/xbmc/games/addons/input/GameClientDevice.cpp
-+++ b/xbmc/games/addons/input/GameClientDevice.cpp
-@@ -6,15 +6,14 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
--#include "GameClientDevice.h"
--
- #include "GameClientPort.h"
--#include "ServiceBroker.h"
-+#include "GameClientDevice.h"
- #include "addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h"
--#include "games/GameServices.h"
- #include "games/controllers/Controller.h"
- #include "games/controllers/ControllerTopology.h"
-+#include "games/GameServices.h"
- #include "utils/StringUtils.h"
-+#include "ServiceBroker.h"
- 
- #include <algorithm>
- 
 diff --git a/xbmc/games/addons/input/GameClientDevice.h b/xbmc/games/addons/input/GameClientDevice.h
 index f291c3af15..f90ed9695e 100644
 --- a/xbmc/games/addons/input/GameClientDevice.h
@@ -14649,39 +14540,6 @@ index d55aa5eea8..913c957d8b 100644
 -
  #include "games/addons/GameClient.h"
  #include "utils/log.h"
- 
-diff --git a/xbmc/games/addons/input/GameClientInput.cpp b/xbmc/games/addons/input/GameClientInput.cpp
-index a63d74cde3..8bb4d27a0d 100644
---- a/xbmc/games/addons/input/GameClientInput.cpp
-+++ b/xbmc/games/addons/input/GameClientInput.cpp
-@@ -7,7 +7,6 @@
-  */
- 
- #include "GameClientInput.h"
--
- #include "GameClientController.h"
- #include "GameClientHardware.h"
- #include "GameClientJoystick.h"
-@@ -15,18 +14,18 @@
- #include "GameClientMouse.h"
- #include "GameClientPort.h"
- #include "GameClientTopology.h"
--#include "ServiceBroker.h"
- #include "addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h"
--#include "games/GameServices.h"
- #include "games/addons/GameClient.h"
- #include "games/addons/GameClientCallbacks.h"
- #include "games/controllers/Controller.h"
- #include "games/controllers/ControllerTopology.h"
-+#include "games/GameServices.h"
- #include "input/joysticks/JoystickTypes.h"
- #include "peripherals/EventLockHandle.h"
- #include "peripherals/Peripherals.h"
- #include "threads/SingleLock.h"
- #include "utils/log.h"
-+#include "ServiceBroker.h"
- 
- #include <algorithm>
  
 diff --git a/xbmc/games/addons/input/GameClientInput.h b/xbmc/games/addons/input/GameClientInput.h
 index 4607730a72..4f9dc5f172 100644
@@ -14797,18 +14655,6 @@ index c9df44e844..a34df805d5 100644
  #include "cores/RetroPlayer/streams/RetroPlayerAudio.h"
  #include "games/addons/GameClientTranslator.h"
  #include "utils/log.h"
-diff --git a/xbmc/games/addons/streams/GameClientStreamSwFramebuffer.cpp b/xbmc/games/addons/streams/GameClientStreamSwFramebuffer.cpp
-index 5ae8ec4e5c..8746a3350c 100644
---- a/xbmc/games/addons/streams/GameClientStreamSwFramebuffer.cpp
-+++ b/xbmc/games/addons/streams/GameClientStreamSwFramebuffer.cpp
-@@ -7,7 +7,6 @@
-  */
- 
- #include "GameClientStreamSwFramebuffer.h"
--
- #include "addons/kodi-addon-dev-kit/include/kodi/kodi_game_types.h"
- #include "cores/RetroPlayer/streams/RetroPlayerVideo.h"
- #include "games/addons/GameClientTranslator.h"
 diff --git a/xbmc/games/addons/streams/GameClientStreamVideo.cpp b/xbmc/games/addons/streams/GameClientStreamVideo.cpp
 index d52d06a904..ac003a664a 100644
 --- a/xbmc/games/addons/streams/GameClientStreamVideo.cpp
