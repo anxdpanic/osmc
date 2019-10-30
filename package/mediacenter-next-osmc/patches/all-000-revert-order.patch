@@ -1382,7 +1382,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/platform/win10/peripherals/PeripheralBusUSB.h |  1 -
  .../win10/powermanagement/Win10PowerSyscall.cpp    |  1 -
  .../win10/powermanagement/WinIdleTimer.cpp         |  2 -
- .../win10/storage/Win10StorageProvider.cpp         | 12 ++--
  xbmc/platform/win10/storage/Win10StorageProvider.h |  6 +-
  xbmc/platform/win32/CharsetConverter.cpp           |  4 +-
  xbmc/platform/win32/Environment.cpp                |  3 -
@@ -1390,7 +1389,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/platform/win32/IMMNotificationClient.h        |  5 +-
  xbmc/platform/win32/MessagePrinter.cpp             |  2 -
  xbmc/platform/win32/WIN32Util.h                    |  4 +-
- xbmc/platform/win32/WinMain.cpp                    | 10 ++--
  xbmc/platform/win32/filesystem/Win32Directory.cpp  |  8 +--
  xbmc/platform/win32/filesystem/Win32File.cpp       | 15 +++--
  xbmc/platform/win32/filesystem/Win32File.h         |  1 -
@@ -28698,33 +28696,6 @@ index 24c78ebf8d..9173632541 100644
  #include <winrt/Windows.System.Display.h>
  
  using namespace winrt::Windows::ApplicationModel::Core;
-diff --git a/xbmc/platform/win10/storage/Win10StorageProvider.cpp b/xbmc/platform/win10/storage/Win10StorageProvider.cpp
-index 16be65fb59..ccf535f05d 100644
---- a/xbmc/platform/win10/storage/Win10StorageProvider.cpp
-+++ b/xbmc/platform/win10/storage/Win10StorageProvider.cpp
-@@ -6,17 +6,15 @@
-  *  See LICENSES/README.md for more information.
-  */
- #include "Win10StorageProvider.h"
--
--#include "filesystem/SpecialProtocol.h"
- #include "guilib/LocalizeStrings.h"
--#include "storage/MediaManager.h"
--#include "utils/JobManager.h"
--#include "utils/StringUtils.h"
--#include "utils/log.h"
--
-+#include "filesystem/SpecialProtocol.h"
- #include "platform/win10/AsyncHelpers.h"
- #include "platform/win10/filesystem/WinLibraryDirectory.h"
- #include "platform/win32/CharsetConverter.h"
-+#include "storage/MediaManager.h"
-+#include "utils/JobManager.h"
-+#include "utils/log.h"
-+#include "utils/StringUtils.h"
- 
- #include <winrt/Windows.Devices.Enumeration.h>
- #include <winrt/Windows.Foundation.Collections.h>
 diff --git a/xbmc/platform/win10/storage/Win10StorageProvider.h b/xbmc/platform/win10/storage/Win10StorageProvider.h
 index b00214acca..7fcc406f30 100644
 --- a/xbmc/platform/win10/storage/Win10StorageProvider.h
@@ -28841,36 +28812,6 @@ index c46e73ebbc..618a31f4ad 100644
  #define BONJOUR_EVENT             ( WM_USER + 0x100 )	// Message sent to the Window when a Bonjour event occurs.
  #define BONJOUR_BROWSER_EVENT     ( WM_USER + 0x110 )
  
-diff --git a/xbmc/platform/win32/WinMain.cpp b/xbmc/platform/win32/WinMain.cpp
-index 18c6b266fe..fddfae2bf2 100644
---- a/xbmc/platform/win32/WinMain.cpp
-+++ b/xbmc/platform/win32/WinMain.cpp
-@@ -8,20 +8,20 @@
- 
- #include "AppParamParser.h"
- #include "CompileInfo.h"
--#include "platform/Environment.h"
--#include "platform/xbmc.h"
- #include "threads/Thread.h"
- #include "threads/platform/win/Win32Exception.h"
-+#include "platform/win32/CharsetConverter.h"
-+#include "platform/xbmc.h"
- #include "utils/CPUInfo.h"
-+#include "platform/Environment.h"
- #include "utils/CharsetConverter.h" // Required to initialize converters before usage
- 
--#include "platform/win32/CharsetConverter.h"
- 
--#include <Objbase.h>
--#include <WinSock2.h>
- #include <dbghelp.h>
- #include <mmsystem.h>
-+#include <Objbase.h>
- #include <shellapi.h>
-+#include <WinSock2.h>
- 
- 
- // Minidump creation function
 diff --git a/xbmc/platform/win32/filesystem/Win32Directory.cpp b/xbmc/platform/win32/filesystem/Win32Directory.cpp
 index b652881fb9..45cb1b78fb 100644
 --- a/xbmc/platform/win32/filesystem/Win32Directory.cpp
