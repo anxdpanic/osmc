@@ -93,9 +93,9 @@ index 1c4f5df..3dc528b 100644
 +          g_application.ReloadSkin(false);
 +        }
 +
-       }
-       else if (message.GetParam1() == GUI_MSG_UPDATE_ITEM && message.GetItem())
-       {
+
+        if (message.GetSenderId() == WINDOW_SETTINGS_PROFILES)
+          g_application.ReloadSkin(false);
 -- 
 2.7.4
 
