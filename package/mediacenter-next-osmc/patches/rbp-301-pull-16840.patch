@@ -1,0 +1,39 @@
+From d07231c4e1aa36d17653e1840ce822f088bb13f8 Mon Sep 17 00:00:00 2001
+From: Garrett Brown <themagnificentmrb@gmail.com>
+Date: Sat, 12 Oct 2019 06:50:06 +0200
+Subject: [PATCH] Profiles: ensure that the skin is reloaded after profile is
+ loaded
+
+Credit: Initial fix by Sam Nazarko
+---
+ xbmc/Application.cpp             | 3 +++
+ xbmc/profiles/ProfileManager.cpp | 2 +-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/Application.cpp b/xbmc/Application.cpp
+index 3dbe288631a1..11d48b567ef2 100644
+--- a/xbmc/Application.cpp
++++ b/xbmc/Application.cpp
+@@ -3751,6 +3751,9 @@ bool CApplication::OnMessage(CGUIMessage& message)
+         ShowAppMigrationMessage();
+ 
+         m_bInitializing = false;
++
++        if (message.GetSenderId() == WINDOW_SETTINGS_PROFILES)
++          g_application.ReloadSkin(false);
+       }
+       else if (message.GetParam1() == GUI_MSG_UPDATE_ITEM && message.GetItem())
+       {
+diff --git a/xbmc/profiles/ProfileManager.cpp b/xbmc/profiles/ProfileManager.cpp
+index 8161e1ec1424..e1f466267c13 100644
+--- a/xbmc/profiles/ProfileManager.cpp
++++ b/xbmc/profiles/ProfileManager.cpp
+@@ -426,7 +426,7 @@ void CProfileManager::FinalizeLoadProfile()
+   // if the user interfaces has been fully initialized let everyone know
+   if (uiInitializationFinished)
+   {
+-    CGUIMessage msg(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_UI_READY);
++    CGUIMessage msg(GUI_MSG_NOTIFY_ALL, WINDOW_SETTINGS_PROFILES, 0, GUI_MSG_UI_READY);
+     CServiceBroker::GetGUI()->GetWindowManager().SendThreadMessage(msg);
+   }
+ }
