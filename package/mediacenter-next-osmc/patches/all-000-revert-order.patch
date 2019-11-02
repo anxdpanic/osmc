@@ -1274,7 +1274,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/platform/darwin/DictionaryUtils.mm            |  3 +-
  xbmc/platform/darwin/MemUtils.cpp                  |  3 +-
  xbmc/platform/darwin/PlatformDarwin.cpp            |  4 +-
- .../platform/darwin/ios-common/AnnounceReceiver.mm | 15 +++--
  xbmc/platform/darwin/ios-common/IOSKeyboard.mm     |  8 +--
  xbmc/platform/darwin/ios-common/IOSKeyboardView.h  |  3 +-
  xbmc/platform/darwin/ios-common/IOSKeyboardView.mm |  7 +--
@@ -27025,40 +27024,6 @@ index 545fd094c4..2c5d97ab52 100644
  
  CPlatformDarwin::CPlatformDarwin()
  {
-diff --git a/xbmc/platform/darwin/ios-common/AnnounceReceiver.mm b/xbmc/platform/darwin/ios-common/AnnounceReceiver.mm
-index e9d83e988b..38ba93b706 100644
---- a/xbmc/platform/darwin/ios-common/AnnounceReceiver.mm
-+++ b/xbmc/platform/darwin/ios-common/AnnounceReceiver.mm
-@@ -6,22 +6,21 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
--#import "platform/darwin/ios-common/AnnounceReceiver.h"
-+#import <UIKit/UIKit.h>
- 
- #import "Application.h"
- #import "FileItem.h"
--#include "PlayListPlayer.h"
--#include "ServiceBroker.h"
-+#import "music/tags/MusicInfoTag.h"
-+#import "music/MusicDatabase.h"
- #import "TextureCache.h"
- #import "filesystem/SpecialProtocol.h"
--#import "music/MusicDatabase.h"
--#import "music/tags/MusicInfoTag.h"
-+#include "PlayListPlayer.h"
- #import "playlists/PlayList.h"
--#import "utils/Variant.h"
- 
-+#import "platform/darwin/ios-common/AnnounceReceiver.h"
- #import "platform/darwin/ios/XBMCController.h"
--
--#import <UIKit/UIKit.h>
-+#import "utils/Variant.h"
-+#include "ServiceBroker.h"
- 
- id objectFromVariant(const CVariant &data);
- 
 diff --git a/xbmc/platform/freebsd/MemUtils.cpp b/xbmc/platform/freebsd/MemUtils.cpp
 index de3e42ca79..66752e39ec 100644
 --- a/xbmc/platform/freebsd/MemUtils.cpp
