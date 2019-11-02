@@ -50,8 +50,8 @@ index 59e8d04..0e732b3 100644
    // if the user interfaces has been fully initialized let everyone know
    if (uiInitializationFinished)
    {
--    CGUIMessage msg(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_UI_READY);
-+    CGUIMessage msg(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_UI_READY_PROFILE);
+-    CGUIMessage msg(GUI_MSG_NOTIFY_ALL, WINDOW_SETTINGS_PROFILES, 0, GUI_MSG_UI_READY);
++    CGUIMessage msg(GUI_MSG_NOTIFY_ALL, WINDOW_SETTINGS_PROFILES, 0, GUI_MSG_UI_READY_PROFILE);
      CServiceBroker::GetGUI()->GetWindowManager().SendThreadMessage(msg);
    }
  }
