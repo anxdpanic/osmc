@@ -1924,10 +1924,10 @@ index fc82cb35c9ad..ebddae3a29e2 100644
      GLfloat a = (matrix.m_pMatrix[0]  * m_pMatrix[0]) + (matrix.m_pMatrix[1]  * m_pMatrix[4]) + (matrix.m_pMatrix[2]  * m_pMatrix[8])  + (matrix.m_pMatrix[3]  * m_pMatrix[12]);
      GLfloat b = (matrix.m_pMatrix[0]  * m_pMatrix[1]) + (matrix.m_pMatrix[1]  * m_pMatrix[5]) + (matrix.m_pMatrix[2]  * m_pMatrix[9])  + (matrix.m_pMatrix[3]  * m_pMatrix[13]);
 diff --git a/xbmc/utils/CPUInfo.cpp b/xbmc/utils/CPUInfo.cpp
-index 111a293615..3737b65277 100644
+index 111a293615ac..98dbceb7de99 100644
 --- a/xbmc/utils/CPUInfo.cpp
 +++ b/xbmc/utils/CPUInfo.cpp
-@@ -6,1032 +6,83 @@
+@@ -6,1032 +6,89 @@
   *  See LICENSES/README.md for more information.
   */
  
@@ -2008,7 +2008,7 @@ index 111a293615..3737b65277 100644
 -#define CPUID_80000001_EDX_3DNOWEXT (1<<30)
 -#define CPUID_80000001_EDX_3DNOW    (1<<31)
 -
--
+ 
 -// Help with the __cpuid intrinsic of MSVC
 -#define CPUINFO_EAX 0
 -#define CPUINFO_EBX 1
@@ -2151,10 +2151,13 @@ index 111a293615..3737b65277 100644
 -  m_cpuCount = siSysInfo.dwNumberOfProcessors;
 -
 -  if (PdhOpenQueryW(nullptr, 0, &m_cpuQueryFreq) == ERROR_SUCCESS)
--  {
++  for (const auto& core : m_cores)
+   {
 -    if (PdhAddEnglishCounterW(m_cpuQueryFreq, L"\\Processor Information(0,0)\\Processor Frequency", 0, &m_cpuFreqCounter) != ERROR_SUCCESS)
 -      m_cpuFreqCounter = nullptr;
--  }
++    if (core.m_id == coreId)
++      return true;
+   }
 -  else
 -    m_cpuQueryFreq = nullptr;
 -
@@ -2206,13 +2209,10 @@ index 111a293615..3737b65277 100644
 -
 -  m_fCPUFreq = fopen ("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq", "r");
 -  if (!m_fCPUFreq)
-+  for (const auto& core : m_cores)
-   {
+-  {
 -    m_cpuInfoForFreq = true;
 -    m_fCPUFreq = fopen("/proc/cpuinfo", "r");
-+    if (core.m_id == coreId)
-+      return true;
-   }
+-  }
 -  else
 -    m_cpuInfoForFreq = false;
 -
@@ -2416,34 +2416,42 @@ index 111a293615..3737b65277 100644
 -
 -  if (HasNeon())
 -    m_cpuFeatures |= CPU_FEATURE_NEON;
--
--}
--
+ 
++  return false;
+ }
+ 
 -CCPUInfo::~CCPUInfo()
--{
++const CoreInfo CCPUInfo::GetCoreInfo(int coreId)
+ {
 -#ifdef TARGET_POSIX
 -  if (m_fProcStat != NULL)
 -    fclose(m_fProcStat);
 -
 -  if (m_fProcTemperature != NULL)
 -    fclose(m_fProcTemperature);
--
++  CoreInfo coreInfo;
+ 
 -  if (m_fCPUFreq != NULL)
 -    fclose(m_fCPUFreq);
 -#elif defined(TARGET_WINDOWS_DESKTOP)
 -  if (m_cpuQueryFreq)
 -    PdhCloseQuery(m_cpuQueryFreq);
--
++  for (auto& core : m_cores)
++  {
++    if (core.m_id == coreId)
++      coreInfo = core;
++  }
+ 
 -  if (m_cpuQueryLoad)
 -    PdhCloseQuery(m_cpuQueryLoad);
 -#elif defined(TARGET_DARWIN)
 -  delete m_pResourceCounter;
 -#endif
-+  return false;
++  return coreInfo;
  }
  
 -int CCPUInfo::getUsedPercentage()
-+const CoreInfo CCPUInfo::GetCoreInfo(int coreId)
++std::string CCPUInfo::GetCoresUsageString() const
  {
 -  int result = 0;
 -
@@ -2482,18 +2490,11 @@ index 111a293615..3737b65277 100644
 -  m_nextUsedReadTime.Set(MINIMUM_TIME_BETWEEN_READS);
 -
 -  return result;
-+  CoreInfo coreInfo;
-+  for (auto& core : m_cores)
-+  {
-+    if (core.m_id == coreId)
-+      coreInfo = core;
-+  }  
-+  return coreInfo;
- }
+-}
++  std::string strCores;
  
 -float CCPUInfo::getCPUFrequency()
-+std::string CCPUInfo::GetCoresUsageString() const
- {
+-{
 -  // Get CPU frequency, scaled to MHz.
 -#if defined(TARGET_DARWIN)
 -  long long hz = 0;
@@ -2506,20 +2507,27 @@ index 111a293615..3737b65277 100644
 -  return 0.f;
 -#elif defined(TARGET_WINDOWS_DESKTOP)
 -  if (m_cpuFreqCounter && PdhCollectQueryData(m_cpuQueryFreq) == ERROR_SUCCESS)
--  {
++  if (!m_cores.empty())
+   {
 -    PDH_RAW_COUNTER cnt;
 -    DWORD cntType;
 -    if (PdhGetRawCounterValue(m_cpuFreqCounter, &cntType, &cnt) == ERROR_SUCCESS &&
 -        (cnt.CStatus == PDH_CSTATUS_VALID_DATA || cnt.CStatus == PDH_CSTATUS_NEW_DATA))
--    {
++    for (const auto& core : m_cores)
+     {
 -      return float(cnt.FirstValue);
--    }
--  }
-+std::string strCores;
- 
++      if (!strCores.empty())
++        strCores += ' ';
++      if (core.m_usagePercent < 10.0)
++        strCores += StringUtils::Format("#%d: %1.1f%%", core.m_id, core.m_usagePercent);
++      else
++        strCores += StringUtils::Format("#%d: %3.0f%%", core.m_id, core.m_usagePercent);
+     }
+   }
+-
 -  if (!m_cores.empty())
 -    return float(m_cores.begin()->second.m_fSpeed);
--  else
+   else
 -    return 0.f;
 -#elif defined(TARGET_FREEBSD)
 -  int hz = 0;
@@ -2530,12 +2538,13 @@ index 111a293615..3737b65277 100644
 -#else
 -  int value = 0;
 -  if (m_fCPUFreq && !m_cpuInfoForFreq)
--  {
+   {
 -    rewind(m_fCPUFreq);
 -    fflush(m_fCPUFreq);
 -    if (fscanf(m_fCPUFreq, "%d", &value))
 -      value /= 1000.0;
--  }
++    strCores += StringUtils::Format("%3.0f%%", double(m_lastUsedPercentage));
+   }
 -  if (m_fCPUFreq && m_cpuInfoForFreq)
 -  {
 -    rewind(m_fCPUFreq);
@@ -2557,21 +2566,6 @@ index 111a293615..3737b65277 100644
 -  }
 -  return value;
 -#endif
-+ if (!m_cores.empty())
-+ {
-+ for (const auto& core : m_cores)
-+     {
-+      if (!strCores.empty())
-+        strCores += ' ';
-+      if (core.m_usagePercent < 10.0)
-+        strCores += StringUtils::Format("#%d: %1.1f%%", core.m_id, core.m_usagePercent);
-+      else
-+        strCores += StringUtils::Format("#%d: %3.0f%%", core.m_id, core.m_usagePercent);
-+     }
-+   }
-+   else {
-+    strCores += StringUtils::Format("%3.0f%%", double(m_lastUsedPercentage));
-+   }
 +  return strCores;
  }
  
@@ -2607,10 +2601,8 @@ index 111a293615..3737b65277 100644
 -      ret = fscanf(p, "%d %c", &value, &scale);
 +      int ret = fscanf(p, "%d %c", &value, &scale);
        pclose(p);
-+      if (ret < 2)
-+        return false;
-     }
-   }
+-    }
+-  }
 -  else
 -  {
 -    // procfs is deprecated in the linux kernel, we should move away from
@@ -2620,7 +2612,7 @@ index 111a293615..3737b65277 100644
 -    rewind(m_fProcTemperature);
 -    fflush(m_fProcTemperature);
 -    ret = fscanf(m_fProcTemperature, "temperature: %d %c", &value, &scale);
--
+ 
 -    // read from the temperature file of the new kernels
 -    if (!ret)
 -    {
@@ -2628,14 +2620,16 @@ index 111a293615..3737b65277 100644
 -      value = value / 1000;
 -      scale = 'c';
 -      ret++;
--    }
--  }
--
++      if (ret < 2)
++        return false;
+     }
+   }
+ 
 -  if (ret != 2)
 -    return false;
 -#endif
 -#endif // TARGET_POSIX
- 
+-
    if (scale == 'C' || scale == 'c')
      temperature = CTemperature::CreateFromCelsius(value);
    else if (scale == 'F' || scale == 'f')
@@ -2643,11 +2637,8 @@ index 111a293615..3737b65277 100644
 -  else
 -    return false;
 -
-+  
-+  temperature.SetValid(true);
-+  
-   return true;
- }
+-  return true;
+-}
 -
 -bool CCPUInfo::HasCoreId(int nCoreId) const
 -{
@@ -2700,7 +2691,7 @@ index 111a293615..3737b65277 100644
 -        const LONGLONG deltaTotal = coreTotal - curCore.m_total,
 -                       deltaIdle  = coreIdle - curCore.m_idle;
 -        const double load = (double(deltaTotal - deltaIdle) * 100.0) / double(deltaTotal);
--
+ 
 -        // win32 has some problems with calculation of load if load close to zero
 -        curCore.m_fPct = (load < 0) ? 0 : load;
 -        if (load >= 0 || deltaTotal > 5 * 10 * 1000 * 1000) // do not update (smooth) values for 5 seconds on negative loads
@@ -2845,9 +2836,10 @@ index 111a293615..3737b65277 100644
 -    }
 -  }
 -#endif
--
--  return true;
--}
++  temperature.SetValid(true);
+ 
+   return true;
+ }
 -
 -std::string CCPUInfo::GetCoresUsageString() const
 -{

@@ -1,16 +1,37 @@
 From bde134139835e0db3671c10bb802e00c68b90177 Mon Sep 17 00:00:00 2001
 From: Lukas Rusak <lorusak@gmail.com>
 Date: Wed, 30 Oct 2019 10:21:42 -0700
-Subject: [PATCH 1/4] CPUInfoWin32: remove _M_ARM gaurd
+Subject: [PATCH 1/5] CPUInfoWin32: remove _M_ARM gaurd
 
 ---
  xbmc/platform/win32/CPUInfoWin32.cpp | 2 --
  1 file changed, 2 deletions(-)
 
+diff --git a/xbmc/platform/win32/CPUInfoWin32.cpp b/xbmc/platform/win32/CPUInfoWin32.cpp
+index 213f74db3583..ebb8239ed65c 100644
+--- a/xbmc/platform/win32/CPUInfoWin32.cpp
++++ b/xbmc/platform/win32/CPUInfoWin32.cpp
+@@ -125,7 +125,6 @@ CCPUInfoWin32::CCPUInfoWin32()
+   else
+     m_cpuQueryLoad = nullptr;
+ 
+-#ifndef _M_ARM
+   int CPUInfo[4]; // receives EAX, EBX, ECD and EDX in that order
+ 
+   __cpuid(CPUInfo, 0);
+@@ -164,7 +163,6 @@ CCPUInfoWin32::CCPUInfoWin32()
+     if (CPUInfo[CPUINFO_EDX] & CPUID_80000001_EDX_3DNOWEXT)
+       m_cpuFeatures |= CPU_FEATURE_3DNOWEXT;
+   }
+-#endif // ! _M_ARM
+ 
+   // Set MMX2 when SSE is present as SSE is a superset of MMX2 and Intel doesn't set the MMX2 cap
+   if (m_cpuFeatures & CPU_FEATURE_SSE)
+
 From a67b08fe758bd3c2661f4dc79e383e21ffa597ca Mon Sep 17 00:00:00 2001
 From: Lukas Rusak <lorusak@gmail.com>
 Date: Wed, 30 Oct 2019 10:25:47 -0700
-Subject: [PATCH 2/4] CPUInfoLinux: return false if temperature units aren't
+Subject: [PATCH 2/5] CPUInfoLinux: return false if temperature units aren't
  valid
 
 ---
@@ -34,7 +55,7 @@ index 9b107353e7da..53da5c076f67 100644
 From 4e51f0fa96041127aeb3769a38337786d0a78839 Mon Sep 17 00:00:00 2001
 From: Lukas Rusak <lorusak@gmail.com>
 Date: Wed, 30 Oct 2019 10:26:38 -0700
-Subject: [PATCH 3/4] CPUInfoLinux: fix ifdefs for non neon platforms
+Subject: [PATCH 3/5] CPUInfoLinux: fix ifdefs for non neon platforms
 
 ---
  xbmc/platform/linux/CPUInfoLinux.cpp | 10 ++++------
@@ -82,7 +103,7 @@ index 53da5c076f67..46b387fc6b80 100644
 From 698e2c49d0f799722ff1600d61e178280cd3d898 Mon Sep 17 00:00:00 2001
 From: Lukas Rusak <lorusak@gmail.com>
 Date: Wed, 30 Oct 2019 10:31:01 -0700
-Subject: [PATCH 4/4] CPUInfo: split posix functions into specific class to
+Subject: [PATCH 4/5] CPUInfo: split posix functions into specific class to
  allow windows to build
 
 ---
@@ -406,14 +427,26 @@ index ebb8239ed65c..a717e6209a9b 100644
 +
 +  return true;
 +}
+diff --git a/xbmc/platform/win32/CPUInfoWin32.h b/xbmc/platform/win32/CPUInfoWin32.h
+index 996de4efaffe..69bfac2f79a2 100644
+--- a/xbmc/platform/win32/CPUInfoWin32.h
++++ b/xbmc/platform/win32/CPUInfoWin32.h
+@@ -19,6 +19,7 @@ class CCPUInfoWin32 : public CCPUInfo
+ 
+   int GetUsedPercentage() override;
+   float GetCPUFrequency() override;
++  bool GetTemperature(CTemperature& temperature) override;
+ 
+ private:
+   // avoid inclusion of <windows.h> and others
 diff --git a/xbmc/utils/CPUInfo.cpp b/xbmc/utils/CPUInfo.cpp
 index 98dbceb7de99..b0afdf3f8775 100644
 --- a/xbmc/utils/CPUInfo.cpp
 +++ b/xbmc/utils/CPUInfo.cpp
 @@ -8,9 +8,6 @@
-  */
  
  #include "CPUInfo.h"
+ 
 -#include "ServiceBroker.h"
 -#include "settings/AdvancedSettings.h"
 -#include "settings/SettingsComponent.h"
@@ -469,3 +502,47 @@ index dc298a52a94d..ad8dd95607a8 100644
  
    bool HasCoreId(int coreId) const;
    const CoreInfo GetCoreInfo(int coreId);
+
+From ff9aeb5cc88b8a84afe79c1efadd2f38fe9cc03a Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Wed, 30 Oct 2019 13:35:31 -0700
+Subject: [PATCH 5/5] CCPUInfo: move servicebroker registration earlier in app
+ startup
+
+---
+ xbmc/Application.cpp       | 2 ++
+ xbmc/platform/Platform.cpp | 2 --
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/Application.cpp b/xbmc/Application.cpp
+index 9ec42b943d95..787d2ed060e9 100644
+--- a/xbmc/Application.cpp
++++ b/xbmc/Application.cpp
+@@ -364,6 +364,8 @@ bool CApplication::Create(const CAppParamParser &params)
+   m_bTestMode = params.m_testmode;
+   m_bStandalone = params.m_standAlone;
+ 
++  CServiceBroker::RegisterCPUInfo(CCPUInfo::GetCPUInfo());
++
+   m_pSettingsComponent.reset(new CSettingsComponent());
+   m_pSettingsComponent->Init(params);
+ 
+diff --git a/xbmc/platform/Platform.cpp b/xbmc/platform/Platform.cpp
+index cfd88baa1623..e1f1465c7949 100644
+--- a/xbmc/platform/Platform.cpp
++++ b/xbmc/platform/Platform.cpp
+@@ -9,7 +9,6 @@
+ #include "Platform.h"
+ 
+ #include "ServiceBroker.h"
+-#include "utils/CPUInfo.h"
+ 
+ // Override for platform ports
+ #if !defined(PLATFORM_OVERRIDE)
+@@ -29,6 +28,5 @@ CPlatform::~CPlatform() = default;
+ 
+ void CPlatform::Init()
+ {
+-  CServiceBroker::RegisterCPUInfo(CCPUInfo::GetCPUInfo());
+ }
+ 
