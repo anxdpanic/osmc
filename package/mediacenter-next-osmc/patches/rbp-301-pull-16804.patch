@@ -1,0 +1,23 @@
+From 7f4991917b63e68cc62e06ccf2794194ac564422 Mon Sep 17 00:00:00 2001
+From: DaveTBlake <oak99sky@yahoo.co.uk>
+Date: Tue, 15 Oct 2019 11:37:51 +0100
+Subject: [PATCH] Revert setting playcount to PLAYCOUNT_NOT_SET on read from
+ cache
+
+---
+ xbmc/video/VideoInfoTag.cpp | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/xbmc/video/VideoInfoTag.cpp b/xbmc/video/VideoInfoTag.cpp
+index c8c671c19864..2e8d9830cf26 100644
+--- a/xbmc/video/VideoInfoTag.cpp
++++ b/xbmc/video/VideoInfoTag.cpp
+@@ -470,8 +470,6 @@ void CVideoInfoTag::Archive(CArchive& ar)
+     ar >> m_strAlbum;
+     ar >> m_artist;
+     ar >> m_playCount;
+-    //re-evaluate the playcount
+-    m_playCount = PLAYCOUNT_NOT_SET;
+     ar >> m_lastPlayed;
+     ar >> m_iTop250;
+     ar >> m_iSeason;

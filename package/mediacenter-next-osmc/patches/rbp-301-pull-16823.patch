@@ -1,0 +1,57 @@
+From be37ceb69784aa8f06f5e4c31065798eb1537de9 Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Thu, 24 Oct 2019 20:44:53 +0200
+Subject: [PATCH] [macos] Improve and fix the fix for only quarter of screen
+ rendered in windowed mode and certain fullscreen resolutions on macOS 10.15
+ (Catalina).
+
+---
+ xbmc/windowing/osx/WinSystemOSX.mm | 21 +++++++++------------
+ 1 file changed, 9 insertions(+), 12 deletions(-)
+
+diff --git a/xbmc/windowing/osx/WinSystemOSX.mm b/xbmc/windowing/osx/WinSystemOSX.mm
+index ac5e52a6c002..053994e85fbb 100644
+--- a/xbmc/windowing/osx/WinSystemOSX.mm
++++ b/xbmc/windowing/osx/WinSystemOSX.mm
+@@ -791,14 +791,7 @@ static void DisplayReconfigured(CGDirectDisplayID display,
+   if (!view)
+     return false;
+ 
+-  if (CDisplaySettings::GetInstance().GetCurrentResolution() == RES_WINDOW)
+-  {
+-    // It seems, that in macOS 10.15 this defaults to YES, but we currently do not support
+-    // Retina resolutions properly. Ensure that the view created by SDL uses a 1 pixel per
+-    // point framebuffer.
+-    view.wantsBestResolutionOpenGLSurface = NO;
+-  }
+-  else
++  if (CDisplaySettings::GetInstance().GetCurrentResolution() != RES_WINDOW)
+   {
+     // If we are not starting up windowed, then hide the initial SDL window
+     // so we do not see it flash before the fade-out and switch to fullscreen.
+@@ -879,6 +872,14 @@ void ResizeWindowInternal(int newWidth, int newHeight, int newLeft, int newTop,
+   NSWindow* window;
+ 
+   view = [context view];
++
++  if (view)
++  {
++    // It seems, that in macOS 10.15 this defaults to YES, but we currently do not support
++    // Retina resolutions properly. Ensure that the view uses a 1 pixel per point framebuffer.
++    view.wantsBestResolutionOpenGLSurface = NO;
++  }
++
+   if (view && (newWidth > 0) && (newHeight > 0))
+   {
+     window = [view window];
+@@ -1019,10 +1020,6 @@ void ResizeWindowInternal(int newWidth, int newHeight, int newLeft, int newTop,
+     [windowedFullScreenwindow update];
+     [blankView setFrameSize:NSMakeSize(m_nWidth, m_nHeight)];
+ 
+-    // It seems, that in macOS 10.15 this defaults to YES, but we currently do not support
+-    // Retina resolutions properly. Thus, ensure that we get a 1 pixel per point framebuffer.
+-    blankView.wantsBestResolutionOpenGLSurface = NO;
+-
+     // Obtain windowed pixel format and create a new context.
+     newContext = CreateWindowedContext(cur_context);
+     [newContext setView:blankView];

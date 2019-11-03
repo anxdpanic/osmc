@@ -1,0 +1,48 @@
+From f37f64451560112410a9f3d4d6f9294af90e6011 Mon Sep 17 00:00:00 2001
+From: Anssi Hannula <anssi@kodi.tv>
+Date: Sat, 12 Oct 2019 11:16:26 +0300
+Subject: [PATCH] VAAPI: fix use after free in CVAAPIContext::DestroyContext
+
+Commit cfd59591f3f9 ("VAAPI: add error and info callbacks") added calls
+into vaSetInfoCallback() and vaSetErrorCallback() in
+CVAAPIContext::DestroyContext().
+
+However, those calls are done after vaTerminate(m_display) which frees
+the context, causing use after free.
+
+Fix that by only performing the callback removal if vaTerminate() fails.
+
+Also, set m_display to NULL after a successful vaTerminate() to avoid
+similar issues being hidden in the future.
+---
+ xbmc/cores/VideoPlayer/DVDCodecs/Video/VAAPI.cpp | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/VAAPI.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/VAAPI.cpp
+index f30c1f61b765..627824465db2 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/VAAPI.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/VAAPI.cpp
+@@ -225,12 +225,19 @@ void CVAAPIContext::DestroyContext()
+ {
+   delete[] m_profiles;
+   if (m_display)
+-    CheckSuccess(vaTerminate(m_display), "vaTerminate");
+-
++  {
++    if (CheckSuccess(vaTerminate(m_display), "vaTerminate"))
++    {
++      m_display = NULL;
++    }
++    else
++    {
+ #if VA_CHECK_VERSION(1, 0, 0)
+-  vaSetErrorCallback(m_display, nullptr, nullptr);
+-  vaSetInfoCallback(m_display, nullptr, nullptr);
++      vaSetErrorCallback(m_display, nullptr, nullptr);
++      vaSetInfoCallback(m_display, nullptr, nullptr);
+ #endif
++    }
++  }
+ }
+ 
+ void CVAAPIContext::QueryCaps()

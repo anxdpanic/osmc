@@ -1,0 +1,36 @@
+From 11233f5ece0de0d32c7a28ca65f8ad441ca8dc9d Mon Sep 17 00:00:00 2001
+From: Wolfgang Haupt <haupt.wolfgang@gmail.com>
+Date: Thu, 17 Oct 2019 18:07:18 +0200
+Subject: [PATCH] VideoTagInfoLoaderFFmpeg: Resolve stack before trying to
+ process
+
+---
+ xbmc/video/tags/VideoTagLoaderFFmpeg.cpp | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/video/tags/VideoTagLoaderFFmpeg.cpp b/xbmc/video/tags/VideoTagLoaderFFmpeg.cpp
+index b2152d5eb266..02be26b0613a 100644
+--- a/xbmc/video/tags/VideoTagLoaderFFmpeg.cpp
++++ b/xbmc/video/tags/VideoTagLoaderFFmpeg.cpp
+@@ -13,6 +13,7 @@
+ #include "addons/Scraper.h"
+ #include "cores/FFmpeg.h"
+ #include "filesystem/File.h"
++#include "filesystem/StackDirectory.h"
+ #include "utils/StringUtils.h"
+ #include "video/VideoInfoTag.h"
+ 
+@@ -39,8 +40,12 @@ CVideoTagLoaderFFmpeg::CVideoTagLoaderFFmpeg(const CFileItem& item,
+   : IVideoInfoTagLoader(item, info, lookInFolder)
+   , m_info(info)
+ {
++  std::string filename =
++      item.IsStack() ? CStackDirectory::GetFirstStackedFile(item.GetPath()) : item.GetPath();
++
+   m_file = new CFile;
+-  if (!m_file->Open(m_item.GetPath()))
++
++  if (!m_file->Open(filename))
+   {
+     delete m_file;
+     m_file = nullptr;

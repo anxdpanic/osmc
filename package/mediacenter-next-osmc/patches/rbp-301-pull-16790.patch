@@ -1,0 +1,23 @@
+From 0d7e06301776c42004789516a94fedcf5e1a4a5d Mon Sep 17 00:00:00 2001
+From: peak3d <pfau@peak3d.de>
+Date: Wed, 16 Oct 2019 14:30:45 +0200
+Subject: [PATCH] [Android][Python] remove wrong platform suffix from native
+ libraries
+
+---
+ tools/android/packaging/Makefile.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/android/packaging/Makefile.in b/tools/android/packaging/Makefile.in
+index 2c7742e2a16c..5595a6d69f98 100644
+--- a/tools/android/packaging/Makefile.in
++++ b/tools/android/packaging/Makefile.in
+@@ -120,7 +120,7 @@ libs: $(PREFIX)/lib/@APP_NAME_LC@/lib@APP_NAME_LC@.so
+ 	find $(DEPENDS_PATH)/share/kodi/addons -name "*.so" -exec cp -fp {} xbmc/obj/local/$(CPU)/ \; || true
+ 	find $(DEPENDS_PATH)/lib/kodi/addons -name "*.so" -exec cp -fp {} xbmc/obj/local/$(CPU)/ \; || true
+ 	find $(PREFIX)/lib/@APP_NAME_LC@/system -name "*.so" -exec cp -fp {} xbmc/obj/local/$(CPU)/ \;
+-	DIR=${CURDIR}; cd $(PREFIX)/lib/python@PYTHON_VERSION@/site-packages; for i in `find Cryptodome -name \*.so` ; do FN=`echo $$i | cut -c1- | tr "/" "_"` ; mv $$i $$DIR/xbmc/obj/local/$(CPU)/$$FN ; done
++	DIR=${CURDIR}; cd $(PREFIX)/lib/python@PYTHON_VERSION@/site-packages; for i in `find Cryptodome -name \*.so` ; do FN=`echo $$i | cut -c1- | tr "/" "_" | sed -e 's/\.cpython-[0-9]\{2\}-x86_64-linux-gnu\./\./g'` ;mv $$i $$DIR/xbmc/obj/local/$(CPU)/$$FN ; done
+ 	cd xbmc/obj/local/$(CPU)/; find . -name "*.so" -not -name "lib*.so" | sed "s/\.\///" | xargs -I@ mv @ lib@
+ 	cp -fp xbmc/obj/local/$(CPU)/*.so xbmc/lib/$(CPU)/
+ 	$(STRIP) --strip-unneeded xbmc/lib/$(CPU)/*.so

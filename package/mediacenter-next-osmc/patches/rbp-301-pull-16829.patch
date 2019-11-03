@@ -1,0 +1,42 @@
+From ada2e8e58c9a5d4170b7f4030c5684431148ee99 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Sat, 26 Oct 2019 09:58:16 +0200
+Subject: [PATCH] [addons][game] fix crash where NULL was given to std::string
+
+This fix a crash where a "const char*" was given before as nullptr and produce
+crash on addon where it becomes changed to "const std::string&".
+---
+ xbmc/games/addons/input/GameClientInput.cpp | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/xbmc/games/addons/input/GameClientInput.cpp b/xbmc/games/addons/input/GameClientInput.cpp
+index 5a85d0f8aad4..481f9686ee83 100644
+--- a/xbmc/games/addons/input/GameClientInput.cpp
++++ b/xbmc/games/addons/input/GameClientInput.cpp
+@@ -364,7 +364,7 @@ void CGameClientInput::CloseKeyboard()
+     {
+       try
+       {
+-        m_struct.toAddon.EnableKeyboard(&m_struct, false, nullptr);
++        m_struct.toAddon.EnableKeyboard(&m_struct, false, "");
+       }
+       catch (...)
+       {
+@@ -428,7 +428,7 @@ void CGameClientInput::CloseMouse()
+     {
+       try
+       {
+-        m_struct.toAddon.EnableMouse(&m_struct, false, nullptr);
++        m_struct.toAddon.EnableMouse(&m_struct, false, "");
+       }
+       catch (...)
+       {
+@@ -512,7 +512,7 @@ void CGameClientInput::CloseJoystick(const std::string &portAddress)
+     {
+       try
+       {
+-        m_struct.toAddon.ConnectController(&m_struct, false, portAddress.c_str(), nullptr);
++        m_struct.toAddon.ConnectController(&m_struct, false, portAddress.c_str(), "");
+       }
+       catch (...)
+       {

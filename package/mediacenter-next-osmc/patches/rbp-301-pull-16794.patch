@@ -1,0 +1,80 @@
+From fc240fb5c94ae58c7b33ccef05d9141dffdf2909 Mon Sep 17 00:00:00 2001
+From: Wolfgang Haupt <haupt.wolfgang@gmail.com>
+Date: Wed, 16 Oct 2019 19:52:01 +0200
+Subject: [PATCH] Docs: Add python3-dev as dependency since we bumped the
+ python version
+
+Co-authored-by: wsnipex <wsnipex@a1.net>
+---
+ docs/README.Fedora.md   | 2 +-
+ docs/README.FreeBSD.md  | 2 +-
+ docs/README.Linux.md    | 2 +-
+ docs/README.Ubuntu.md   | 2 +-
+ docs/README.openSUSE.md | 2 +-
+ 5 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/docs/README.Fedora.md b/docs/README.Fedora.md
+index 909e168fc7a8..ff13bfc22658 100644
+--- a/docs/README.Fedora.md
++++ b/docs/README.Fedora.md
+@@ -65,7 +65,7 @@ If you get a `package not found` type of message with the below command, remove
+ 
+ Install build dependencies:
+ ```
+-sudo dnf install alsa-lib-devel autoconf automake avahi-compat-libdns_sd-devel avahi-devel bluez-libs-devel bzip2-devel cmake curl dbus-devel flatbuffers flatbuffers-devel fmt-devel fontconfig-devel freetype-devel fribidi-devel fstrcmp-devel gawk gcc gcc-c++ gettext gettext-devel giflib-devel gperf java-11-openjdk-headless jre lcms2-devel libao-devel libass-devel libbluray-devel libcap-devel libcdio-devel libcec-devel libcurl-devel libidn2-devel libjpeg-turbo-devel libmicrohttpd-devel libmpc-devel libnfs-devel libplist-devel libpng12-devel libsmbclient-devel libtool libtool-ltdl-devel libudev-devel libunistring libusb-devel libuuid-devel libva-devel libvdpau-devel libxml2-devel libXmu-devel libXrandr-devel libxslt-devel libXt-devel lirc-devel lzo-devel make mariadb-devel mesa-libEGL-devel mesa-libGL-devel mesa-libGLU-devel mesa-libGLw-devel mesa-libOSMesa-devel nasm openssl-devel openssl-libs patch pcre-devel pulseaudio-libs-devel python-devel python-pillow rapidjson-devel shairplay-devel sqlite-devel swig taglib-devel tinyxml-devel trousers-devel uuid-devel yasm zlib-devel
++sudo dnf install alsa-lib-devel autoconf automake avahi-compat-libdns_sd-devel avahi-devel bluez-libs-devel bzip2-devel cmake curl dbus-devel flatbuffers flatbuffers-devel fmt-devel fontconfig-devel freetype-devel fribidi-devel fstrcmp-devel gawk gcc gcc-c++ gettext gettext-devel giflib-devel gperf java-11-openjdk-headless jre lcms2-devel libao-devel libass-devel libbluray-devel libcap-devel libcdio-devel libcec-devel libcurl-devel libidn2-devel libjpeg-turbo-devel libmicrohttpd-devel libmpc-devel libnfs-devel libplist-devel libpng12-devel libsmbclient-devel libtool libtool-ltdl-devel libudev-devel libunistring libusb-devel libuuid-devel libva-devel libvdpau-devel libxml2-devel libXmu-devel libXrandr-devel libxslt-devel libXt-devel lirc-devel lzo-devel make mariadb-devel mesa-libEGL-devel mesa-libGL-devel mesa-libGLU-devel mesa-libGLw-devel mesa-libOSMesa-devel nasm openssl-devel openssl-libs patch pcre-devel pulseaudio-libs-devel python3-devel python3-pillow rapidjson-devel shairplay-devel sqlite-devel swig taglib-devel tinyxml-devel trousers-devel uuid-devel yasm zlib-devel
+ ```
+ 
+ **WARNING:** Make sure you copy paste the entire line or you might receive an error or miss a few dependencies.
+diff --git a/docs/README.FreeBSD.md b/docs/README.FreeBSD.md
+index 604218e00fb5..d65af3f8c0d0 100644
+--- a/docs/README.FreeBSD.md
++++ b/docs/README.FreeBSD.md
+@@ -76,7 +76,7 @@ If you get a `package not found` type of message with the below command, remove
+ 
+ Install build dependencies:
+ ```
+-sudo pkg install autoconf automake avahi-app binutils cmake curl dbus doxygen e2fsprogs-libuuid enca encodings flac flatbuffers font-util fontconfig freetype2 fribidi gawk gettext-tools giflib git glew gmake gmp gnutls gperf gstreamer1-vaapi hal jpeg-turbo libaacs libass libbdplus libbluray libcapn libcdio libcec libedit libfmt libgcrypt libgpg-error libidn libinotify libmicrohttpd libnfs libogg libplist librtmp libtool libudev-devd libva libvdpau libvorbis libxslt lirc lzo2 m4 mesa-libs mysql57-client nasm openjdk8 p8-platform pkgconf python2 rapidjson samba46 shairplay sndio sqlite3 swig30 taglib tiff tinyxml xf86-input-keyboard xf86-input-mouse xorg-proto xorg-server xrandr zip
++sudo pkg install autoconf automake avahi-app binutils cmake curl dbus doxygen e2fsprogs-libuuid enca encodings flac flatbuffers font-util fontconfig freetype2 fribidi gawk gettext-tools giflib git glew gmake gmp gnutls gperf gstreamer1-vaapi hal jpeg-turbo libaacs libass libbdplus libbluray libcapn libcdio libcec libedit libfmt libgcrypt libgpg-error libidn libinotify libmicrohttpd libnfs libogg libplist librtmp libtool libudev-devd libva libvdpau libvorbis libxslt lirc lzo2 m4 mesa-libs mysql57-client nasm openjdk8 p8-platform pkgconf python3 py-pillow rapidjson samba46 shairplay sndio sqlite3 swig30 taglib tiff tinyxml xf86-input-keyboard xf86-input-mouse xorg-proto xorg-server xrandr zip
+ ```
+ 
+ **WARNING:** Make sure you copy paste the entire line or you might receive an error or miss a few dependencies.
+diff --git a/docs/README.Linux.md b/docs/README.Linux.md
+index a9c7ce73c74b..54f2fe3aae74 100644
+--- a/docs/README.Linux.md
++++ b/docs/README.Linux.md
+@@ -74,7 +74,7 @@ The following is the list of packages that are used to build Kodi on Debian/Ubun
+ 
+ **NOTE:** Kodi requires a compiler with C++14 support, i.e. gcc >= 4.9 or clang >= 3.4
+ 
+-* autoconf, automake, autopoint, gettext, autotools-dev, cmake, curl, default-jre | openjdk-6-jre | openjdk-7-jre, gawk, gcc (>= 4.9) | gcc-4.9, g++ (>= 4.9) | g++-4.9, cpp (>= 4.9) | cpp-4.9, flatbuffers, gdc, gperf, libasound2-dev | libasound-dev, libass-dev (>= 0.9.8), libavahi-client-dev, libavahi-common-dev, libbluetooth-dev, libbluray-dev, libbz2-dev, libcdio-dev, libcec4-dev | libcec-dev, libp8-platform-dev, libcrossguid-dev, libcurl4-openssl-dev | libcurl4-gnutls-dev | libcurl-dev, libcwiid-dev, libdbus-1-dev, libegl1-mesa-dev, libenca-dev, libflac-dev, libfontconfig-dev, libfmt3-dev | libfmt-dev, libfreetype6-dev, libfribidi-dev, libfstrcmp-dev, libgcrypt-dev, libgif-dev (>= 5.0.5), libgles2-mesa-dev [armel] | libgl1-mesa-dev | libgl-dev, libglew-dev, libglu1-mesa-dev | libglu-dev, libgnutls-dev | libgnutls28-dev, libgpg-error-dev, libiso9660-dev, libjpeg-dev, liblcms2-dev, liblirc-dev, libltdl-dev, liblzo2-dev, libmicrohttpd-dev, libmysqlclient-dev, libnfs-dev, libogg-dev, libomxil-bellagio-dev [armel], libpcre3-dev, libplist-dev, libpng12-dev | libpng-dev, libpulse-dev, libshairplay-dev, libsmbclient-dev, libsqlite3-dev, libssl-dev, libtag1-dev (>= 1.8) | libtag1x8, libtiff5-dev | libtiff-dev | libtiff4-dev, libtinyxml-dev, libtool, libudev-dev, libva-dev, libvdpau-dev, libvorbis-dev, libxkbcommon-dev, libxmu-dev, libxrandr-dev, libxslt1-dev | libxslt-dev, libxt-dev, waylandpp-dev | netcat, wayland-protocols | wipe, lsb-release, nasm [!amd64], python-dev, python-pil | python-imaging, python-support | python-minimal, rapidjson-dev, swig, unzip, uuid-dev, yasm, zip, zlib1g-dev
++* autoconf, automake, autopoint, gettext, autotools-dev, cmake, curl, default-jre | openjdk-6-jre | openjdk-7-jre, gawk, gcc (>= 4.9) | gcc-4.9, g++ (>= 4.9) | g++-4.9, cpp (>= 4.9) | cpp-4.9, flatbuffers, gdc, gperf, libasound2-dev | libasound-dev, libass-dev (>= 0.9.8), libavahi-client-dev, libavahi-common-dev, libbluetooth-dev, libbluray-dev, libbz2-dev, libcdio-dev, libcec4-dev | libcec-dev, libp8-platform-dev, libcrossguid-dev, libcurl4-openssl-dev | libcurl4-gnutls-dev | libcurl-dev, libcwiid-dev, libdbus-1-dev, libegl1-mesa-dev, libenca-dev, libflac-dev, libfontconfig-dev, libfmt3-dev | libfmt-dev, libfreetype6-dev, libfribidi-dev, libfstrcmp-dev, libgcrypt-dev, libgif-dev (>= 5.0.5), libgles2-mesa-dev [armel] | libgl1-mesa-dev | libgl-dev, libglew-dev, libglu1-mesa-dev | libglu-dev, libgnutls-dev | libgnutls28-dev, libgpg-error-dev, libiso9660-dev, libjpeg-dev, liblcms2-dev, liblirc-dev, libltdl-dev, liblzo2-dev, libmicrohttpd-dev, libmysqlclient-dev, libnfs-dev, libogg-dev, libomxil-bellagio-dev [armel], libpcre3-dev, libplist-dev, libpng12-dev | libpng-dev, libpulse-dev, libshairplay-dev, libsmbclient-dev, libsqlite3-dev, libssl-dev, libtag1-dev (>= 1.8) | libtag1x8, libtiff5-dev | libtiff-dev | libtiff4-dev, libtinyxml-dev, libtool, libudev-dev, libva-dev, libvdpau-dev, libvorbis-dev, libxkbcommon-dev, libxmu-dev, libxrandr-dev, libxslt1-dev | libxslt-dev, libxt-dev, waylandpp-dev | netcat, wayland-protocols | wipe, lsb-release, nasm [!amd64], python3-dev, python3-pil | python-imaging, python-support | python3-minimal, rapidjson-dev, swig, unzip, uuid-dev, yasm, zip, zlib1g-dev
+ 
+ ### 3.1. Build missing dependencies
+ Some packages may be missing or outdated in older distributions. Notably `crossguid, libfmt, waylandpp, wayland-protocols, etc.` are known to be outdated or missing. Fortunately there is an easy way to build individual dependencies with **[Kodi's unified depends build system](../tools/depends/README.md)**.
+diff --git a/docs/README.Ubuntu.md b/docs/README.Ubuntu.md
+index 8f746fc2d2fe..56c844d2d65f 100644
+--- a/docs/README.Ubuntu.md
++++ b/docs/README.Ubuntu.md
+@@ -115,7 +115,7 @@ If you get a `package not found` type of message with the below command, remove
+ 
+ Install build dependencies manually:
+ ```
+-sudo apt install debhelper autoconf automake autopoint gettext autotools-dev cmake curl default-jre doxygen gawk gcc gdc gperf libasound2-dev libass-dev libavahi-client-dev libavahi-common-dev libbluetooth-dev libbluray-dev libbz2-dev libcdio-dev libp8-platform-dev libcrossguid-dev libcurl4-openssl-dev libcwiid-dev libdbus-1-dev libegl1-mesa-dev libenca-dev libflac-dev flatbuffers-dev libfontconfig-dev libfreetype6-dev libfribidi-dev libfstrcmp-dev libgcrypt-dev libgif-dev libgles2-mesa-dev libgl1-mesa-dev libglu1-mesa-dev libgnutls28-dev libgpg-error-dev libiso9660-dev libjpeg-dev liblcms2-dev libltdl-dev liblzo2-dev libmicrohttpd-dev libmysqlclient-dev libnfs-dev libogg-dev libpcre3-dev libplist-dev libpng-dev libpulse-dev libshairplay-dev libsmbclient-dev libsqlite3-dev libssl-dev libtag1-dev libtiff5-dev libtinyxml-dev libtool libudev-dev libva-dev libvdpau-dev libvorbis-dev libxmu-dev libxrandr-dev libxslt1-dev libxt-dev lsb-release python-dev python-pil rapidjson-dev swig unzip uuid-dev yasm zip zlib1g-dev
++sudo apt install debhelper autoconf automake autopoint gettext autotools-dev cmake curl default-jre doxygen gawk gcc gdc gperf libasound2-dev libass-dev libavahi-client-dev libavahi-common-dev libbluetooth-dev libbluray-dev libbz2-dev libcdio-dev libp8-platform-dev libcrossguid-dev libcurl4-openssl-dev libcwiid-dev libdbus-1-dev libegl1-mesa-dev libenca-dev libflac-dev flatbuffers-dev libfontconfig-dev libfreetype6-dev libfribidi-dev libfstrcmp-dev libgcrypt-dev libgif-dev libgles2-mesa-dev libgl1-mesa-dev libglu1-mesa-dev libgnutls28-dev libgpg-error-dev libiso9660-dev libjpeg-dev liblcms2-dev libltdl-dev liblzo2-dev libmicrohttpd-dev libmysqlclient-dev libnfs-dev libogg-dev libpcre3-dev libplist-dev libpng-dev libpulse-dev libshairplay-dev libsmbclient-dev libsqlite3-dev libssl-dev libtag1-dev libtiff5-dev libtinyxml-dev libtool libudev-dev libva-dev libvdpau-dev libvorbis-dev libxmu-dev libxrandr-dev libxslt1-dev libxt-dev lsb-release python3-dev python3-pil rapidjson-dev swig unzip uuid-dev yasm zip zlib1g-dev
+ ```
+ 
+ **WARNING:** Make sure you copy paste the entire line or you might receive an error or miss a few dependencies.
+diff --git a/docs/README.openSUSE.md b/docs/README.openSUSE.md
+index 611f59b1f196..f0b50be1e5d2 100644
+--- a/docs/README.openSUSE.md
++++ b/docs/README.openSUSE.md
+@@ -76,7 +76,7 @@ If you get a `package not found` type of message with the below command, remove
+ 
+ Install build dependencies:
+ ```
+-sudo zypper install alsa-devel autoconf automake bluez-devel boost-devel capi4linux-devel ccache cmake doxygen flac-devel fribidi-devel fstrcmp-devel gcc gcc-c++ gettext-devel giflib-devel glew-devel gperf java-openjdk libass-devel libavahi-devel libbluray-devel libbz2-devel libcap-devel libcap-ng-devel libcdio-devel libcec-devel libcurl-devel libdvdread-devel libgudev-1_0-devel libidn2-devel libjasper-devel libjpeg-devel liblcms2-devel libmad-devel libmicrohttpd-devel libmodplug-devel libmpeg2-devel libmysqlclient-devel libnfs-devel libogg-devel libpcap-devel libplist-devel libpng12-devel libpulse-devel libsamplerate-devel libsmbclient-devel libtag-devel libtiff-devel libtool libudev-devel libuuid-devel libva-devel libvdpau-devel libvorbis-devel libXrandr-devel libXrender-devel libxslt-devel lirc-devel lzo-devel make Mesa-libEGL-devel Mesa-libGLESv2-devel Mesa-libGLESv3-devel nasm patch pcre-devel python-devel randrproto-devel renderproto-devel shairplay-devel sqlite3-devel swig tinyxml-devel
++sudo zypper install alsa-devel autoconf automake bluez-devel boost-devel capi4linux-devel ccache cmake doxygen flac-devel fribidi-devel fstrcmp-devel gcc gcc-c++ gettext-devel giflib-devel glew-devel gperf java-openjdk libass-devel libavahi-devel libbluray-devel libbz2-devel libcap-devel libcap-ng-devel libcdio-devel libcec-devel libcurl-devel libdvdread-devel libgudev-1_0-devel libidn2-devel libjasper-devel libjpeg-devel liblcms2-devel libmad-devel libmicrohttpd-devel libmodplug-devel libmpeg2-devel libmysqlclient-devel libnfs-devel libogg-devel libpcap-devel libplist-devel libpng12-devel libpulse-devel libsamplerate-devel libsmbclient-devel libtag-devel libtiff-devel libtool libudev-devel libuuid-devel libva-devel libvdpau-devel libvorbis-devel libXrandr-devel libXrender-devel libxslt-devel lirc-devel lzo-devel make Mesa-libEGL-devel Mesa-libGLESv2-devel Mesa-libGLESv3-devel nasm patch pcre-devel python3-devel python3-Pillow randrproto-devel renderproto-devel shairplay-devel sqlite3-devel swig tinyxml-devel
+ ```
+ 
+ **WARNING:** Make sure you copy paste the entire line or you might receive an error or miss a few dependencies.
