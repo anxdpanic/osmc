@@ -1,0 +1,100 @@
+From 5c5a300d0cf5b212f3246fbd1e71cbecd19930b7 Mon Sep 17 00:00:00 2001
+From: DaveTBlake <oak99sky@yahoo.co.uk>
+Date: Tue, 29 Oct 2019 17:26:14 +0000
+Subject: [PATCH] Base cache filename on itemlist path with options. Save cache
+ filename with each item so correct cache cleared on item update.
+
+---
+ xbmc/FileItem.cpp               | 25 ++++++++++++++++++++++---
+ xbmc/FileItem.h                 |  2 ++
+ xbmc/windows/GUIMediaWindow.cpp | 10 +++++++++-
+ 3 files changed, 33 insertions(+), 4 deletions(-)
+
+diff --git a/xbmc/FileItem.cpp b/xbmc/FileItem.cpp
+index e4f04ccb9cd2..ed75812370ee 100644
+--- a/xbmc/FileItem.cpp
++++ b/xbmc/FileItem.cpp
+@@ -2920,8 +2920,17 @@ bool CFileItemList::Save(int windowID)
+   CLog::Log(LOGDEBUG,"Saving fileitems [%s]", CURL::GetRedacted(GetPath()).c_str());
+ 
+   CFile file;
+-  if (file.OpenForWrite(GetDiscFileCache(windowID), true)) // overwrite always
++  std::string cachefile = GetDiscFileCache(windowID);
++  if (file.OpenForWrite(cachefile, true)) // overwrite always
+   {
++    // Before caching save simplified cache file name in every item so the cache file can be
++    // identifed and removed if the item is updated. List path and options (used for file
++    // name when list cached) can not be accurately derived from item path.
++    StringUtils::Replace(cachefile, "special://temp/archive_cache/", "");
++    StringUtils::Replace(cachefile, ".fi", "");
++    for (auto item : m_items)
++      item->SetProperty("cachefilename", cachefile);
++
+     CArchive ar(&file, CArchive::store);
+     ar << *this;
+     CLog::Log(LOGDEBUG,"  -- items: %i, sort method: %i, ascending: %s", iSize, m_sortDescription.sortBy, m_sortDescription.sortOrder == SortOrderAscending ? "true" : "false");
+@@ -2935,7 +2944,11 @@ bool CFileItemList::Save(int windowID)
+ 
+ void CFileItemList::RemoveDiscCache(int windowID) const
+ {
+-  std::string cacheFile(GetDiscFileCache(windowID));
++  RemoveDiscCache(GetDiscFileCache(windowID));
++}
++
++void CFileItemList::RemoveDiscCache(const std::string& cacheFile) const
++{
+   if (CFile::Exists(cacheFile))
+   {
+     CLog::Log(LOGDEBUG,"Clearing cached fileitems [%s]", CURL::GetRedacted(GetPath()).c_str());
+@@ -2943,10 +2956,16 @@ void CFileItemList::RemoveDiscCache(int windowID) const
+   }
+ }
+ 
++void CFileItemList::RemoveDiscCacheCRC(const std::string& crc) const
++{
++  std::string cachefile = StringUtils::Format("special://temp/archive_cache/%s.fi", crc);
++  RemoveDiscCache(cachefile);
++}
++
+ std::string CFileItemList::GetDiscFileCache(int windowID) const
+ {
+   std::string strPath(GetPath());
+-  strPath = CURL(strPath).GetWithoutOptions();
++  URIUtils::RemoveSlashAtEnd(strPath);
+ 
+   uint32_t crc = Crc32::ComputeFromLowerCase(strPath);
+ 
+diff --git a/xbmc/FileItem.h b/xbmc/FileItem.h
+index 2604b0a6147f..643f7caf39e1 100644
+--- a/xbmc/FileItem.h
++++ b/xbmc/FileItem.h
+@@ -725,6 +725,8 @@ class CFileItemList : public CFileItem
+    \sa Save,Load
+    */
+   void RemoveDiscCache(int windowID = 0) const;
++  void RemoveDiscCache(const std::string& cachefile) const;
++  void RemoveDiscCacheCRC(const std::string& crc) const;
+   bool AlwaysCache() const;
+ 
+   void Swap(unsigned int item1, unsigned int item2);
+diff --git a/xbmc/windows/GUIMediaWindow.cpp b/xbmc/windows/GUIMediaWindow.cpp
+index 143e7425b960..32560d1d0822 100644
+--- a/xbmc/windows/GUIMediaWindow.cpp
++++ b/xbmc/windows/GUIMediaWindow.cpp
+@@ -426,7 +426,15 @@ bool CGUIMediaWindow::OnMessage(CGUIMessage& message)
+         { // need to remove the disc cache
+           CFileItemList items;
+           items.SetPath(URIUtils::GetDirectory(newItem->GetPath()));
+-          items.RemoveDiscCache(GetID());
++          if (newItem->HasProperty("cachefilename"))
++          {
++            // Use stored cache file name
++            std::string crcfile = newItem->GetProperty("cachefilename").asString();
++            items.RemoveDiscCacheCRC(crcfile);
++          }
++          else
++            // No stored cache file name, attempt using truncated item path as list path
++            items.RemoveDiscCache(GetID());
+         }
+       }
+       else if (message.GetParam1()==GUI_MSG_UPDATE_PATH)
