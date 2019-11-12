@@ -1,0 +1,31 @@
+From 37a6e850c2d51279fb01b240eb7b4535dfe8f4fa Mon Sep 17 00:00:00 2001
+From: arnova <arnova@void.org>
+Date: Sun, 10 Nov 2019 13:37:34 +0100
+Subject: [PATCH] fixed: Extension matching in FileDirectoryFactory was broken
+
+---
+ xbmc/filesystem/FileDirectoryFactory.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/filesystem/FileDirectoryFactory.cpp b/xbmc/filesystem/FileDirectoryFactory.cpp
+index 95e1d856184d..a3144f60d9ac 100644
+--- a/xbmc/filesystem/FileDirectoryFactory.cpp
++++ b/xbmc/filesystem/FileDirectoryFactory.cpp
+@@ -54,7 +54,7 @@ IFileDirectory* CFileDirectoryFactory::Create(const CURL& url, CFileItem* pItem,
+       if (CAudioDecoder::HasTracks(addonInfo))
+       {
+         auto exts = StringUtils::Split(CAudioDecoder::GetExtensions(addonInfo), "|");
+-        if (std::find(exts.begin(), exts.end(), "." + strExtension) != exts.end())
++        if (std::find(exts.begin(), exts.end(), strExtension) != exts.end())
+         {
+           CAudioDecoder* result = new CAudioDecoder(addonInfo);
+           if (!result->CreateDecoder() || !result->ContainsFiles(url))
+@@ -75,7 +75,7 @@ IFileDirectory* CFileDirectoryFactory::Create(const CURL& url, CFileItem* pItem,
+       if (vfsAddon->HasFileDirectories())
+       {
+         auto exts = StringUtils::Split(vfsAddon->GetExtensions(), "|");
+-        if (std::find(exts.begin(), exts.end(), "." + strExtension) != exts.end())
++        if (std::find(exts.begin(), exts.end(), strExtension) != exts.end())
+         {
+           CVFSEntryIFileDirectoryWrapper* wrap = new CVFSEntryIFileDirectoryWrapper(vfsAddon);
+           if (wrap->ContainsFiles(url))
