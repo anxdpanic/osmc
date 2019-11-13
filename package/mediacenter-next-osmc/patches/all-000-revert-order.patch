@@ -194,7 +194,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/cores/AudioEngine/Sinks/AESinkDirectSound.h   |  7 +--
  xbmc/cores/AudioEngine/Sinks/AESinkOSS.h           |  4 +-
  xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp       |  9 ++-
- xbmc/cores/AudioEngine/Sinks/AESinkPULSE.h         |  3 +-
  xbmc/cores/AudioEngine/Sinks/AESinkPi.cpp          | 12 ++--
  xbmc/cores/AudioEngine/Sinks/AESinkSNDIO.cpp       |  1 -
  xbmc/cores/AudioEngine/Sinks/AESinkSNDIO.h         |  5 +-
@@ -1488,8 +1487,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/settings/lib/SettingSection.cpp               |  7 +--
  xbmc/settings/lib/SettingSection.h                 |  6 +-
  xbmc/settings/lib/SettingUpdate.cpp                |  3 +-
- xbmc/settings/lib/SettingsManager.cpp              | 10 ++--
- xbmc/settings/lib/SettingsManager.h                |  8 +--
  xbmc/settings/windows/GUIControlSettings.cpp       | 14 ++---
  xbmc/settings/windows/GUIControlSettings.h         |  8 +--
  xbmc/settings/windows/GUIWindowSettings.cpp        |  1 -
@@ -5680,22 +5677,6 @@ index 139352d4bb..b4599ad482 100644
 -#include "utils/log.h"
  
  static const char *ContextStateToString(pa_context_state s)
- {
-diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.h b/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.h
-index 21c97f3bba..b0ace8bcf4 100644
---- a/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.h
-+++ b/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.h
-@@ -11,10 +11,9 @@
- #include "cores/AudioEngine/Interfaces/AESink.h"
- #include "cores/AudioEngine/Utils/AEDeviceInfo.h"
- #include "cores/AudioEngine/Utils/AEUtil.h"
--#include "threads/CriticalSection.h"
--
- #include <pulse/pulseaudio.h>
- #include <pulse/simple.h>
-+#include "threads/CriticalSection.h"
- 
- class CAESinkPULSE : public IAESink
  {
 diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkPi.cpp b/xbmc/cores/AudioEngine/Sinks/AESinkPi.cpp
 index 026c8b778e..edcaf09d3f 100644
@@ -30942,57 +30923,6 @@ index 51c5dfaeb9..d25c595f4d 100644
  
  bool CSettingUpdate::Deserialize(const TiXmlNode *node)
  {
-diff --git a/xbmc/settings/lib/SettingsManager.cpp b/xbmc/settings/lib/SettingsManager.cpp
-index 885b89995b..a643b6ac09 100644
---- a/xbmc/settings/lib/SettingsManager.cpp
-+++ b/xbmc/settings/lib/SettingsManager.cpp
-@@ -8,15 +8,15 @@
- 
- #include "SettingsManager.h"
- 
--#include "Setting.h"
-+#include <algorithm>
-+#include <utility>
-+
- #include "SettingDefinitions.h"
- #include "SettingSection.h"
-+#include "Setting.h"
-+#include "utils/log.h"
- #include "utils/StringUtils.h"
- #include "utils/XBMCTinyXML.h"
--#include "utils/log.h"
--
--#include <algorithm>
--#include <utility>
- 
- const uint32_t CSettingsManager::Version = 2;
- const uint32_t CSettingsManager::MinimumSupportedVersion = 0;
-diff --git a/xbmc/settings/lib/SettingsManager.h b/xbmc/settings/lib/SettingsManager.h
-index f4dc1c7836..dc5d4faa27 100644
---- a/xbmc/settings/lib/SettingsManager.h
-+++ b/xbmc/settings/lib/SettingsManager.h
-@@ -8,6 +8,10 @@
- 
- #pragma once
- 
-+#include <map>
-+#include <set>
-+#include <vector>
-+
- #include "ISettingCallback.h"
- #include "ISettingControlCreator.h"
- #include "ISettingCreator.h"
-@@ -19,10 +23,6 @@
- #include "SettingDependency.h"
- #include "threads/SharedSection.h"
- 
--#include <map>
--#include <set>
--#include <vector>
--
- class CSettingCategory;
- class CSettingGroup;
- class CSettingSection;
 diff --git a/xbmc/settings/windows/GUIControlSettings.h b/xbmc/settings/windows/GUIControlSettings.h
 index a06238844c..0a1ed1f1b6 100644
 --- a/xbmc/settings/windows/GUIControlSettings.h
