@@ -1,0 +1,44 @@
+From 1e87d8998bfb1950f19bc34fc0c93927170e95f4 Mon Sep 17 00:00:00 2001
+From: Arne Morten Kvarving <spiff@kodi.tv>
+Date: Wed, 6 Nov 2019 13:31:09 +0100
+Subject: [PATCH] fixed: support shoutcast over https
+
+we can no longer blindly replace protocol with http since
+shoutcast over https is now a thing.
+
+replace shout:// protocol with http
+replace shouts://protocol with https
+---
+ xbmc/filesystem/FileFactory.cpp   | 2 +-
+ xbmc/filesystem/ShoutcastFile.cpp | 5 ++++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/filesystem/FileFactory.cpp b/xbmc/filesystem/FileFactory.cpp
+index 1ab31bff4748..7e70fff48196 100644
+--- a/xbmc/filesystem/FileFactory.cpp
++++ b/xbmc/filesystem/FileFactory.cpp
+@@ -137,7 +137,7 @@ IFile* CFileFactory::CreateLoader(const CURL& url)
+   ||  url.IsProtocol("http")
+   ||  url.IsProtocol("https")) return new CCurlFile();
+   else if (url.IsProtocol("dav") || url.IsProtocol("davs")) return new CDAVFile();
+-  else if (url.IsProtocol("shout")) return new CShoutcastFile();
++  else if (url.IsProtocol("shout") || url.IsProtocol("shouts")) return new CShoutcastFile();
+ #ifdef HAS_FILESYSTEM_SMB
+ #ifdef TARGET_WINDOWS
+   else if (url.IsProtocol("smb")) return new CWin32SMBFile();
+diff --git a/xbmc/filesystem/ShoutcastFile.cpp b/xbmc/filesystem/ShoutcastFile.cpp
+index 5a55174869ba..b49df66483fd 100644
+--- a/xbmc/filesystem/ShoutcastFile.cpp
++++ b/xbmc/filesystem/ShoutcastFile.cpp
+@@ -58,7 +58,10 @@ bool CShoutcastFile::Open(const CURL& url)
+ {
+   CURL url2(url);
+   url2.SetProtocolOptions(url2.GetProtocolOptions()+"&noshout=true&Icy-MetaData=1");
+-  url2.SetProtocol("http");
++  if (url.GetProtocol() == "shouts")
++    url2.SetProtocol("https");
++  else if (url.GetProtocol() == "shout")
++    url2.SetProtocol("http");
+ 
+   bool result = m_file.Open(url2);
+   if (result)
