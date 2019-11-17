@@ -1,28 +1,27 @@
-From 4171c64c98e667614d42753998342078a8be8934 Mon Sep 17 00:00:00 2001
+From c92a41fdf4a2848a2f376abdbfeeef822c958224 Mon Sep 17 00:00:00 2001
 From: Greg McCarthy <greg@gjmccarthy.co.uk>
-Date: Thu, 6 Jun 2019 18:56:56 +0100
-Subject: [PATCH] Revert "AESinkAUDIOTRACK: drop amlogic hacks"
+Date: Sun, 17 Nov 2019 08:56:26 +0000
+Subject: [PATCH] Revert AESinkAUDIOTRACK: drop amlogic hacks
 
-This reverts commit 926d2e30c4e6dfad1730229b71e36b1b5e80dbe7.
 ---
  xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp | 166 ++++++++++++++++------
  xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.h   |   1 +
- 2 files changed, 121 insertions(+), 46 deletions(-)
+ 2 files changed, 123 insertions(+), 44 deletions(-)
 
 diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp b/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp
-index 54471c8ee3..4a3146cdc5 100644
+index 0d70bb80a1..f0f15a3feb 100644
 --- a/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp
 +++ b/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp
-@@ -21,6 +21,8 @@
- #include "utils/StringUtils.h"
- #include "utils/TimeUtils.h"
+@@ -22,6 +22,8 @@
+ #include <androidjni/AudioTrack.h>
+ #include <androidjni/Build.h>
  
 +#include "utils/AMLUtils.h"
 +
  // This is an alternative to the linear weighted delay smoothing
  // advantages: only one history value needs to be stored
  // in tests the linear weighted average smoother yield better results
-@@ -38,6 +40,24 @@ const uint64_t UINT64_UPPER_BYTES = 0xFFFFFFFF00000000;
+@@ -39,6 +41,25 @@ const uint64_t UINT64_UPPER_BYTES = 0xFFFFFFFF00000000;
  
  static const AEChannel KnownChannels[] = { AE_CH_FL, AE_CH_FR, AE_CH_FC, AE_CH_LFE, AE_CH_SL, AE_CH_SR, AE_CH_BL, AE_CH_BR, AE_CH_BC, AE_CH_BLOC, AE_CH_BROC, AE_CH_NULL };
  
@@ -44,10 +43,11 @@ index 54471c8ee3..4a3146cdc5 100644
 +  return ((CJNIAudioFormat::ENCODING_TRUEHD != -1) && (CJNIAudioFormat::ENCODING_DTSHD != -1));
 +}
 +
++
  static int AEStreamFormatToATFormat(const CAEStreamInfo::DataType& dt)
  {
    switch (dt)
-@@ -384,6 +404,10 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
+@@ -385,6 +406,10 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
        atChannelMask = CJNIAudioFormat::CHANNEL_OUT_STEREO;
    }
  
@@ -58,11 +58,10 @@ index 54471c8ee3..4a3146cdc5 100644
    while (!m_at_jni)
    {
      CLog::Log(LOGNOTICE, "Trying to open: samplerate: %u, channelMask: %d, encoding: %d", m_sink_sampleRate, atChannelMask, m_encoding);
-@@ -460,10 +484,27 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
+@@ -461,8 +486,27 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
      }
      else
      {
--      m_min_buffer_size *= 2;
 +      if (m_passthrough)
 +      {
 +        m_min_buffer_size *= 2;
@@ -76,19 +75,19 @@ index 54471c8ee3..4a3146cdc5 100644
 +        }
 +      }
 +      else
-+        m_min_buffer_size *= 2;
- 
++      m_min_buffer_size *= 2;
++
        m_format.m_frameSize = m_format.m_channelLayout.Count() * (CAEUtil::DataFormatToBits(m_format.m_dataFormat) / 8);
 -      m_sink_frameSize = m_format.m_frameSize;
-+      // again a workaround for AML old code
++            // again a workaround for AML old code
 +      if (m_passthrough && aml_present() && m_info.m_wantsIECPassthrough && (CJNIAudioFormat::ENCODING_IEC61937 == -1))
 +        m_sink_frameSize = 2 * CAEUtil::DataFormatToBits(AE_FMT_S16LE) / 8; // sending via 2 channels 2 * 16 / 8 = 4
 +      else
 +        m_sink_frameSize = m_format.m_frameSize;
-       m_format.m_frames = (int)(m_min_buffer_size / m_format.m_frameSize) / 2;
-     }
- 
-@@ -604,6 +645,13 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
+       // aim at 200 ms buffer but at max 300 ms (2 * 0.15s) and 50 ms periods
+       m_audiotrackbuffer_sec =
+           static_cast<double>(m_min_buffer_size) / (m_sink_frameSize * m_sink_sampleRate);
+@@ -611,6 +655,13 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
    if (m_offset > 0)
      m_headPos -= m_offset;
  
@@ -102,15 +101,20 @@ index 54471c8ee3..4a3146cdc5 100644
    if (m_passthrough && !m_info.m_wantsIECPassthrough)
    {
      if (m_extTimer.MillisLeft() > 0)
-@@ -869,54 +917,74 @@ void CAESinkAUDIOTRACK::UpdateAvailablePassthroughCapabilities()
+@@ -872,53 +923,74 @@ void CAESinkAUDIOTRACK::UpdateAvailablePassthroughCapabilities()
      }
    }
  
 -  if (CJNIAudioManager::GetSDKVersion() >= 23)
-+  if (aml_present() && CJNIAudioManager::GetSDKVersion() < 23)
++  if (aml_present() && CJNIAudioManager::GetSDKVersion() < 23) 
    {
 -    if (CJNIAudioFormat::ENCODING_DTS_HD != -1)
--    {
++    // passthrough
++    m_info.m_wantsIECPassthrough = true;
++    m_sink_sampleRates.insert(44100);
++    m_sink_sampleRates.insert(48000);
++    if (HasAmlHD())
+     {
 -      if (VerifySinkConfiguration(48000, AEChannelMapToAUDIOTRACKChannelMask(AE_CH_LAYOUT_7_1), CJNIAudioFormat::ENCODING_DTS_HD))
 -      {
 -        CLog::Log(LOGDEBUG, "Firmware implements DTS-HD RAW");
@@ -119,12 +123,7 @@ index 54471c8ee3..4a3146cdc5 100644
 -      }
 -    }
 -    if (CJNIAudioFormat::ENCODING_DOLBY_TRUEHD != -1)
-+    // passthrough
-+    m_info.m_wantsIECPassthrough = true;
-+    m_sink_sampleRates.insert(44100);
-+    m_sink_sampleRates.insert(48000);
-+    if (HasAmlHD())
-     {
+-    {
 -      if (VerifySinkConfiguration(48000, AEChannelMapToAUDIOTRACKChannelMask(AE_CH_LAYOUT_7_1), CJNIAudioFormat::ENCODING_DOLBY_TRUEHD))
 -      {
 -        CLog::Log(LOGDEBUG, "Firmware implements TrueHD RAW");
@@ -137,7 +136,7 @@ index 54471c8ee3..4a3146cdc5 100644
 +      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_MA);
 +      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
      }
-+    std::copy(m_sink_sampleRates.begin(), m_sink_sampleRates.end(), std::back_inserter(m_info.m_sampleRates));
++  std::copy(m_sink_sampleRates.begin(), m_sink_sampleRates.end(), std::back_inserter(m_info.m_sampleRates));
    }
 -  // Android v24 and backports can do real IEC API
 -  if (CJNIAudioFormat::ENCODING_IEC61937 != -1)
@@ -170,7 +169,7 @@ index 54471c8ee3..4a3146cdc5 100644
 +          CLog::Log(LOGDEBUG, "Firmware implements DTS-HD RAW");
            m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
            m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_MA);
-+        }
++                  }
 +      }
 +      if (CJNIAudioFormat::ENCODING_DOLBY_TRUEHD != -1)
 +      {
@@ -178,8 +177,7 @@ index 54471c8ee3..4a3146cdc5 100644
 +        {
 +          CLog::Log(LOGDEBUG, "Firmware implements TrueHD RAW");
            m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
--          CLog::Log(LOGDEBUG, "8 Channel PT via IEC61937 is supported");
-+        }
++                 }
 +      }
 +    }
 +    // Android v24 and backports can do real IEC API
@@ -211,10 +209,10 @@ index 54471c8ee3..4a3146cdc5 100644
 +            m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
 +            CLog::Log(LOGDEBUG, "8 Channel PT via IEC61937 is supported");
 +          }
+           CLog::Log(LOGDEBUG, "8 Channel PT via IEC61937 is supported");
          }
        }
-     }
-@@ -950,15 +1018,21 @@ void CAESinkAUDIOTRACK::UpdateAvailablePCMCapabilities()
+@@ -953,15 +1025,21 @@ void CAESinkAUDIOTRACK::UpdateAvailablePCMCapabilities()
      CLog::Log(LOGNOTICE, "Multi channel Float is supported");
    }
  
@@ -244,7 +242,7 @@ index 54471c8ee3..4a3146cdc5 100644
    }
    std::copy(m_sink_sampleRates.begin(), m_sink_sampleRates.end(), std::back_inserter(m_info.m_sampleRates));
 diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.h b/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.h
-index af54356cb6..647ca62d47 100644
+index 242e8412d0..b31e718621 100644
 --- a/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.h
 +++ b/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.h
 @@ -45,6 +45,7 @@ protected:
