@@ -1,0 +1,45 @@
+From bc3ebfed25a3bc78c59a43b37801fb48c7d69bc6 Mon Sep 17 00:00:00 2001
+From: Sebastian S <su4lfred@gmail.com>
+Date: Sat, 9 Nov 2019 09:57:19 +0100
+Subject: [PATCH] [json] Add missing "status" string for
+ VideoLibrary.GetTVShowDetails
+
+Setting the string is possible since early 2016 but it was forgotten to add it as readable value.
+---
+ xbmc/interfaces/json-rpc/schema/methods.json | 2 +-
+ xbmc/interfaces/json-rpc/schema/types.json   | 1 +
+ xbmc/interfaces/json-rpc/schema/version.txt  | 2 +-
+ 3 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/interfaces/json-rpc/schema/methods.json b/xbmc/interfaces/json-rpc/schema/methods.json
+index 833c3b026a30..ce5b400605e7 100644
+--- a/xbmc/interfaces/json-rpc/schema/methods.json
++++ b/xbmc/interfaces/json-rpc/schema/methods.json
+@@ -1605,7 +1605,7 @@
+       { "name": "ratings", "$ref": "Video.Ratings.Set" },
+       { "name": "dateadded", "$ref": "Optional.String" },
+       { "name": "runtime", "$ref": "Optional.Integer", "description": "Runtime in seconds" },
+-      { "name": "status", "$ref": "Optional.String" },
++      { "name": "status", "$ref": "Optional.String", "description": "Valid values: 'returning series', 'in production', 'planned', 'cancelled', 'ended'" },
+       { "name": "uniqueid", "type": [ "null", { "$ref": "Media.UniqueID.Set", "required": true } ], "default": null }
+     ],
+     "returns": "string"
+diff --git a/xbmc/interfaces/json-rpc/schema/types.json b/xbmc/interfaces/json-rpc/schema/types.json
+index 17282f61c859..853aa37bee6a 100644
+--- a/xbmc/interfaces/json-rpc/schema/types.json
++++ b/xbmc/interfaces/json-rpc/schema/types.json
+@@ -895,6 +895,7 @@
+       "userrating": { "type": "integer" },
+       "ratings": { "type": "Video.Ratings" },
+       "runtime": { "type": "integer", "description": "Runtime in seconds" },
++      "status": { "type": "string", "description": "Returns 'returning series', 'in production', 'planned', 'cancelled' or 'ended'" },
+       "uniqueid": { "$ref": "Media.UniqueID" }
+     }
+   },
+diff --git a/xbmc/interfaces/json-rpc/schema/version.txt b/xbmc/interfaces/json-rpc/schema/version.txt
+index ecdcf23c6380..d1b9f31c6758 100644
+--- a/xbmc/interfaces/json-rpc/schema/version.txt
++++ b/xbmc/interfaces/json-rpc/schema/version.txt
+@@ -1 +1 @@
+-JSONRPC_VERSION 10.5.2
++JSONRPC_VERSION 10.6.0
