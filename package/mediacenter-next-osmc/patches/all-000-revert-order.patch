@@ -352,7 +352,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  .../DVDInputStreams/DVDInputStreamStack.cpp        |  1 -
  .../DVDInputStreams/DVDInputStreamStack.h          |  1 -
  .../DVDInputStreams/DVDStateSerializer.cpp         |  4 +-
- .../DVDInputStreams/InputStreamAddon.cpp           |  3 +-
  .../VideoPlayer/DVDInputStreams/InputStreamAddon.h |  6 +-
  .../DVDInputStreams/InputStreamMultiSource.cpp     |  6 +-
  xbmc/cores/VideoPlayer/DVDMessage.cpp              |  8 +--
@@ -8539,26 +8538,6 @@ index fff112bb5c..c0f9df83c1 100644
  #include <sstream>
  
  bool CDVDStateSerializer::test( const dvd_state_t *state  )
-diff --git a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.cpp b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.cpp
-index f535bf4751..8829572f75 100644
---- a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.cpp
-+++ b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.cpp
-@@ -7,14 +7,13 @@
-  */
- 
- #include "InputStreamAddon.h"
--
-+#include "cores/VideoPlayer/Interface/Addon/TimingConstants.h"
- #include "addons/binary-addons/AddonDll.h"
- #include "addons/binary-addons/BinaryAddonBase.h"
- #include "addons/kodi-addon-dev-kit/include/kodi/addon-instance/VideoCodec.h"
- #include "cores/VideoPlayer/DVDDemuxers/DVDDemux.h"
- #include "cores/VideoPlayer/DVDDemuxers/DVDDemuxUtils.h"
- #include "cores/VideoPlayer/Interface/Addon/DemuxCrypto.h"
--#include "cores/VideoPlayer/Interface/Addon/TimingConstants.h"
- #include "filesystem/SpecialProtocol.h"
- #include "utils/StringUtils.h"
- #include "utils/URIUtils.h"
 diff --git a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.h b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.h
 index e11108db48..e215953ab2 100644
 --- a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.h
