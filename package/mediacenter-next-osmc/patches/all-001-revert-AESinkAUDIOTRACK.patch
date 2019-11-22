@@ -1,15 +1,15 @@
-From c92a41fdf4a2848a2f376abdbfeeef822c958224 Mon Sep 17 00:00:00 2001
+From 212050a3ee3675256303b6a649b30900dc42a9f2 Mon Sep 17 00:00:00 2001
 From: Greg McCarthy <greg@gjmccarthy.co.uk>
-Date: Sun, 17 Nov 2019 08:56:26 +0000
-Subject: [PATCH] Revert AESinkAUDIOTRACK: drop amlogic hacks
+Date: Fri, 22 Nov 2019 11:56:48 +0000
+Subject: [PATCH] Update patch
 
 ---
- xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp | 166 ++++++++++++++++------
+ xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp | 157 ++++++++++++++++------
  xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.h   |   1 +
- 2 files changed, 123 insertions(+), 44 deletions(-)
+ 2 files changed, 115 insertions(+), 43 deletions(-)
 
 diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp b/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp
-index 0d70bb80a1..f0f15a3feb 100644
+index e15812b281..c19d1e2b2e 100644
 --- a/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp
 +++ b/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp
 @@ -22,6 +22,8 @@
@@ -62,7 +62,7 @@ index 0d70bb80a1..f0f15a3feb 100644
      }
      else
      {
-+      if (m_passthrough)
++    if (m_passthrough)
 +      {
 +        m_min_buffer_size *= 2;
 +        // AML in old mode needs more buffer or it stutters when faking PT
@@ -87,26 +87,12 @@ index 0d70bb80a1..f0f15a3feb 100644
        // aim at 200 ms buffer but at max 300 ms (2 * 0.15s) and 50 ms periods
        m_audiotrackbuffer_sec =
            static_cast<double>(m_min_buffer_size) / (m_sink_frameSize * m_sink_sampleRate);
-@@ -611,6 +655,13 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
-   if (m_offset > 0)
-     m_headPos -= m_offset;
- 
-+  // this makes EAC3 working even when AML is not enabled
-+  if (aml_present() && m_info.m_wantsIECPassthrough &&
-+      (m_encoding == CJNIAudioFormat::ENCODING_DTS_HD ||
-+       m_encoding == CJNIAudioFormat::ENCODING_E_AC3 ||
-+       m_encoding == CJNIAudioFormat::ENCODING_DOLBY_TRUEHD))
-+    normHead_pos /= m_sink_frameSize;  // AML wants sink in 48k but returns pos in 192k
-+
-   if (m_passthrough && !m_info.m_wantsIECPassthrough)
-   {
-     if (m_extTimer.MillisLeft() > 0)
-@@ -872,53 +923,74 @@ void CAESinkAUDIOTRACK::UpdateAvailablePassthroughCapabilities()
+@@ -872,51 +916,72 @@ void CAESinkAUDIOTRACK::UpdateAvailablePassthroughCapabilities()
      }
    }
  
 -  if (CJNIAudioManager::GetSDKVersion() >= 23)
-+  if (aml_present() && CJNIAudioManager::GetSDKVersion() < 23) 
++  if (aml_present() && CJNIAudioManager::GetSDKVersion() < 23)
    {
 -    if (CJNIAudioFormat::ENCODING_DTS_HD != -1)
 +    // passthrough
@@ -160,16 +146,13 @@ index 0d70bb80a1..f0f15a3feb 100644
 -      if (supports_192khz)
 +      if (CJNIAudioFormat::ENCODING_DTS_HD != -1)
        {
--        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
--        // Check for IEC 8 channel 192 khz PT
+-        // Check for IEC 8 channel 192 khz PT DTS-HD-MA and TrueHD
 -        int atChannelMask = AEChannelMapToAUDIOTRACKChannelMask(AE_CH_LAYOUT_7_1);
 -        if (VerifySinkConfiguration(192000, atChannelMask, CJNIAudioFormat::ENCODING_IEC61937))
-+        if (VerifySinkConfiguration(48000, AEChannelMapToAUDIOTRACKChannelMask(AE_CH_LAYOUT_7_1), CJNIAudioFormat::ENCODING_DTS_HD))
++        if (VerifySinkConfiguration(48000, AEChannelMapToAUDIOTRACKChannelMask(AE_CH_LAYOUT_7_1), CJNIAudioFormat::ENCODING_DTS_HD)) 
          {
-+          CLog::Log(LOGDEBUG, "Firmware implements DTS-HD RAW");
-           m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
            m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_MA);
-+                  }
++            }
 +      }
 +      if (CJNIAudioFormat::ENCODING_DOLBY_TRUEHD != -1)
 +      {
@@ -211,24 +194,24 @@ index 0d70bb80a1..f0f15a3feb 100644
 +          }
            CLog::Log(LOGDEBUG, "8 Channel PT via IEC61937 is supported");
          }
-       }
-@@ -953,15 +1025,21 @@ void CAESinkAUDIOTRACK::UpdateAvailablePCMCapabilities()
+         // Check for IEC 2 channel 192 khz PT DTS-HD-HR and E-AC3
+@@ -958,15 +1023,21 @@ void CAESinkAUDIOTRACK::UpdateAvailablePCMCapabilities()
      CLog::Log(LOGNOTICE, "Multi channel Float is supported");
    }
  
 -  int test_sample[] = { 32000, 44100, 48000, 88200, 96000, 176400, 192000 };
 -  int test_sample_sz = sizeof(test_sample) / sizeof(int);
--
--  for (int i = 0; i < test_sample_sz; ++i)
 +  // Still AML API 21 and 22 get hardcoded samplerates - we can drop that
 +  // when we stop supporting API < 23 - let's only add the default
 +  // music samplerate
 +  if (!aml_present() || CJNIAudioManager::GetSDKVersion() >= 23)
-   {
--    if (IsSupported(test_sample[i], CJNIAudioFormat::CHANNEL_OUT_STEREO, encoding))
++   {
 +    int test_sample[] = { 32000, 44100, 48000, 88200, 96000, 176400, 192000 };
 +    int test_sample_sz = sizeof(test_sample) / sizeof(int);
-+
+ 
+-  for (int i = 0; i < test_sample_sz; ++i)
+-  {
+-    if (IsSupported(test_sample[i], CJNIAudioFormat::CHANNEL_OUT_STEREO, encoding))
 +    for (int i = 0; i < test_sample_sz; ++i)
      {
 -      m_sink_sampleRates.insert(test_sample[i]);
