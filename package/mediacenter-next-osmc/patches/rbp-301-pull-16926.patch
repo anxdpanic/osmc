@@ -1,0 +1,72 @@
+From ee6824a3f71461e70dbfaef7e97b7a2293a9a27f Mon Sep 17 00:00:00 2001
+From: montellese <montellese@kodi.tv>
+Date: Mon, 14 Oct 2019 23:44:25 +0200
+Subject: [PATCH] [addons] fix CAddon::HasSettings() for settings.xml files
+ without any settings
+
+---
+ xbmc/addons/Addon.cpp                  | 2 +-
+ xbmc/addons/settings/AddonSettings.cpp | 2 +-
+ xbmc/settings/lib/SettingsManager.cpp  | 5 +++++
+ xbmc/settings/lib/SettingsManager.h    | 6 ++++++
+ 4 files changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/addons/Addon.cpp b/xbmc/addons/Addon.cpp
+index 3f6a2a238d4d..4b973eab04e3 100644
+--- a/xbmc/addons/Addon.cpp
++++ b/xbmc/addons/Addon.cpp
+@@ -53,7 +53,7 @@ CAddon::CAddon(const AddonInfoPtr& addonInfo, TYPE addonType)
+  */
+ bool CAddon::HasSettings()
+ {
+-  return LoadSettings(false);
++  return LoadSettings(false) && m_settings->HasSettings();
+ }
+ 
+ bool CAddon::SettingsInitialized() const
+diff --git a/xbmc/addons/settings/AddonSettings.cpp b/xbmc/addons/settings/AddonSettings.cpp
+index a33ed9dab1f9..a2dd2d697bfe 100644
+--- a/xbmc/addons/settings/AddonSettings.cpp
++++ b/xbmc/addons/settings/AddonSettings.cpp
+@@ -336,7 +336,7 @@ bool CAddonSettings::Save(CXBMCTinyXML& doc) const
+ 
+ bool CAddonSettings::HasSettings() const
+ {
+-  return IsInitialized() && !GetSettingsManager()->GetSections().empty();
++  return IsInitialized() && GetSettingsManager()->HasSettings();
+ }
+ 
+ std::string CAddonSettings::GetSettingLabel(int label) const
+diff --git a/xbmc/settings/lib/SettingsManager.cpp b/xbmc/settings/lib/SettingsManager.cpp
+index 97012a9c29e6..1b81af1ab036 100644
+--- a/xbmc/settings/lib/SettingsManager.cpp
++++ b/xbmc/settings/lib/SettingsManager.cpp
+@@ -541,6 +541,11 @@ void* CSettingsManager::GetSettingOptionsFiller(SettingConstPtr setting)
+   return fillerIt->second.filler;
+ }
+ 
++bool CSettingsManager::HasSettings() const
++{
++  return !m_settings.empty();
++}
++
+ SettingPtr CSettingsManager::GetSetting(const std::string &id) const
+ {
+   CSharedLock lock(m_settingsCritical);
+diff --git a/xbmc/settings/lib/SettingsManager.h b/xbmc/settings/lib/SettingsManager.h
+index 925334e921fd..91ca2b233c62 100644
+--- a/xbmc/settings/lib/SettingsManager.h
++++ b/xbmc/settings/lib/SettingsManager.h
+@@ -276,6 +276,12 @@ class CSettingsManager : public ISettingCreator, public ISettingControlCreator,
+    */
+   void* GetSettingOptionsFiller(std::shared_ptr<const CSetting> setting);
+ 
++  /*!
++   \brief Checks whether any settings have been initialized.
++   
++   \return True if at least one setting has been initialized, false otherwise*/
++  bool HasSettings() const;
++
+   /*!
+    \brief Gets the setting with the given identifier.
+ 
