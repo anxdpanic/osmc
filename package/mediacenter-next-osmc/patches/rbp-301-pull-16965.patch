@@ -1,0 +1,115 @@
+From f2b1f167d085eb1c716a3c7e493b8ad197226352 Mon Sep 17 00:00:00 2001
+From: fritsch <Peter.Fruehberger@gmail.com>
+Date: Mon, 25 Nov 2019 17:03:52 +0100
+Subject: [PATCH 1/4] AESinkPULSE: Properly cork after drain to not underrun
+
+---
+ xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp b/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp
+index 6f694cc298ea..212965f9e4ed 100644
+--- a/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp
++++ b/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp
+@@ -1151,6 +1151,8 @@ void CAESinkPULSE::Drain()
+ 
+   pa_threaded_mainloop_lock(m_MainLoop);
+   WaitForOperation(pa_stream_drain(m_Stream, NULL, NULL), m_MainLoop, "Drain");
++  WaitForOperation(pa_stream_cork(m_Stream, 1, NULL, NULL), m_MainLoop, "Pause");
++  m_IsStreamPaused = true;
+   pa_threaded_mainloop_unlock(m_MainLoop);
+ }
+ 
+
+From 2338c524bdcc89a2b1789f36c5a53a7359c1d000 Mon Sep 17 00:00:00 2001
+From: fritsch <Peter.Fruehberger@gmail.com>
+Date: Mon, 25 Nov 2019 17:04:12 +0100
+Subject: [PATCH 2/4] AESinkAudioTrack: Pause after drain - to care for
+ underrun
+
+---
+ xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp b/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp
+index 391bfabb60a5..cfa22d5a6667 100644
+--- a/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp
++++ b/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp
+@@ -792,6 +792,7 @@ void CAESinkAUDIOTRACK::Drain()
+ 
+   CLog::Log(LOGDEBUG, "Draining Audio");
+   m_at_jni->stop();
++  m_at_jni->pause();
+   m_duration_written = 0;
+   m_headPos = 0;
+   m_linearmovingaverage.clear();
+
+From 3826919962e75fbee68e923ccff1766434722721 Mon Sep 17 00:00:00 2001
+From: fritsch <Peter.Fruehberger@gmail.com>
+Date: Mon, 25 Nov 2019 20:51:42 +0100
+Subject: [PATCH 3/4] AESinkPulse: Flush on Deinitialize not Drain
+
+---
+ xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp b/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp
+index 212965f9e4ed..35e12fa12fc7 100644
+--- a/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp
++++ b/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp
+@@ -1035,7 +1035,12 @@ void CAESinkPULSE::Deinitialize()
+   m_maxLatency = 0.0;
+ 
+   if (m_Stream)
+-    Drain();
++  {
++    CSingleExit exit(m_sec);
++    pa_threaded_mainloop_lock(m_MainLoop);
++    WaitForOperation(pa_stream_flush(m_Stream, NULL, NULL), m_MainLoop, "Flush");
++    pa_threaded_mainloop_unlock(m_MainLoop);
++  }
+ 
+   {
+     CSingleExit exit(m_sec);
+
+From 0a655500ae06a9aba64cf5b95eb1496e740b4b5f Mon Sep 17 00:00:00 2001
+From: fritsch <Peter.Fruehberger@gmail.com>
+Date: Mon, 25 Nov 2019 20:55:41 +0100
+Subject: [PATCH 4/4] AESinkAudioTrack: Discard on deinitialize instead of
+ drain
+
+---
+ xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp | 11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
+
+diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp b/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp
+index cfa22d5a6667..0db430e85f3a 100644
+--- a/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp
++++ b/xbmc/cores/AudioEngine/Sinks/AESinkAUDIOTRACK.cpp
+@@ -545,10 +545,9 @@ void CAESinkAUDIOTRACK::Deinitialize()
+   if (!m_at_jni)
+     return;
+ 
+-  uint64_t before = CurrentHostCounter();
+   if (IsInitialized())
+   {
+-    m_at_jni->stop();
++    m_at_jni->pause();
+     m_at_jni->flush();
+   }
+   m_at_jni->release();
+@@ -560,14 +559,6 @@ void CAESinkAUDIOTRACK::Deinitialize()
+ 
+   delete m_at_jni;
+   m_at_jni = NULL;
+-  uint64_t gone = CurrentHostCounter() - before;
+-  uint64_t delta_ms = 1000 * gone / CurrentHostFrequency();
+-  int64_t diff = m_audiotrackbuffer_sec * 1000 - delta_ms;
+-  if (diff > 0)
+-  {
+-    CLog::Log(LOGDEBUG, "Flushing might not be properly implemented, sleeping: %d ms", diff);
+-    usleep(diff * 1000);
+-  }
+   m_delay = 0.0;
+ }
+ 
