@@ -17820,26 +17820,6 @@ index c24c4e9a5d..1d8127faf0 100644
  using namespace KODI::GUILIB::GUIINFO;
  using namespace KODI::GAME;
  using namespace KODI::RETRO;
-diff --git a/xbmc/guilib/guiinfo/LibraryGUIInfo.cpp b/xbmc/guilib/guiinfo/LibraryGUIInfo.cpp
-index 510c05b215..5e55415cb8 100644
---- a/xbmc/guilib/guiinfo/LibraryGUIInfo.cpp
-+++ b/xbmc/guilib/guiinfo/LibraryGUIInfo.cpp
-@@ -9,12 +9,13 @@
- #include "guilib/guiinfo/LibraryGUIInfo.h"
- 
- #include "Application.h"
--#include "guilib/guiinfo/GUIInfo.h"
--#include "guilib/guiinfo/GUIInfoLabels.h"
- #include "music/MusicDatabase.h"
- #include "utils/StringUtils.h"
- #include "video/VideoDatabase.h"
- 
-+#include "guilib/guiinfo/GUIInfo.h"
-+#include "guilib/guiinfo/GUIInfoLabels.h"
-+
- using namespace KODI::GUILIB::GUIINFO;
- 
- CLibraryGUIInfo::CLibraryGUIInfo()
 diff --git a/xbmc/guilib/guiinfo/MusicGUIInfo.cpp b/xbmc/guilib/guiinfo/MusicGUIInfo.cpp
 index 84b61babe4..121c5fb803 100644
 --- a/xbmc/guilib/guiinfo/MusicGUIInfo.cpp
