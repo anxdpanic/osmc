@@ -35381,57 +35381,6 @@ index 3f207d3ffa..eb81f18eb2 100644
  #include <X11/Xlib.h>
  #include <X11/Xutil.h>
  
-diff --git a/xbmc/windowing/X11/WinSystemX11GLContext.cpp b/xbmc/windowing/X11/WinSystemX11GLContext.cpp
-index 8ff2abdd1d..3f55941f2f 100644
---- a/xbmc/windowing/X11/WinSystemX11GLContext.cpp
-+++ b/xbmc/windowing/X11/WinSystemX11GLContext.cpp
-@@ -6,32 +6,31 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
--#include "WinSystemX11GLContext.h"
-+#include <X11/Xlib.h>
-+#include <X11/Xutil.h>
- 
--#include "Application.h"
-+#include "WinSystemX11GLContext.h"
- #include "GLContextEGL.h"
--#include "OptionalsReg.h"
-+#include "utils/log.h"
-+#include "utils/StringUtils.h"
-+#include "windowing/GraphicContext.h"
-+#include "guilib/DispResource.h"
-+#include "threads/SingleLock.h"
-+#include <vector>
-+#include "Application.h"
- #include "VideoSyncOML.h"
--#include "X11DPMSSupport.h"
-+
- #include "cores/RetroPlayer/process/X11/RPProcessInfoX11.h"
- #include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererOpenGL.h"
- #include "cores/VideoPlayer/DVDCodecs/DVDFactoryCodec.h"
- #include "cores/VideoPlayer/Process/X11/ProcessInfoX11.h"
- #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGL.h"
- #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
--#include "guilib/DispResource.h"
--#include "rendering/gl/ScreenshotSurfaceGL.h"
--#include "threads/SingleLock.h"
--#include "utils/StringUtils.h"
--#include "utils/log.h"
--#include "windowing/GraphicContext.h"
- 
-+#include "OptionalsReg.h"
- #include "platform/linux/OptionalsReg.h"
--
--#include <vector>
--
--#include <X11/Xlib.h>
--#include <X11/Xutil.h>
-+#include "rendering/gl/ScreenshotSurfaceGL.h"
-+#include "X11DPMSSupport.h"
- 
- using namespace KODI;
- 
 diff --git a/xbmc/windowing/X11/WinSystemX11GLContext.h b/xbmc/windowing/X11/WinSystemX11GLContext.h
 index 456451a773..45bc8777fd 100644
 --- a/xbmc/windowing/X11/WinSystemX11GLContext.h
