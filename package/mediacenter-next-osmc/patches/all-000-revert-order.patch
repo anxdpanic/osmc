@@ -36344,28 +36344,6 @@ index 75fbe5602c..bdeb68c8c0 100644
  #include <EGL/egl.h>
  #include <EGL/eglplatform.h>
  
-diff --git a/xbmc/windowing/rpi/WinSystemRpi.h b/xbmc/windowing/rpi/WinSystemRpi.h
-index bdcb0ad80d..cd44023ca5 100644
---- a/xbmc/windowing/rpi/WinSystemRpi.h
-+++ b/xbmc/windowing/rpi/WinSystemRpi.h
-@@ -9,14 +9,12 @@
- #pragma once
- 
- #include "RPIUtils.h"
-+#include "platform/linux/input/LibInputHandler.h"
-+#include "platform/linux/OptionalsReg.h"
- #include "rendering/gles/RenderSystemGLES.h"
- #include "threads/CriticalSection.h"
--#include "threads/SystemClock.h"
- #include "windowing/WinSystem.h"
--
--#include "platform/linux/OptionalsReg.h"
--#include "platform/linux/input/LibInputHandler.h"
--
-+#include "threads/SystemClock.h"
- #include <EGL/egl.h>
- 
- class IDispResource;
 diff --git a/xbmc/windowing/rpi/WinSystemRpiGLESContext.cpp b/xbmc/windowing/rpi/WinSystemRpiGLESContext.cpp
 index 3ec0da452c..06c328ecba 100644
 --- a/xbmc/windowing/rpi/WinSystemRpiGLESContext.cpp
