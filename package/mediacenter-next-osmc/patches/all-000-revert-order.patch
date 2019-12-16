@@ -1695,7 +1695,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/windowing/X11/WinEventsX11.h                  |  5 +-
  xbmc/windowing/X11/WinSystemX11.cpp                | 33 +++++------
  xbmc/windowing/X11/WinSystemX11.h                  | 11 ++--
- xbmc/windowing/X11/WinSystemX11GLContext.cpp       | 29 +++++-----
  xbmc/windowing/X11/WinSystemX11GLContext.h         |  6 +-
  xbmc/windowing/X11/XRandR.h                        |  2 +-
  xbmc/windowing/XBMC_events.h                       |  2 +-
