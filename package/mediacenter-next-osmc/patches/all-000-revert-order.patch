@@ -1419,7 +1419,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/profiles/Profile.h                            |  2 +-
  xbmc/profiles/ProfileManager.h                     |  8 +--
  xbmc/profiles/dialogs/GUIDialogLockSettings.cpp    |  8 +--
- xbmc/profiles/dialogs/GUIDialogProfileSettings.cpp | 18 +++---
  xbmc/profiles/dialogs/GUIDialogProfileSettings.h   |  4 +-
  xbmc/profiles/windows/GUIWindowSettingsProfile.cpp | 21 ++++---
  xbmc/programs/GUIViewStatePrograms.cpp             |  5 +-
@@ -29385,50 +29384,6 @@ index e562ef603a..c35f773660 100644
  
  #define SETTING_USERNAME            "user.name"
  #define SETTING_PASSWORD            "user.password"
-diff --git a/xbmc/profiles/dialogs/GUIDialogProfileSettings.cpp b/xbmc/profiles/dialogs/GUIDialogProfileSettings.cpp
-index 446fcdb9ee..222d1fa2c8 100644
---- a/xbmc/profiles/dialogs/GUIDialogProfileSettings.cpp
-+++ b/xbmc/profiles/dialogs/GUIDialogProfileSettings.cpp
-@@ -8,30 +8,30 @@
- 
- #include "GUIDialogProfileSettings.h"
- 
--#include "FileItem.h"
--#include "GUIPassword.h"
--#include "ServiceBroker.h"
--#include "Util.h"
-+#include <utility>
-+
- #include "dialogs/GUIDialogFileBrowser.h"
- #include "dialogs/GUIDialogYesNo.h"
-+#include "FileItem.h"
- #include "filesystem/Directory.h"
- #include "filesystem/File.h"
- #include "guilib/GUIComponent.h"
- #include "guilib/GUIKeyboardFactory.h"
- #include "guilib/GUIWindowManager.h"
- #include "guilib/LocalizeStrings.h"
--#include "profiles/ProfileManager.h"
-+#include "GUIPassword.h"
- #include "profiles/dialogs/GUIDialogLockSettings.h"
--#include "settings/SettingsComponent.h"
-+#include "profiles/ProfileManager.h"
- #include "settings/lib/Setting.h"
-+#include "settings/SettingsComponent.h"
- #include "settings/windows/GUIControlSettings.h"
- #include "storage/MediaManager.h"
-+#include "Util.h"
-+#include "utils/log.h"
- #include "utils/StringUtils.h"
- #include "utils/URIUtils.h"
- #include "utils/Variant.h"
--#include "utils/log.h"
--
--#include <utility>
-+#include "ServiceBroker.h"
- 
- #define SETTING_PROFILE_NAME          "profile.name"
- #define SETTING_PROFILE_IMAGE         "profile.image"
 diff --git a/xbmc/profiles/dialogs/GUIDialogProfileSettings.h b/xbmc/profiles/dialogs/GUIDialogProfileSettings.h
 index dff49cf438..cc8407e2b1 100644
 --- a/xbmc/profiles/dialogs/GUIDialogProfileSettings.h
