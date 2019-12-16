@@ -36917,56 +36917,6 @@ index 939095601a..6c55dcdb13 100644
  namespace wayland
  {
  class event_queue_t;
-diff --git a/xbmc/windowing/wayland/WinSystemWayland.h b/xbmc/windowing/wayland/WinSystemWayland.h
-index 4b0b027a6d..704985e69d 100644
---- a/xbmc/windowing/wayland/WinSystemWayland.h
-+++ b/xbmc/windowing/wayland/WinSystemWayland.h
-@@ -8,31 +8,31 @@
- 
- #pragma once
- 
--#include "Connection.h"
--#include "Output.h"
--#include "Seat.h"
--#include "SeatInputProcessing.h"
--#include "ShellSurface.h"
--#include "Signals.h"
--#include "WindowDecorationHandler.h"
--#include "threads/CriticalSection.h"
--#include "threads/Event.h"
--#include "utils/ActorProtocol.h"
--#include "windowing/WinSystem.h"
--
--#include "platform/linux/OptionalsReg.h"
-+#include <time.h>
- 
- #include <atomic>
- #include <ctime>
- #include <list>
- #include <map>
- #include <set>
--#include <time.h>
- 
- #include <wayland-client.hpp>
- #include <wayland-cursor.hpp>
- #include <wayland-extra-protocols.hpp>
- 
-+#include "Connection.h"
-+#include "Output.h"
-+#include "Seat.h"
-+#include "SeatInputProcessing.h"
-+#include "Signals.h"
-+#include "ShellSurface.h"
-+#include "platform/linux/OptionalsReg.h"
-+#include "threads/CriticalSection.h"
-+#include "threads/Event.h"
-+#include "utils/ActorProtocol.h"
-+#include "WindowDecorationHandler.h"
-+#include "windowing/WinSystem.h"
-+
- class IDispResource;
- 
- namespace KODI
 diff --git a/xbmc/windowing/wayland/WinSystemWaylandEGLContext.h b/xbmc/windowing/wayland/WinSystemWaylandEGLContext.h
 index e36e2dd7f4..a43faea6a0 100644
 --- a/xbmc/windowing/wayland/WinSystemWaylandEGLContext.h
