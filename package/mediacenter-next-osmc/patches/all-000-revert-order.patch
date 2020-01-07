@@ -928,7 +928,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/interfaces/builtins/GUIBuiltins.cpp           | 16 +++---
  xbmc/interfaces/builtins/GUIContainerBuiltins.cpp  |  3 +-
  xbmc/interfaces/builtins/GUIControlBuiltins.cpp    |  1 -
- xbmc/interfaces/builtins/LibraryBuiltins.cpp       |  8 +--
  xbmc/interfaces/builtins/PictureBuiltins.cpp       |  3 +-
  xbmc/interfaces/builtins/ProfileBuiltins.cpp       | 12 ++--
  xbmc/interfaces/builtins/SkinBuiltins.cpp          |  8 +--
@@ -19562,35 +19561,6 @@ index e64fed9c61..a5b3a4d738 100644
  #include "ServiceBroker.h"
  #include "guilib/GUIComponent.h"
  #include "guilib/GUIWindowManager.h"
-diff --git a/xbmc/interfaces/builtins/LibraryBuiltins.cpp b/xbmc/interfaces/builtins/LibraryBuiltins.cpp
-index 15f2cfbf4d..dbda3d9fec 100644
---- a/xbmc/interfaces/builtins/LibraryBuiltins.cpp
-+++ b/xbmc/interfaces/builtins/LibraryBuiltins.cpp
-@@ -9,20 +9,20 @@
- #include "LibraryBuiltins.h"
- 
- #include "Application.h"
--#include "GUIUserMessages.h"
--#include "MediaSource.h"
- #include "ServiceBroker.h"
- #include "dialogs/GUIDialogFileBrowser.h"
- #include "dialogs/GUIDialogYesNo.h"
- #include "guilib/GUIComponent.h"
--#include "guilib/GUIWindowManager.h"
- #include "guilib/LocalizeStrings.h"
-+#include "guilib/GUIWindowManager.h"
-+#include "GUIUserMessages.h"
-+#include "MediaSource.h"
- #include "messaging/helpers/DialogHelper.h"
- #include "music/MusicLibraryQueue.h"
- #include "settings/LibExportSettings.h"
- #include "storage/MediaManager.h"
--#include "utils/StringUtils.h"
- #include "utils/log.h"
-+#include "utils/StringUtils.h"
- #include "video/VideoDatabase.h"
- 
- using namespace KODI::MESSAGING;
 diff --git a/xbmc/interfaces/builtins/PictureBuiltins.cpp b/xbmc/interfaces/builtins/PictureBuiltins.cpp
 index 15cfe0a982..b48e3f01e3 100644
 --- a/xbmc/interfaces/builtins/PictureBuiltins.cpp
