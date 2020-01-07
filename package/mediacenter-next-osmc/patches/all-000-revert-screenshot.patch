@@ -868,13 +868,13 @@ index 3f55941f2f..08ba6f074d 100644
 --- a/xbmc/windowing/X11/WinSystemX11GLContext.cpp
 +++ b/xbmc/windowing/X11/WinSystemX11GLContext.cpp
 @@ -29,7 +29,6 @@
- 
- #include "OptionalsReg.h"
- #include "platform/linux/OptionalsReg.h"
+ #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGL.h"
+ #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
+ #include "guilib/DispResource.h"
 -#include "rendering/gl/ScreenshotSurfaceGL.h"
- #include "X11DPMSSupport.h"
- 
- using namespace KODI;
+ #include "threads/SingleLock.h"
+ #include "utils/StringUtils.h"
+ #include "utils/log.h"
 @@ -270,8 +269,6 @@ bool CWinSystemX11GLContext::RefreshGLContext(bool force)
    VIDEOPLAYER::CRendererFactory::ClearRenderer();
    CLinuxRendererGL::Register();
