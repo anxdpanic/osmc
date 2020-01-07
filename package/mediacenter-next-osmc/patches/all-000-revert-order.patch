@@ -1649,7 +1649,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/video/dialogs/GUIDialogTeletext.cpp           |  7 +--
  xbmc/video/dialogs/GUIDialogVideoBookmarks.cpp     | 34 ++++++-----
  xbmc/video/dialogs/GUIDialogVideoBookmarks.h       |  4 +-
- xbmc/video/dialogs/GUIDialogVideoInfo.cpp          | 61 ++++++++++----------
  xbmc/video/dialogs/GUIDialogVideoInfo.h            |  2 +-
  xbmc/video/dialogs/GUIDialogVideoOSD.cpp           |  5 +-
  xbmc/video/dialogs/GUIDialogVideoSettings.cpp      | 20 +++----
@@ -1713,8 +1712,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/windowing/gbm/DRMUtils.h                      | 16 +++---
  xbmc/windowing/gbm/GBMUtils.cpp                    |  1 -
  xbmc/windowing/gbm/OffScreenModeSetting.cpp        |  1 -
- xbmc/windowing/gbm/WinSystemGbm.cpp                | 23 ++++----
- xbmc/windowing/gbm/WinSystemGbm.h                  | 15 +++--
  xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp      |  6 +-
  xbmc/windowing/gbm/WinSystemGbmEGLContext.h        |  3 +-
  xbmc/windowing/gbm/WinSystemGbmGLContext.cpp       | 13 ++---
@@ -34212,91 +34209,6 @@ index 2f2d6ef42d..b859ea309e 100644
  
  class CFileItemList;
  
-diff --git a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
-index a54635eb62..dc2015aee5 100644
---- a/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
-+++ b/xbmc/video/dialogs/GUIDialogVideoInfo.cpp
-@@ -7,50 +7,49 @@
-  */
- 
- #include "GUIDialogVideoInfo.h"
--
- #include "Application.h"
--#include "ContextMenuManager.h"
--#include "FileItem.h"
--#include "GUIPassword.h"
--#include "GUIUserMessages.h"
- #include "ServiceBroker.h"
--#include "TextureCache.h"
--#include "Util.h"
--#include "dialogs/GUIDialogFileBrowser.h"
--#include "dialogs/GUIDialogProgress.h"
--#include "dialogs/GUIDialogSelect.h"
--#include "dialogs/GUIDialogYesNo.h"
--#include "filesystem/Directory.h"
--#include "filesystem/File.h"
--#include "filesystem/VideoDatabaseDirectory.h"
--#include "filesystem/VideoDatabaseDirectory/QueryParams.h"
-+#include "GUIPassword.h"
- #include "guilib/GUIComponent.h"
-+#include "guilib/GUIWindow.h"
-+#include "Util.h"
- #include "guilib/GUIImage.h"
-+#include "utils/SortUtils.h"
-+#include "utils/StringUtils.h"
-+#include "utils/URIUtils.h"
-+#include "video/windows/GUIWindowVideoNav.h"
-+#include "dialogs/GUIDialogFileBrowser.h"
-+#include "video/VideoInfoScanner.h"
-+#include "video/tags/VideoTagLoaderFFmpeg.h"
-+#include "messaging/ApplicationMessenger.h"
-+#include "video/VideoInfoTag.h"
- #include "guilib/GUIKeyboardFactory.h"
--#include "guilib/GUIWindow.h"
- #include "guilib/GUIWindowManager.h"
--#include "guilib/LocalizeStrings.h"
--#include "input/Key.h"
--#include "messaging/ApplicationMessenger.h"
--#include "messaging/helpers/DialogOKHelper.h"
--#include "music/MusicDatabase.h"
-+#include "dialogs/GUIDialogYesNo.h"
-+#include "dialogs/GUIDialogSelect.h"
-+#include "dialogs/GUIDialogProgress.h"
-+#include "filesystem/File.h"
-+#include "FileItem.h"
-+#include "storage/MediaManager.h"
- #include "profiles/ProfileManager.h"
- #include "settings/AdvancedSettings.h"
-+#include "settings/lib/Setting.h"
- #include "settings/MediaSourceSettings.h"
- #include "settings/Settings.h"
- #include "settings/SettingsComponent.h"
--#include "settings/lib/Setting.h"
--#include "storage/MediaManager.h"
-+#include "input/Key.h"
-+#include "guilib/LocalizeStrings.h"
-+#include "ContextMenuManager.h"
-+#include "GUIUserMessages.h"
-+#include "TextureCache.h"
-+#include "music/MusicDatabase.h"
-+#include "video/VideoThumbLoader.h"
-+#include "filesystem/Directory.h"
-+#include "filesystem/VideoDatabaseDirectory.h"
-+#include "filesystem/VideoDatabaseDirectory/QueryParams.h"
- #include "utils/FileUtils.h"
--#include "utils/SortUtils.h"
--#include "utils/StringUtils.h"
--#include "utils/URIUtils.h"
- #include "utils/Variant.h"
--#include "video/VideoInfoScanner.h"
--#include "video/VideoInfoTag.h"
--#include "video/VideoThumbLoader.h"
--#include "video/tags/VideoTagLoaderFFmpeg.h"
--#include "video/windows/GUIWindowVideoNav.h"
-+#include "messaging/helpers/DialogOKHelper.h"
- 
- #include <iterator>
- #include <string>
 diff --git a/xbmc/video/dialogs/GUIDialogVideoInfo.h b/xbmc/video/dialogs/GUIDialogVideoInfo.h
 index 57d92ab6b0..574309d863 100644
 --- a/xbmc/video/dialogs/GUIDialogVideoInfo.h
@@ -35825,76 +35737,6 @@ index 106b6c5518..0715c19591 100644
  #include "utils/log.h"
  
  using namespace KODI::WINDOWING::GBM;
-diff --git a/xbmc/windowing/gbm/WinSystemGbm.cpp b/xbmc/windowing/gbm/WinSystemGbm.cpp
-index a714192c63..712222ca0c 100644
---- a/xbmc/windowing/gbm/WinSystemGbm.cpp
-+++ b/xbmc/windowing/gbm/WinSystemGbm.cpp
-@@ -7,26 +7,25 @@
-  */
- 
- #include "WinSystemGbm.h"
--
--#include "DRMAtomic.h"
--#include "DRMLegacy.h"
--#include "GBMDPMSSupport.h"
--#include "OffScreenModeSetting.h"
--#include "OptionalsReg.h"
- #include "ServiceBroker.h"
--#include "messaging/ApplicationMessenger.h"
- #include "settings/DisplaySettings.h"
- #include "settings/Settings.h"
- #include "settings/SettingsComponent.h"
- #include "settings/lib/Setting.h"
--#include "utils/StringUtils.h"
--#include "utils/log.h"
--#include "windowing/GraphicContext.h"
-+#include <string.h>
- 
-+#include "OptionalsReg.h"
- #include "platform/linux/OptionalsReg.h"
-+#include "windowing/GraphicContext.h"
-+#include "GBMDPMSSupport.h"
- #include "platform/linux/powermanagement/LinuxPowerSyscall.h"
--
--#include <string.h>
-+#include "settings/DisplaySettings.h"
-+#include "utils/log.h"
-+#include "utils/StringUtils.h"
-+#include "DRMAtomic.h"
-+#include "DRMLegacy.h"
-+#include "OffScreenModeSetting.h"
-+#include "messaging/ApplicationMessenger.h"
- 
- using namespace KODI::WINDOWING::GBM;
- 
-diff --git a/xbmc/windowing/gbm/WinSystemGbm.h b/xbmc/windowing/gbm/WinSystemGbm.h
-index de83340334..b9b325d4bd 100644
---- a/xbmc/windowing/gbm/WinSystemGbm.h
-+++ b/xbmc/windowing/gbm/WinSystemGbm.h
-@@ -8,16 +8,15 @@
- 
- #pragma once
- 
--#include "DRMUtils.h"
--#include "VideoLayerBridge.h"
--#include "threads/CriticalSection.h"
--#include "windowing/WinSystem.h"
-+#include <gbm.h>
-+#include <EGL/egl.h>
- 
--#include "platform/linux/OptionalsReg.h"
- #include "platform/linux/input/LibInputHandler.h"
--
--#include <EGL/egl.h>
--#include <gbm.h>
-+#include "platform/linux/OptionalsReg.h"
-+#include "threads/CriticalSection.h"
-+#include "windowing/WinSystem.h"
-+#include "DRMUtils.h"
-+#include "VideoLayerBridge.h"
- 
- class IDispResource;
- 
 diff --git a/xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp b/xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp
 index 1116c67780..cb453a541f 100644
 --- a/xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp
