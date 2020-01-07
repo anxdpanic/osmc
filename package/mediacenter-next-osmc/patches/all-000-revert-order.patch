@@ -1695,7 +1695,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/windowing/X11/WinEventsX11.h                  |  5 +-
  xbmc/windowing/X11/WinSystemX11.cpp                | 33 +++++------
  xbmc/windowing/X11/WinSystemX11.h                  | 11 ++--
- xbmc/windowing/X11/WinSystemX11GLContext.h         |  6 +-
  xbmc/windowing/X11/XRandR.h                        |  2 +-
  xbmc/windowing/XBMC_events.h                       |  2 +-
  xbmc/windowing/android/AndroidUtils.cpp            | 37 ++++++------
@@ -35379,27 +35378,6 @@ index 3f207d3ffa..eb81f18eb2 100644
 +#include "settings/lib/ISettingCallback.h"
  #include <X11/Xlib.h>
  #include <X11/Xutil.h>
- 
-diff --git a/xbmc/windowing/X11/WinSystemX11GLContext.h b/xbmc/windowing/X11/WinSystemX11GLContext.h
-index 456451a773..45bc8777fd 100644
---- a/xbmc/windowing/X11/WinSystemX11GLContext.h
-+++ b/xbmc/windowing/X11/WinSystemX11GLContext.h
-@@ -9,14 +9,12 @@
- #pragma once
- 
- #include "WinSystemX11.h"
--#include "rendering/gl/RenderSystemGL.h"
- 
-+#include <EGL/egl.h>
-+#include "rendering/gl/RenderSystemGL.h"
- #include "platform/linux/OptionalsReg.h"
--
- #include <memory>
- 
--#include <EGL/egl.h>
--
- class CGLContext;
- class CVaapiProxy;
  
 diff --git a/xbmc/windowing/X11/XRandR.h b/xbmc/windowing/X11/XRandR.h
 index 09495ba437..b98c2db1b6 100644
