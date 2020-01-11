@@ -30074,27 +30074,6 @@ index c806f41702..b8a962df58 100644
  
  #define XML_SKINSETTINGS  "skinsettings"
  
-diff --git a/xbmc/settings/SkinSettings.h b/xbmc/settings/SkinSettings.h
-index 0e4dc4dcf3..1ba01de61b 100644
---- a/xbmc/settings/SkinSettings.h
-+++ b/xbmc/settings/SkinSettings.h
-@@ -8,13 +8,13 @@
- 
- #pragma once
- 
-+#include <set>
-+#include <string>
-+
- #include "addons/Skin.h"
- #include "settings/lib/ISubSettings.h"
- #include "threads/CriticalSection.h"
- 
--#include <set>
--#include <string>
--
- class TiXmlNode;
- 
- class CSkinSettings : public ISubSettings
 diff --git a/xbmc/settings/dialogs/GUIDialogContentSettings.cpp b/xbmc/settings/dialogs/GUIDialogContentSettings.cpp
 index 3b1890d626..49a6b30095 100644
 --- a/xbmc/settings/dialogs/GUIDialogContentSettings.cpp
@@ -32660,18 +32639,6 @@ index 386bfb9547..d81f82d5ab 100644
  #include "utils/StringUtils.h"
  
  bool StringValidation::IsInteger(const std::string &input, void *data)
-diff --git a/xbmc/utils/SystemInfo.h b/xbmc/utils/SystemInfo.h
-index e2b8838db2..6d9e7ece07 100644
---- a/xbmc/utils/SystemInfo.h
-+++ b/xbmc/utils/SystemInfo.h
-@@ -10,7 +10,6 @@
- 
- #include "InfoLoader.h"
- #include "settings/lib/ISubSettings.h"
--
- #include <string>
- 
- #define KB  (1024)          // 1 KiloByte (1KB)   1024 Byte (2^10 Byte)
 diff --git a/xbmc/utils/Temperature.cpp b/xbmc/utils/Temperature.cpp
 index 52ace1c395..da07851eb5 100644
 --- a/xbmc/utils/Temperature.cpp
@@ -34744,30 +34711,6 @@ index a92bd1e834..955cc0ca1e 100644
  
  #define XML_VIEWSTATESETTINGS       "viewstates"
  #define XML_VIEWMODE                "viewmode"
-diff --git a/xbmc/view/ViewStateSettings.h b/xbmc/view/ViewStateSettings.h
-index 947c07e3f7..3bce697c12 100644
---- a/xbmc/view/ViewStateSettings.h
-+++ b/xbmc/view/ViewStateSettings.h
-@@ -8,15 +8,15 @@
- 
- #pragma once
- 
-+#include <map>
-+#include <string>
-+
- #include "ViewState.h"
- #include "events/IEvent.h"
-+#include "windowing/GraphicContext.h"
- #include "settings/lib/ISubSettings.h"
- #include "settings/lib/Setting.h"
- #include "threads/CriticalSection.h"
--#include "windowing/GraphicContext.h"
--
--#include <map>
--#include <string>
- 
- class TiXmlNode;
- 
 diff --git a/xbmc/weather/GUIWindowWeather.cpp b/xbmc/weather/GUIWindowWeather.cpp
 index ee9bbd5435..2badb8c31e 100644
 --- a/xbmc/weather/GUIWindowWeather.cpp
