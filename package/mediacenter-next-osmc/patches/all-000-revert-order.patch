@@ -1438,10 +1438,8 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/rendering/gles/ScreenshotSurfaceGLES.cpp      |  6 +-
  xbmc/settings/AdvancedSettings.h                   |  8 +--
  xbmc/settings/DiscSettings.cpp                     | 11 ++--
- xbmc/settings/DisplaySettings.h                    | 12 ++--
  xbmc/settings/LibExportSettings.h                  |  3 +-
  xbmc/settings/MediaSettings.cpp                    | 20 +++----
- xbmc/settings/MediaSettings.h                      | 10 ++--
  xbmc/settings/MediaSourceSettings.cpp              | 13 ++---
  xbmc/settings/MediaSourceSettings.h                |  4 +-
  xbmc/settings/SettingAddon.cpp                     |  3 +-
@@ -29775,34 +29773,6 @@ index 76f2884c3c..9e841e39e0 100644
  
  using namespace KODI::MESSAGING;
  
-diff --git a/xbmc/settings/DisplaySettings.h b/xbmc/settings/DisplaySettings.h
-index 37b06aebe5..2e6c554aea 100644
---- a/xbmc/settings/DisplaySettings.h
-+++ b/xbmc/settings/DisplaySettings.h
-@@ -8,17 +8,17 @@
- 
- #pragma once
- 
--#include "settings/lib/ISettingCallback.h"
--#include "settings/lib/ISubSettings.h"
--#include "threads/CriticalSection.h"
--#include "utils/Observer.h"
--#include "windowing/Resolution.h"
--
- #include <map>
- #include <set>
- #include <utility>
- #include <vector>
- 
-+#include "windowing/Resolution.h"
-+#include "settings/lib/ISettingCallback.h"
-+#include "settings/lib/ISubSettings.h"
-+#include "threads/CriticalSection.h"
-+#include "utils/Observer.h"
-+
- class TiXmlNode;
- struct IntegerSettingOption;
- struct StringSettingOption;
 diff --git a/xbmc/settings/LibExportSettings.h b/xbmc/settings/LibExportSettings.h
 index c7395fbdad..b82f3cc88a 100644
 --- a/xbmc/settings/LibExportSettings.h
@@ -29865,33 +29835,6 @@ index 8717bc142b..d88829787c 100644
 -
  using namespace KODI;
  using namespace KODI::MESSAGING;
- 
-diff --git a/xbmc/settings/MediaSettings.h b/xbmc/settings/MediaSettings.h
-index ab4f94538b..93f480359e 100644
---- a/xbmc/settings/MediaSettings.h
-+++ b/xbmc/settings/MediaSettings.h
-@@ -8,17 +8,17 @@
- 
- #pragma once
- 
-+#include <map>
-+#include <string>
-+
- #include "cores/VideoSettings.h"
--#include "settings/GameSettings.h"
--#include "settings/LibExportSettings.h"
- #include "settings/lib/ISettingCallback.h"
- #include "settings/lib/ISettingsHandler.h"
- #include "settings/lib/ISubSettings.h"
-+#include "settings/GameSettings.h"
-+#include "settings/LibExportSettings.h"
- #include "threads/CriticalSection.h"
- 
--#include <map>
--#include <string>
--
- #define VOLUME_DRC_MINIMUM 0    // 0dB
- #define VOLUME_DRC_MAXIMUM 6000 // 60dB
  
 diff --git a/xbmc/settings/MediaSourceSettings.cpp b/xbmc/settings/MediaSourceSettings.cpp
 index 4cfcfc6572..48120af130 100644
@@ -30068,25 +30011,6 @@ index 0ccd621914..11798b7d31 100644
  
  class CVariant;
  class CSettingList;
-diff --git a/xbmc/settings/Settings.h b/xbmc/settings/Settings.h
-index 8f3a172f58..8ac78f569e 100644
---- a/xbmc/settings/Settings.h
-+++ b/xbmc/settings/Settings.h
-@@ -8,12 +8,12 @@
- 
- #pragma once
- 
-+#include <string>
-+
- #include "settings/SettingControl.h"
- #include "settings/SettingCreator.h"
- #include "settings/SettingsBase.h"
- 
--#include <string>
--
- class CSettingList;
- class TiXmlNode;
- 
 diff --git a/xbmc/settings/SettingsBase.cpp b/xbmc/settings/SettingsBase.cpp
 index 3cb862919b..abc4c6364d 100644
 --- a/xbmc/settings/SettingsBase.cpp
