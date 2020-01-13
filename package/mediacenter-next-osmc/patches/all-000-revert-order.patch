@@ -1264,7 +1264,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  .../android/peripherals/PeripheralBusAndroid.h     | 15 +++--
  .../powermanagement/AndroidPowerSyscall.cpp        |  1 -
  .../android/storage/AndroidStorageProvider.cpp     | 26 ++++-----
- .../android/storage/AndroidStorageProvider.h       |  4 +-
  xbmc/platform/darwin/DarwinNSUserDefaults.mm       |  1 -
  xbmc/platform/darwin/DictionaryUtils.h             |  2 +-
  xbmc/platform/darwin/DictionaryUtils.mm            |  3 +-
@@ -1780,7 +1779,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/windowing/windows/WinKeyMap.h                 |  4 +-
  xbmc/windowing/windows/WinSystemWin32.cpp          | 17 +++---
  xbmc/windowing/windows/WinSystemWin32.h            |  1 -
- xbmc/windowing/windows/WinSystemWin32DX.h          |  3 +-
  xbmc/windows/GUIWindowDebugInfo.cpp                | 21 ++++---
  xbmc/windows/GUIWindowFileManager.h                | 10 ++--
  xbmc/windows/GUIWindowHome.cpp                     | 19 +++----
@@ -26791,25 +26789,6 @@ index 8aa5fec0ce..0b016f4c84 100644
  
  static const char * typeWL[] = { "vfat", "exfat", "sdcardfs", "fuse", "ntfs", "fat32", "ext3", "ext4", "esdfs" };
  static const char * mountWL[] = { "/mnt", "/Removable", "/storage" };
-diff --git a/xbmc/platform/android/storage/AndroidStorageProvider.h b/xbmc/platform/android/storage/AndroidStorageProvider.h
-index e5ea7e6840..73fe965603 100644
---- a/xbmc/platform/android/storage/AndroidStorageProvider.h
-+++ b/xbmc/platform/android/storage/AndroidStorageProvider.h
-@@ -8,12 +8,12 @@
- 
- #pragma once
- 
--#include "storage/IStorageProvider.h"
--
- #include <set>
- #include <string>
- #include <vector>
- 
-+#include "storage/IStorageProvider.h"
-+
- class CAndroidStorageProvider : public IStorageProvider
- {
- public:
 diff --git a/xbmc/platform/darwin/DarwinNSUserDefaults.mm b/xbmc/platform/darwin/DarwinNSUserDefaults.mm
 index de8c3f7b5c..cf65d03df0 100644
 --- a/xbmc/platform/darwin/DarwinNSUserDefaults.mm
@@ -36895,23 +36874,6 @@ index b5c8cef4ac..39c218248d 100644
  #include <vector>
  
  static const DWORD WINDOWED_STYLE = WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN;
-diff --git a/xbmc/windowing/windows/WinSystemWin32DX.h b/xbmc/windowing/windows/WinSystemWin32DX.h
-index 708ae56b64..bd1aa3b3ce 100644
---- a/xbmc/windowing/windows/WinSystemWin32DX.h
-+++ b/xbmc/windowing/windows/WinSystemWin32DX.h
-@@ -8,11 +8,10 @@
- 
- #pragma once
- 
-+#include <easyhook/easyhook.h>
- #include "rendering/dx/RenderSystemDX.h"
- #include "windowing/windows/WinSystemWin32.h"
- 
--#include <easyhook/easyhook.h>
--
- struct D3D10DDIARG_CREATERESOURCE;
- 
- class CWinSystemWin32DX : public CWinSystemWin32, public CRenderSystemDX
 diff --git a/xbmc/windows/GUIWindowDebugInfo.cpp b/xbmc/windows/GUIWindowDebugInfo.cpp
 index b8bfeff8ae..fa7e28a2ab 100644
 --- a/xbmc/windows/GUIWindowDebugInfo.cpp
