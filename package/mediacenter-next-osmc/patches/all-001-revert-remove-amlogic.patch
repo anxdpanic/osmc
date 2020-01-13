@@ -3939,9 +3939,9 @@ index a5c565552b..eb473ec6be 100644
  if(OPENGLES_FOUND AND (CORE_PLATFORM_NAME_LC STREQUAL android OR
                         CORE_PLATFORM_NAME_LC STREQUAL ios OR
 +                       CORE_PLATFORM_NAME_LC STREQUAL aml OR
+                        CORE_PLATFORM_NAME_LC STREQUAL tvos OR
                         CORE_PLATFORM_NAME_LC STREQUAL gbm OR
-                        CORE_PLATFORM_NAME_LC STREQUAL wayland))
-   list(APPEND SOURCES LinuxRendererGLES.cpp
+                        CORE_PLATFORM_NAME_LC STREQUAL x11 OR
 diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/CMakeLists.txt b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/CMakeLists.txt
 index 0f5bc0c18f..382eda9d00 100644
 --- a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/CMakeLists.txt
