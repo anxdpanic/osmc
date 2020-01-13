@@ -4196,9 +4196,9 @@ index b8b1331a7a..4987883f8b 100644
  if(OPENGLES_FOUND AND (CORE_PLATFORM_NAME_LC STREQUAL android OR
                         CORE_PLATFORM_NAME_LC STREQUAL ios OR
 +                       CORE_PLATFORM_NAME_LC STREQUAL aml OR
+                        CORE_PLATFORM_NAME_LC STREQUAL tvos OR
                         CORE_PLATFORM_NAME_LC STREQUAL gbm OR
-                        CORE_PLATFORM_NAME_LC STREQUAL wayland))
-   list(APPEND SOURCES ConversionMatrix.cpp
+                        CORE_PLATFORM_NAME_LC STREQUAL x11 OR
 diff --git a/xbmc/platform/linux/input/CMakeLists.txt b/xbmc/platform/linux/input/CMakeLists.txt
 index bec4224f77..b5a45d03b0 100644
 --- a/xbmc/platform/linux/input/CMakeLists.txt
