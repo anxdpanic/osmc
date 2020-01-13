@@ -9836,29 +9836,6 @@ index a118e6aacc..e6dcf10782 100644
  
  CBaseRenderer* CRendererVTB::Create(CVideoBuffer *buffer)
  {
-diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererVTBGLES.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererVTBGLES.cpp
-index 41b60c0d5d..5fe6d424c2 100644
---- a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererVTBGLES.cpp
-+++ b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererVTBGLES.cpp
-@@ -7,16 +7,14 @@
-  */
- 
- #include "RendererVTBGLES.h"
--
- #include "../RenderFactory.h"
- #include "ServiceBroker.h"
- #include "cores/IPlayer.h"
-+#include "utils/log.h"
-+#include "utils/GLUtils.h"
- #include "cores/VideoPlayer/DVDCodecs/Video/VTB.h"
- #include "settings/MediaSettings.h"
--#include "utils/GLUtils.h"
--#include "utils/log.h"
- #include "windowing/ios/WinSystemIOS.h"
--
- #include <CoreVideo/CVBuffer.h>
- #include <CoreVideo/CVPixelBuffer.h>
- #include <OpenGLES/ES2/glext.h>
 diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererVTBGLES.h b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererVTBGLES.h
 index 36e8466854..b5b62b80a3 100644
 --- a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererVTBGLES.h
