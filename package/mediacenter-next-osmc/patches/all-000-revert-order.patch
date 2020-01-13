@@ -1264,7 +1264,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  .../android/peripherals/PeripheralBusAndroid.h     | 15 +++--
  .../powermanagement/AndroidPowerSyscall.cpp        |  1 -
  .../android/storage/AndroidStorageProvider.cpp     | 26 ++++-----
- xbmc/platform/darwin/DarwinNSUserDefaults.mm       |  1 -
  xbmc/platform/darwin/DictionaryUtils.h             |  2 +-
  xbmc/platform/darwin/DictionaryUtils.mm            |  3 +-
  xbmc/platform/darwin/MemUtils.cpp                  |  3 +-
@@ -26789,18 +26788,6 @@ index 8aa5fec0ce..0b016f4c84 100644
  
  static const char * typeWL[] = { "vfat", "exfat", "sdcardfs", "fuse", "ntfs", "fat32", "ext3", "ext4", "esdfs" };
  static const char * mountWL[] = { "/mnt", "/Removable", "/storage" };
-diff --git a/xbmc/platform/darwin/DarwinNSUserDefaults.mm b/xbmc/platform/darwin/DarwinNSUserDefaults.mm
-index de8c3f7b5c..cf65d03df0 100644
---- a/xbmc/platform/darwin/DarwinNSUserDefaults.mm
-+++ b/xbmc/platform/darwin/DarwinNSUserDefaults.mm
-@@ -7,7 +7,6 @@
-  */
- 
- #import "platform/darwin/DarwinNSUserDefaults.h"
--
- #import "filesystem/SpecialProtocol.h"
- #import "utils/log.h"
- 
 diff --git a/xbmc/platform/darwin/DictionaryUtils.h b/xbmc/platform/darwin/DictionaryUtils.h
 index cd83eb70e3..a6f29da568 100644
 --- a/xbmc/platform/darwin/DictionaryUtils.h
