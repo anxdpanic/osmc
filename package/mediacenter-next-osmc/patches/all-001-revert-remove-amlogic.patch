@@ -3977,7 +3977,7 @@ index 0000000000..c545374a54
 +#include "cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAmlogic.h"
 +#include "cores/VideoPlayer/DVDCodecs/Video/AMLCodec.h"
 +#include "utils/log.h"
-+#include "utils/SysfsUtils.h"
++#include "platform/linux/SysfsPath.h"
 +#include "utils/ScreenshotAML.h"
 +#include "settings/MediaSettings.h"
 +#include "cores/VideoPlayer/VideoRenderers/RenderCapture.h"
