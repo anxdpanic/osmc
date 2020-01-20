@@ -841,7 +841,7 @@ index 0000000000..10e73cc74f
 +#include "utils/AMLUtils.h"
 +#include "utils/log.h"
 +#include "utils/StringUtils.h"
-+#include "utils/SysfsUtils.h"
++#include "platform/linux/SysfsPath.h"
 +#include "utils/TimeUtils.h"
 +
 +#include <unistd.h>
@@ -3383,7 +3383,7 @@ index 0000000000..14e11b362b
 +#include "utils/AMLUtils.h"
 +#include "utils/BitstreamConverter.h"
 +#include "utils/log.h"
-+#include "utils/SysfsUtils.h"
++#include "platform/linux/SysfsPath.h"
 +#include "settings/AdvancedSettings.h"
 +#include "settings/Settings.h"
 +#include "settings/SettingsComponent.h"
@@ -4331,7 +4331,7 @@ index 0000000000..429e1bcf5f
 +#include "AMLUtils.h"
 +#include "utils/CPUInfo.h"
 +#include "utils/log.h"
-+#include "utils/SysfsUtils.h"
++#include "platform/linux/SysfsPath.h"
 +#include "utils/StringUtils.h"
 +#include "windowing/GraphicContext.h"
 +#include "utils/RegExp.h"
@@ -5467,7 +5467,7 @@ index 0000000000..0637f83fc0
 +#include "guilib/DispResource.h"
 +#include "utils/AMLUtils.h"
 +#include "utils/log.h"
-+#include "utils/SysfsUtils.h"
++#include "platform/linux/SysfsPath.h"
 +#include "threads/SingleLock.h"
 +
 +#include <linux/fb.h>
