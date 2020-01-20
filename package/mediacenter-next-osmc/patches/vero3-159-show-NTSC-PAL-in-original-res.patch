@@ -82,7 +82,7 @@ index e4900f4649..2e730dba6b 100644
  #include "guilib/LocalizeStrings.h"
  #include "utils/log.h"
  #include "utils/MathUtils.h"
-+#include "platform/linux/SysfsPath.h"
++#include "utils/SysfsUtils.h"
  #include "cores/VideoPlayer/VideoRenderers/RenderFlags.h"
 +#include "xbmc/Application.h"
  

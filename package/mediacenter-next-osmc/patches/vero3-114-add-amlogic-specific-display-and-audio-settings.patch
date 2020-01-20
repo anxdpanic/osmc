@@ -134,7 +134,7 @@ index e808eaa..9f94a19
  #include "threads/SingleLock.h"
  #include "utils/log.h"
  #include "utils/StringUtils.h"
-+#include "platform/linux/SysfsPath.h"
++#include "utils/SysfsUtils.h"
  #include "utils/Variant.h"
  #include "utils/XMLUtils.h"
  #include "rendering/RenderSystem.h"
