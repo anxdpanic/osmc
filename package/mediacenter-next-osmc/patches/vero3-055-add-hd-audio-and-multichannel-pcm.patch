@@ -19,7 +19,7 @@ index f684c53..7dc6713 100644
  #include "settings/SettingsComponent.h"
  #if defined(HAS_LIBAMCODEC)
  #include "utils/AMLUtils.h"
-+#include "utils/SysfsUtils.h"
++#include "platform/linux/SysfsPath.h"
  #endif
  
  #ifdef TARGET_POSIX

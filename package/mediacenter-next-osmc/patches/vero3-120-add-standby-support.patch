@@ -19,7 +19,7 @@ index e64e495..9a28ce2 100644
  
  #if defined(HAS_LIBAMCODEC)
  #include "utils/AMLUtils.h"
-+#include "utils/SysfsUtils.h"
++#include "platform/SysfsPath.h"
  #endif
  
  //TODO: XInitThreads
