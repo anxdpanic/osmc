@@ -954,7 +954,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/interfaces/json-rpc/FileOperations.cpp        | 11 ++--
  xbmc/interfaces/json-rpc/FileOperations.h          |  2 +-
  xbmc/interfaces/json-rpc/GUIOperations.cpp         | 13 ++---
- xbmc/interfaces/json-rpc/InputOperations.cpp       |  7 +--
  xbmc/interfaces/json-rpc/JSONRPC.cpp               | 13 ++---
  xbmc/interfaces/json-rpc/JSONRPC.h                 |  6 +-
  xbmc/interfaces/json-rpc/JSONRPCUtils.h            |  4 +-
@@ -1109,7 +1108,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/network/AirTunesServer.h                      | 21 ++++---
  xbmc/network/DNSNameCache.cpp                      |  5 +-
  xbmc/network/DNSNameCache.h                        |  2 +-
- xbmc/network/EventClient.cpp                       | 25 ++++-----
  xbmc/network/EventClient.h                         |  6 +-
  xbmc/network/EventPacket.cpp                       |  1 -
  xbmc/network/EventServer.cpp                       | 11 ++--
@@ -20112,29 +20110,6 @@ index 9c24013d74..953285055b 100644
  
  using namespace JSONRPC;
  using namespace ADDON;
-diff --git a/xbmc/interfaces/json-rpc/InputOperations.cpp b/xbmc/interfaces/json-rpc/InputOperations.cpp
-index ae6fc0f6e1..8f47222b3f 100644
---- a/xbmc/interfaces/json-rpc/InputOperations.cpp
-+++ b/xbmc/interfaces/json-rpc/InputOperations.cpp
-@@ -7,15 +7,14 @@
-  */
- 
- #include "InputOperations.h"
--
- #include "Application.h"
-+#include "messaging/ApplicationMessenger.h"
- #include "guilib/GUIAudioManager.h"
--#include "guilib/GUIKeyboardFactory.h"
- #include "guilib/GUIWindow.h"
- #include "guilib/GUIWindowManager.h"
--#include "input/Key.h"
-+#include "guilib/GUIKeyboardFactory.h"
- #include "input/actions/ActionTranslator.h"
--#include "messaging/ApplicationMessenger.h"
-+#include "input/Key.h"
- #include "utils/Variant.h"
- 
- using namespace JSONRPC;
 diff --git a/xbmc/interfaces/json-rpc/JSONRPC.cpp b/xbmc/interfaces/json-rpc/JSONRPC.cpp
 index d597ffd691..1db3c9f6f3 100644
 --- a/xbmc/interfaces/json-rpc/JSONRPC.cpp
@@ -23394,49 +23369,6 @@ index c62342cbbd..5336db909e 100644
  
  class CCriticalSection;
  
-diff --git a/xbmc/network/EventClient.cpp b/xbmc/network/EventClient.cpp
-index 8259080c5b..0670682401 100644
---- a/xbmc/network/EventClient.cpp
-+++ b/xbmc/network/EventClient.cpp
-@@ -6,26 +6,25 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
--#include "EventClient.h"
-+#include "threads/SystemClock.h"
- 
-+#include "EventClient.h"
- #include "EventPacket.h"
--#include "ServiceBroker.h"
--#include "dialogs/GUIDialogKaiToast.h"
--#include "filesystem/File.h"
--#include "guilib/LocalizeStrings.h"
-+#include "threads/SingleLock.h"
- #include "input/GamepadTranslator.h"
- #include "input/IRTranslator.h"
--#include "input/Key.h"
- #include "input/KeyboardTranslator.h"
--#include "threads/SingleLock.h"
--#include "threads/SystemClock.h"
--#include "utils/StringUtils.h"
--#include "utils/TimeUtils.h"
--#include "utils/log.h"
--#include "windowing/GraphicContext.h"
--
- #include <map>
- #include <queue>
-+#include "filesystem/File.h"
-+#include "utils/log.h"
-+#include "utils/TimeUtils.h"
-+#include "dialogs/GUIDialogKaiToast.h"
-+#include "windowing/GraphicContext.h"
-+#include "input/Key.h"
-+#include "guilib/LocalizeStrings.h"
-+#include "utils/StringUtils.h"
-+#include "ServiceBroker.h"
- 
- using namespace EVENTCLIENT;
- using namespace EVENTPACKET;
 diff --git a/xbmc/network/EventClient.h b/xbmc/network/EventClient.h
 index e40cef0285..7c76d78c96 100644
 --- a/xbmc/network/EventClient.h
