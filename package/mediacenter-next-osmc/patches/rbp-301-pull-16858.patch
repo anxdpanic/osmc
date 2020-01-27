@@ -1,0 +1,252 @@
+From efb1096a6171cf728e0bf48906705dfdefc739e8 Mon Sep 17 00:00:00 2001
+From: Josh Bendavid <Josh.Bendavid@cern.ch>
+Date: Sat, 2 Nov 2019 01:01:04 +0100
+Subject: [PATCH] Add JSON RPC call to send button press event and move button
+ string translation to common place.
+
+---
+ xbmc/Application.cpp                          | 11 +++++++
+ xbmc/input/ButtonTranslator.cpp               | 24 ++++++++++++++
+ xbmc/input/ButtonTranslator.h                 |  2 ++
+ xbmc/interfaces/json-rpc/InputOperations.cpp  | 31 +++++++++++++++++++
+ xbmc/interfaces/json-rpc/InputOperations.h    |  6 ++++
+ .../json-rpc/JSONServiceDescription.cpp       |  1 +
+ xbmc/interfaces/json-rpc/schema/methods.json  | 12 +++++++
+ xbmc/interfaces/json-rpc/schema/version.txt   |  2 +-
+ xbmc/messaging/ApplicationMessenger.h         |  1 +
+ xbmc/network/EventClient.cpp                  | 27 +++-------------
+ 10 files changed, 93 insertions(+), 24 deletions(-)
+
+diff --git a/xbmc/Application.cpp b/xbmc/Application.cpp
+index fc6eec8f027e..f3a45291580a 100644
+--- a/xbmc/Application.cpp
++++ b/xbmc/Application.cpp
+@@ -2262,6 +2262,17 @@ void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
+ 
+     break;
+ 
++  case TMSG_EVENT:
++  {
++    if (pMsg->lpVoid)
++    {
++      XBMC_Event* event = static_cast<XBMC_Event*>(pMsg->lpVoid);
++      OnEvent(*event);
++      delete event;
++    }
++  }
++  break;
++    
+   default:
+     CLog::Log(LOGERROR, "%s: Unhandled threadmessage sent, %u", __FUNCTION__, msg);
+     break;
+diff --git a/xbmc/input/ButtonTranslator.cpp b/xbmc/input/ButtonTranslator.cpp
+index c1a6ab43b5dc..bcc521718fa6 100644
+--- a/xbmc/input/ButtonTranslator.cpp
++++ b/xbmc/input/ButtonTranslator.cpp
+@@ -407,3 +407,27 @@ void CButtonTranslator::UnregisterMapper(IButtonMapper *mapper)
+     }
+   }
+ }
++
++uint32_t CButtonTranslator::TranslateString(std::string strMap, std::string strButton)
++{
++  if (strMap == "KB") // standard keyboard map
++  {
++    return CKeyboardTranslator::TranslateString(strButton);
++  }
++  else if (strMap == "XG") // xbox gamepad map
++  {
++    return CGamepadTranslator::TranslateString(strButton);
++  }
++  else if (strMap == "R1") // xbox remote map
++  {
++    return CIRTranslator::TranslateString(strButton);
++  }
++  else if (strMap == "R2") // xbox universal remote map
++  {
++    return CIRTranslator::TranslateUniversalRemoteString(strButton);
++  }
++  else
++  {
++    return 0;
++  }
++}
+diff --git a/xbmc/input/ButtonTranslator.h b/xbmc/input/ButtonTranslator.h
+index d6b4a1ca6b99..9124d1460f0a 100644
+--- a/xbmc/input/ButtonTranslator.h
++++ b/xbmc/input/ButtonTranslator.h
+@@ -62,6 +62,8 @@ class CButtonTranslator
+   void RegisterMapper(const std::string &device, IButtonMapper *mapper);
+   void UnregisterMapper(IButtonMapper *mapper);
+ 
++  static uint32_t TranslateString(std::string strMap, std::string strButton);
++
+ private:
+   struct CButtonAction
+   {
+diff --git a/xbmc/interfaces/json-rpc/InputOperations.cpp b/xbmc/interfaces/json-rpc/InputOperations.cpp
+index ae6fc0f6e1f9..2936a19f2846 100644
+--- a/xbmc/interfaces/json-rpc/InputOperations.cpp
++++ b/xbmc/interfaces/json-rpc/InputOperations.cpp
+@@ -13,6 +13,7 @@
+ #include "guilib/GUIKeyboardFactory.h"
+ #include "guilib/GUIWindow.h"
+ #include "guilib/GUIWindowManager.h"
++#include "input/ButtonTranslator.h"
+ #include "input/Key.h"
+ #include "input/actions/ActionTranslator.h"
+ #include "messaging/ApplicationMessenger.h"
+@@ -84,6 +85,36 @@ JSONRPC_STATUS CInputOperations::ExecuteAction(const std::string &method, ITrans
+   return SendAction(action);
+ }
+ 
++JSONRPC_STATUS CInputOperations::ButtonEvent(const std::string& method,
++                                             ITransportLayer* transport,
++                                             IClient* client,
++                                             const CVariant& parameterObject,
++                                             CVariant& result)
++{
++  std::string button = parameterObject["button"].asString();
++  std::string keymap = parameterObject["keymap"].asString();
++  int holdtime = static_cast<int>(parameterObject["holdtime"].asInteger());
++  if (holdtime < 0)
++  {
++    return InvalidParams;
++  }
++
++  uint32_t keycode = CButtonTranslator::TranslateString(keymap, button);
++  if (keycode == 0)
++  {
++    return InvalidParams;
++  }
++
++  XBMC_Event* newEvent = new XBMC_Event;
++  newEvent->type = XBMC_BUTTON;
++  newEvent->keybutton.button = keycode;
++  newEvent->keybutton.holdtime = holdtime;
++
++  CApplicationMessenger::GetInstance().PostMsg(TMSG_EVENT, -1, -1, static_cast<void*>(newEvent));
++
++  return ACK;
++}
++
+ JSONRPC_STATUS CInputOperations::Left(const std::string &method, ITransportLayer *transport, IClient *client, const CVariant &parameterObject, CVariant &result)
+ {
+   return SendAction(ACTION_MOVE_LEFT);
+diff --git a/xbmc/interfaces/json-rpc/InputOperations.h b/xbmc/interfaces/json-rpc/InputOperations.h
+index 847885801f38..a431a1c1f2bc 100644
+--- a/xbmc/interfaces/json-rpc/InputOperations.h
++++ b/xbmc/interfaces/json-rpc/InputOperations.h
+@@ -20,6 +20,12 @@ namespace JSONRPC
+     static JSONRPC_STATUS SendText(const std::string &method, ITransportLayer *transport, IClient *client, const CVariant &parameterObject, CVariant &result);
+     static JSONRPC_STATUS ExecuteAction(const std::string &method, ITransportLayer *transport, IClient *client, const CVariant &parameterObject, CVariant &result);
+ 
++    static JSONRPC_STATUS ButtonEvent(const std::string& method,
++                                      ITransportLayer* transport,
++                                      IClient* client,
++                                      const CVariant& parameterObject,
++                                      CVariant& result);
++
+     static JSONRPC_STATUS Left(const std::string &method, ITransportLayer *transport, IClient *client, const CVariant &parameterObject, CVariant &result);
+     static JSONRPC_STATUS Right(const std::string &method, ITransportLayer *transport, IClient *client, const CVariant &parameterObject, CVariant &result);
+     static JSONRPC_STATUS Down(const std::string &method, ITransportLayer *transport, IClient *client, const CVariant &parameterObject, CVariant &result);
+diff --git a/xbmc/interfaces/json-rpc/JSONServiceDescription.cpp b/xbmc/interfaces/json-rpc/JSONServiceDescription.cpp
+index 6b199bde18cf..4b20c8d0285b 100644
+--- a/xbmc/interfaces/json-rpc/JSONServiceDescription.cpp
++++ b/xbmc/interfaces/json-rpc/JSONServiceDescription.cpp
+@@ -198,6 +198,7 @@ JsonRpcMethodMap CJSONServiceDescription::m_methodMaps[] = {
+ // Input operations
+   { "Input.SendText",                               CInputOperations::SendText },
+   { "Input.ExecuteAction",                          CInputOperations::ExecuteAction },
++  { "Input.ButtonEvent",                            CInputOperations::ButtonEvent },
+   { "Input.Left",                                   CInputOperations::Left },
+   { "Input.Right",                                  CInputOperations::Right },
+   { "Input.Down",                                   CInputOperations::Down },
+diff --git a/xbmc/interfaces/json-rpc/schema/methods.json b/xbmc/interfaces/json-rpc/schema/methods.json
+index ce5b400605e7..fbe6988c1c0a 100644
+--- a/xbmc/interfaces/json-rpc/schema/methods.json
++++ b/xbmc/interfaces/json-rpc/schema/methods.json
+@@ -2342,6 +2342,18 @@
+     ],
+     "returns": "string"
+   },
++  "Input.ButtonEvent": {
++    "type": "method",
++    "description": "Send a button press event",
++    "transport": "Response",
++    "permission": "Navigate",
++    "params": [
++      { "name": "button", "type": "string", "required": true, "description": "Button name" },
++      { "name": "keymap", "type": "string", "required": true, "description": "Keymap name (KB, XG, R1, or R2)", "enum": [ "KB", "XG", "R1", "R2" ] },
++      { "name": "holdtime", "type": "integer", "required": false, "minimum" : 0, "default" : 0, "description": "Number of milliseconds to simulate button hold." }
++    ],
++    "returns": "string"
++  },
+   "Input.Left": {
+     "type": "method",
+     "description": "Navigate left in GUI",
+diff --git a/xbmc/interfaces/json-rpc/schema/version.txt b/xbmc/interfaces/json-rpc/schema/version.txt
+index 9da92121ba3e..e6a7a67aa9ce 100644
+--- a/xbmc/interfaces/json-rpc/schema/version.txt
++++ b/xbmc/interfaces/json-rpc/schema/version.txt
+@@ -1 +1 @@
+-JSONRPC_VERSION 11.0.0
++JSONRPC_VERSION 11.1.0
+diff --git a/xbmc/messaging/ApplicationMessenger.h b/xbmc/messaging/ApplicationMessenger.h
+index d61e7236cbfe..a1c6b60d521f 100644
+--- a/xbmc/messaging/ApplicationMessenger.h
++++ b/xbmc/messaging/ApplicationMessenger.h
+@@ -81,6 +81,7 @@
+ #define TMSG_SYSTEM_POWERDOWN             TMSG_MASK_APPLICATION + 30
+ #define TMSG_RENDERER_PREINIT             TMSG_MASK_APPLICATION + 31
+ #define TMSG_RENDERER_UNINIT              TMSG_MASK_APPLICATION + 32
++#define TMSG_EVENT                        TMSG_MASK_APPLICATION + 33
+ 
+ #define TMSG_GUI_INFOLABEL                TMSG_MASK_GUIINFOMANAGER + 0
+ #define TMSG_GUI_INFOBOOL                 TMSG_MASK_GUIINFOMANAGER + 1
+diff --git a/xbmc/network/EventClient.cpp b/xbmc/network/EventClient.cpp
+index 8259080c5b16..6f4a058fd789 100644
+--- a/xbmc/network/EventClient.cpp
++++ b/xbmc/network/EventClient.cpp
+@@ -13,6 +13,7 @@
+ #include "dialogs/GUIDialogKaiToast.h"
+ #include "filesystem/File.h"
+ #include "guilib/LocalizeStrings.h"
++#include "input/ButtonTranslator.h"
+ #include "input/GamepadTranslator.h"
+ #include "input/IRTranslator.h"
+ #include "input/Key.h"
+@@ -59,30 +60,10 @@ void CEventButtonState::Load()
+   {
+     if ( (m_mapName.length() > 0) && (m_buttonName.length() > 0) )
+     {
+-      if ( m_mapName.compare("KB") == 0 ) // standard keyboard map
++      m_iKeyCode = CButtonTranslator::TranslateString(m_mapName, m_buttonName);
++      if (m_iKeyCode == 0)
+       {
+-        m_iKeyCode = CKeyboardTranslator::TranslateString( m_buttonName.c_str() );
+-      }
+-      else if  ( m_mapName.compare("XG") == 0 ) // xbox gamepad map
+-      {
+-        m_iKeyCode = CGamepadTranslator::TranslateString( m_buttonName.c_str() );
+-      }
+-      else if  ( m_mapName.compare("R1") == 0 ) // xbox remote map
+-      {
+-        m_iKeyCode = CIRTranslator::TranslateString( m_buttonName.c_str() );
+-      }
+-      else if  ( m_mapName.compare("R2") == 0 ) // xbox universal remote map
+-      {
+-        m_iKeyCode = CIRTranslator::TranslateUniversalRemoteString( m_buttonName.c_str() );
+-      }
+-      else if ( (m_mapName.length() > 3) &&
+-                (StringUtils::StartsWith(m_mapName, "LI:")) ) // starts with LI: ?
+-      {
+-        CLog::Log(LOGNOTICE, "ES: LIRC support not implemented");
+-      }
+-      else
+-      {
+-        Reset(); // disable key since its invalid
++        Reset();
+         CLog::Log(LOGERROR, "ES: Could not map %s : %s to a key", m_mapName.c_str(),
+                   m_buttonName.c_str());
+       }

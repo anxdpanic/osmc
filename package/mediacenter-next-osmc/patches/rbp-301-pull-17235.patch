@@ -1,0 +1,37 @@
+From 2216de6f6b317669c0ef046bdf43cb688807aa90 Mon Sep 17 00:00:00 2001
+From: jjd-uk <>
+Date: Tue, 21 Jan 2020 12:44:41 +0000
+Subject: [PATCH] [Estuary] Media Flags fix
+
+---
+ addons/skin.estuary/xml/DialogSeekBar.xml | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/addons/skin.estuary/xml/DialogSeekBar.xml b/addons/skin.estuary/xml/DialogSeekBar.xml
+index 334cdeb4b0ed..706e016c2e63 100644
+--- a/addons/skin.estuary/xml/DialogSeekBar.xml
++++ b/addons/skin.estuary/xml/DialogSeekBar.xml
+@@ -89,6 +89,7 @@
+ 						<param name="texture" value="$INFO[MusicPlayer.Channels,flags/audiochannel/,.png]" />
+ 					</include>
+ 					<control type="group">
++						<visible>!String.IsEmpty(MusicPlayer.SampleRate)</visible>
+ 						<width>115</width>
+ 						<control type="label">
+ 							<width>115</width>
+@@ -103,6 +104,7 @@
+ 						</include>
+ 					</control>
+ 					<control type="group">
++						<visible>!String.IsEmpty(MusicPlayer.BitRate)</visible>
+ 						<width>115</width>
+ 						<control type="label">
+ 							<width>115</width>
+@@ -117,6 +119,7 @@
+ 						</include>
+ 					</control>
+ 					<control type="group">
++						<visible>!String.IsEmpty(MusicPlayer.BitsPerSample)</visible>
+ 						<width>115</width>
+ 						<control type="label">
+ 							<width>115</width>

@@ -1,0 +1,39 @@
+From 146178c4fb06bf7b7db49b37be0934c8cc57d5f6 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Mon, 20 Jan 2020 10:36:51 +0000
+Subject: [PATCH] [cmake] fix not allowed depends check
+
+Before was in case with more as one value for not allowed OS
+e.g. "!windows !windowsstore" defined in platforms.txt, it used
+all the time.
+
+Is a cmake "for" loop where it compare the name with wanted target,
+before has it seen the name is, in one of the names not equal and
+set to allowed and continued loop, no matter if on next/before place defined
+as not.
+
+With this change it check the not allowed name is present,
+make `set(${build} FALSE)` and break the loop.
+
+Related to inputstream.ffmpegdirect, where on some depends, Windows and
+Windowsstore must be prevented.
+---
+ cmake/scripts/common/CheckTargetPlatform.cmake | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/cmake/scripts/common/CheckTargetPlatform.cmake b/cmake/scripts/common/CheckTargetPlatform.cmake
+index 526e4bd1f13c..d77608581053 100644
+--- a/cmake/scripts/common/CheckTargetPlatform.cmake
++++ b/cmake/scripts/common/CheckTargetPlatform.cmake
+@@ -29,7 +29,10 @@ function(check_target_platform dir target_platform build)
+           string(SUBSTRING ${platform} 1 ${platform_length} platform)
+ 
+           # check if the current platform does not match the extracted platform
+-          if(NOT ${platform} STREQUAL ${target_platform})
++          if(${platform} STREQUAL ${target_platform})
++            set(${build} FALSE)
++            break()
++          elseif(NOT ${platform} STREQUAL ${target_platform})
+             set(${build} TRUE)
+           endif()
+         endif()

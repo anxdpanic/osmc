@@ -1,0 +1,41 @@
+From 80f711659aafa4d2ba49196bbee44b7fb9865001 Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Sun, 26 Jan 2020 08:42:28 +0100
+Subject: [PATCH] [PVR] Fix CPVREpgTagsContainer::UpdateEntries to reset the
+ tags cache data, not the tags cache instance. Make two members const to
+ prevent those kind of bugs in the future.
+
+---
+ xbmc/pvr/epg/EpgTagsContainer.cpp | 2 +-
+ xbmc/pvr/epg/EpgTagsContainer.h   | 5 ++---
+ 2 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/xbmc/pvr/epg/EpgTagsContainer.cpp b/xbmc/pvr/epg/EpgTagsContainer.cpp
+index a022d38eadc1..cf1fba6b844a 100644
+--- a/xbmc/pvr/epg/EpgTagsContainer.cpp
++++ b/xbmc/pvr/epg/EpgTagsContainer.cpp
+@@ -155,7 +155,7 @@ bool CPVREpgTagsContainer::UpdateEntries(const CPVREpgTagsContainer& tags)
+     }
+ 
+     if (bResetCache)
+-      m_tagsCache.reset();
++      m_tagsCache->Reset();
+   }
+   else
+   {
+diff --git a/xbmc/pvr/epg/EpgTagsContainer.h b/xbmc/pvr/epg/EpgTagsContainer.h
+index 4039d9306258..d1ddac2c2f80 100644
+--- a/xbmc/pvr/epg/EpgTagsContainer.h
++++ b/xbmc/pvr/epg/EpgTagsContainer.h
+@@ -197,9 +197,8 @@ class CPVREpgTagsContainer
+ 
+   int m_iEpgID = 0;
+   std::shared_ptr<CPVREpgChannelData> m_channelData;
+-  std::shared_ptr<CPVREpgDatabase> m_database;
+-
+-  std::unique_ptr<CPVREpgTagsCache> m_tagsCache;
++  const std::shared_ptr<CPVREpgDatabase> m_database;
++  const std::unique_ptr<CPVREpgTagsCache> m_tagsCache;
+ 
+   std::map<CDateTime, std::shared_ptr<CPVREpgInfoTag>> m_changedTags;
+   std::map<CDateTime, std::shared_ptr<CPVREpgInfoTag>> m_deletedTags;
