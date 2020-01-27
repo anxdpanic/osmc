@@ -1213,7 +1213,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/platform/android/activity/AndroidKey.cpp      |  6 +-
  xbmc/platform/android/activity/AndroidKey.h        |  4 +-
  xbmc/platform/android/activity/AndroidMouse.cpp    |  5 +-
- xbmc/platform/android/activity/AndroidTouch.cpp    |  4 +-
  xbmc/platform/android/activity/AndroidTouch.h      |  3 +-
  xbmc/platform/android/activity/EventLoop.cpp       |  3 +-
  xbmc/platform/android/activity/EventLoop.h         |  4 +-
@@ -25647,39 +25646,6 @@ index 8db9f97ef3..e79dae12e5 100644
  #include "windowing/android/WinSystemAndroid.h"
  
  //#define DEBUG_VERBOSE
-diff --git a/xbmc/platform/android/activity/AndroidTouch.cpp b/xbmc/platform/android/activity/AndroidTouch.cpp
-index 5081a131c4..74c5ec536d 100644
---- a/xbmc/platform/android/activity/AndroidTouch.cpp
-+++ b/xbmc/platform/android/activity/AndroidTouch.cpp
-@@ -7,12 +7,10 @@
-  */
- 
- #include "AndroidTouch.h"
--
-+#include "platform/android/activity/XBMCApp.h"
- #include "input/touch/generic/GenericTouchActionHandler.h"
- #include "input/touch/generic/GenericTouchInputHandler.h"
- 
--#include "platform/android/activity/XBMCApp.h"
--
- CAndroidTouch::CAndroidTouch() : m_dpi(160)
- {
-   CGenericTouchInputHandler::GetInstance().RegisterHandler(&CGenericTouchActionHandler::GetInstance());
-diff --git a/xbmc/platform/android/activity/AndroidTouch.h b/xbmc/platform/android/activity/AndroidTouch.h
-index 5de5f20db8..c41a8cd536 100644
---- a/xbmc/platform/android/activity/AndroidTouch.h
-+++ b/xbmc/platform/android/activity/AndroidTouch.h
-@@ -8,9 +8,8 @@
- 
- #pragma once
- 
--#include <math.h>
--
- #include <android/input.h>
-+#include <math.h>
- 
- class CAndroidTouch
- {
 diff --git a/xbmc/platform/android/activity/EventLoop.cpp b/xbmc/platform/android/activity/EventLoop.cpp
 index b713acd811..b4a48d36a8 100644
 --- a/xbmc/platform/android/activity/EventLoop.cpp
