@@ -1779,7 +1779,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/windows/GUIWindowLoginScreen.cpp              |  1 -
  xbmc/windows/GUIWindowPointer.cpp                  |  5 +-
  xbmc/windows/GUIWindowScreensaver.cpp              |  3 +-
- xbmc/windows/GUIWindowScreensaverDim.cpp           |  2 +-
  xbmc/windows/GUIWindowSplash.cpp                   |  2 +-
  xbmc/windows/GUIWindowStartup.cpp                  |  3 +-
  1836 files changed, 5132 insertions(+), 6304 deletions(-)
@@ -36522,100 +36521,6 @@ index 425e96eb8b..6357f33e3c 100644
  class CFileItem;
  class CFileItemList;
  class CGUIDialogProgress;
-diff --git a/xbmc/windows/GUIWindowHome.cpp b/xbmc/windows/GUIWindowHome.cpp
-index b539f29417..2eb929fad9 100644
---- a/xbmc/windows/GUIWindowHome.cpp
-+++ b/xbmc/windows/GUIWindowHome.cpp
-@@ -7,21 +7,20 @@
-  */
- 
- #include "GUIWindowHome.h"
--
--#include "Application.h"
--#include "ServiceBroker.h"
--#include "guilib/GUIComponent.h"
--#include "guilib/GUIWindowManager.h"
--#include "guilib/WindowIDs.h"
- #include "input/Key.h"
-+#include "guilib/WindowIDs.h"
-+#include "utils/JobManager.h"
-+#include "utils/RecentlyAddedJob.h"
- #include "interfaces/AnnouncementManager.h"
-+#include "utils/log.h"
- #include "settings/AdvancedSettings.h"
- #include "settings/SettingsComponent.h"
--#include "utils/JobManager.h"
--#include "utils/RecentlyAddedJob.h"
--#include "utils/StringUtils.h"
- #include "utils/Variant.h"
--#include "utils/log.h"
-+#include "guilib/GUIComponent.h"
-+#include "guilib/GUIWindowManager.h"
-+#include "Application.h"
-+#include "ServiceBroker.h"
-+#include "utils/StringUtils.h"
- 
- CGUIWindowHome::CGUIWindowHome(void) : CGUIWindow(WINDOW_HOME, "Home.xml")
- {
-diff --git a/xbmc/windows/GUIWindowLoginScreen.cpp b/xbmc/windows/GUIWindowLoginScreen.cpp
-index 1e34d44bff..71abcc006f 100644
---- a/xbmc/windows/GUIWindowLoginScreen.cpp
-+++ b/xbmc/windows/GUIWindowLoginScreen.cpp
-@@ -7,7 +7,6 @@
-  */
- 
- #include "GUIWindowLoginScreen.h"
--
- #include "FileItem.h"
- #include "GUIPassword.h"
- #include "ServiceBroker.h"
-diff --git a/xbmc/windows/GUIWindowPointer.cpp b/xbmc/windows/GUIWindowPointer.cpp
-index d9e1bda499..cd49d2a34e 100644
---- a/xbmc/windows/GUIWindowPointer.cpp
-+++ b/xbmc/windows/GUIWindowPointer.cpp
-@@ -7,10 +7,9 @@
-  */
- 
- #include "GUIWindowPointer.h"
--
--#include "ServiceBroker.h"
--#include "input/InputManager.h"
- #include "input/mouse/MouseStat.h"
-+#include "input/InputManager.h"
-+#include "ServiceBroker.h"
- #include "windowing/WinSystem.h"
- 
- #define ID_POINTER 10
-diff --git a/xbmc/windows/GUIWindowScreensaver.cpp b/xbmc/windows/GUIWindowScreensaver.cpp
-index 2cacf1d8c9..a49f4a7316 100644
---- a/xbmc/windows/GUIWindowScreensaver.cpp
-+++ b/xbmc/windows/GUIWindowScreensaver.cpp
-@@ -7,9 +7,8 @@
-  */
- 
- #include "GUIWindowScreensaver.h"
--
--#include "Application.h"
- #include "GUIPassword.h"
-+#include "Application.h"
- #include "GUIUserMessages.h"
- #include "ServiceBroker.h"
- #include "addons/ScreenSaver.h"
-diff --git a/xbmc/windows/GUIWindowScreensaverDim.cpp b/xbmc/windows/GUIWindowScreensaverDim.cpp
-index dad22d8aad..4e16cf2c5b 100644
---- a/xbmc/windows/GUIWindowScreensaverDim.cpp
-+++ b/xbmc/windows/GUIWindowScreensaverDim.cpp
-@@ -11,9 +11,9 @@
- #include "Application.h"
- #include "ServiceBroker.h"
- #include "addons/binary-addons/AddonDll.h"
--#include "guilib/GUITexture.h"
- #include "utils/Color.h"
- #include "windowing/GraphicContext.h"
-+#include "guilib/GUITexture.h"
- 
- CGUIWindowScreensaverDim::CGUIWindowScreensaverDim(void)
-   : CGUIDialog(WINDOW_SCREENSAVER_DIM, "", DialogModalityType::MODELESS)
 -- 
 2.16.4
 
