@@ -1770,7 +1770,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/windowing/windows/VideoSyncD3D.h              |  2 +-
  xbmc/windowing/windows/Win32DPMSSupport.cpp        |  2 +-
  xbmc/windowing/windows/WinEventsWin32.h            |  2 +-
- xbmc/windowing/windows/WinKeyMap.h                 |  4 +-
  xbmc/windowing/windows/WinSystemWin32.h            |  1 -
  xbmc/windows/GUIWindowHome.cpp                     | 19 +++----
  xbmc/windows/GUIWindowLoginScreen.cpp              |  1 -
@@ -36359,39 +36358,6 @@ index 99adc10a3d..ef164eab1f 100644
  #include "utils/log.h"
  #include "windowing/GraphicContext.h"
  #include "windowing/windows/WinSystemWin32.h"
-diff --git a/xbmc/windowing/windows/WinEventsWin32.h b/xbmc/windowing/windows/WinEventsWin32.h
-index 466c755801..4faa7c659e 100644
---- a/xbmc/windowing/windows/WinEventsWin32.h
-+++ b/xbmc/windowing/windows/WinEventsWin32.h
-@@ -8,8 +8,8 @@
- 
- #pragma once
- 
--#include "input/touch/TouchTypes.h"
- #include "windowing/WinEvents.h"
-+#include "input/touch/TouchTypes.h"
- 
- class CGenericTouchSwipeDetector;
- 
-diff --git a/xbmc/windowing/windows/WinKeyMap.h b/xbmc/windowing/windows/WinKeyMap.h
-index a732085fc8..d003643bb8 100644
---- a/xbmc/windowing/windows/WinKeyMap.h
-+++ b/xbmc/windowing/windows/WinKeyMap.h
-@@ -8,12 +8,12 @@
- 
- #pragma once
- 
--#include "ServiceBroker.h"
--#include "Util.h"
- #include "input/XBMC_keysym.h"
- #include "input/XBMC_vkeys.h"
-+#include "ServiceBroker.h"
- #include "settings/AdvancedSettings.h"
- #include "settings/SettingsComponent.h"
-+#include "Util.h"
- 
- namespace KODI
- {
 -- 
 2.16.4
 
