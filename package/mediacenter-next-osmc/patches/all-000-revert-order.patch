@@ -1774,7 +1774,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/windowing/windows/WinSystemWin32.cpp          | 17 +++---
  xbmc/windowing/windows/WinSystemWin32.h            |  1 -
  xbmc/windows/GUIWindowDebugInfo.cpp                | 21 ++++---
- xbmc/windows/GUIWindowFileManager.h                | 10 ++--
  xbmc/windows/GUIWindowHome.cpp                     | 19 +++----
  xbmc/windows/GUIWindowLoginScreen.cpp              |  1 -
  xbmc/windows/GUIWindowPointer.cpp                  |  5 +-
@@ -36496,31 +36495,6 @@ index b8bfeff8ae..fa7e28a2ab 100644
  
  CGUIWindowDebugInfo::CGUIWindowDebugInfo(void)
    : CGUIDialog(WINDOW_DEBUG_INFO, "", DialogModalityType::MODELESS)
-diff --git a/xbmc/windows/GUIWindowFileManager.h b/xbmc/windows/GUIWindowFileManager.h
-index 425e96eb8b..6357f33e3c 100644
---- a/xbmc/windows/GUIWindowFileManager.h
-+++ b/xbmc/windows/GUIWindowFileManager.h
-@@ -8,15 +8,15 @@
- 
- #pragma once
- 
--#include "filesystem/DirectoryHistory.h"
--#include "filesystem/VirtualDirectory.h"
--#include "guilib/GUIWindow.h"
--#include "utils/JobManager.h"
--
- #include <atomic>
- #include <string>
- #include <vector>
- 
-+#include "guilib/GUIWindow.h"
-+#include "filesystem/VirtualDirectory.h"
-+#include "filesystem/DirectoryHistory.h"
-+#include "utils/JobManager.h"
-+
- class CFileItem;
- class CFileItemList;
- class CGUIDialogProgress;
 -- 
 2.16.4
 
