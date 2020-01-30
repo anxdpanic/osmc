@@ -1781,7 +1781,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/windows/GUIWindowScreensaver.cpp              |  3 +-
  xbmc/windows/GUIWindowScreensaverDim.cpp           |  2 +-
  xbmc/windows/GUIWindowSplash.cpp                   |  2 +-
- xbmc/windows/GUIWindowSplash.h                     |  4 +-
  xbmc/windows/GUIWindowStartup.cpp                  |  3 +-
  1836 files changed, 5132 insertions(+), 6304 deletions(-)
 
@@ -36617,40 +36616,6 @@ index dad22d8aad..4e16cf2c5b 100644
  
  CGUIWindowScreensaverDim::CGUIWindowScreensaverDim(void)
    : CGUIDialog(WINDOW_SCREENSAVER_DIM, "", DialogModalityType::MODELESS)
-diff --git a/xbmc/windows/GUIWindowSplash.cpp b/xbmc/windows/GUIWindowSplash.cpp
-index 2c61f7b722..a8415d8d52 100644
---- a/xbmc/windows/GUIWindowSplash.cpp
-+++ b/xbmc/windows/GUIWindowSplash.cpp
-@@ -8,11 +8,11 @@
- 
- #include "GUIWindowSplash.h"
- 
--#include "Util.h"
- #include "guilib/GUIImage.h"
- #include "guilib/GUIWindowManager.h"
- #include "settings/AdvancedSettings.h"
- #include "settings/SettingsComponent.h"
-+#include "Util.h"
- 
- CGUIWindowSplash::CGUIWindowSplash(void) : CGUIWindow(WINDOW_SPLASH, "")
- {
-diff --git a/xbmc/windows/GUIWindowSplash.h b/xbmc/windows/GUIWindowSplash.h
-index 85e34fab11..dd9b8ab979 100644
---- a/xbmc/windows/GUIWindowSplash.h
-+++ b/xbmc/windows/GUIWindowSplash.h
-@@ -8,10 +8,10 @@
- 
- #pragma once
- 
--#include "guilib/GUIWindow.h"
--
- #include <memory>
- 
-+#include "guilib/GUIWindow.h"
-+
- class CGUITextLayout;
- class CGUIImage;
- 
 -- 
 2.16.4
 
