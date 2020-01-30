@@ -1768,7 +1768,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/windowing/win10/WinSystemWin10DX.cpp          |  3 +-
  xbmc/windowing/windows/VideoSyncD3D.cpp            |  9 ++-
  xbmc/windowing/windows/VideoSyncD3D.h              |  2 +-
- xbmc/windowing/windows/Win32DPMSSupport.cpp        |  2 +-
  xbmc/windowing/windows/WinEventsWin32.h            |  2 +-
  xbmc/windowing/windows/WinSystemWin32.h            |  1 -
  xbmc/windows/GUIWindowHome.cpp                     | 19 +++----
@@ -36305,59 +36304,6 @@ index 723d258e46..2ac39b1d81 100644
  
  std::unique_ptr<CWinSystemBase> CWinSystemBase::CreateWinSystem()
  {
-diff --git a/xbmc/windowing/windows/VideoSyncD3D.cpp b/xbmc/windowing/windows/VideoSyncD3D.cpp
-index ebfc215a05..bbaea6432e 100644
---- a/xbmc/windowing/windows/VideoSyncD3D.cpp
-+++ b/xbmc/windowing/windows/VideoSyncD3D.cpp
-@@ -6,15 +6,14 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
--#include "VideoSyncD3D.h"
--
--#include "Utils/MathUtils.h"
-+#include "utils/log.h"
- #include "Utils/TimeUtils.h"
-+#include "Utils/MathUtils.h"
- #include "rendering/dx/DeviceResources.h"
- #include "rendering/dx/RenderContext.h"
--#include "utils/StringUtils.h"
--#include "utils/log.h"
-+#include "VideoSyncD3D.h"
- #include "windowing/GraphicContext.h"
-+#include "utils/StringUtils.h"
- 
- void CVideoSyncD3D::OnLostDisplay()
- {
-diff --git a/xbmc/windowing/windows/VideoSyncD3D.h b/xbmc/windowing/windows/VideoSyncD3D.h
-index dceb08994b..4bcdafc7d5 100644
---- a/xbmc/windowing/windows/VideoSyncD3D.h
-+++ b/xbmc/windowing/windows/VideoSyncD3D.h
-@@ -8,9 +8,9 @@
- 
- #pragma once
- 
-+#include "windowing/VideoSync.h"
- #include "guilib/DispResource.h"
- #include "threads/Event.h"
--#include "windowing/VideoSync.h"
- 
- class CVideoSyncD3D : public CVideoSync, IDispResource
- {
-diff --git a/xbmc/windowing/windows/Win32DPMSSupport.cpp b/xbmc/windowing/windows/Win32DPMSSupport.cpp
-index 99adc10a3d..ef164eab1f 100644
---- a/xbmc/windowing/windows/Win32DPMSSupport.cpp
-+++ b/xbmc/windowing/windows/Win32DPMSSupport.cpp
-@@ -8,8 +8,8 @@
- 
- #include "Win32DPMSSupport.h"
- 
--#include "ServiceBroker.h"
- #include "rendering/dx/RenderContext.h"
-+#include "ServiceBroker.h"
- #include "utils/log.h"
- #include "windowing/GraphicContext.h"
- #include "windowing/windows/WinSystemWin32.h"
 -- 
 2.16.4
 
