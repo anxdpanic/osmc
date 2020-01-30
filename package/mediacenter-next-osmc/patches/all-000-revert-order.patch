@@ -1346,7 +1346,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/platform/posix/filesystem/SMBDirectory.cpp    | 12 ++--
  xbmc/platform/posix/filesystem/SMBDirectory.h      |  4 +-
  xbmc/platform/posix/filesystem/SMBFile.cpp         | 14 ++---
- xbmc/platform/posix/filesystem/SMBFile.h           |  2 +-
  xbmc/platform/posix/network/NetworkLinux.h         |  5 +-
  xbmc/platform/posix/utils/FileHandle.h             |  4 +-
  xbmc/platform/posix/utils/Mmap.h                   |  4 +-
@@ -27705,20 +27704,6 @@ index c3aad33658..71e6ec5a6c 100644
  
  using namespace XFILE;
  
-diff --git a/xbmc/platform/posix/filesystem/SMBFile.h b/xbmc/platform/posix/filesystem/SMBFile.h
-index 469458908a..5ad942d28d 100644
---- a/xbmc/platform/posix/filesystem/SMBFile.h
-+++ b/xbmc/platform/posix/filesystem/SMBFile.h
-@@ -15,8 +15,8 @@
- //////////////////////////////////////////////////////////////////////
- 
- 
--#include "URL.h"
- #include "filesystem/IFile.h"
-+#include "URL.h"
- #include "threads/CriticalSection.h"
- 
- #define NT_STATUS_CONNECTION_REFUSED long(0xC0000000 | 0x0236)
 diff --git a/xbmc/platform/posix/network/NetworkLinux.h b/xbmc/platform/posix/network/NetworkLinux.h
 index e759c05d7a..13d87076ae 100644
 --- a/xbmc/platform/posix/network/NetworkLinux.h
