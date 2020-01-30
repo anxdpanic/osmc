@@ -1773,7 +1773,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/windowing/windows/WinKeyMap.h                 |  4 +-
  xbmc/windowing/windows/WinSystemWin32.cpp          | 17 +++---
  xbmc/windowing/windows/WinSystemWin32.h            |  1 -
- xbmc/windows/GUIWindowDebugInfo.cpp                | 21 ++++---
  xbmc/windows/GUIWindowHome.cpp                     | 19 +++----
  xbmc/windows/GUIWindowLoginScreen.cpp              |  1 -
  xbmc/windows/GUIWindowPointer.cpp                  |  5 +-
@@ -36442,59 +36441,6 @@ index 9c44f46d5e..0486780a47 100644
  #include <tpcshrd.h>
  
  CWinSystemWin32::CWinSystemWin32()
-diff --git a/xbmc/windowing/windows/WinSystemWin32.h b/xbmc/windowing/windows/WinSystemWin32.h
-index b5c8cef4ac..39c218248d 100644
---- a/xbmc/windowing/windows/WinSystemWin32.h
-+++ b/xbmc/windowing/windows/WinSystemWin32.h
-@@ -12,7 +12,6 @@
- #include "threads/CriticalSection.h"
- #include "threads/SystemClock.h"
- #include "windowing/WinSystem.h"
--
- #include <vector>
- 
- static const DWORD WINDOWED_STYLE = WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN;
-diff --git a/xbmc/windows/GUIWindowDebugInfo.cpp b/xbmc/windows/GUIWindowDebugInfo.cpp
-index b8bfeff8ae..fa7e28a2ab 100644
---- a/xbmc/windows/GUIWindowDebugInfo.cpp
-+++ b/xbmc/windows/GUIWindowDebugInfo.cpp
-@@ -7,26 +7,25 @@
-  */
- 
- #include "GUIWindowDebugInfo.h"
--
--#include "CompileInfo.h"
--#include "GUIInfoManager.h"
--#include "ServiceBroker.h"
-+#include "settings/AdvancedSettings.h"
-+#include "settings/SettingsComponent.h"
- #include "addons/Skin.h"
-+#include "utils/CPUInfo.h"
-+#include "utils/log.h"
-+#include "CompileInfo.h"
- #include "filesystem/SpecialProtocol.h"
-+#include "input/WindowTranslator.h"
- #include "guilib/GUIComponent.h"
- #include "guilib/GUIControlFactory.h"
--#include "guilib/GUIControlProfiler.h"
- #include "guilib/GUIFontManager.h"
- #include "guilib/GUITextLayout.h"
- #include "guilib/GUIWindowManager.h"
--#include "input/WindowTranslator.h"
--#include "settings/AdvancedSettings.h"
--#include "settings/SettingsComponent.h"
--#include "utils/CPUInfo.h"
-+#include "guilib/GUIControlProfiler.h"
-+#include "GUIInfoManager.h"
-+#include "ServiceBroker.h"
- #include "utils/MemUtils.h"
--#include "utils/StringUtils.h"
- #include "utils/Variant.h"
--#include "utils/log.h"
-+#include "utils/StringUtils.h"
- 
- CGUIWindowDebugInfo::CGUIWindowDebugInfo(void)
-   : CGUIDialog(WINDOW_DEBUG_INFO, "", DialogModalityType::MODELESS)
 -- 
 2.16.4
 
