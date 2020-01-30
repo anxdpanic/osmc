@@ -1,0 +1,2013 @@
+From c67ca2c8fccb6c75ee098412960a887a21221242 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Tue, 21 Jan 2020 19:13:39 -0800
+Subject: [PATCH] [posix] network: split into platform specific files
+
+---
+ cmake/scripts/android/ArchSetup.cmake         |   2 +-
+ cmake/scripts/freebsd/ArchSetup.cmake         |   2 +-
+ cmake/scripts/linux/ArchSetup.cmake           |   2 +-
+ cmake/scripts/osx/ArchSetup.cmake             |   2 +-
+ cmake/treedata/freebsd/subdirs.txt            |   2 +-
+ cmake/treedata/optional/common/avahi.txt      |   1 +
+ cmake/treedata/osx/subdirs.txt                |   1 +
+ xbmc/network/Network.h                        |   4 +-
+ xbmc/network/Zeroconf.cpp                     |   2 +-
+ xbmc/network/ZeroconfBrowser.cpp              |   2 +-
+ .../darwin/osx/network/CMakeLists.txt         |   4 +
+ .../darwin/osx/network/NetworkOsx.cpp         | 234 +++++++
+ xbmc/platform/darwin/osx/network/NetworkOsx.h |  42 ++
+ xbmc/platform/freebsd/network/CMakeLists.txt  |   4 +
+ .../freebsd/network/NetworkFreebsd.cpp        | 248 ++++++++
+ .../platform/freebsd/network/NetworkFreebsd.h |  42 ++
+ xbmc/platform/linux/network/CMakeLists.txt    |  10 +-
+ xbmc/platform/linux/network/NetworkLinux.cpp  | 217 +++++++
+ xbmc/platform/linux/network/NetworkLinux.h    |  42 ++
+ .../linux/network/zeroconf/CMakeLists.txt     |   8 +
+ .../network/{ => zeroconf}/ZeroconfAvahi.cpp  |   0
+ .../network/{ => zeroconf}/ZeroconfAvahi.h    |   0
+ .../{ => zeroconf}/ZeroconfBrowserAvahi.cpp   |   0
+ .../{ => zeroconf}/ZeroconfBrowserAvahi.h     |   0
+ xbmc/platform/posix/network/CMakeLists.txt    |   4 +-
+ xbmc/platform/posix/network/NetworkLinux.cpp  | 584 ------------------
+ xbmc/platform/posix/network/NetworkLinux.h    |  71 ---
+ xbmc/platform/posix/network/NetworkPosix.cpp  | 148 +++++
+ xbmc/platform/posix/network/NetworkPosix.h    |  69 +++
+ 29 files changed, 1074 insertions(+), 673 deletions(-)
+ create mode 100644 cmake/treedata/optional/common/avahi.txt
+ create mode 100644 xbmc/platform/darwin/osx/network/CMakeLists.txt
+ create mode 100644 xbmc/platform/darwin/osx/network/NetworkOsx.cpp
+ create mode 100644 xbmc/platform/darwin/osx/network/NetworkOsx.h
+ create mode 100644 xbmc/platform/freebsd/network/CMakeLists.txt
+ create mode 100644 xbmc/platform/freebsd/network/NetworkFreebsd.cpp
+ create mode 100644 xbmc/platform/freebsd/network/NetworkFreebsd.h
+ create mode 100644 xbmc/platform/linux/network/NetworkLinux.cpp
+ create mode 100644 xbmc/platform/linux/network/NetworkLinux.h
+ create mode 100644 xbmc/platform/linux/network/zeroconf/CMakeLists.txt
+ rename xbmc/platform/linux/network/{ => zeroconf}/ZeroconfAvahi.cpp (100%)
+ rename xbmc/platform/linux/network/{ => zeroconf}/ZeroconfAvahi.h (100%)
+ rename xbmc/platform/linux/network/{ => zeroconf}/ZeroconfBrowserAvahi.cpp (100%)
+ rename xbmc/platform/linux/network/{ => zeroconf}/ZeroconfBrowserAvahi.h (100%)
+ delete mode 100644 xbmc/platform/posix/network/NetworkLinux.cpp
+ delete mode 100644 xbmc/platform/posix/network/NetworkLinux.h
+ create mode 100644 xbmc/platform/posix/network/NetworkPosix.cpp
+ create mode 100644 xbmc/platform/posix/network/NetworkPosix.h
+
+diff --git a/cmake/scripts/android/ArchSetup.cmake b/cmake/scripts/android/ArchSetup.cmake
+index f092409ce9b4..f18db6c0d5bf 100644
+--- a/cmake/scripts/android/ArchSetup.cmake
++++ b/cmake/scripts/android/ArchSetup.cmake
+@@ -33,7 +33,7 @@ else()
+ endif()
+ 
+ # Additional SYSTEM_DEFINES
+-list(APPEND SYSTEM_DEFINES -DHAS_ZEROCONF -DHAS_LINUX_NETWORK)
++list(APPEND SYSTEM_DEFINES -DHAS_ZEROCONF)
+ 
+ set(ENABLE_X11 OFF CACHE BOOL "" FORCE)
+ set(ENABLE_OPTICAL OFF CACHE BOOL "" FORCE)
+diff --git a/cmake/scripts/freebsd/ArchSetup.cmake b/cmake/scripts/freebsd/ArchSetup.cmake
+index 46021ece7d38..7da6c51d975d 100644
+--- a/cmake/scripts/freebsd/ArchSetup.cmake
++++ b/cmake/scripts/freebsd/ArchSetup.cmake
+@@ -31,4 +31,4 @@ if(NOT ENABLE_ALSA)
+ endif()
+ 
+ # Additional SYSTEM_DEFINES
+-list(APPEND SYSTEM_DEFINES -DHAS_LINUX_NETWORK)
++list(APPEND SYSTEM_DEFINES -DHAS_POSIX_NETWORK -DHAS_FREEBSD_NETWORK)
+diff --git a/cmake/scripts/linux/ArchSetup.cmake b/cmake/scripts/linux/ArchSetup.cmake
+index 35b5379da531..353a84e39354 100644
+--- a/cmake/scripts/linux/ArchSetup.cmake
++++ b/cmake/scripts/linux/ArchSetup.cmake
+@@ -97,7 +97,7 @@ if(HAVE_MKOSTEMP)
+ endif()
+ 
+ # Additional SYSTEM_DEFINES
+-list(APPEND SYSTEM_DEFINES -DHAS_LINUX_NETWORK)
++list(APPEND SYSTEM_DEFINES -DHAS_POSIX_NETWORK -DHAS_LINUX_NETWORK)
+ 
+ # Code Coverage
+ if(CMAKE_BUILD_TYPE STREQUAL Coverage)
+diff --git a/cmake/scripts/osx/ArchSetup.cmake b/cmake/scripts/osx/ArchSetup.cmake
+index f7ab9196bf3c..20396f709b5a 100644
+--- a/cmake/scripts/osx/ArchSetup.cmake
++++ b/cmake/scripts/osx/ArchSetup.cmake
+@@ -24,7 +24,7 @@ else()
+ endif()
+ 
+ # Additional SYSTEM_DEFINES
+-list(APPEND SYSTEM_DEFINES -DHAS_LINUX_NETWORK -DHAS_SDL -DHAS_ZEROCONF)
++list(APPEND SYSTEM_DEFINES -DHAS_POSIX_NETWORK -DHAS_OSX_NETWORK -DHAS_SDL -DHAS_ZEROCONF)
+ 
+ list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${NATIVEPREFIX})
+ 
+diff --git a/cmake/treedata/freebsd/subdirs.txt b/cmake/treedata/freebsd/subdirs.txt
+index e10d348d7497..79e3462cf44f 100644
+--- a/cmake/treedata/freebsd/subdirs.txt
++++ b/cmake/treedata/freebsd/subdirs.txt
+@@ -3,8 +3,8 @@ xbmc/cores/VideoPlayer/Process/rbpi cores/VideoPlayer/Process/rbpi
+ xbmc/input/touch                    input/touch
+ xbmc/input/touch/generic            input/touch/generic
+ xbmc/platform/freebsd               platform/freebsd
++xbmc/platform/freebsd/network       platform/freebsd/network
+ xbmc/platform/linux/input           platform/linux/input
+-xbmc/platform/linux/network         platform/linux/network
+ xbmc/platform/linux/peripherals     platform/linux/peripherals
+ xbmc/platform/linux/powermanagement platform/linux/powermanagement
+ xbmc/platform/linux/sse4            platform/linux/sse4
+diff --git a/cmake/treedata/optional/common/avahi.txt b/cmake/treedata/optional/common/avahi.txt
+new file mode 100644
+index 000000000000..41b82b993b4e
+--- /dev/null
++++ b/cmake/treedata/optional/common/avahi.txt
+@@ -0,0 +1 @@
++xbmc/platform/linux/network/zeroconf platform/linux/network/zeroconf # AVAHI
+diff --git a/cmake/treedata/osx/subdirs.txt b/cmake/treedata/osx/subdirs.txt
+index f53a6e1d49ff..f4785abbf158 100644
+--- a/cmake/treedata/osx/subdirs.txt
++++ b/cmake/treedata/osx/subdirs.txt
+@@ -3,6 +3,7 @@ xbmc/cores/VideoPlayer/Process/osx    cores/VideoPlayer/Process/osx
+ xbmc/platform/darwin                  platform/darwin
+ xbmc/platform/darwin/network          platform/darwin/network
+ xbmc/platform/darwin/osx              platform/osx
++xbmc/platform/darwin/osx/network      platform/darwin/osx/network
+ xbmc/platform/darwin/osx/peripherals  platform/osx/peripherals
+ xbmc/platform/darwin/osx/powermanagement platform/darwin/osx/powermanagement
+ xbmc/platform/darwin/osx/storage      platform/osx/storage
+diff --git a/xbmc/network/Network.h b/xbmc/network/Network.h
+index 0bdb157f35e3..fd8a18e82582 100644
+--- a/xbmc/network/Network.h
++++ b/xbmc/network/Network.h
+@@ -114,8 +114,8 @@ class CNetworkBase
+ 
+ #if defined(TARGET_ANDROID)
+ #include "platform/android/network/NetworkAndroid.h"
+-#elif defined(HAS_LINUX_NETWORK)
+-#include "platform/posix/network/NetworkLinux.h"
++#elif defined(HAS_POSIX_NETWORK)
++#include "platform/posix/network/NetworkPosix.h"
+ #elif defined(HAS_WIN32_NETWORK)
+ #include "platform/win32/network/NetworkWin32.h"
+ #elif defined(HAS_WIN10_NETWORK)
+diff --git a/xbmc/network/Zeroconf.cpp b/xbmc/network/Zeroconf.cpp
+index 79c145d75341..775da859ed25 100644
+--- a/xbmc/network/Zeroconf.cpp
++++ b/xbmc/network/Zeroconf.cpp
+@@ -18,7 +18,7 @@
+ #include "utils/JobManager.h"
+ 
+ #if defined(HAS_AVAHI)
+-#include "platform/linux/network/ZeroconfAvahi.h"
++#include "platform/linux/network/zeroconf/ZeroconfAvahi.h"
+ #elif defined(TARGET_DARWIN)
+ //on osx use the native implementation
+ #include "platform/darwin/network/ZeroconfDarwin.h"
+diff --git a/xbmc/network/ZeroconfBrowser.cpp b/xbmc/network/ZeroconfBrowser.cpp
+index 029330889be9..480b3bc9e651 100644
+--- a/xbmc/network/ZeroconfBrowser.cpp
++++ b/xbmc/network/ZeroconfBrowser.cpp
+@@ -11,7 +11,7 @@
+ #include <cassert>
+ 
+ #if defined (HAS_AVAHI)
+-#include "platform/linux/network/ZeroconfBrowserAvahi.h"
++#include "platform/linux/network/zeroconf/ZeroconfBrowserAvahi.h"
+ #elif defined(TARGET_DARWIN)
+ //on osx use the native implementation
+ #include "platform/darwin/network/ZeroconfBrowserDarwin.h"
+diff --git a/xbmc/platform/darwin/osx/network/CMakeLists.txt b/xbmc/platform/darwin/osx/network/CMakeLists.txt
+new file mode 100644
+index 000000000000..c6686b30d84c
+--- /dev/null
++++ b/xbmc/platform/darwin/osx/network/CMakeLists.txt
+@@ -0,0 +1,4 @@
++set(SOURCES NetworkOsx.cpp)
++set(HEADERS NetworkOsx.h)
++
++core_add_library(platform_osx_network)
+diff --git a/xbmc/platform/darwin/osx/network/NetworkOsx.cpp b/xbmc/platform/darwin/osx/network/NetworkOsx.cpp
+new file mode 100644
+index 000000000000..a25748149cec
+--- /dev/null
++++ b/xbmc/platform/darwin/osx/network/NetworkOsx.cpp
+@@ -0,0 +1,234 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#include "NetworkOsx.h"
++
++#include "utils/StringUtils.h"
++#include "utils/log.h"
++
++#include <errno.h>
++
++#include <arpa/inet.h>
++#include <ifaddrs.h>
++#include <net/if.h>
++#include <net/if_dl.h>
++#include <net/if_types.h>
++#include <net/route.h>
++#include <netinet/if_ether.h>
++#include <sys/sockio.h>
++
++#define ARRAY_SIZE(X) (sizeof(X) / sizeof((X)[0]))
++
++CNetworkInterfaceOsx::CNetworkInterfaceOsx(CNetworkPosix* network,
++                                           std::string interfaceName,
++                                           char interfaceMacAddrRaw[6])
++  : CNetworkInterfacePosix(network, interfaceName, interfaceMacAddrRaw)
++{
++}
++
++std::string CNetworkInterfaceOsx::GetCurrentDefaultGateway() const
++{
++  std::string result;
++
++  FILE* pipe = popen("echo \"show State:/Network/Global/IPv4\" | scutil | grep Router", "r");
++  usleep(100000);
++  if (pipe)
++  {
++    std::string tmpStr;
++    char buffer[256] = {'\0'};
++    if (fread(buffer, sizeof(char), sizeof(buffer), pipe) > 0 && !ferror(pipe))
++    {
++      tmpStr = buffer;
++      if (tmpStr.length() >= 11)
++        result = tmpStr.substr(11);
++    }
++    pclose(pipe);
++  }
++  if (result.empty())
++    CLog::Log(LOGWARNING, "Unable to determine gateway");
++
++  return result;
++}
++
++bool CNetworkInterfaceOsx::GetHostMacAddress(unsigned long host_ip, std::string& mac) const
++{
++  bool ret = false;
++  size_t needed;
++  char *buf, *next;
++  struct rt_msghdr* rtm;
++  struct sockaddr_inarp* sin;
++  struct sockaddr_dl* sdl;
++  int mib[6];
++
++  mac = "";
++
++  mib[0] = CTL_NET;
++  mib[1] = PF_ROUTE;
++  mib[2] = 0;
++  mib[3] = AF_INET;
++  mib[4] = NET_RT_FLAGS;
++  mib[5] = RTF_LLINFO;
++
++  if (sysctl(mib, ARRAY_SIZE(mib), NULL, &needed, NULL, 0) == 0)
++  {
++    buf = (char*)malloc(needed);
++    if (buf)
++    {
++      if (sysctl(mib, ARRAY_SIZE(mib), buf, &needed, NULL, 0) == 0)
++      {
++        for (next = buf; next < buf + needed; next += rtm->rtm_msglen)
++        {
++
++          rtm = (struct rt_msghdr*)next;
++          sin = (struct sockaddr_inarp*)(rtm + 1);
++          sdl = (struct sockaddr_dl*)(sin + 1);
++
++          if (host_ip != sin->sin_addr.s_addr || sdl->sdl_alen < 6)
++            continue;
++
++          u_char* cp = (u_char*)LLADDR(sdl);
++
++          mac = StringUtils::Format("%02X:%02X:%02X:%02X:%02X:%02X", cp[0], cp[1], cp[2], cp[3],
++                                    cp[4], cp[5]);
++          ret = true;
++          break;
++        }
++      }
++      free(buf);
++    }
++  }
++  return ret;
++}
++
++CNetworkOsx::CNetworkOsx() : CNetworkPosix()
++{
++  queryInterfaceList();
++}
++
++
++void CNetworkOsx::GetMacAddress(const std::string& interfaceName, char rawMac[6])
++{
++  memset(rawMac, 0, 6);
++
++#if !defined(IFT_ETHER)
++#define IFT_ETHER 0x6 /* Ethernet CSMACD */
++#endif
++  const struct sockaddr_dl* dlAddr = NULL;
++  const uint8_t* base = NULL;
++  // Query the list of interfaces.
++  struct ifaddrs* list;
++  struct ifaddrs* interface;
++
++  if (getifaddrs(&list) < 0)
++  {
++    return;
++  }
++
++  for (interface = list; interface != NULL; interface = interface->ifa_next)
++  {
++    if (interfaceName == interface->ifa_name)
++    {
++      if ((interface->ifa_addr->sa_family == AF_LINK) &&
++          (((const struct sockaddr_dl*)interface->ifa_addr)->sdl_type == IFT_ETHER))
++      {
++        dlAddr = (const struct sockaddr_dl*)interface->ifa_addr;
++        base = (const uint8_t*)&dlAddr->sdl_data[dlAddr->sdl_nlen];
++
++        if (dlAddr->sdl_alen > 5)
++        {
++          memcpy(rawMac, base, 6);
++        }
++      }
++      break;
++    }
++  }
++
++  freeifaddrs(list);
++}
++
++void CNetworkOsx::queryInterfaceList()
++{
++  char macAddrRaw[6];
++  m_interfaces.clear();
++
++  // Query the list of interfaces.
++  struct ifaddrs* list;
++  if (getifaddrs(&list) < 0)
++    return;
++
++  struct ifaddrs* cur;
++  for (cur = list; cur != NULL; cur = cur->ifa_next)
++  {
++    if (cur->ifa_addr->sa_family != AF_INET)
++      continue;
++
++    GetMacAddress(cur->ifa_name, macAddrRaw);
++
++    // only add interfaces with non-zero mac addresses
++    if (macAddrRaw[0] || macAddrRaw[1] || macAddrRaw[2] || macAddrRaw[3] || macAddrRaw[4] ||
++        macAddrRaw[5])
++      // Add the interface.
++      m_interfaces.push_back(new CNetworkInterfaceOsx(this, cur->ifa_name, macAddrRaw));
++  }
++
++  freeifaddrs(list);
++}
++
++std::vector<std::string> CNetworkOsx::GetNameServers()
++{
++  std::vector<std::string> result;
++
++  FILE* pipe = popen("scutil --dns | grep \"nameserver\" | tail -n2", "r");
++  usleep(100000);
++  if (pipe)
++  {
++    std::vector<std::string> tmpStr;
++    char buffer[256] = {'\0'};
++    if (fread(buffer, sizeof(char), sizeof(buffer), pipe) > 0 && !ferror(pipe))
++    {
++      tmpStr = StringUtils::Split(buffer, "\n");
++      for (unsigned int i = 0; i < tmpStr.size(); i++)
++      {
++        // result looks like this - > '  nameserver[0] : 192.168.1.1'
++        // 2 blank spaces + 13 in 'nameserver[0]' + blank + ':' + blank == 18 :)
++        if (tmpStr[i].length() >= 18)
++          result.push_back(tmpStr[i].substr(18));
++      }
++    }
++    pclose(pipe);
++  }
++  if (result.empty())
++    CLog::Log(LOGWARNING, "Unable to determine nameserver");
++
++  return result;
++}
++
++bool CNetworkOsx::PingHost(unsigned long remote_ip, unsigned int timeout_ms)
++{
++  char cmd_line[64];
++
++  struct in_addr host_ip;
++  host_ip.s_addr = remote_ip;
++
++  sprintf(cmd_line, "ping -c 1 -t %d %s", timeout_ms / 1000 + (timeout_ms % 1000) != 0,
++          inet_ntoa(host_ip));
++
++  int status = -1;
++  status = system(cmd_line);
++  int result = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
++
++  // http://linux.about.com/od/commands/l/blcmdl8_ping.htm ;
++  // 0 reply
++  // 1 no reply
++  // else some error
++
++  if (result < 0 || result > 1)
++    CLog::Log(LOGERROR, "Ping fail : status = %d, errno = %d : '%s'", status, errno, cmd_line);
++
++  return result == 0;
++}
+diff --git a/xbmc/platform/darwin/osx/network/NetworkOsx.h b/xbmc/platform/darwin/osx/network/NetworkOsx.h
+new file mode 100644
+index 000000000000..96a03789619f
+--- /dev/null
++++ b/xbmc/platform/darwin/osx/network/NetworkOsx.h
+@@ -0,0 +1,42 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#pragma once
++
++#include "platform/posix/network/NetworkPosix.h"
++
++#include <string>
++#include <vector>
++
++class CNetworkInterfaceOsx : public CNetworkInterfacePosix
++{
++public:
++  CNetworkInterfaceOsx(CNetworkPosix* network,
++                       std::string interfaceName,
++                       char interfaceMacAddrRaw[6]);
++  ~CNetworkInterfaceOsx() override = default;
++
++  std::string GetCurrentDefaultGateway() const override;
++  bool GetHostMacAddress(unsigned long host, std::string& mac) const override;
++};
++
++class CNetworkOsx : public CNetworkPosix
++{
++public:
++  CNetworkOsx();
++  ~CNetworkOsx() override = default;
++
++  bool PingHost(unsigned long host, unsigned int timeout_ms = 2000) override;
++  std::vector<std::string> GetNameServers() override;
++
++private:
++  void GetMacAddress(const std::string& interfaceName, char macAddrRaw[6]) override;
++  void queryInterfaceList() override;
++};
++
++using CNetwork = CNetworkOsx;
+diff --git a/xbmc/platform/freebsd/network/CMakeLists.txt b/xbmc/platform/freebsd/network/CMakeLists.txt
+new file mode 100644
+index 000000000000..25d8ee87c903
+--- /dev/null
++++ b/xbmc/platform/freebsd/network/CMakeLists.txt
+@@ -0,0 +1,4 @@
++set(SOURCES NetworkFreebsd.cpp)
++set(HEADERS NetworkFreebsd.h)
++
++core_add_library(platform_freebsd_network)
+diff --git a/xbmc/platform/freebsd/network/NetworkFreebsd.cpp b/xbmc/platform/freebsd/network/NetworkFreebsd.cpp
+new file mode 100644
+index 000000000000..c2a533b5bdbb
+--- /dev/null
++++ b/xbmc/platform/freebsd/network/NetworkFreebsd.cpp
+@@ -0,0 +1,248 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#include "NetworkFreebsd.h"
++
++#include "utils/StringUtils.h"
++#include "utils/log.h"
++
++#include <errno.h>
++
++#include <arpa/inet.h>
++#include <ifaddrs.h>
++#include <net/if.h>
++#include <net/if_arp.h>
++#include <net/if_dl.h>
++#include <net/route.h>
++#include <netinet/if_ether.h>
++#include <netinet/in.h>
++#include <resolv.h>
++#include <sys/sockio.h>
++#include <sys/wait.h>
++
++#define ARRAY_SIZE(X) (sizeof(X) / sizeof((X)[0]))
++
++CNetworkInterfaceFreebsd::CNetworkInterfaceFreebsd(CNetworkPosix* network,
++                                                   std::string interfaceName,
++                                                   char interfaceMacAddrRaw[6])
++  : CNetworkInterfacePosix(network, interfaceName, interfaceMacAddrRaw)
++{
++}
++
++std::string CNetworkInterfaceFreebsd::GetCurrentDefaultGateway() const
++{
++  std::string result;
++
++  size_t needed;
++  int mib[6];
++  char *buf, *next, *lim;
++  char line[16];
++  struct rt_msghdr* rtm;
++  struct sockaddr* sa;
++  struct sockaddr_in* sockin;
++
++  mib[0] = CTL_NET;
++  mib[1] = PF_ROUTE;
++  mib[2] = 0;
++  mib[3] = 0;
++  mib[4] = NET_RT_DUMP;
++  mib[5] = 0;
++  if (sysctl(mib, 6, NULL, &needed, NULL, 0) < 0)
++    return result;
++
++  if ((buf = (char*)malloc(needed)) == NULL)
++    return result;
++
++  if (sysctl(mib, 6, buf, &needed, NULL, 0) < 0)
++  {
++    free(buf);
++    return result;
++  }
++
++  lim = buf + needed;
++  for (next = buf; next < lim; next += rtm->rtm_msglen)
++  {
++    rtm = (struct rt_msghdr*)next;
++    sa = (struct sockaddr*)(rtm + 1);
++    sa = (struct sockaddr*)(SA_SIZE(sa) + (char*)sa);
++    sockin = (struct sockaddr_in*)sa;
++    if (inet_ntop(AF_INET, &sockin->sin_addr.s_addr, line, sizeof(line)) == NULL)
++    {
++      free(buf);
++      return result;
++    }
++    result = line;
++    break;
++  }
++  free(buf);
++
++  return result;
++}
++
++bool CNetworkInterfaceFreebsd::GetHostMacAddress(unsigned long host_ip, std::string& mac) const
++{
++  bool ret = false;
++  size_t needed;
++  char *buf, *next;
++  struct rt_msghdr* rtm;
++  struct sockaddr_inarp* sin;
++  struct sockaddr_dl* sdl;
++  int mib[6];
++
++  mac = "";
++
++  mib[0] = CTL_NET;
++  mib[1] = PF_ROUTE;
++  mib[2] = 0;
++  mib[3] = AF_INET;
++  mib[4] = NET_RT_FLAGS;
++  mib[5] = RTF_LLINFO;
++
++  if (sysctl(mib, ARRAY_SIZE(mib), NULL, &needed, NULL, 0) == 0)
++  {
++    buf = (char*)malloc(needed);
++    if (buf)
++    {
++      if (sysctl(mib, ARRAY_SIZE(mib), buf, &needed, NULL, 0) == 0)
++      {
++        for (next = buf; next < buf + needed; next += rtm->rtm_msglen)
++        {
++
++          rtm = (struct rt_msghdr*)next;
++          sin = (struct sockaddr_inarp*)(rtm + 1);
++          sdl = (struct sockaddr_dl*)(sin + 1);
++
++          if (host_ip != sin->sin_addr.s_addr || sdl->sdl_alen < 6)
++            continue;
++
++          u_char* cp = (u_char*)LLADDR(sdl);
++
++          mac = StringUtils::Format("%02X:%02X:%02X:%02X:%02X:%02X", cp[0], cp[1], cp[2], cp[3],
++                                    cp[4], cp[5]);
++          ret = true;
++          break;
++        }
++      }
++      free(buf);
++    }
++  }
++  return ret;
++}
++
++CNetworkFreebsd::CNetworkFreebsd() : CNetworkPosix()
++{
++  queryInterfaceList();
++}
++
++void CNetworkFreebsd::GetMacAddress(const std::string& interfaceName, char rawMac[6])
++{
++  memset(rawMac, 0, 6);
++
++#if !defined(IFT_ETHER)
++#define IFT_ETHER 0x6 /* Ethernet CSMACD */
++#endif
++  const struct sockaddr_dl* dlAddr = NULL;
++  const uint8_t* base = NULL;
++  // Query the list of interfaces.
++  struct ifaddrs* list;
++  struct ifaddrs* interface;
++
++  if (getifaddrs(&list) < 0)
++  {
++    return;
++  }
++
++  for (interface = list; interface != NULL; interface = interface->ifa_next)
++  {
++    if (interfaceName == interface->ifa_name)
++    {
++      if ((interface->ifa_addr->sa_family == AF_LINK) &&
++          (((const struct sockaddr_dl*)interface->ifa_addr)->sdl_type == IFT_ETHER))
++      {
++        dlAddr = (const struct sockaddr_dl*)interface->ifa_addr;
++        base = (const uint8_t*)&dlAddr->sdl_data[dlAddr->sdl_nlen];
++
++        if (dlAddr->sdl_alen > 5)
++        {
++          memcpy(rawMac, base, 6);
++        }
++      }
++      break;
++    }
++  }
++
++  freeifaddrs(list);
++}
++
++void CNetworkFreebsd::queryInterfaceList()
++{
++  char macAddrRaw[6];
++  m_interfaces.clear();
++
++  // Query the list of interfaces.
++  struct ifaddrs* list;
++  if (getifaddrs(&list) < 0)
++    return;
++
++  struct ifaddrs* cur;
++  for (cur = list; cur != NULL; cur = cur->ifa_next)
++  {
++    if (cur->ifa_addr->sa_family != AF_INET)
++      continue;
++
++    GetMacAddress(cur->ifa_name, macAddrRaw);
++
++    // only add interfaces with non-zero mac addresses
++    if (macAddrRaw[0] || macAddrRaw[1] || macAddrRaw[2] || macAddrRaw[3] || macAddrRaw[4] ||
++        macAddrRaw[5])
++      // Add the interface.
++      m_interfaces.push_back(new CNetworkInterfaceFreebsd(this, cur->ifa_name, macAddrRaw));
++  }
++
++  freeifaddrs(list);
++}
++
++std::vector<std::string> CNetworkFreebsd::GetNameServers()
++{
++  std::vector<std::string> result;
++
++  res_init();
++
++  for (int i = 0; i < _res.nscount; i++)
++  {
++    std::string ns = inet_ntoa(_res.nsaddr_list[i].sin_addr);
++    result.push_back(ns);
++  }
++
++  return result;
++}
++
++bool CNetworkFreebsd::PingHost(unsigned long remote_ip, unsigned int timeout_ms)
++{
++  char cmd_line[64];
++
++  struct in_addr host_ip;
++  host_ip.s_addr = remote_ip;
++
++  sprintf(cmd_line, "ping -c 1 -t %d %s", timeout_ms / 1000 + (timeout_ms % 1000) != 0,
++          inet_ntoa(host_ip));
++
++  int status = -1;
++  status = system(cmd_line);
++  int result = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
++
++  // http://linux.about.com/od/commands/l/blcmdl8_ping.htm ;
++  // 0 reply
++  // 1 no reply
++  // else some error
++
++  if (result < 0 || result > 1)
++    CLog::Log(LOGERROR, "Ping fail : status = %d, errno = %d : '%s'", status, errno, cmd_line);
++
++  return result == 0;
++}
+diff --git a/xbmc/platform/freebsd/network/NetworkFreebsd.h b/xbmc/platform/freebsd/network/NetworkFreebsd.h
+new file mode 100644
+index 000000000000..585d64e3d848
+--- /dev/null
++++ b/xbmc/platform/freebsd/network/NetworkFreebsd.h
+@@ -0,0 +1,42 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#pragma once
++
++#include "platform/posix/network/NetworkPosix.h"
++
++#include <string>
++#include <vector>
++
++class CNetworkInterfaceFreebsd : public CNetworkInterfacePosix
++{
++public:
++  CNetworkInterfaceFreebsd(CNetworkPosix* network,
++                           std::string interfaceName,
++                           char interfaceMacAddrRaw[6]);
++  ~CNetworkInterfaceFreebsd() override = default;
++
++  std::string GetCurrentDefaultGateway() const override;
++  bool GetHostMacAddress(unsigned long host, std::string& mac) const override;
++};
++
++class CNetworkFreebsd : public CNetworkPosix
++{
++public:
++  CNetworkFreebsd();
++  ~CNetworkFreebsd() override = default;
++
++  bool PingHost(unsigned long host, unsigned int timeout_ms = 2000) override;
++  std::vector<std::string> GetNameServers() override;
++
++private:
++  void GetMacAddress(const std::string& interfaceName, char macAddrRaw[6]) override;
++  void queryInterfaceList() override;
++};
++
++using CNetwork = CNetworkFreebsd;
+diff --git a/xbmc/platform/linux/network/CMakeLists.txt b/xbmc/platform/linux/network/CMakeLists.txt
+index 2920c3c0f450..44aa2e768976 100644
+--- a/xbmc/platform/linux/network/CMakeLists.txt
++++ b/xbmc/platform/linux/network/CMakeLists.txt
+@@ -1,8 +1,4 @@
+-if(AVAHI_FOUND)
+-  set(SOURCES ZeroconfAvahi.cpp
+-              ZeroconfBrowserAvahi.cpp)
+-  set(HEADERS ZeroconfAvahi.h
+-              ZeroconfBrowserAvahi.h)
++set(SOURCES NetworkLinux.cpp)
++set(HEADERS NetworkLinux.h)
+ 
+-  core_add_library(platform_linux_network)
+-endif()
++core_add_library(platform_linux_network)
+diff --git a/xbmc/platform/linux/network/NetworkLinux.cpp b/xbmc/platform/linux/network/NetworkLinux.cpp
+new file mode 100644
+index 000000000000..8da24ddcc8ab
+--- /dev/null
++++ b/xbmc/platform/linux/network/NetworkLinux.cpp
+@@ -0,0 +1,217 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#include "NetworkLinux.h"
++
++#include "utils/StringUtils.h"
++#include "utils/log.h"
++
++#include <errno.h>
++
++#include <arpa/inet.h>
++#include <net/if.h>
++#include <net/if_arp.h>
++#include <resolv.h>
++#include <sys/ioctl.h>
++
++CNetworkInterfaceLinux::CNetworkInterfaceLinux(CNetworkPosix* network,
++                                               std::string interfaceName,
++                                               char interfaceMacAddrRaw[6])
++  : CNetworkInterfacePosix(network, interfaceName, interfaceMacAddrRaw)
++{
++}
++
++std::string CNetworkInterfaceLinux::GetCurrentDefaultGateway() const
++{
++  std::string result;
++
++  FILE* fp = fopen("/proc/net/route", "r");
++  if (!fp)
++  {
++    // TBD: Error
++    return result;
++  }
++
++  char* line = NULL;
++  char iface[16];
++  char dst[128];
++  char gateway[128];
++  size_t linel = 0;
++  int n;
++  int linenum = 0;
++  while (getdelim(&line, &linel, '\n', fp) > 0)
++  {
++    // skip first two lines
++    if (linenum++ < 1)
++      continue;
++
++    // search where the word begins
++    n = sscanf(line, "%15s %127s %127s", iface, dst, gateway);
++
++    if (n < 3)
++      continue;
++
++    if (strcmp(iface, m_interfaceName.c_str()) == 0 && strcmp(dst, "00000000") == 0 &&
++        strcmp(gateway, "00000000") != 0)
++    {
++      unsigned char gatewayAddr[4];
++      int len = CNetworkBase::ParseHex(gateway, gatewayAddr);
++      if (len == 4)
++      {
++        struct in_addr in;
++        in.s_addr = (gatewayAddr[0] << 24) | (gatewayAddr[1] << 16) | (gatewayAddr[2] << 8) |
++                    (gatewayAddr[3]);
++        result = inet_ntoa(in);
++        break;
++      }
++    }
++  }
++  free(line);
++  fclose(fp);
++
++  return result;
++}
++
++bool CNetworkInterfaceLinux::GetHostMacAddress(unsigned long host_ip, std::string& mac) const
++{
++  struct arpreq areq;
++  struct sockaddr_in* sin;
++
++  memset(&areq, 0x0, sizeof(areq));
++
++  sin = (struct sockaddr_in*)&areq.arp_pa;
++  sin->sin_family = AF_INET;
++  sin->sin_addr.s_addr = host_ip;
++
++  sin = (struct sockaddr_in*)&areq.arp_ha;
++  sin->sin_family = ARPHRD_ETHER;
++
++  strncpy(areq.arp_dev, m_interfaceName.c_str(), sizeof(areq.arp_dev));
++  areq.arp_dev[sizeof(areq.arp_dev) - 1] = '\0';
++
++  int result = ioctl(m_network->GetSocket(), SIOCGARP, (caddr_t)&areq);
++
++  if (result != 0)
++  {
++    //  CLog::Log(LOGERROR, "%s - GetHostMacAddress/ioctl failed with errno (%d)", __FUNCTION__, errno);
++    return false;
++  }
++
++  struct sockaddr* res = &areq.arp_ha;
++  mac = StringUtils::Format("%02X:%02X:%02X:%02X:%02X:%02X", (uint8_t)res->sa_data[0],
++                            (uint8_t)res->sa_data[1], (uint8_t)res->sa_data[2],
++                            (uint8_t)res->sa_data[3], (uint8_t)res->sa_data[4],
++                            (uint8_t)res->sa_data[5]);
++
++  for (int i = 0; i < 6; ++i)
++    if (res->sa_data[i])
++      return true;
++
++  return false;
++}
++
++CNetworkLinux::CNetworkLinux() : CNetworkPosix()
++{
++  queryInterfaceList();
++}
++
++void CNetworkLinux::GetMacAddress(const std::string& interfaceName, char rawMac[6])
++{
++  memset(rawMac, 0, 6);
++
++  struct ifreq ifr;
++  strcpy(ifr.ifr_name, interfaceName.c_str());
++  if (ioctl(GetSocket(), SIOCGIFHWADDR, &ifr) >= 0)
++  {
++    memcpy(rawMac, ifr.ifr_hwaddr.sa_data, 6);
++  }
++}
++
++void CNetworkLinux::queryInterfaceList()
++{
++  char macAddrRaw[6];
++  m_interfaces.clear();
++
++  FILE* fp = fopen("/proc/net/dev", "r");
++  if (!fp)
++  {
++    // TBD: Error
++    return;
++  }
++
++  char* line = NULL;
++  size_t linel = 0;
++  int n;
++  char* p;
++  int linenum = 0;
++  while (getdelim(&line, &linel, '\n', fp) > 0)
++  {
++    // skip first two lines
++    if (linenum++ < 2)
++      continue;
++
++    // search where the word begins
++    p = line;
++    while (isspace(*p))
++      ++p;
++
++    // read word until :
++    n = strcspn(p, ": \t");
++    p[n] = 0;
++
++    // save the result
++    std::string interfaceName = p;
++    GetMacAddress(interfaceName, macAddrRaw);
++
++    // only add interfaces with non-zero mac addresses
++    if (macAddrRaw[0] || macAddrRaw[1] || macAddrRaw[2] || macAddrRaw[3] || macAddrRaw[4] ||
++        macAddrRaw[5])
++      m_interfaces.push_back(new CNetworkInterfaceLinux(this, interfaceName, macAddrRaw));
++  }
++  free(line);
++  fclose(fp);
++}
++
++std::vector<std::string> CNetworkLinux::GetNameServers()
++{
++  std::vector<std::string> result;
++
++  res_init();
++
++  for (int i = 0; i < _res.nscount; i++)
++  {
++    std::string ns = inet_ntoa(_res.nsaddr_list[i].sin_addr);
++    result.push_back(ns);
++  }
++  return result;
++}
++
++bool CNetworkLinux::PingHost(unsigned long remote_ip, unsigned int timeout_ms)
++{
++  char cmd_line[64];
++
++  struct in_addr host_ip;
++  host_ip.s_addr = remote_ip;
++
++  sprintf(cmd_line, "ping -c 1 -w %d %s", timeout_ms / 1000 + (timeout_ms % 1000) != 0,
++          inet_ntoa(host_ip));
++
++  int status = -1;
++  status = system(cmd_line);
++  int result = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
++
++  // http://linux.about.com/od/commands/l/blcmdl8_ping.htm ;
++  // 0 reply
++  // 1 no reply
++  // else some error
++
++  if (result < 0 || result > 1)
++    CLog::Log(LOGERROR, "Ping fail : status = %d, errno = %d : '%s'", status, errno, cmd_line);
++
++  return result == 0;
++}
+diff --git a/xbmc/platform/linux/network/NetworkLinux.h b/xbmc/platform/linux/network/NetworkLinux.h
+new file mode 100644
+index 000000000000..665174b3574f
+--- /dev/null
++++ b/xbmc/platform/linux/network/NetworkLinux.h
+@@ -0,0 +1,42 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#pragma once
++
++#include "platform/posix/network/NetworkPosix.h"
++
++#include <string>
++#include <vector>
++
++class CNetworkInterfaceLinux : public CNetworkInterfacePosix
++{
++public:
++  CNetworkInterfaceLinux(CNetworkPosix* network,
++                         std::string interfaceName,
++                         char interfaceMacAddrRaw[6]);
++  ~CNetworkInterfaceLinux() override = default;
++
++  std::string GetCurrentDefaultGateway() const override;
++  bool GetHostMacAddress(unsigned long host, std::string& mac) const override;
++};
++
++class CNetworkLinux : public CNetworkPosix
++{
++public:
++  CNetworkLinux();
++  ~CNetworkLinux() override = default;
++
++  bool PingHost(unsigned long host, unsigned int timeout_ms = 2000) override;
++  std::vector<std::string> GetNameServers(void) override;
++
++private:
++  void GetMacAddress(const std::string& interfaceName, char macAddrRaw[6]) override;
++  void queryInterfaceList() override;
++};
++
++using CNetwork = CNetworkLinux;
+diff --git a/xbmc/platform/linux/network/zeroconf/CMakeLists.txt b/xbmc/platform/linux/network/zeroconf/CMakeLists.txt
+new file mode 100644
+index 000000000000..b31ab7359eaf
+--- /dev/null
++++ b/xbmc/platform/linux/network/zeroconf/CMakeLists.txt
+@@ -0,0 +1,8 @@
++if(AVAHI_FOUND)
++  set(SOURCES ZeroconfAvahi.cpp
++              ZeroconfBrowserAvahi.cpp)
++  set(HEADERS ZeroconfAvahi.h
++              ZeroconfBrowserAvahi.h)
++
++  core_add_library(platform_linux_network_zeroconf)
++endif()
+diff --git a/xbmc/platform/linux/network/ZeroconfAvahi.cpp b/xbmc/platform/linux/network/zeroconf/ZeroconfAvahi.cpp
+similarity index 100%
+rename from xbmc/platform/linux/network/ZeroconfAvahi.cpp
+rename to xbmc/platform/linux/network/zeroconf/ZeroconfAvahi.cpp
+diff --git a/xbmc/platform/linux/network/ZeroconfAvahi.h b/xbmc/platform/linux/network/zeroconf/ZeroconfAvahi.h
+similarity index 100%
+rename from xbmc/platform/linux/network/ZeroconfAvahi.h
+rename to xbmc/platform/linux/network/zeroconf/ZeroconfAvahi.h
+diff --git a/xbmc/platform/linux/network/ZeroconfBrowserAvahi.cpp b/xbmc/platform/linux/network/zeroconf/ZeroconfBrowserAvahi.cpp
+similarity index 100%
+rename from xbmc/platform/linux/network/ZeroconfBrowserAvahi.cpp
+rename to xbmc/platform/linux/network/zeroconf/ZeroconfBrowserAvahi.cpp
+diff --git a/xbmc/platform/linux/network/ZeroconfBrowserAvahi.h b/xbmc/platform/linux/network/zeroconf/ZeroconfBrowserAvahi.h
+similarity index 100%
+rename from xbmc/platform/linux/network/ZeroconfBrowserAvahi.h
+rename to xbmc/platform/linux/network/zeroconf/ZeroconfBrowserAvahi.h
+diff --git a/xbmc/platform/posix/network/CMakeLists.txt b/xbmc/platform/posix/network/CMakeLists.txt
+index f68b86802d1d..3f8f85088f9c 100644
+--- a/xbmc/platform/posix/network/CMakeLists.txt
++++ b/xbmc/platform/posix/network/CMakeLists.txt
+@@ -1,5 +1,5 @@
+-set(SOURCES NetworkLinux.cpp)
++set(SOURCES NetworkPosix.cpp)
+ 
+-set(HEADERS NetworkLinux.h)
++set(HEADERS NetworkPosix.h)
+ 
+ core_add_library(platform_posix_network)
+diff --git a/xbmc/platform/posix/network/NetworkLinux.cpp b/xbmc/platform/posix/network/NetworkLinux.cpp
+deleted file mode 100644
+index 5c5cee53bbad..000000000000
+--- a/xbmc/platform/posix/network/NetworkLinux.cpp
++++ /dev/null
+@@ -1,584 +0,0 @@
+-/*
+- *  Copyright (C) 2005-2018 Team Kodi
+- *  This file is part of Kodi - https://kodi.tv
+- *
+- *  SPDX-License-Identifier: GPL-2.0-or-later
+- *  See LICENSES/README.md for more information.
+- */
+-
+-#include <cstdlib>
+-
+-#include <sys/ioctl.h>
+-#include <sys/socket.h>
+-#include <netinet/in.h>
+-#include <arpa/inet.h>
+-#if defined(TARGET_LINUX)
+-  #include <linux/if.h>
+-  #include <linux/wireless.h>
+-  #include <linux/sockios.h>
+-#endif
+-#ifdef TARGET_ANDROID
+-#include "platform/android/bionic_supplement/bionic_supplement.h"
+-
+-#include <sys/system_properties.h>
+-#include <sys/wait.h>
+-#endif
+-#include <errno.h>
+-#include <resolv.h>
+-#if defined(TARGET_DARWIN)
+-  #include <sys/sockio.h>
+-  #include <net/if.h>
+-  #include <net/if_dl.h>
+-  #include <net/if_types.h>
+-  #include <net/route.h>
+-  #include <netinet/if_ether.h>
+-  #include <ifaddrs.h>
+-#elif defined(TARGET_FREEBSD)
+-  #include <sys/sockio.h>
+-  #include <sys/wait.h>
+-  #include <net/if.h>
+-  #include <net/if_arp.h>
+-  #include <net/if_dl.h>
+-  #include <ifaddrs.h>
+-  #include <net/route.h>
+-  #include <netinet/if_ether.h>
+-#else
+-  #include <net/if_arp.h>
+-#endif
+-#include "PlatformDefs.h"
+-#include "NetworkLinux.h"
+-#include "Util.h"
+-#include "utils/log.h"
+-#include "utils/StringUtils.h"
+-
+-CNetworkInterfaceLinux::CNetworkInterfaceLinux(CNetworkLinux* network, std::string interfaceName, char interfaceMacAddrRaw[6]):
+-  m_interfaceName(interfaceName),
+-  m_interfaceMacAdr(StringUtils::Format("%02X:%02X:%02X:%02X:%02X:%02X",
+-                                        (uint8_t)interfaceMacAddrRaw[0],
+-                                        (uint8_t)interfaceMacAddrRaw[1],
+-                                        (uint8_t)interfaceMacAddrRaw[2],
+-                                        (uint8_t)interfaceMacAddrRaw[3],
+-                                        (uint8_t)interfaceMacAddrRaw[4],
+-                                        (uint8_t)interfaceMacAddrRaw[5]))
+-{
+-   m_network = network;
+-   memcpy(m_interfaceMacAddrRaw, interfaceMacAddrRaw, sizeof(m_interfaceMacAddrRaw));
+-}
+-
+-CNetworkInterfaceLinux::~CNetworkInterfaceLinux(void) = default;
+-
+-bool CNetworkInterfaceLinux::IsEnabled() const
+-{
+-   struct ifreq ifr;
+-   strcpy(ifr.ifr_name, m_interfaceName.c_str());
+-   if (ioctl(m_network->GetSocket(), SIOCGIFFLAGS, &ifr) < 0)
+-      return false;
+-
+-   return ((ifr.ifr_flags & IFF_UP) == IFF_UP);
+-}
+-
+-bool CNetworkInterfaceLinux::IsConnected() const
+-{
+-   struct ifreq ifr;
+-   int zero = 0;
+-   memset(&ifr,0,sizeof(struct ifreq));
+-   strcpy(ifr.ifr_name, m_interfaceName.c_str());
+-   if (ioctl(m_network->GetSocket(), SIOCGIFFLAGS, &ifr) < 0)
+-      return false;
+-
+-   // ignore loopback
+-   int iRunning = ( (ifr.ifr_flags & IFF_RUNNING) && (!(ifr.ifr_flags & IFF_LOOPBACK)));
+-
+-   if (ioctl(m_network->GetSocket(), SIOCGIFADDR, &ifr) < 0)
+-      return false;
+-
+-   // return only interfaces which has ip address
+-   return iRunning && (0 != memcmp(ifr.ifr_addr.sa_data+sizeof(short), &zero, sizeof(int)));
+-}
+-
+-std::string CNetworkInterfaceLinux::GetMacAddress() const
+-{
+-  return m_interfaceMacAdr;
+-}
+-
+-void CNetworkInterfaceLinux::GetMacAddressRaw(char rawMac[6]) const
+-{
+-  memcpy(rawMac, m_interfaceMacAddrRaw, 6);
+-}
+-
+-std::string CNetworkInterfaceLinux::GetCurrentIPAddress(void) const
+-{
+-   std::string result;
+-
+-   struct ifreq ifr;
+-   strcpy(ifr.ifr_name, m_interfaceName.c_str());
+-   ifr.ifr_addr.sa_family = AF_INET;
+-   if (ioctl(m_network->GetSocket(), SIOCGIFADDR, &ifr) >= 0)
+-   {
+-      result = inet_ntoa((*((struct sockaddr_in *)&ifr.ifr_addr)).sin_addr);
+-   }
+-
+-   return result;
+-}
+-
+-std::string CNetworkInterfaceLinux::GetCurrentNetmask(void) const
+-{
+-   std::string result;
+-
+-   struct ifreq ifr;
+-   strcpy(ifr.ifr_name, m_interfaceName.c_str());
+-   ifr.ifr_addr.sa_family = AF_INET;
+-   if (ioctl(m_network->GetSocket(), SIOCGIFNETMASK, &ifr) >= 0)
+-   {
+-      result = inet_ntoa((*((struct sockaddr_in*)&ifr.ifr_addr)).sin_addr);
+-   }
+-
+-   return result;
+-}
+-
+-std::string CNetworkInterfaceLinux::GetCurrentDefaultGateway(void) const
+-{
+-   std::string result;
+-
+-#if defined(TARGET_DARWIN)
+-  FILE* pipe = popen("echo \"show State:/Network/Global/IPv4\" | scutil | grep Router", "r");
+-  usleep(100000);
+-  if (pipe)
+-  {
+-    std::string tmpStr;
+-    char buffer[256] = {'\0'};
+-    if (fread(buffer, sizeof(char), sizeof(buffer), pipe) > 0 && !ferror(pipe))
+-    {
+-      tmpStr = buffer;
+-      if (tmpStr.length() >= 11)
+-        result = tmpStr.substr(11);
+-    }
+-    pclose(pipe);
+-  }
+-  if (result.empty())
+-    CLog::Log(LOGWARNING, "Unable to determine gateway");
+-#elif defined(TARGET_FREEBSD)
+-   size_t needed;
+-   int mib[6];
+-   char *buf, *next, *lim;
+-   char line[16];
+-   struct rt_msghdr *rtm;
+-   struct sockaddr *sa;
+-   struct sockaddr_in *sockin;
+-
+-   mib[0] = CTL_NET;
+-   mib[1] = PF_ROUTE;
+-   mib[2] = 0;
+-   mib[3] = 0;
+-   mib[4] = NET_RT_DUMP;
+-   mib[5] = 0;
+-   if (sysctl(mib, 6, NULL, &needed, NULL, 0) < 0)
+-      return result;
+-
+-   if ((buf = (char *)malloc(needed)) == NULL)
+-      return result;
+-
+-   if (sysctl(mib, 6, buf, &needed, NULL, 0) < 0) {
+-      free(buf);
+-      return result;
+-   }
+-
+-   lim  = buf + needed;
+-   for (next = buf; next < lim; next += rtm->rtm_msglen) {
+-      rtm = (struct rt_msghdr *)next;
+-      sa = (struct sockaddr *)(rtm + 1);
+-      sa = (struct sockaddr *)(SA_SIZE(sa) + (char *)sa);
+-      sockin = (struct sockaddr_in *)sa;
+-      if (inet_ntop(AF_INET, &sockin->sin_addr.s_addr,
+-         line, sizeof(line)) == NULL) {
+-            free(buf);
+-            return result;
+-	  }
+-	  result = line;
+-      break;
+-   }
+-   free(buf);
+-#else
+-   FILE* fp = fopen("/proc/net/route", "r");
+-   if (!fp)
+-   {
+-     // TBD: Error
+-     return result;
+-   }
+-
+-   char* line = NULL;
+-   char iface[16];
+-   char dst[128];
+-   char gateway[128];
+-   size_t linel = 0;
+-   int n;
+-   int linenum = 0;
+-   while (getdelim(&line, &linel, '\n', fp) > 0)
+-   {
+-      // skip first two lines
+-      if (linenum++ < 1)
+-         continue;
+-
+-      // search where the word begins
+-      n = sscanf(line,  "%15s %127s %127s",
+-         iface, dst, gateway);
+-
+-      if (n < 3)
+-         continue;
+-
+-      if (strcmp(iface, m_interfaceName.c_str()) == 0 &&
+-          strcmp(dst, "00000000") == 0 &&
+-          strcmp(gateway, "00000000") != 0)
+-      {
+-         unsigned char gatewayAddr[4];
+-         int len = CNetworkBase::ParseHex(gateway, gatewayAddr);
+-         if (len == 4)
+-         {
+-            struct in_addr in;
+-            in.s_addr = (gatewayAddr[0] << 24) | (gatewayAddr[1] << 16) |
+-                        (gatewayAddr[2] << 8) | (gatewayAddr[3]);
+-            result = inet_ntoa(in);
+-            break;
+-         }
+-      }
+-   }
+-   free(line);
+-   fclose(fp);
+-#endif
+-
+-   return result;
+-}
+-
+-CNetworkLinux::CNetworkLinux()
+- : CNetworkBase()
+-{
+-   m_sock = socket(AF_INET, SOCK_DGRAM, 0);
+-   queryInterfaceList();
+-}
+-
+-CNetworkLinux::~CNetworkLinux(void)
+-{
+-  if (m_sock != -1)
+-    close(CNetworkLinux::m_sock);
+-
+-  std::vector<CNetworkInterface*>::iterator it = m_interfaces.begin();
+-  while(it != m_interfaces.end())
+-  {
+-    CNetworkInterface* nInt = *it;
+-    delete nInt;
+-    it = m_interfaces.erase(it);
+-  }
+-}
+-
+-std::vector<CNetworkInterface*>& CNetworkLinux::GetInterfaceList(void)
+-{
+-   return m_interfaces;
+-}
+-
+-//! @bug
+-//! Overwrite the GetFirstConnectedInterface and requery
+-//! the interface list if no connected device is found
+-//! this fixes a bug when no network is available after first start of xbmc
+-//! and the interface comes up during runtime
+-CNetworkInterface* CNetworkLinux::GetFirstConnectedInterface(void)
+-{
+-    CNetworkInterface *pNetIf=CNetworkBase::GetFirstConnectedInterface();
+-
+-    // no connected Interfaces found? - requeryInterfaceList
+-    if (!pNetIf)
+-    {
+-        CLog::Log(LOGDEBUG,"%s no connected interface found - requery list",__FUNCTION__);
+-        queryInterfaceList();
+-        //retry finding a connected if
+-        pNetIf = CNetworkBase::GetFirstConnectedInterface();
+-    }
+-
+-    return pNetIf;
+-}
+-
+-
+-void CNetworkLinux::GetMacAddress(const std::string& interfaceName, char rawMac[6])
+-{
+-  memset(rawMac, 0, 6);
+-#if defined(TARGET_DARWIN) || defined(TARGET_FREEBSD)
+-
+-#if !defined(IFT_ETHER)
+-#define IFT_ETHER 0x6/* Ethernet CSMACD */
+-#endif
+-  const struct sockaddr_dl* dlAddr = NULL;
+-  const uint8_t * base = NULL;
+-  // Query the list of interfaces.
+-  struct ifaddrs *list;
+-  struct ifaddrs *interface;
+-
+-  if( getifaddrs(&list) < 0 )
+-  {
+-    return;
+-  }
+-
+-  for(interface = list; interface != NULL; interface = interface->ifa_next)
+-  {
+-    if(interfaceName == interface->ifa_name)
+-    {
+-      if ( (interface->ifa_addr->sa_family == AF_LINK) && (((const struct sockaddr_dl *) interface->ifa_addr)->sdl_type == IFT_ETHER) )
+-      {
+-        dlAddr = (const struct sockaddr_dl *) interface->ifa_addr;
+-        base = (const uint8_t *) &dlAddr->sdl_data[dlAddr->sdl_nlen];
+-
+-        if( dlAddr->sdl_alen > 5 )
+-        {
+-          memcpy(rawMac, base, 6);
+-        }
+-      }
+-      break;
+-    }
+-  }
+-
+-  freeifaddrs(list);
+-
+-#else
+-
+-   struct ifreq ifr;
+-   strcpy(ifr.ifr_name, interfaceName.c_str());
+-   if (ioctl(GetSocket(), SIOCGIFHWADDR, &ifr) >= 0)
+-   {
+-      memcpy(rawMac, ifr.ifr_hwaddr.sa_data, 6);
+-   }
+-#endif
+-}
+-
+-void CNetworkLinux::queryInterfaceList()
+-{
+-  char macAddrRaw[6];
+-  m_interfaces.clear();
+-
+-#if defined(TARGET_DARWIN) || defined(TARGET_FREEBSD)
+-
+-   // Query the list of interfaces.
+-   struct ifaddrs *list;
+-   if (getifaddrs(&list) < 0)
+-     return;
+-
+-   struct ifaddrs *cur;
+-   for(cur = list; cur != NULL; cur = cur->ifa_next)
+-   {
+-     if(cur->ifa_addr->sa_family != AF_INET)
+-       continue;
+-
+-     GetMacAddress(cur->ifa_name, macAddrRaw);
+-
+-      // only add interfaces with non-zero mac addresses
+-      if (macAddrRaw[0] || macAddrRaw[1] || macAddrRaw[2] || macAddrRaw[3] || macAddrRaw[4] || macAddrRaw[5])
+-         // Add the interface.
+-         m_interfaces.push_back(new CNetworkInterfaceLinux(this, cur->ifa_name, macAddrRaw));
+-   }
+-
+-   freeifaddrs(list);
+-
+-#else
+-   FILE* fp = fopen("/proc/net/dev", "r");
+-   if (!fp)
+-   {
+-     // TBD: Error
+-     return;
+-   }
+-
+-   char* line = NULL;
+-   size_t linel = 0;
+-   int n;
+-   char* p;
+-   int linenum = 0;
+-   while (getdelim(&line, &linel, '\n', fp) > 0)
+-   {
+-      // skip first two lines
+-      if (linenum++ < 2)
+-         continue;
+-
+-    // search where the word begins
+-      p = line;
+-      while (isspace(*p))
+-      ++p;
+-
+-      // read word until :
+-      n = strcspn(p, ": \t");
+-      p[n] = 0;
+-
+-      // save the result
+-      std::string interfaceName = p;
+-      GetMacAddress(interfaceName, macAddrRaw);
+-
+-      // only add interfaces with non-zero mac addresses
+-      if (macAddrRaw[0] || macAddrRaw[1] || macAddrRaw[2] || macAddrRaw[3] || macAddrRaw[4] || macAddrRaw[5])
+-          m_interfaces.push_back(new CNetworkInterfaceLinux(this, interfaceName, macAddrRaw));
+-   }
+-   free(line);
+-   fclose(fp);
+-#endif
+-}
+-
+-std::vector<std::string> CNetworkLinux::GetNameServers(void)
+-{
+-   std::vector<std::string> result;
+-
+-#if defined(TARGET_DARWIN)
+-  FILE* pipe = popen("scutil --dns | grep \"nameserver\" | tail -n2", "r");
+-  usleep(100000);
+-  if (pipe)
+-  {
+-    std::vector<std::string> tmpStr;
+-    char buffer[256] = {'\0'};
+-    if (fread(buffer, sizeof(char), sizeof(buffer), pipe) > 0 && !ferror(pipe))
+-    {
+-      tmpStr = StringUtils::Split(buffer, "\n");
+-      for (unsigned int i = 0; i < tmpStr.size(); i ++)
+-      {
+-        // result looks like this - > '  nameserver[0] : 192.168.1.1'
+-        // 2 blank spaces + 13 in 'nameserver[0]' + blank + ':' + blank == 18 :)
+-        if (tmpStr[i].length() >= 18)
+-          result.push_back(tmpStr[i].substr(18));
+-      }
+-    }
+-    pclose(pipe);
+-  }
+-  if (result.empty())
+-    CLog::Log(LOGWARNING, "Unable to determine nameserver");
+-#elif defined(TARGET_ANDROID)
+-  char nameserver[PROP_VALUE_MAX];
+-
+-  if (__system_property_get("net.dns1",nameserver))
+-    result.push_back(nameserver);
+-  if (__system_property_get("net.dns2",nameserver))
+-    result.push_back(nameserver);
+-  if (__system_property_get("net.dns3",nameserver))
+-    result.push_back(nameserver);
+-
+-  if (!result.size())
+-       CLog::Log(LOGWARNING, "Unable to determine nameserver");
+-#else
+-   res_init();
+-
+-   for (int i = 0; i < _res.nscount; i ++)
+-   {
+-      std::string ns = inet_ntoa(_res.nsaddr_list[i].sin_addr);
+-      result.push_back(ns);
+-   }
+-#endif
+-   return result;
+-}
+-
+-bool CNetworkLinux::PingHost(unsigned long remote_ip, unsigned int timeout_ms)
+-{
+-  char cmd_line [64];
+-
+-  struct in_addr host_ip;
+-  host_ip.s_addr = remote_ip;
+-
+-#if defined (TARGET_DARWIN) || defined (TARGET_FREEBSD)
+-  sprintf(cmd_line, "ping -c 1 -t %d %s", timeout_ms / 1000 + (timeout_ms % 1000) != 0, inet_ntoa(host_ip));
+-#else
+-  sprintf(cmd_line, "ping -c 1 -w %d %s", timeout_ms / 1000 + (timeout_ms % 1000) != 0, inet_ntoa(host_ip));
+-#endif
+-
+-  int status = -1;
+-  status = system (cmd_line);
+-  int result = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+-
+-  // http://linux.about.com/od/commands/l/blcmdl8_ping.htm ;
+-  // 0 reply
+-  // 1 no reply
+-  // else some error
+-
+-  if (result < 0 || result > 1)
+-    CLog::Log(LOGERROR, "Ping fail : status = %d, errno = %d : '%s'", status, errno, cmd_line);
+-
+-  return result == 0;
+-}
+-
+-#if defined(TARGET_DARWIN) || defined(TARGET_FREEBSD)
+-bool CNetworkInterfaceLinux::GetHostMacAddress(unsigned long host_ip, std::string& mac) const
+-{
+-  bool ret = false;
+-  size_t needed;
+-  char *buf, *next;
+-  struct rt_msghdr *rtm;
+-  struct sockaddr_inarp *sin;
+-  struct sockaddr_dl *sdl;
+-  int mib[6];
+-
+-  mac = "";
+-
+-  mib[0] = CTL_NET;
+-  mib[1] = PF_ROUTE;
+-  mib[2] = 0;
+-  mib[3] = AF_INET;
+-  mib[4] = NET_RT_FLAGS;
+-  mib[5] = RTF_LLINFO;
+-
+-  if (sysctl(mib, ARRAY_SIZE(mib), NULL, &needed, NULL, 0) == 0)
+-  {
+-    buf = (char*)malloc(needed);
+-    if (buf)
+-    {
+-      if (sysctl(mib, ARRAY_SIZE(mib), buf, &needed, NULL, 0) == 0)
+-      {
+-        for (next = buf; next < buf + needed; next += rtm->rtm_msglen)
+-        {
+-
+-          rtm = (struct rt_msghdr *)next;
+-          sin = (struct sockaddr_inarp *)(rtm + 1);
+-          sdl = (struct sockaddr_dl *)(sin + 1);
+-
+-          if (host_ip != sin->sin_addr.s_addr || sdl->sdl_alen < 6)
+-            continue;
+-
+-          u_char *cp = (u_char*)LLADDR(sdl);
+-
+-          mac = StringUtils::Format("%02X:%02X:%02X:%02X:%02X:%02X",
+-                                    cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]);
+-          ret = true;
+-          break;
+-        }
+-      }
+-      free(buf);
+-    }
+-  }
+-  return ret;
+-}
+-#else
+-bool CNetworkInterfaceLinux::GetHostMacAddress(unsigned long host_ip, std::string& mac) const
+-{
+-  struct arpreq areq;
+-  struct sockaddr_in* sin;
+-
+-  memset(&areq, 0x0, sizeof(areq));
+-
+-  sin = (struct sockaddr_in *) &areq.arp_pa;
+-  sin->sin_family = AF_INET;
+-  sin->sin_addr.s_addr = host_ip;
+-
+-  sin = (struct sockaddr_in *) &areq.arp_ha;
+-  sin->sin_family = ARPHRD_ETHER;
+-
+-  strncpy(areq.arp_dev, m_interfaceName.c_str(), sizeof(areq.arp_dev));
+-  areq.arp_dev[sizeof(areq.arp_dev)-1] = '\0';
+-
+-  int result = ioctl (m_network->GetSocket(), SIOCGARP, (caddr_t) &areq);
+-
+-  if (result != 0)
+-  {
+-//  CLog::Log(LOGERROR, "%s - GetHostMacAddress/ioctl failed with errno (%d)", __FUNCTION__, errno);
+-    return false;
+-  }
+-
+-  struct sockaddr* res = &areq.arp_ha;
+-  mac = StringUtils::Format("%02X:%02X:%02X:%02X:%02X:%02X",
+-    (uint8_t) res->sa_data[0], (uint8_t) res->sa_data[1], (uint8_t) res->sa_data[2],
+-    (uint8_t) res->sa_data[3], (uint8_t) res->sa_data[4], (uint8_t) res->sa_data[5]);
+-
+-  for (int i=0; i<6; ++i)
+-    if (res->sa_data[i])
+-      return true;
+-
+-  return false;
+-}
+-#endif
+diff --git a/xbmc/platform/posix/network/NetworkLinux.h b/xbmc/platform/posix/network/NetworkLinux.h
+deleted file mode 100644
+index e759c05d7a2e..000000000000
+--- a/xbmc/platform/posix/network/NetworkLinux.h
++++ /dev/null
+@@ -1,71 +0,0 @@
+-/*
+- *  Copyright (C) 2005-2018 Team Kodi
+- *  This file is part of Kodi - https://kodi.tv
+- *
+- *  SPDX-License-Identifier: GPL-2.0-or-later
+- *  See LICENSES/README.md for more information.
+- */
+-
+-#pragma once
+-
+-#include "network/Network.h"
+-
+-#include <cstdio>
+-#include <string>
+-#include <vector>
+-
+-class CNetworkLinux;
+-
+-class CNetworkInterfaceLinux : public CNetworkInterface
+-{
+-public:
+-   CNetworkInterfaceLinux(CNetworkLinux* network, std::string interfaceName, char interfaceMacAddrRaw[6]);
+-   ~CNetworkInterfaceLinux(void) override;
+-
+-   bool IsEnabled(void) const override;
+-   bool IsConnected(void) const override;
+-
+-   std::string GetMacAddress(void) const override;
+-   void GetMacAddressRaw(char rawMac[6]) const override;
+-
+-   bool GetHostMacAddress(unsigned long host, std::string& mac) const override;
+-
+-   std::string GetCurrentIPAddress() const override;
+-   std::string GetCurrentNetmask() const override;
+-   std::string GetCurrentDefaultGateway(void) const override;
+-
+-private:
+-   std::string     m_interfaceName;
+-   std::string     m_interfaceMacAdr;
+-   char           m_interfaceMacAddrRaw[6];
+-   CNetworkLinux* m_network;
+-};
+-
+-class CNetworkLinux : public CNetworkBase
+-{
+-public:
+-   CNetworkLinux();
+-   ~CNetworkLinux(void) override;
+-
+-   // Return the list of interfaces
+-   std::vector<CNetworkInterface*>& GetInterfaceList(void) override;
+-   CNetworkInterface* GetFirstConnectedInterface(void) override;
+-
+-   // Ping remote host
+-   bool PingHost(unsigned long host, unsigned int timeout_ms = 2000) override;
+-
+-   // Get/set the nameserver(s)
+-   std::vector<std::string> GetNameServers(void) override;
+-
+-   friend class CNetworkInterfaceLinux;
+-
+-private:
+-   int GetSocket() { return m_sock; }
+-   void GetMacAddress(const std::string& interfaceName, char macAddrRaw[6]);
+-   void queryInterfaceList();
+-   std::vector<CNetworkInterface*> m_interfaces;
+-   int m_sock;
+-};
+-
+-using CNetwork = CNetworkLinux;
+-
+diff --git a/xbmc/platform/posix/network/NetworkPosix.cpp b/xbmc/platform/posix/network/NetworkPosix.cpp
+new file mode 100644
+index 000000000000..403be71a82c5
+--- /dev/null
++++ b/xbmc/platform/posix/network/NetworkPosix.cpp
+@@ -0,0 +1,148 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#include "NetworkPosix.h"
++
++#include "utils/StringUtils.h"
++#include "utils/log.h"
++
++#include <arpa/inet.h>
++#include <net/if.h>
++#include <netinet/in.h>
++#include <sys/ioctl.h>
++#include <sys/socket.h>
++
++CNetworkInterfacePosix::CNetworkInterfacePosix(CNetworkPosix* network,
++                                               std::string interfaceName,
++                                               char interfaceMacAddrRaw[6])
++  : m_interfaceName(interfaceName),
++    m_interfaceMacAdr(StringUtils::Format("%02X:%02X:%02X:%02X:%02X:%02X",
++                                          (uint8_t)interfaceMacAddrRaw[0],
++                                          (uint8_t)interfaceMacAddrRaw[1],
++                                          (uint8_t)interfaceMacAddrRaw[2],
++                                          (uint8_t)interfaceMacAddrRaw[3],
++                                          (uint8_t)interfaceMacAddrRaw[4],
++                                          (uint8_t)interfaceMacAddrRaw[5]))
++{
++  m_network = network;
++  memcpy(m_interfaceMacAddrRaw, interfaceMacAddrRaw, sizeof(m_interfaceMacAddrRaw));
++}
++
++bool CNetworkInterfacePosix::IsEnabled() const
++{
++  struct ifreq ifr;
++  strcpy(ifr.ifr_name, m_interfaceName.c_str());
++  if (ioctl(m_network->GetSocket(), SIOCGIFFLAGS, &ifr) < 0)
++    return false;
++
++  return ((ifr.ifr_flags & IFF_UP) == IFF_UP);
++}
++
++bool CNetworkInterfacePosix::IsConnected() const
++{
++  struct ifreq ifr;
++  int zero = 0;
++  memset(&ifr, 0, sizeof(struct ifreq));
++  strcpy(ifr.ifr_name, m_interfaceName.c_str());
++  if (ioctl(m_network->GetSocket(), SIOCGIFFLAGS, &ifr) < 0)
++    return false;
++
++  // ignore loopback
++  int iRunning = ((ifr.ifr_flags & IFF_RUNNING) && (!(ifr.ifr_flags & IFF_LOOPBACK)));
++
++  if (ioctl(m_network->GetSocket(), SIOCGIFADDR, &ifr) < 0)
++    return false;
++
++  // return only interfaces which has ip address
++  return iRunning && (0 != memcmp(ifr.ifr_addr.sa_data + sizeof(short), &zero, sizeof(int)));
++}
++
++std::string CNetworkInterfacePosix::GetCurrentIPAddress() const
++{
++  std::string result;
++
++  struct ifreq ifr;
++  strcpy(ifr.ifr_name, m_interfaceName.c_str());
++  ifr.ifr_addr.sa_family = AF_INET;
++  if (ioctl(m_network->GetSocket(), SIOCGIFADDR, &ifr) >= 0)
++  {
++    result = inet_ntoa((*((struct sockaddr_in*)&ifr.ifr_addr)).sin_addr);
++  }
++
++  return result;
++}
++
++std::string CNetworkInterfacePosix::GetCurrentNetmask() const
++{
++  std::string result;
++
++  struct ifreq ifr;
++  strcpy(ifr.ifr_name, m_interfaceName.c_str());
++  ifr.ifr_addr.sa_family = AF_INET;
++  if (ioctl(m_network->GetSocket(), SIOCGIFNETMASK, &ifr) >= 0)
++  {
++    result = inet_ntoa((*((struct sockaddr_in*)&ifr.ifr_addr)).sin_addr);
++  }
++
++  return result;
++}
++
++std::string CNetworkInterfacePosix::GetMacAddress() const
++{
++  return m_interfaceMacAdr;
++}
++
++void CNetworkInterfacePosix::GetMacAddressRaw(char rawMac[6]) const
++{
++  memcpy(rawMac, m_interfaceMacAddrRaw, 6);
++}
++
++CNetworkPosix::CNetworkPosix() : CNetworkBase()
++{
++  m_sock = socket(AF_INET, SOCK_DGRAM, 0);
++}
++
++CNetworkPosix::~CNetworkPosix()
++{
++  if (m_sock != -1)
++    close(CNetworkPosix::m_sock);
++
++  std::vector<CNetworkInterface*>::iterator it = m_interfaces.begin();
++  while (it != m_interfaces.end())
++  {
++    CNetworkInterface* nInt = *it;
++    delete nInt;
++    it = m_interfaces.erase(it);
++  }
++}
++
++std::vector<CNetworkInterface*>& CNetworkPosix::GetInterfaceList()
++{
++  return m_interfaces;
++}
++
++//! @bug
++//! Overwrite the GetFirstConnectedInterface and requery
++//! the interface list if no connected device is found
++//! this fixes a bug when no network is available after first start of xbmc
++//! and the interface comes up during runtime
++CNetworkInterface* CNetworkPosix::GetFirstConnectedInterface()
++{
++  CNetworkInterface* pNetIf = CNetworkBase::GetFirstConnectedInterface();
++
++  // no connected Interfaces found? - requeryInterfaceList
++  if (!pNetIf)
++  {
++    CLog::Log(LOGDEBUG, "%s no connected interface found - requery list", __FUNCTION__);
++    queryInterfaceList();
++    //retry finding a connected if
++    pNetIf = CNetworkBase::GetFirstConnectedInterface();
++  }
++
++  return pNetIf;
++}
+diff --git a/xbmc/platform/posix/network/NetworkPosix.h b/xbmc/platform/posix/network/NetworkPosix.h
+new file mode 100644
+index 000000000000..be807a2a839e
+--- /dev/null
++++ b/xbmc/platform/posix/network/NetworkPosix.h
+@@ -0,0 +1,69 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#pragma once
++
++#include "network/Network.h"
++
++#include <string>
++#include <vector>
++
++class CNetworkPosix;
++
++class CNetworkInterfacePosix : public CNetworkInterface
++{
++public:
++  CNetworkInterfacePosix(CNetworkPosix* network,
++                         std::string interfaceName,
++                         char interfaceMacAddrRaw[6]);
++  virtual ~CNetworkInterfacePosix() override = default;
++
++  bool IsEnabled() const override;
++  bool IsConnected() const override;
++  std::string GetCurrentIPAddress() const override;
++  std::string GetCurrentNetmask() const override;
++
++  std::string GetMacAddress() const override;
++  void GetMacAddressRaw(char rawMac[6]) const override;
++
++protected:
++  std::string m_interfaceName;
++  CNetworkPosix* m_network;
++
++private:
++  std::string m_interfaceMacAdr;
++  char m_interfaceMacAddrRaw[6];
++};
++
++class CNetworkPosix : public CNetworkBase
++{
++public:
++  CNetworkPosix();
++  virtual ~CNetworkPosix() override;
++
++  std::vector<CNetworkInterface*>& GetInterfaceList() override;
++  CNetworkInterface* GetFirstConnectedInterface() override;
++
++  int GetSocket() { return m_sock; }
++
++protected:
++  std::vector<CNetworkInterface*> m_interfaces;
++
++private:
++  virtual void GetMacAddress(const std::string& interfaceName, char macAddrRaw[6]) = 0;
++  virtual void queryInterfaceList() = 0;
++  int m_sock;
++};
++
++#if defined(HAS_LINUX_NETWORK)
++#include "platform/linux/network/NetworkLinux.h"
++#elif defined(HAS_FREEBSD_NETWORK)
++#include "platform/freebsd/network/NetworkFreebsd.h"
++#elif defined(HAS_OSX_NETWORK)
++#include "platform/darwin/osx/network/NetworkOsx.h"
++#endif

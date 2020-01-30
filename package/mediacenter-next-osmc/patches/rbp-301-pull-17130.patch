@@ -1,0 +1,777 @@
+From 5d5d06063167e84fde17f7fbb72d096048a03358 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Tue, 28 Jan 2020 02:06:12 +0100
+Subject: [PATCH 1/7] [addons] use in filesystem the IsAddonInstalled to check
+
+No need to call "CServiceBroker::GetAddonMgr().GetAddon(addon->ID(), localAddon, ADDON_UNKNOWN, false)"
+if already a function in Manager where do this.
+---
+ xbmc/filesystem/AddonsDirectory.cpp | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/xbmc/filesystem/AddonsDirectory.cpp b/xbmc/filesystem/AddonsDirectory.cpp
+index 4322b4945eae..4e130ffd3508 100644
+--- a/xbmc/filesystem/AddonsDirectory.cpp
++++ b/xbmc/filesystem/AddonsDirectory.cpp
+@@ -785,8 +785,7 @@ void CAddonsDirectory::GenerateAddonListing(const CURL &path,
+     itemPath.SetFileName(addon->ID());
+     CFileItemPtr pItem = FileItemFromAddon(addon, itemPath.Get(), false);
+ 
+-    AddonPtr localAddon;
+-    bool installed = CServiceBroker::GetAddonMgr().GetAddon(addon->ID(), localAddon, ADDON_UNKNOWN, false);
++    bool installed = CServiceBroker::GetAddonMgr().IsAddonInstalled(addon->ID());
+     bool disabled = CServiceBroker::GetAddonMgr().IsAddonDisabled(addon->ID());
+     bool hasUpdate = outdated.find(addon->ID()) != outdated.end();
+ 
+
+From 177c949617d3722653d69cf0d12b12e3f8b67c27 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Tue, 28 Jan 2020 00:33:34 +0100
+Subject: [PATCH 2/7] [addons] prevent on addon directory the add of "plugin"
+ or "script" as own folder
+
+This types have always a subtype where controlled in own folders.
+Needed for following changes.
+---
+ xbmc/filesystem/AddonsDirectory.cpp | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/filesystem/AddonsDirectory.cpp b/xbmc/filesystem/AddonsDirectory.cpp
+index 4e130ffd3508..ae8ffdc529f6 100644
+--- a/xbmc/filesystem/AddonsDirectory.cpp
++++ b/xbmc/filesystem/AddonsDirectory.cpp
+@@ -341,7 +341,16 @@ static void GenerateMainCategoryListing(const CURL& path, const VECADDONS& addon
+   for (unsigned int i = ADDON_UNKNOWN + 1; i < ADDON_MAX - 1; ++i)
+   {
+     const TYPE type = (TYPE)i;
+-    if (!IsInfoProviderType(type) && !IsLookAndFeelType(type) && !IsDependencyType(type) && !IsGameType(type))
++    /*
++     * Check and prevent insert for this cases:
++     * - By a provider, look and feel, dependency and game becomes given to
++     *   subdirectory to control the types
++     * - By ADDON_SCRIPT and ADDON_PLUGIN, them contains one of the possible
++     *   subtypes (audio, video, app or/and game) and not needed to show
++     *   together in a Script or Plugin list
++     */
++    if (!IsInfoProviderType(type) && !IsLookAndFeelType(type) && !IsDependencyType(type) &&
++        !IsGameType(type) && type != ADDON_SCRIPT && type != ADDON_PLUGIN)
+       uncategorized.insert(static_cast<TYPE>(i));
+   }
+   GenerateTypeListing(path, uncategorized, addons, items);
+
+From 178f229ab8320be0af48fc6d4b27a25902d8dc75 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Tue, 28 Jan 2020 00:34:55 +0100
+Subject: [PATCH 3/7] [addons] remove func. "FullType()" from IAddon and other
+ places, becomes nowhere used
+
+---
+ xbmc/addons/Addon.h          |  1 -
+ xbmc/addons/IAddon.h         |  1 -
+ xbmc/addons/PluginSource.cpp | 16 ----------------
+ xbmc/addons/PluginSource.h   |  1 -
+ 4 files changed, 19 deletions(-)
+
+diff --git a/xbmc/addons/Addon.h b/xbmc/addons/Addon.h
+index b8c918a09156..08f247e9fee8 100644
+--- a/xbmc/addons/Addon.h
++++ b/xbmc/addons/Addon.h
+@@ -34,7 +34,6 @@ class CAddon : public IAddon
+   ~CAddon() override = default;
+ 
+   TYPE Type() const override { return m_addonInfo->MainType(); }
+-  TYPE FullType() const override { return Type(); }
+   bool IsType(TYPE type) const override { return type == m_addonInfo->MainType(); }
+   const CAddonType* Type(TYPE type) const { return m_addonInfo->Type(type); }
+ 
+diff --git a/xbmc/addons/IAddon.h b/xbmc/addons/IAddon.h
+index f323fe7844d7..cbff8312c2a6 100644
+--- a/xbmc/addons/IAddon.h
++++ b/xbmc/addons/IAddon.h
+@@ -34,7 +34,6 @@ namespace ADDON
+   public:
+     virtual ~IAddon() = default;
+     virtual TYPE Type() const =0;
+-    virtual TYPE FullType() const =0;
+     virtual bool IsType(TYPE type) const =0;
+     virtual std::string ID() const =0;
+     virtual std::string Name() const =0;
+diff --git a/xbmc/addons/PluginSource.cpp b/xbmc/addons/PluginSource.cpp
+index 48160b881acb..e8ff18910c38 100644
+--- a/xbmc/addons/PluginSource.cpp
++++ b/xbmc/addons/PluginSource.cpp
+@@ -80,22 +80,6 @@ CPluginSource::Content CPluginSource::Translate(const std::string &content)
+     return CPluginSource::UNKNOWN;
+ }
+ 
+-TYPE CPluginSource::FullType() const
+-{
+-  if (Provides(VIDEO))
+-    return ADDON_VIDEO;
+-  if (Provides(AUDIO))
+-    return ADDON_AUDIO;
+-  if (Provides(IMAGE))
+-    return ADDON_IMAGE;
+-  if (Provides(GAME))
+-    return ADDON_GAME;
+-  if (Provides(EXECUTABLE))
+-    return ADDON_EXECUTABLE;
+-
+-  return CAddon::FullType();
+-}
+-
+ bool CPluginSource::IsType(TYPE type) const
+ {
+   return ((type == ADDON_VIDEO && Provides(VIDEO))
+diff --git a/xbmc/addons/PluginSource.h b/xbmc/addons/PluginSource.h
+index 2373ca9e4ba4..0137fd5e5638 100644
+--- a/xbmc/addons/PluginSource.h
++++ b/xbmc/addons/PluginSource.h
+@@ -23,7 +23,6 @@ class CPluginSource : public CAddon
+ 
+   explicit CPluginSource(const AddonInfoPtr& addonInfo, TYPE addonType);
+ 
+-  TYPE FullType() const override;
+   bool IsType(TYPE type) const override;
+   bool Provides(const Content& content) const
+   {
+
+From f4a8a119527a7d39c2c8566d9eda82ab787a9dcd Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Tue, 28 Jan 2020 01:43:49 +0100
+Subject: [PATCH 4/7] [addons] fix check on
+ CAddonsDirectory::GetScriptsAndPlugins for right type
+
+This fix the ask about the script and plugin addons to have the right
+start path, that they can be used on addon window.
+
+This failure effect was present in case a addon has contained more as one
+type, e.g. python screensaver together with video addon.
+---
+ xbmc/addons/Addon.h                 |  5 ++--
+ xbmc/addons/IAddon.h                |  1 +
+ xbmc/addons/PluginSource.cpp        |  3 ++-
+ xbmc/filesystem/AddonsDirectory.cpp | 42 ++++++++++++-----------------
+ 4 files changed, 23 insertions(+), 28 deletions(-)
+
+diff --git a/xbmc/addons/Addon.h b/xbmc/addons/Addon.h
+index 08f247e9fee8..8d8f01f3bce0 100644
+--- a/xbmc/addons/Addon.h
++++ b/xbmc/addons/Addon.h
+@@ -33,8 +33,9 @@ class CAddon : public IAddon
+   explicit CAddon(const AddonInfoPtr& addonInfo, TYPE addonType);
+   ~CAddon() override = default;
+ 
+-  TYPE Type() const override { return m_addonInfo->MainType(); }
+-  bool IsType(TYPE type) const override { return type == m_addonInfo->MainType(); }
++  TYPE MainType() const override { return m_addonInfo->MainType(); }
++  TYPE Type() const override { return m_type; }
++  bool IsType(TYPE type) const override { return m_addonInfo->IsType(type); }
+   const CAddonType* Type(TYPE type) const { return m_addonInfo->Type(type); }
+ 
+   std::string ID() const override{ return m_addonInfo->ID(); }
+diff --git a/xbmc/addons/IAddon.h b/xbmc/addons/IAddon.h
+index cbff8312c2a6..d96f783ac469 100644
+--- a/xbmc/addons/IAddon.h
++++ b/xbmc/addons/IAddon.h
+@@ -33,6 +33,7 @@ namespace ADDON
+   {
+   public:
+     virtual ~IAddon() = default;
++    virtual TYPE MainType() const = 0;
+     virtual TYPE Type() const =0;
+     virtual bool IsType(TYPE type) const =0;
+     virtual std::string ID() const =0;
+diff --git a/xbmc/addons/PluginSource.cpp b/xbmc/addons/PluginSource.cpp
+index e8ff18910c38..f160980bb528 100644
+--- a/xbmc/addons/PluginSource.cpp
++++ b/xbmc/addons/PluginSource.cpp
+@@ -86,7 +86,8 @@ bool CPluginSource::IsType(TYPE type) const
+        || (type == ADDON_AUDIO && Provides(AUDIO))
+        || (type == ADDON_IMAGE && Provides(IMAGE))
+        || (type == ADDON_GAME && Provides(GAME))
+-       || (type == ADDON_EXECUTABLE && Provides(EXECUTABLE)));
++       || (type == ADDON_EXECUTABLE && Provides(EXECUTABLE))
++       || (type == CAddon::Type()));
+ }
+ 
+ } /*namespace ADDON*/
+diff --git a/xbmc/filesystem/AddonsDirectory.cpp b/xbmc/filesystem/AddonsDirectory.cpp
+index ae8ffdc529f6..c4766ea29a24 100644
+--- a/xbmc/filesystem/AddonsDirectory.cpp
++++ b/xbmc/filesystem/AddonsDirectory.cpp
+@@ -891,34 +891,26 @@ bool CAddonsDirectory::GetScriptsAndPlugins(const std::string &content, CFileIte
+     const bool bIsFolder = (addon->Type() == ADDON_PLUGIN);
+ 
+     std::string path;
+-    switch (addon->Type())
++    if (addon->IsType(ADDON_PLUGIN))
+     {
+-      case ADDON_PLUGIN:
++      path = "plugin://" + addon->ID();
++      PluginPtr plugin = std::dynamic_pointer_cast<CPluginSource>(addon);
++      if (plugin && plugin->ProvidesSeveral())
+       {
+-        path = "plugin://" + addon->ID();
+-        PluginPtr plugin = std::dynamic_pointer_cast<CPluginSource>(addon);
+-        if (plugin && plugin->ProvidesSeveral())
+-        {
+-          CURL url(path);
+-          std::string opt = StringUtils::Format("?content_type=%s", content.c_str());
+-          url.SetOptions(opt);
+-          path = url.Get();
+-        }
+-        break;
+-      }
+-      case ADDON_SCRIPT:
+-      {
+-        path = "script://" + addon->ID();
+-        break;
+-      }
+-      case ADDON_GAMEDLL:
+-      {
+-        // Kodi fails to launch games with empty path from home screen
+-        path = "game://" + addon->ID();
+-        break;
++        CURL url(path);
++        std::string opt = StringUtils::Format("?content_type=%s", content.c_str());
++        url.SetOptions(opt);
++        path = url.Get();
+       }
+-      default:
+-        break;
++    }
++    else if (addon->IsType(ADDON_SCRIPT))
++    {
++      path = "script://" + addon->ID();
++    }
++    else if (addon->IsType(ADDON_GAMEDLL))
++    {
++      // Kodi fails to launch games with empty path from home screen
++      path = "game://" + addon->ID();
+     }
+ 
+     items.Add(FileItemFromAddon(addon, path, bIsFolder));
+
+From 7e3c45f8e06c4b9c84ed7b23906e3e3c2c21f00a Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Tue, 28 Jan 2020 01:39:31 +0100
+Subject: [PATCH 5/7] [addons] fix script/plugin subtype check
+
+Before was wrongly during creation the subtype added to addon info,
+this then make e.g. "video" to all types inside a addon and "program" then
+also declared wrongly as "video".
+---
+ xbmc/addons/PluginSource.cpp | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/xbmc/addons/PluginSource.cpp b/xbmc/addons/PluginSource.cpp
+index f160980bb528..00e231eb596a 100644
+--- a/xbmc/addons/PluginSource.cpp
++++ b/xbmc/addons/PluginSource.cpp
+@@ -21,13 +21,19 @@ namespace ADDON
+ CPluginSource::CPluginSource(const AddonInfoPtr& addonInfo, TYPE addonType) : CAddon(addonInfo, addonType)
+ {
+   std::string provides = addonInfo->Type(addonType)->GetValue("provides").asString();
+-  if (!provides.empty())
+-    addonInfo->AddExtraInfo("provides", provides);
+-  else
++  if (provides.empty())
+   {
++    /*
++     * If "provides" was empty, check about them in addon extra info. This become
++     * needed for addons from repo content where the addon is stored inside a
++     * database and the related type classes are not created on addon info.
++     * The database add then "provides" to there.
++     */
+     const auto& i = addonInfo->ExtraInfo().find("provides");
+     if (i != addonInfo->ExtraInfo().end())
+       provides = i->second;
++    else
++      provides = "executable"; // if nothing fall back to "executable"
+   }
+ 
+   for (auto values : addonInfo->Type(addonType)->GetValues())
+
+From 0384233156839a4456ea039f98539e1b0a9fdfc3 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Tue, 28 Jan 2020 00:51:32 +0100
+Subject: [PATCH 6/7] [addons] rename all addon IsType func. to HasType (is
+ more correct)
+
+---
+ xbmc/addons/Addon.h                            |  2 +-
+ xbmc/addons/AddonManager.cpp                   |  8 ++++----
+ xbmc/addons/GUIWindowAddonBrowser.cpp          |  2 +-
+ xbmc/addons/IAddon.h                           |  2 +-
+ xbmc/addons/PluginSource.cpp                   |  2 +-
+ xbmc/addons/PluginSource.h                     |  2 +-
+ xbmc/addons/addoninfo/AddonInfo.cpp            |  2 +-
+ xbmc/addons/addoninfo/AddonInfo.h              |  2 +-
+ xbmc/addons/binary-addons/BinaryAddonBase.cpp  |  4 ++--
+ xbmc/addons/binary-addons/BinaryAddonBase.h    |  2 +-
+ .../binary-addons/BinaryAddonManager.cpp       | 10 +++++-----
+ xbmc/addons/test/TestAddonInfoBuilder.cpp      | 18 +++++++++---------
+ xbmc/filesystem/AddonsDirectory.cpp            | 15 ++++++++-------
+ xbmc/games/GameUtils.cpp                       |  2 +-
+ 14 files changed, 37 insertions(+), 36 deletions(-)
+
+diff --git a/xbmc/addons/Addon.h b/xbmc/addons/Addon.h
+index 8d8f01f3bce0..a77aab59994c 100644
+--- a/xbmc/addons/Addon.h
++++ b/xbmc/addons/Addon.h
+@@ -35,7 +35,7 @@ class CAddon : public IAddon
+ 
+   TYPE MainType() const override { return m_addonInfo->MainType(); }
+   TYPE Type() const override { return m_type; }
+-  bool IsType(TYPE type) const override { return m_addonInfo->IsType(type); }
++  bool HasType(TYPE type) const override { return m_addonInfo->HasType(type); }
+   const CAddonType* Type(TYPE type) const { return m_addonInfo->Type(type); }
+ 
+   std::string ID() const override{ return m_addonInfo->ID(); }
+diff --git a/xbmc/addons/AddonManager.cpp b/xbmc/addons/AddonManager.cpp
+index 6bae79d12dc5..7b30882fb699 100644
+--- a/xbmc/addons/AddonManager.cpp
++++ b/xbmc/addons/AddonManager.cpp
+@@ -279,7 +279,7 @@ bool CAddonMgr::GetInstallableAddons(VECADDONS& addons, const TYPE &type)
+       bool bErase = false;
+ 
+       // check if the addon matches the provided addon type
+-      if (type != ADDON::ADDON_UNKNOWN && addon->Type() != type && !addon->IsType(type))
++      if (type != ADDON::ADDON_UNKNOWN && addon->Type() != type && !addon->HasType(type))
+         bErase = true;
+ 
+       if (!this->CanAddonBeInstalled(addon))
+@@ -341,7 +341,7 @@ bool CAddonMgr::GetAddonsInternal(const TYPE &type, VECADDONS &addons, bool enab
+ 
+   for (const auto& addonInfo : m_installedAddons)
+   {
+-    if (type != ADDON_UNKNOWN && !addonInfo.second->IsType(type))
++    if (type != ADDON_UNKNOWN && !addonInfo.second->HasType(type))
+       continue;
+ 
+     if (enabledOnly && IsAddonDisabled(addonInfo.second->ID()))
+@@ -783,7 +783,7 @@ bool CAddonMgr::GetAddonInfos(AddonInfos& addonInfos, TYPE type)
+   bool forUnknown = type == ADDON_UNKNOWN;
+   for (auto& info : m_installedAddons)
+   {
+-    if (info.second->MainType() != ADDON_UNKNOWN && (forUnknown || info.second->IsType(type)))
++    if (info.second->MainType() != ADDON_UNKNOWN && (forUnknown || info.second->HasType(type)))
+       addonInfos.push_back(info.second);
+   }
+ 
+@@ -796,7 +796,7 @@ const AddonInfoPtr CAddonMgr::GetAddonInfo(const std::string& id, TYPE type /*=
+ 
+   auto addon = m_installedAddons.find(id);
+   if (addon != m_installedAddons.end())
+-    if ((type == ADDON_UNKNOWN || addon->second->IsType(type)))
++    if ((type == ADDON_UNKNOWN || addon->second->HasType(type)))
+       return addon->second;
+ 
+   return nullptr;
+diff --git a/xbmc/addons/GUIWindowAddonBrowser.cpp b/xbmc/addons/GUIWindowAddonBrowser.cpp
+index fdd1615502ec..c4e10b290e80 100644
+--- a/xbmc/addons/GUIWindowAddonBrowser.cpp
++++ b/xbmc/addons/GUIWindowAddonBrowser.cpp
+@@ -423,7 +423,7 @@ int CGUIWindowAddonBrowser::SelectAddonID(const std::vector<ADDON::TYPE> &types,
+         bool matchesType = false;
+         for (std::vector<ADDON::TYPE>::const_iterator type = validTypes.begin(); type != validTypes.end(); ++type)
+         {
+-          if (pAddon->IsType(*type))
++          if (pAddon->HasType(*type))
+           {
+             matchesType = true;
+             break;
+diff --git a/xbmc/addons/IAddon.h b/xbmc/addons/IAddon.h
+index d96f783ac469..5a3c14ca1c79 100644
+--- a/xbmc/addons/IAddon.h
++++ b/xbmc/addons/IAddon.h
+@@ -35,7 +35,7 @@ namespace ADDON
+     virtual ~IAddon() = default;
+     virtual TYPE MainType() const = 0;
+     virtual TYPE Type() const =0;
+-    virtual bool IsType(TYPE type) const =0;
++    virtual bool HasType(TYPE type) const = 0;
+     virtual std::string ID() const =0;
+     virtual std::string Name() const =0;
+     virtual bool IsInUse() const =0;
+diff --git a/xbmc/addons/PluginSource.cpp b/xbmc/addons/PluginSource.cpp
+index 00e231eb596a..44c982484ef5 100644
+--- a/xbmc/addons/PluginSource.cpp
++++ b/xbmc/addons/PluginSource.cpp
+@@ -86,7 +86,7 @@ CPluginSource::Content CPluginSource::Translate(const std::string &content)
+     return CPluginSource::UNKNOWN;
+ }
+ 
+-bool CPluginSource::IsType(TYPE type) const
++bool CPluginSource::HasType(TYPE type) const
+ {
+   return ((type == ADDON_VIDEO && Provides(VIDEO))
+        || (type == ADDON_AUDIO && Provides(AUDIO))
+diff --git a/xbmc/addons/PluginSource.h b/xbmc/addons/PluginSource.h
+index 0137fd5e5638..27a3cee451ab 100644
+--- a/xbmc/addons/PluginSource.h
++++ b/xbmc/addons/PluginSource.h
+@@ -23,7 +23,7 @@ class CPluginSource : public CAddon
+ 
+   explicit CPluginSource(const AddonInfoPtr& addonInfo, TYPE addonType);
+ 
+-  bool IsType(TYPE type) const override;
++  bool HasType(TYPE type) const override;
+   bool Provides(const Content& content) const
+   {
+     return content == UNKNOWN ? false : m_providedContent.count(content) > 0;
+diff --git a/xbmc/addons/addoninfo/AddonInfo.cpp b/xbmc/addons/addoninfo/AddonInfo.cpp
+index c5552ba37178..5704cfe42986 100644
+--- a/xbmc/addons/addoninfo/AddonInfo.cpp
++++ b/xbmc/addons/addoninfo/AddonInfo.cpp
+@@ -150,7 +150,7 @@ const CAddonType* CAddonInfo::Type(TYPE type) const
+   return &dummy;
+ }
+ 
+-bool CAddonInfo::IsType(TYPE type, bool mainOnly /*= false*/) const
++bool CAddonInfo::HasType(TYPE type, bool mainOnly /*= false*/) const
+ {
+   return (m_mainType == type || ProvidesSubContent(type, mainOnly ? m_mainType : ADDON_UNKNOWN));
+ }
+diff --git a/xbmc/addons/addoninfo/AddonInfo.h b/xbmc/addons/addoninfo/AddonInfo.h
+index bf3e526477ba..832fe368d9c7 100644
+--- a/xbmc/addons/addoninfo/AddonInfo.h
++++ b/xbmc/addons/addoninfo/AddonInfo.h
+@@ -71,7 +71,7 @@ class CAddonInfo
+   const std::string& ID() const { return m_id; }
+ 
+   TYPE MainType() const { return m_mainType; }
+-  bool IsType(TYPE type, bool mainOnly = false) const;
++  bool HasType(TYPE type, bool mainOnly = false) const;
+   const std::vector<CAddonType>& Types() const { return m_types; }
+   const CAddonType* Type(TYPE type) const;
+ 
+diff --git a/xbmc/addons/binary-addons/BinaryAddonBase.cpp b/xbmc/addons/binary-addons/BinaryAddonBase.cpp
+index 2b3b6f816e2b..a54a2ca711c9 100644
+--- a/xbmc/addons/binary-addons/BinaryAddonBase.cpp
++++ b/xbmc/addons/binary-addons/BinaryAddonBase.cpp
+@@ -37,9 +37,9 @@ const std::string& CBinaryAddonBase::MainLibName() const
+   return m_addonInfo->LibName();
+ }
+ 
+-bool CBinaryAddonBase::IsType(TYPE type) const
++bool CBinaryAddonBase::HasType(TYPE type) const
+ {
+-  return m_addonInfo->IsType(type);
++  return m_addonInfo->HasType(type);
+ }
+ 
+ const std::vector<CAddonType>& CBinaryAddonBase::Types() const
+diff --git a/xbmc/addons/binary-addons/BinaryAddonBase.h b/xbmc/addons/binary-addons/BinaryAddonBase.h
+index e177c02dd723..1387f12700db 100644
+--- a/xbmc/addons/binary-addons/BinaryAddonBase.h
++++ b/xbmc/addons/binary-addons/BinaryAddonBase.h
+@@ -35,7 +35,7 @@ namespace ADDON
+     TYPE MainType() const;
+     const std::string& MainLibName() const;
+ 
+-    bool IsType(TYPE type) const;
++    bool HasType(TYPE type) const;
+     const std::vector<CAddonType>& Types() const;
+     const CAddonType* Type(TYPE type) const;
+ 
+diff --git a/xbmc/addons/binary-addons/BinaryAddonManager.cpp b/xbmc/addons/binary-addons/BinaryAddonManager.cpp
+index 1a361f80059f..9c87555d6c4d 100644
+--- a/xbmc/addons/binary-addons/BinaryAddonManager.cpp
++++ b/xbmc/addons/binary-addons/BinaryAddonManager.cpp
+@@ -61,7 +61,7 @@ bool CBinaryAddonManager::HasInstalledAddons(const TYPE &type) const
+   CSingleLock lock(m_critSection);
+   for (auto info : m_installedAddons)
+   {
+-    if (info.second->IsType(type))
++    if (info.second->HasType(type))
+       return true;
+   }
+   return false;
+@@ -72,7 +72,7 @@ bool CBinaryAddonManager::HasEnabledAddons(const TYPE &type) const
+   CSingleLock lock(m_critSection);
+   for (auto info : m_enabledAddons)
+   {
+-    if (info.second->IsType(type))
++    if (info.second->HasType(type))
+       return true;
+   }
+   return false;
+@@ -102,7 +102,7 @@ void CBinaryAddonManager::GetAddonInfos(BinaryAddonBaseList& addonInfos, bool en
+ 
+   for (auto info : *addons)
+   {
+-    if (type == ADDON_UNKNOWN || info.second->IsType(type))
++    if (type == ADDON_UNKNOWN || info.second->HasType(type))
+     {
+       addonInfos.push_back(info.second);
+     }
+@@ -115,7 +115,7 @@ void CBinaryAddonManager::GetDisabledAddonInfos(BinaryAddonBaseList& addonInfos,
+ 
+   for (auto info : m_installedAddons)
+   {
+-    if (type == ADDON_UNKNOWN || info.second->IsType(type))
++    if (type == ADDON_UNKNOWN || info.second->HasType(type))
+     {
+       if (!IsAddonEnabled(info.second->ID(), type))
+         addonInfos.push_back(info.second);
+@@ -128,7 +128,7 @@ const BinaryAddonBasePtr CBinaryAddonManager::GetInstalledAddonInfo(const std::s
+   CSingleLock lock(m_critSection);
+ 
+   auto addon = m_installedAddons.find(addonId);
+-  if (addon != m_installedAddons.end() && (type == ADDON_UNKNOWN || addon->second->IsType(type)))
++  if (addon != m_installedAddons.end() && (type == ADDON_UNKNOWN || addon->second->HasType(type)))
+     return addon->second;
+ 
+   CLog::Log(LOGERROR, "CBinaryAddonManager::%s: Requested addon '%s' unknown as binary", __FUNCTION__, addonId.c_str());
+diff --git a/xbmc/addons/test/TestAddonInfoBuilder.cpp b/xbmc/addons/test/TestAddonInfoBuilder.cpp
+index bae905883806..e7df9678bb49 100644
+--- a/xbmc/addons/test/TestAddonInfoBuilder.cpp
++++ b/xbmc/addons/test/TestAddonInfoBuilder.cpp
+@@ -63,8 +63,8 @@ TEST_F(TestAddonInfoBuilder, TestGenerate_Id_Type)
+   EXPECT_NE(nullptr, addon);
+   EXPECT_EQ(addon->ID(), "foo.baz");
+   EXPECT_EQ(addon->MainType(), ADDON_VIZ);
+-  EXPECT_TRUE(addon->IsType(ADDON_VIZ));
+-  EXPECT_FALSE(addon->IsType(ADDON_SCREENSAVER));
++  EXPECT_TRUE(addon->HasType(ADDON_VIZ));
++  EXPECT_FALSE(addon->HasType(ADDON_SCREENSAVER));
+ }
+ 
+ TEST_F(TestAddonInfoBuilder, TestGenerate_Repo)
+@@ -79,13 +79,13 @@ TEST_F(TestAddonInfoBuilder, TestGenerate_Repo)
+   EXPECT_EQ(addon->ID(), "metadata.blablabla.org");
+ 
+   EXPECT_EQ(addon->MainType(), ADDON_SCRAPER_MOVIES);
+-  EXPECT_TRUE(addon->IsType(ADDON_SCRAPER_MOVIES));
++  EXPECT_TRUE(addon->HasType(ADDON_SCRAPER_MOVIES));
+   EXPECT_EQ(addon->Type(ADDON_SCRAPER_MOVIES)->LibName(), "blablabla.xml");
+   EXPECT_EQ(addon->Type(ADDON_SCRAPER_MOVIES)->GetValue("@language").asString(), "en");
+ 
+-  EXPECT_TRUE(addon->IsType(ADDON_SCRIPT_MODULE));
++  EXPECT_TRUE(addon->HasType(ADDON_SCRIPT_MODULE));
+   EXPECT_EQ(addon->Type(ADDON_SCRIPT_MODULE)->LibName(), "lib.so");
+-  EXPECT_FALSE(addon->IsType(ADDON_SCRAPER_ARTISTS));
++  EXPECT_FALSE(addon->HasType(ADDON_SCRAPER_ARTISTS));
+ 
+   EXPECT_EQ(addon->Name(), "The Bla Bla Bla Addon");
+   EXPECT_EQ(addon->Author(), "Team Kodi");
+@@ -150,10 +150,10 @@ TEST_F(TestAddonInfoBuilder, TestGenerate_DBEntry)
+   EXPECT_EQ(addon->ID(), "video.blablabla.org");
+ 
+   EXPECT_EQ(addon->MainType(), ADDON_PLUGIN);
+-  EXPECT_TRUE(addon->IsType(ADDON_PLUGIN));
+-  EXPECT_TRUE(addon->IsType(ADDON_VIDEO));
+-  EXPECT_TRUE(addon->IsType(ADDON_AUDIO));
+-  EXPECT_FALSE(addon->IsType(ADDON_GAME));
++  EXPECT_TRUE(addon->HasType(ADDON_PLUGIN));
++  EXPECT_TRUE(addon->HasType(ADDON_VIDEO));
++  EXPECT_TRUE(addon->HasType(ADDON_AUDIO));
++  EXPECT_FALSE(addon->HasType(ADDON_GAME));
+ 
+   EXPECT_EQ(addon->Name(), "The Bla Bla Bla Addon");
+   EXPECT_EQ(addon->Author(), "Team Kodi");
+diff --git a/xbmc/filesystem/AddonsDirectory.cpp b/xbmc/filesystem/AddonsDirectory.cpp
+index c4766ea29a24..4447fc85612f 100644
+--- a/xbmc/filesystem/AddonsDirectory.cpp
++++ b/xbmc/filesystem/AddonsDirectory.cpp
+@@ -120,7 +120,7 @@ static bool IsEmulator(const AddonPtr& addon)
+ 
+ static bool IsGameProvider(const AddonPtr& addon)
+ {
+-  return addon->Type() == ADDON_PLUGIN && addon->IsType(ADDON_GAME);
++  return addon->Type() == ADDON_PLUGIN && addon->HasType(ADDON_GAME);
+ }
+ 
+ static bool IsGameResource(const AddonPtr& addon)
+@@ -152,7 +152,7 @@ static bool IsDependencyType(TYPE type)
+ static bool IsUserInstalled(const AddonPtr& addon)
+ {
+   return std::find_if(dependencyTypes.begin(), dependencyTypes.end(),
+-      [&](TYPE type){ return addon->IsType(type); }) == dependencyTypes.end();
++                      [&](TYPE type) { return addon->HasType(type); }) == dependencyTypes.end();
+ }
+ 
+ static bool IsOrphaned(const AddonPtr& addon, const VECADDONS& all)
+@@ -178,7 +178,7 @@ static void GenerateTypeListing(const CURL& path, const std::set<TYPE>& types,
+   {
+     for (const auto& addon : addons)
+     {
+-      if (addon->IsType(type))
++      if (addon->HasType(type))
+       {
+         CFileItemPtr item(new CFileItem(CAddonInfo::TranslateType(type, true)));
+         CURL itemPath = path;
+@@ -419,7 +419,8 @@ static void GenerateCategoryListing(const CURL& path, VECADDONS& addons,
+     TYPE type = CAddonInfo::TranslateType(category);
+     items.SetProperty("addoncategory", CAddonInfo::TranslateType(type, true));
+     addons.erase(std::remove_if(addons.begin(), addons.end(),
+-        [type](const AddonPtr& addon){ return !addon->IsType(type); }), addons.end());
++                                [type](const AddonPtr& addon) { return !addon->HasType(type); }),
++                 addons.end());
+     CAddonsDirectory::GenerateAddonListing(path, addons, items, CAddonInfo::TranslateType(type, true));
+   }
+ }
+@@ -891,7 +892,7 @@ bool CAddonsDirectory::GetScriptsAndPlugins(const std::string &content, CFileIte
+     const bool bIsFolder = (addon->Type() == ADDON_PLUGIN);
+ 
+     std::string path;
+-    if (addon->IsType(ADDON_PLUGIN))
++    if (addon->HasType(ADDON_PLUGIN))
+     {
+       path = "plugin://" + addon->ID();
+       PluginPtr plugin = std::dynamic_pointer_cast<CPluginSource>(addon);
+@@ -903,11 +904,11 @@ bool CAddonsDirectory::GetScriptsAndPlugins(const std::string &content, CFileIte
+         path = url.Get();
+       }
+     }
+-    else if (addon->IsType(ADDON_SCRIPT))
++    else if (addon->HasType(ADDON_SCRIPT))
+     {
+       path = "script://" + addon->ID();
+     }
+-    else if (addon->IsType(ADDON_GAMEDLL))
++    else if (addon->HasType(ADDON_GAMEDLL))
+     {
+       // Kodi fails to launch games with empty path from home screen
+       path = "game://" + addon->ID();
+diff --git a/xbmc/games/GameUtils.cpp b/xbmc/games/GameUtils.cpp
+index d1225a518a5e..256d475c4974 100644
+--- a/xbmc/games/GameUtils.cpp
++++ b/xbmc/games/GameUtils.cpp
+@@ -228,7 +228,7 @@ bool CGameUtils::IsStandaloneGame(const ADDON::AddonPtr& addon)
+     }
+     case ADDON_SCRIPT:
+     {
+-      return addon->IsType(ADDON_GAME);
++      return addon->HasType(ADDON_GAME);
+     }
+     default:
+       break;
+
+From 516487354d607cd5726f8b95c4751a2d7bd0dc7d Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Tue, 28 Jan 2020 02:18:27 +0100
+Subject: [PATCH 7/7] [addons] add a bit of documentation to CAddon and
+ CAddonInfo
+
+This to have a description what the related functions do.
+---
+ xbmc/addons/Addon.h               | 43 +++++++++++++++++++++++++++++++
+ xbmc/addons/addoninfo/AddonInfo.h | 42 ++++++++++++++++++++++++++++++
+ 2 files changed, 85 insertions(+)
+
+diff --git a/xbmc/addons/Addon.h b/xbmc/addons/Addon.h
+index a77aab59994c..c42e54f6f9d6 100644
+--- a/xbmc/addons/Addon.h
++++ b/xbmc/addons/Addon.h
+@@ -33,9 +33,52 @@ class CAddon : public IAddon
+   explicit CAddon(const AddonInfoPtr& addonInfo, TYPE addonType);
+   ~CAddon() override = default;
+ 
++  /**
++   * @brief To get the main type of this addon
++   *
++   * This is the first type defined in **addon.xml** and can be different to the
++   * on @ref Type() defined type.
++   *
++   * @return The used main type of addon
++   */
+   TYPE MainType() const override { return m_addonInfo->MainType(); }
++
++  /**
++   * @brief To get the on this CAddon class processed addon type
++   *
++   * @return For this class used addon type
++   */
+   TYPE Type() const override { return m_type; }
++
++  /**
++   * @brief To check complete addon (not only this) contains a type
++   *
++   * @note This can be overridden by a child e.g. plugin to check for subtype
++   * e.g. video or music.
++   *
++   * @param[in] type The to checked type identifier
++   * @return true in case the wanted type is supported, false if not
++   */
+   bool HasType(TYPE type) const override { return m_addonInfo->HasType(type); }
++
++  /**
++   * @brief The get for given addon type information and extension data
++   *
++   * @param[in] type The wanted type data
++   * @return addon type class with @ref CAddonExtensions as information
++   *
++   * @note This function return never a "nullptr", in case the wanted type is
++   * not supported, becomes a dummy of @ref CAddonType given.
++   *
++   * ------------------------------------------------------------------------
++   *
++   * **Example:**
++   * ~~~~~~~~~~~~~{.cpp}
++   * // To get e.g. <extension ... name="blablabla" /> from addon.xml
++   * std::string name = Type(ADDON_...)->GetValue("@name").asString();
++   * ~~~~~~~~~~~~~
++   *
++   */
+   const CAddonType* Type(TYPE type) const { return m_addonInfo->Type(type); }
+ 
+   std::string ID() const override{ return m_addonInfo->ID(); }
+diff --git a/xbmc/addons/addoninfo/AddonInfo.h b/xbmc/addons/addoninfo/AddonInfo.h
+index 832fe368d9c7..355703ce34b5 100644
+--- a/xbmc/addons/addoninfo/AddonInfo.h
++++ b/xbmc/addons/addoninfo/AddonInfo.h
+@@ -70,9 +70,51 @@ class CAddonInfo
+ 
+   const std::string& ID() const { return m_id; }
+ 
++  /**
++   * @brief To get the main type of this addon
++   *
++   * This is the first type defined in addon.xml.
++   *
++   * @return The used main type of addon
++   */
+   TYPE MainType() const { return m_mainType; }
++
++  /**
++   * @brief To check addon contains a type
++   *
++   * @param[in] type The to checked type identifier
++   * @param[in] mainOnly to check only in first defined main addon inside addon.xml
++   * @return true in case the wanted type is supported, false if not
++   */
+   bool HasType(TYPE type, bool mainOnly = false) const;
++
++  /**
++   * @brief To get all available types inside the addon
++   *
++   * To have all `<extension point="..." />` defined in addon.xml inside a list.
++   *
++   * @return List of all supported types
++   */
+   const std::vector<CAddonType>& Types() const { return m_types; }
++
++  /**
++   * @brief The get for given addon type information and extension data
++   *
++   * @param[in] type The wanted type data
++   * @return addon type class with @ref CAddonExtensions as information
++   *
++   * @note This function return never a "nullptr", in case the wanted type is
++   * not supported, becomes a dummy of @ref CAddonType given.
++   *
++   * ------------------------------------------------------------------------
++   *
++   * **Example:**
++   * ~~~~~~~~~~~~~{.cpp}
++   * // To get <extension ... name="blablabla" /> from addon.xml
++   * std::string name = Type(ADDON_...)->GetValue("@name").asString();
++   * ~~~~~~~~~~~~~
++   *
++   */
+   const CAddonType* Type(TYPE type) const;
+ 
+   bool ProvidesSubContent(const TYPE& content, const TYPE& mainType = ADDON_UNKNOWN) const;

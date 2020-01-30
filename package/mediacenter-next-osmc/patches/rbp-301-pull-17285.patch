@@ -1,0 +1,82 @@
+From 170e97352fa8621a4279353ea1c69ef767351148 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Tue, 28 Jan 2020 22:19:10 +0100
+Subject: [PATCH] [pvr] rename m_iplayingChannelUniqueID to
+ m_playingChannelUniqueId
+
+---
+ xbmc/pvr/PVRPlaybackState.cpp | 12 ++++++------
+ xbmc/pvr/PVRPlaybackState.h   |  2 +-
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/xbmc/pvr/PVRPlaybackState.cpp b/xbmc/pvr/PVRPlaybackState.cpp
+index a92e5e267f4f..0b9d9d88c6c7 100644
+--- a/xbmc/pvr/PVRPlaybackState.cpp
++++ b/xbmc/pvr/PVRPlaybackState.cpp
+@@ -65,7 +65,7 @@ void CPVRPlaybackState::OnPlaybackStarted(const std::shared_ptr<CFileItem> item)
+   m_playingRecording.reset();
+   m_playingEpgTag.reset();
+   m_playingClientId = -1;
+-  m_iplayingChannelUniqueID = -1;
++  m_playingChannelUniqueId = -1;
+   m_strPlayingClientName.clear();
+ 
+   if (item->HasPVRChannelInfoTag())
+@@ -74,7 +74,7 @@ void CPVRPlaybackState::OnPlaybackStarted(const std::shared_ptr<CFileItem> item)
+ 
+     m_playingChannel = channel;
+     m_playingClientId = m_playingChannel->ClientID();
+-    m_iplayingChannelUniqueID = m_playingChannel->UniqueID();
++    m_playingChannelUniqueId = m_playingChannel->UniqueID();
+ 
+     SetPlayingGroup(channel);
+ 
+@@ -143,7 +143,7 @@ bool CPVRPlaybackState::OnPlaybackStopped(const std::shared_ptr<CFileItem> item)
+     bChanged = true;
+     m_playingChannel.reset();
+     m_playingClientId = -1;
+-    m_iplayingChannelUniqueID = -1;
++    m_playingChannelUniqueId = -1;
+     m_strPlayingClientName.clear();
+   }
+   else if (item->HasPVRRecordingInfoTag() && item->GetPVRRecordingInfoTag() == m_playingRecording)
+@@ -151,7 +151,7 @@ bool CPVRPlaybackState::OnPlaybackStopped(const std::shared_ptr<CFileItem> item)
+     bChanged = true;
+     m_playingRecording.reset();
+     m_playingClientId = -1;
+-    m_iplayingChannelUniqueID = -1;
++    m_playingChannelUniqueId = -1;
+     m_strPlayingClientName.clear();
+   }
+   else if (item->HasEPGInfoTag() && m_playingEpgTag && *item->GetEPGInfoTag() == *m_playingEpgTag)
+@@ -159,7 +159,7 @@ bool CPVRPlaybackState::OnPlaybackStopped(const std::shared_ptr<CFileItem> item)
+     bChanged = true;
+     m_playingEpgTag.reset();
+     m_playingClientId = -1;
+-    m_iplayingChannelUniqueID = -1;
++    m_playingChannelUniqueId = -1;
+     m_strPlayingClientName.clear();
+   }
+ 
+@@ -204,7 +204,7 @@ bool CPVRPlaybackState::IsPlayingEpgTag() const
+ 
+ bool CPVRPlaybackState::IsPlayingChannel(int iClientID, int iUniqueChannelID) const
+ {
+-  return m_playingChannel && m_playingClientId == iClientID && m_iplayingChannelUniqueID == iUniqueChannelID;
++  return m_playingChannel && m_playingClientId == iClientID && m_playingChannelUniqueId == iUniqueChannelID;
+ }
+ 
+ bool CPVRPlaybackState::IsPlayingChannel(const std::shared_ptr<CPVRChannel>& channel) const
+diff --git a/xbmc/pvr/PVRPlaybackState.h b/xbmc/pvr/PVRPlaybackState.h
+index 60b301870695..93bc93964e0d 100644
+--- a/xbmc/pvr/PVRPlaybackState.h
++++ b/xbmc/pvr/PVRPlaybackState.h
+@@ -210,7 +210,7 @@ class CPVRPlaybackState
+   std::shared_ptr<CPVREpgInfoTag> m_playingEpgTag;
+   std::string m_strPlayingClientName;
+   int m_playingClientId = -1;
+-  int m_iplayingChannelUniqueID = -1;
++  int m_playingChannelUniqueId = -1;
+ 
+   class CLastWatchedUpdateTimer;
+   std::unique_ptr<CLastWatchedUpdateTimer> m_lastWatchedUpdateTimer;
