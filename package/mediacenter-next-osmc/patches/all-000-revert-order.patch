@@ -1346,7 +1346,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/platform/posix/filesystem/SMBDirectory.cpp    | 12 ++--
  xbmc/platform/posix/filesystem/SMBDirectory.h      |  4 +-
  xbmc/platform/posix/filesystem/SMBFile.cpp         | 14 ++---
- xbmc/platform/posix/network/NetworkLinux.h         |  5 +-
  xbmc/platform/posix/utils/FileHandle.h             |  4 +-
  xbmc/platform/posix/utils/Mmap.h                   |  4 +-
  xbmc/platform/posix/utils/SharedMemory.h           |  4 +-
@@ -27703,24 +27702,6 @@ index c3aad33658..71e6ec5a6c 100644
 +#include "commons/Exception.h"
  
  using namespace XFILE;
- 
-diff --git a/xbmc/platform/posix/network/NetworkLinux.h b/xbmc/platform/posix/network/NetworkLinux.h
-index e759c05d7a..13d87076ae 100644
---- a/xbmc/platform/posix/network/NetworkLinux.h
-+++ b/xbmc/platform/posix/network/NetworkLinux.h
-@@ -8,11 +8,10 @@
- 
- #pragma once
- 
--#include "network/Network.h"
--
--#include <cstdio>
- #include <string>
- #include <vector>
-+#include <cstdio>
-+#include "network/Network.h"
- 
- class CNetworkLinux;
  
 diff --git a/xbmc/platform/posix/utils/FileHandle.h b/xbmc/platform/posix/utils/FileHandle.h
 index e50a357c44..0576abc215 100644
