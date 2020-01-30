@@ -36651,24 +36651,6 @@ index 85e34fab11..dd9b8ab979 100644
  class CGUITextLayout;
  class CGUIImage;
  
-diff --git a/xbmc/windows/GUIWindowStartup.cpp b/xbmc/windows/GUIWindowStartup.cpp
-index ffa3d79d7a..76c64b131e 100644
---- a/xbmc/windows/GUIWindowStartup.cpp
-+++ b/xbmc/windows/GUIWindowStartup.cpp
-@@ -7,12 +7,11 @@
-  */
- 
- #include "GUIWindowStartup.h"
--
- #include "ServiceBroker.h"
-+#include "input/Key.h"
- #include "guilib/GUIComponent.h"
- #include "guilib/GUIWindowManager.h"
- #include "guilib/WindowIDs.h"
--#include "input/Key.h"
- 
- CGUIWindowStartup::CGUIWindowStartup(void)
-     : CGUIWindow(WINDOW_STARTUP_ANIM, "Startup.xml")
 -- 
 2.16.4
 
