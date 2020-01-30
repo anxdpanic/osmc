@@ -1783,7 +1783,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/windows/GUIWindowSplash.cpp                   |  2 +-
  xbmc/windows/GUIWindowSplash.h                     |  4 +-
  xbmc/windows/GUIWindowStartup.cpp                  |  3 +-
- xbmc/windows/GUIWindowSystemInfo.h                 |  4 +-
  1836 files changed, 5132 insertions(+), 6304 deletions(-)
 
 diff --git a/tools/depends/native/JsonSchemaBuilder/src/JsonSchemaBuilder.cpp b/tools/depends/native/JsonSchemaBuilder/src/JsonSchemaBuilder.cpp
@@ -36670,24 +36669,6 @@ index ffa3d79d7a..76c64b131e 100644
  
  CGUIWindowStartup::CGUIWindowStartup(void)
      : CGUIWindow(WINDOW_STARTUP_ANIM, "Startup.xml")
-diff --git a/xbmc/windows/GUIWindowSystemInfo.h b/xbmc/windows/GUIWindowSystemInfo.h
-index e2fc50aed5..40251bb944 100644
---- a/xbmc/windows/GUIWindowSystemInfo.h
-+++ b/xbmc/windows/GUIWindowSystemInfo.h
-@@ -8,11 +8,11 @@
- 
- #pragma once
- 
--#include "guilib/GUIWindow.h"
--
- #include <string>
- #include <vector>
- 
-+#include "guilib/GUIWindow.h"
-+
- class CGUIWindowSystemInfo : public CGUIWindow
- {
- public:
 -- 
 2.16.4
 
