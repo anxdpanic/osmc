@@ -1,0 +1,64 @@
+From 7961776f2b25c1647f8cd4ab40c94e04ed95d60d Mon Sep 17 00:00:00 2001
+From: enen92 <92enen@gmail.com>
+Date: Thu, 30 Jan 2020 16:18:16 +0000
+Subject: [PATCH] [JSON-RPC] Also set art when updating infolabels
+ (VideoLibrary.SetMovieDetails)
+
+---
+ xbmc/interfaces/json-rpc/FileOperations.cpp | 2 +-
+ xbmc/interfaces/json-rpc/JSONRPCUtils.h     | 5 ++++-
+ xbmc/interfaces/json-rpc/VideoLibrary.cpp   | 2 +-
+ xbmc/interfaces/json-rpc/schema/version.txt | 2 +-
+ 4 files changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/xbmc/interfaces/json-rpc/FileOperations.cpp b/xbmc/interfaces/json-rpc/FileOperations.cpp
+index 579a8f88b099..ef29960dc642 100644
+--- a/xbmc/interfaces/json-rpc/FileOperations.cpp
++++ b/xbmc/interfaces/json-rpc/FileOperations.cpp
+@@ -252,7 +252,7 @@ JSONRPC_STATUS CFileOperations::SetFileDetails(const std::string &method, ITrans
+   CVideoLibrary::UpdateResumePoint(parameterObject, infos, videodatabase);
+ 
+   videodatabase.GetFileInfo("", infos, fileId);
+-  CJSONRPCUtils::NotifyItemUpdated(infos);
++  CJSONRPCUtils::NotifyItemUpdated(infos, std::map<std::string, std::string>{});
+   return ACK;
+ }
+ 
+diff --git a/xbmc/interfaces/json-rpc/JSONRPCUtils.h b/xbmc/interfaces/json-rpc/JSONRPCUtils.h
+index 3d018e7f6993..f5104ce6076d 100644
+--- a/xbmc/interfaces/json-rpc/JSONRPCUtils.h
++++ b/xbmc/interfaces/json-rpc/JSONRPCUtils.h
+@@ -162,9 +162,12 @@ namespace JSONRPC
+       CGUIMessage message(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_UPDATE, CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindow());
+       CServiceBroker::GetGUI()->GetWindowManager().SendThreadMessage(message);
+     }
+-    static inline void NotifyItemUpdated(const CVideoInfoTag &info)
++    static inline void NotifyItemUpdated(const CVideoInfoTag& info,
++                                         const std::map<std::string, std::string>& artwork)
+     {
+       CFileItemPtr msgItem(new CFileItem(info));
++      if (!artwork.empty())
++        msgItem->SetArt(artwork);
+       CGUIMessage message(GUI_MSG_NOTIFY_ALL, CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindow(), 0, GUI_MSG_UPDATE_ITEM, 0, msgItem);
+       CServiceBroker::GetGUI()->GetWindowManager().SendThreadMessage(message);
+     }
+diff --git a/xbmc/interfaces/json-rpc/VideoLibrary.cpp b/xbmc/interfaces/json-rpc/VideoLibrary.cpp
+index e5a9fdd2087e..c987b17317b9 100644
+--- a/xbmc/interfaces/json-rpc/VideoLibrary.cpp
++++ b/xbmc/interfaces/json-rpc/VideoLibrary.cpp
+@@ -547,7 +547,7 @@ JSONRPC_STATUS CVideoLibrary::SetMovieDetails(const std::string &method, ITransp
+ 
+   UpdateResumePoint(parameterObject, infos, videodatabase);
+ 
+-  CJSONRPCUtils::NotifyItemUpdated(infos);
++  CJSONRPCUtils::NotifyItemUpdated(infos, artwork);
+   return ACK;
+ }
+ 
+diff --git a/xbmc/interfaces/json-rpc/schema/version.txt b/xbmc/interfaces/json-rpc/schema/version.txt
+index 3130f45944b1..34bc5bb6042c 100644
+--- a/xbmc/interfaces/json-rpc/schema/version.txt
++++ b/xbmc/interfaces/json-rpc/schema/version.txt
+@@ -1 +1 @@
+-JSONRPC_VERSION 11.2.0
++JSONRPC_VERSION 11.2.1

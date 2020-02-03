@@ -1,0 +1,29 @@
+From 72501c328fa2ba69f5b37fc794deb66be1bfa602 Mon Sep 17 00:00:00 2001
+From: fandangos <veggav@gmail.com>
+Date: Mon, 13 Jan 2020 10:25:37 -0300
+Subject: [PATCH] Fix UHD BD Dolby Vision dual layer stream
+
+Exclusive to UHD BD, Dolby has a second video layer that is mistaken by a 1080p HEVC/AVC stream causing a green screen when played.
+---
+ xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp
+index 0d56d9455454..bad147325519 100644
+--- a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp
++++ b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp
+@@ -1727,6 +1727,14 @@ CDemuxStream* CDVDDemuxFFmpeg::AddStream(int streamIdx)
+ #ifdef HAVE_LIBBLURAY
+     if (m_pInput->IsStreamType(DVDSTREAM_TYPE_BLURAY))
+     {
++      // UHD BD have a secondary video stream called by Dolby as enhancement layer.
++      // This is not used by streaming services and devices (ATV, Nvidia Shield, XONE).
++      if (pStream->id == 0x1015)
++      {
++        CLog::Log(LOGDEBUG, "CDVDDemuxFFmpeg::AddStream - discarding Dolby Vision stream");
++        pStream->discard = AVDISCARD_ALL;
++        return nullptr;
++      }
+       stream->dvdNavId = pStream->id;
+ 
+       auto it = std::find_if(m_streams.begin(), m_streams.end(),

@@ -1,0 +1,434 @@
+From 67e6eaf7799745d1ab92999bb47c6bcd66e493fd Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Fri, 24 Jan 2020 12:29:51 -0800
+Subject: [PATCH 1/3] [depends] libgpg-error: update to 1.36 and add patch for
+ gawk5 support
+
+---
+ tools/depends/target/libgpg-error/Makefile    |  11 +-
+ .../libgpg-error-1.36-gawk5-support.patch     | 155 ++++++++++++++++++
+ .../libgpg-error/tvos_remove-fork.patch       |  47 ++++++
+ 3 files changed, 211 insertions(+), 2 deletions(-)
+ create mode 100644 tools/depends/target/libgpg-error/libgpg-error-1.36-gawk5-support.patch
+ create mode 100644 tools/depends/target/libgpg-error/tvos_remove-fork.patch
+
+diff --git a/tools/depends/target/libgpg-error/Makefile b/tools/depends/target/libgpg-error/Makefile
+index d0c108cd1b78..07d57ecd5032 100644
+--- a/tools/depends/target/libgpg-error/Makefile
++++ b/tools/depends/target/libgpg-error/Makefile
+@@ -1,14 +1,16 @@
+ include ../../Makefile.include
+-DEPS= ../../Makefile.include Makefile
++DEPS= ../../Makefile.include Makefile tvos_remove-fork.patch libgpg-error-1.36-gawk5-support.patch
+ 
+ # lib name, version
+ LIBNAME=libgpg-error
+-VERSION=1.27
++VERSION=1.36
+ SOURCE=$(LIBNAME)-$(VERSION)
+ ARCHIVE=$(SOURCE).tar.bz2
+ 
+ # configuration settings
+ CONFIGURE=./configure --prefix=$(PREFIX) \
++  --disable-doc \
++  --disable-tests \
+   --disable-languages \
+   --disable-nls --disable-shared
+ 
+@@ -22,6 +24,11 @@ $(TARBALLS_LOCATION)/$(ARCHIVE):
+ $(PLATFORM): $(TARBALLS_LOCATION)/$(ARCHIVE) $(DEPS)
+ 	rm -rf $(PLATFORM)/*; mkdir -p $(PLATFORM)
+ 	cd $(PLATFORM); $(ARCHIVE_TOOL) $(ARCHIVE_TOOL_FLAGS) $(TARBALLS_LOCATION)/$(ARCHIVE)
++	cd $(PLATFORM); patch -p1 -i ../libgpg-error-1.36-gawk5-support.patch
++ifeq ($(TARGET_PLATFORM),appletvos)
++	cd $(PLATFORM); patch -p1 -i ../tvos_remove-fork.patch
++endif
++	cd $(PLATFORM); $(AUTORECONF) -vif
+ 	cd $(PLATFORM); $(CONFIGURE)
+ 
+ $(LIBDYLIB): $(PLATFORM)
+diff --git a/tools/depends/target/libgpg-error/libgpg-error-1.36-gawk5-support.patch b/tools/depends/target/libgpg-error/libgpg-error-1.36-gawk5-support.patch
+new file mode 100644
+index 000000000000..85477b0be60d
+--- /dev/null
++++ b/tools/depends/target/libgpg-error/libgpg-error-1.36-gawk5-support.patch
+@@ -0,0 +1,155 @@
++From 7865041c77f4f7005282f10f9b6666b19072fbdf Mon Sep 17 00:00:00 2001
++From: NIIBE Yutaka <gniibe@fsij.org>
++Date: Mon, 15 Apr 2019 15:10:44 +0900
++Subject: [PATCH] awk: Prepare for Gawk 5.0.
++
++* src/Makefile.am: Use pkg_namespace (instead of namespace).
++* src/mkerrnos.awk: Likewise.
++* lang/cl/mkerrcodes.awk: Don't escape # in regexp.
++* src/mkerrcodes.awk, src/mkerrcodes1.awk, src/mkerrcodes2.awk: Ditto.
++
++--
++
++In Gawk 5.0, regexp routines are replaced by Gnulib implementation,
++which only allows escaping specific characters.
++
++GnuPG-bug-id: 4459
++Reported-by: Marius Schamschula
++Signed-off-by: NIIBE Yutaka <gniibe@fsij.org>
++---
++ lang/cl/mkerrcodes.awk |  2 +-
++ src/Makefile.am        |  2 +-
++ src/mkerrcodes.awk     |  2 +-
++ src/mkerrcodes1.awk    |  2 +-
++ src/mkerrcodes2.awk    |  2 +-
++ src/mkerrnos.awk       |  2 +-
++ src/mkstrtable.awk     | 10 +++++-----
++ 7 files changed, 11 insertions(+), 11 deletions(-)
++
++diff --git a/lang/cl/mkerrcodes.awk b/lang/cl/mkerrcodes.awk
++index ae29043..9a1fc18 100644
++--- a/lang/cl/mkerrcodes.awk
+++++ b/lang/cl/mkerrcodes.awk
++@@ -122,7 +122,7 @@ header {
++ }
++ 
++ !header {
++-  sub (/\#.+/, "");
+++  sub (/#.+/, "");
++   sub (/[ 	]+$/, ""); # Strip trailing space and tab characters.
++ 
++   if (/^$/)
++diff --git a/src/Makefile.am b/src/Makefile.am
++index ce1b882..f2590cb 100644
++--- a/src/Makefile.am
+++++ b/src/Makefile.am
++@@ -293,7 +293,7 @@ code-from-errno.h: mkerrcodes$(EXEEXT_FOR_BUILD) Makefile
++ 
++ errnos-sym.h: Makefile mkstrtable.awk errnos.in
++ 	$(AWK) -f $(srcdir)/mkstrtable.awk -v textidx=2 -v nogettext=1 \
++-		-v prefix=GPG_ERR_ -v namespace=errnos_ \
+++		-v prefix=GPG_ERR_ -v pkg_namespace=errnos_ \
++ 		$(srcdir)/errnos.in >$@
++ 
++ 
++diff --git a/src/mkerrcodes.awk b/src/mkerrcodes.awk
++index 46d436c..e9c857c 100644
++--- a/src/mkerrcodes.awk
+++++ b/src/mkerrcodes.awk
++@@ -85,7 +85,7 @@ header {
++ }
++ 
++ !header {
++-  sub (/\#.+/, "");
+++  sub (/#.+/, "");
++   sub (/[ 	]+$/, ""); # Strip trailing space and tab characters.
++ 
++   if (/^$/)
++diff --git a/src/mkerrcodes1.awk b/src/mkerrcodes1.awk
++index a771a73..4578e29 100644
++--- a/src/mkerrcodes1.awk
+++++ b/src/mkerrcodes1.awk
++@@ -81,7 +81,7 @@ header {
++ }
++ 
++ !header {
++-  sub (/\#.+/, "");
+++  sub (/#.+/, "");
++   sub (/[ 	]+$/, ""); # Strip trailing space and tab characters.
++ 
++   if (/^$/)
++diff --git a/src/mkerrcodes2.awk b/src/mkerrcodes2.awk
++index ea58503..188f7a4 100644
++--- a/src/mkerrcodes2.awk
+++++ b/src/mkerrcodes2.awk
++@@ -91,7 +91,7 @@ header {
++ }
++ 
++ !header {
++-  sub (/\#.+/, "");
+++  sub (/#.+/, "");
++   sub (/[ 	]+$/, ""); # Strip trailing space and tab characters.
++ 
++   if (/^$/)
++diff --git a/src/mkerrnos.awk b/src/mkerrnos.awk
++index f79df66..15b1aad 100644
++--- a/src/mkerrnos.awk
+++++ b/src/mkerrnos.awk
++@@ -83,7 +83,7 @@ header {
++ }
++ 
++ !header {
++-  sub (/\#.+/, "");
+++  sub (/#.+/, "");
++   sub (/[ 	]+$/, ""); # Strip trailing space and tab characters.
++ 
++   if (/^$/)
++diff --git a/src/mkstrtable.awk b/src/mkstrtable.awk
++index c9de9c1..285e45f 100644
++--- a/src/mkstrtable.awk
+++++ b/src/mkstrtable.awk
++@@ -77,7 +77,7 @@
++ #
++ # The variable prefix can be used to prepend a string to each message.
++ #
++-# The variable namespace can be used to prepend a string to each
+++# The variable pkg_namespace can be used to prepend a string to each
++ # variable and macro name.
++ 
++ BEGIN {
++@@ -102,7 +102,7 @@ header {
++       print "/* The purpose of this complex string table is to produce";
++       print "   optimal code with a minimum of relocations.  */";
++       print "";
++-      print "static const char " namespace "msgstr[] = ";
+++      print "static const char " pkg_namespace "msgstr[] = ";
++       header = 0;
++     }
++   else
++@@ -110,7 +110,7 @@ header {
++ }
++ 
++ !header {
++-  sub (/\#.+/, "");
+++  sub (/#.+/, "");
++   sub (/[ 	]+$/, ""); # Strip trailing space and tab characters.
++ 
++   if (/^$/)
++@@ -150,7 +150,7 @@ END {
++   else
++     print "  gettext_noop (\"" last_msgstr "\");";
++   print "";
++-  print "static const int " namespace "msgidx[] =";
+++  print "static const int " pkg_namespace "msgidx[] =";
++   print "  {";
++   for (i = 0; i < coded_msgs; i++)
++     print "    " pos[i] ",";
++@@ -158,7 +158,7 @@ END {
++   print "  };";
++   print "";
++   print "static GPG_ERR_INLINE int";
++-  print namespace "msgidxof (int code)";
+++  print pkg_namespace "msgidxof (int code)";
++   print "{";
++   print "  return (0 ? 0";
++ 
+diff --git a/tools/depends/target/libgpg-error/tvos_remove-fork.patch b/tools/depends/target/libgpg-error/tvos_remove-fork.patch
+new file mode 100644
+index 000000000000..333f1fac7792
+--- /dev/null
++++ b/tools/depends/target/libgpg-error/tvos_remove-fork.patch
+@@ -0,0 +1,47 @@
++--- a/src/spawn-posix.c
+++++ b/src/spawn-posix.c
++@@ -314,7 +314,7 @@
++ 
++   if (preexec)
++     preexec ();
++-  execv (pgmname, arg_list);
+++//  execv (pgmname, arg_list);
++   /* No way to print anything, as we have may have closed all streams. */
++   _exit (127);
++ }
++@@ -464,7 +464,7 @@
++     }
++ 
++   _gpgrt_pre_syscall ();
++-  *pid = fork ();
+++  *pid = -1;
++   _gpgrt_post_syscall ();
++   if (*pid == (pid_t)(-1))
++     {
++@@ -534,7 +534,7 @@
++   gpg_error_t err;
++ 
++   _gpgrt_pre_syscall ();
++-  *pid = fork ();
+++  *pid = -1;
++   _gpgrt_post_syscall ();
++   if (*pid == (pid_t)(-1))
++     {
++@@ -813,7 +813,7 @@
++     return _gpg_err_code_from_syserror ();
++ 
++   _gpgrt_pre_syscall ();
++-  pid = fork ();
+++  pid = -1;
++   _gpgrt_post_syscall ();
++   if (pid == (pid_t)(-1))
++     {
++@@ -830,7 +830,7 @@
++       if (setsid() == -1 || chdir ("/"))
++         _exit (1);
++ 
++-      pid2 = fork (); /* Double fork to let init take over the new child. */
+++      pid2 = -1; /* Double fork to let init take over the new child. */
++       if (pid2 == (pid_t)(-1))
++         _exit (1);
++       if (pid2)
+
+From 0617a59d5956bf9f7a179bc4eb99087c1f2ef7d4 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Fri, 24 Jan 2020 12:30:33 -0800
+Subject: [PATCH 2/3] [depends] nettle: update to 3.5.1
+
+---
+ tools/depends/target/nettle/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/depends/target/nettle/Makefile b/tools/depends/target/nettle/Makefile
+index 4d2f43427d2b..52459fc82a2d 100644
+--- a/tools/depends/target/nettle/Makefile
++++ b/tools/depends/target/nettle/Makefile
+@@ -3,7 +3,7 @@ DEPS= ../../Makefile.include Makefile 01-disable_testsuite.patch
+ 
+ # lib name, version
+ LIBNAME=nettle
+-VERSION=3.2
++VERSION=3.5.1
+ SOURCE=$(LIBNAME)-$(VERSION)
+ ARCHIVE=$(SOURCE).tar.gz
+ 
+
+From 4a6c4f52db2bb96b54fa49532ab43707762e4292 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Fri, 24 Jan 2020 12:30:55 -0800
+Subject: [PATCH 3/3] [depends] gnutls: update to 3.6.11.1
+
+---
+ cmake/scripts/osx/ArchSetup.cmake             |  2 +-
+ .../target/gnutls/02-darwin-getentropy.patch  | 13 +++++-----
+ tools/depends/target/gnutls/Makefile          | 11 ++++----
+ .../target/gnutls/add-dl-as-private-lib.patch | 26 +++++++++++++++++++
+ .../remove-weak_import-check-for-osx.patch    | 17 ++++++++++++
+ 5 files changed, 57 insertions(+), 12 deletions(-)
+ create mode 100644 tools/depends/target/gnutls/add-dl-as-private-lib.patch
+ create mode 100644 tools/depends/target/gnutls/remove-weak_import-check-for-osx.patch
+
+diff --git a/cmake/scripts/osx/ArchSetup.cmake b/cmake/scripts/osx/ArchSetup.cmake
+index f7ab9196bf3c..c474a8ea895c 100644
+--- a/cmake/scripts/osx/ArchSetup.cmake
++++ b/cmake/scripts/osx/ArchSetup.cmake
+@@ -33,7 +33,7 @@ list(APPEND DEPLIBS "-framework DiskArbitration" "-framework IOKit"
+                     "-framework ApplicationServices" "-framework AppKit"
+                     "-framework CoreAudio" "-framework AudioToolbox"
+                     "-framework CoreGraphics" "-framework CoreMedia"
+-                    "-framework VideoToolbox")
++                    "-framework VideoToolbox" "-framework Security")
+ 
+ set(CMAKE_OSX_DEPLOYMENT_TARGET 10.9)
+ set(CMAKE_XCODE_ATTRIBUTE_CLANG_LINK_OBJC_RUNTIME OFF)
+diff --git a/tools/depends/target/gnutls/02-darwin-getentropy.patch b/tools/depends/target/gnutls/02-darwin-getentropy.patch
+index 300490c12fa7..80ddd9d43a17 100644
+--- a/tools/depends/target/gnutls/02-darwin-getentropy.patch
++++ b/tools/depends/target/gnutls/02-darwin-getentropy.patch
+@@ -1,14 +1,15 @@
+---- a/configure.ac
+-+++ b/configure.ac
+-@@ -220,6 +220,7 @@
+- 		   rnd_variant=getrandom],
+- 		  [AC_MSG_RESULT(no)])
++diff -Naur a/configure.ac b/configure.ac
++--- a/configure.ac	2019-12-02 08:32:16.000000000 -0800
+++++ b/configure.ac	2020-01-31 10:25:36.473631501 -0800
++@@ -278,6 +278,7 @@
++ 
++ AM_CONDITIONAL(HAVE_KERN_ARND, test "$rnd_variant" = "kern_arnd")
+  
+ +if test "x$have_macosx" != "xyes"; then
+  AC_MSG_CHECKING([for getentropy])
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([
+  	   #include <unistd.h>
+-@@ -233,6 +234,7 @@
++@@ -294,6 +295,7 @@
+  		   AC_DEFINE([HAVE_GETENTROPY], 1, [Enable the OpenBSD getentropy function])
+  		   rnd_variant=getentropy],
+  		  [AC_MSG_RESULT(no)])
+diff --git a/tools/depends/target/gnutls/Makefile b/tools/depends/target/gnutls/Makefile
+index d5e7dbb99d38..82a91cd7644b 100644
+--- a/tools/depends/target/gnutls/Makefile
++++ b/tools/depends/target/gnutls/Makefile
+@@ -1,9 +1,9 @@
+ include ../../Makefile.include
+-DEPS= ../../Makefile.include Makefile size-max.patch 02-darwin-getentropy.patch
++DEPS= ../../Makefile.include Makefile size-max.patch 02-darwin-getentropy.patch remove-weak_import-check-for-osx.patch add-dl-as-private-lib.patch
+ 
+ # lib name, version
+ LIBNAME=gnutls
+-VERSION=3.5.10
++VERSION=3.6.11.1
+ SOURCE=$(LIBNAME)-$(VERSION)
+ ARCHIVE=$(SOURCE).tar.xz
+ 
+@@ -15,10 +15,9 @@ CONFIGURE_HACKS+= ac_cv_func_fork=no
+ endif
+ 
+ # configuration settings
+-CONFIGURE=cp -f $(CONFIG_SUB) $(CONFIG_GUESS) .; \
+-          ./configure --prefix=$(PREFIX) --disable-shared --without-p11-kit --disable-nls --with-included-unistring \
++CONFIGURE=./configure --prefix=$(PREFIX) --disable-shared --without-p11-kit --disable-nls --with-included-unistring \
+                       --with-included-libtasn1 --enable-local-libopts --disable-doc --disable-tests --disable-guile \
+-                      $(CONFIGURE_HACKS)
++                      --disable-tools $(CONFIGURE_HACKS)
+ 
+ LIBDYLIB=$(PLATFORM)/lib/.libs/lib$(LIBNAME).a
+ 
+@@ -32,6 +31,8 @@ $(PLATFORM): $(TARBALLS_LOCATION)/$(ARCHIVE) $(DEPS)
+ 	cd $(PLATFORM); $(ARCHIVE_TOOL) $(ARCHIVE_TOOL_FLAGS) $(TARBALLS_LOCATION)/$(ARCHIVE)
+ 	cd $(PLATFORM); patch -p1 -i ../size-max.patch
+ 	cd $(PLATFORM); patch -p1 -i ../02-darwin-getentropy.patch
++	cd $(PLATFORM); patch -p1 -i ../remove-weak_import-check-for-osx.patch
++	cd $(PLATFORM); patch -p1 -i ../add-dl-as-private-lib.patch
+ 	cd $(PLATFORM); $(AUTORECONF) -vif
+ 	cd $(PLATFORM); $(CONFIGURE)
+ 
+diff --git a/tools/depends/target/gnutls/add-dl-as-private-lib.patch b/tools/depends/target/gnutls/add-dl-as-private-lib.patch
+new file mode 100644
+index 000000000000..d49392129b22
+--- /dev/null
++++ b/tools/depends/target/gnutls/add-dl-as-private-lib.patch
+@@ -0,0 +1,26 @@
++diff --git a/configure.ac b/configure.ac
++index db1ce841f..264712b56 100644
++--- a/configure.ac
+++++ b/configure.ac
++@@ -512,6 +512,9 @@ LT_INIT([disable-static,win32-dll,shared])
++ 
++ 
++ AC_LIB_HAVE_LINKFLAGS(dl,, [#include <dlfcn.h>], [dladdr (0, 0);])
+++if test "x$HAVE_LIBDL" = "xyes"; then
+++      AC_SUBST([LIBDL], [-ldl])
+++fi
++ 
++ AC_ARG_ENABLE(fips140-mode,
++   AS_HELP_STRING([--enable-fips140-mode], [enable FIPS140-2 mode]),
++diff --git a/lib/gnutls.pc.in b/lib/gnutls.pc.in
++index ffad3e168..15b990764 100644
++--- a/lib/gnutls.pc.in
+++++ b/lib/gnutls.pc.in
++@@ -19,6 +19,6 @@ Description: Transport Security Layer implementation for the GNU system
++ URL: https://www.gnutls.org/
++ Version: @VERSION@
++ Libs: -L${libdir} -lgnutls
++-Libs.private: @LIBINTL@ @LIBSOCKET@ @INET_PTON_LIB@ @LIBPTHREAD@ @LIB_SELECT@ @TSS_LIBS@ @GMP_LIBS@ @LIBUNISTRING@ @LIBIDN2_LIBS@ @LIBATOMIC_LIBS@
+++Libs.private: @LIBINTL@ @LIBSOCKET@ @INET_PTON_LIB@ @LIBPTHREAD@ @LIB_SELECT@ @TSS_LIBS@ @GMP_LIBS@ @LIBUNISTRING@ @LIBIDN2_LIBS@ @LIBATOMIC_LIBS@ @LIBDL@
++ @GNUTLS_REQUIRES_PRIVATE@
++ Cflags: -I${includedir}
+diff --git a/tools/depends/target/gnutls/remove-weak_import-check-for-osx.patch b/tools/depends/target/gnutls/remove-weak_import-check-for-osx.patch
+new file mode 100644
+index 000000000000..ec2b3b0a838d
+--- /dev/null
++++ b/tools/depends/target/gnutls/remove-weak_import-check-for-osx.patch
+@@ -0,0 +1,17 @@
++--- a/configure.ac	2020-01-25 08:26:59.223068640 -0800
+++++ b/configure.ac	2020-01-25 08:26:38.846233553 -0800
++@@ -122,14 +122,6 @@
++   ;;
++   *darwin*)
++     have_macosx=yes
++-    save_LDFLAGS="$LDFLAGS"
++-    dnl Try to use -no_weak_imports if available. This makes sure we
++-    dnl error out when linking to a function that doesn't exist in the
++-    dnl intended minimum runtime version.
++-    LDFLAGS="$LDFLAGS -Wl,-no_weak_imports"
++-    AC_MSG_CHECKING([whether the linker supports -Wl,-no_weak_imports])
++-    AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])],
++-      [AC_MSG_RESULT(yes)], [AC_MSG_RESULT(no); LDFLAGS="$save_LDFLAGS"])
++   ;;
++   *solaris*)
++     have_elf=yes
