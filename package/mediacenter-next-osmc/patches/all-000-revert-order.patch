@@ -71,7 +71,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/ThumbLoader.h                                 |  1 -
  xbmc/URL.h                                         |  3 +-
  xbmc/Util.h                                        |  9 ++-
- xbmc/XBDateTime.h                                  |  4 +-
  xbmc/addons/AddonDatabase.cpp                      | 12 ++--
  xbmc/addons/AddonDatabase.h                        | 10 ++--
  xbmc/addons/addoninfo/AddonInfo.h                  |  3 +-
@@ -3139,22 +3138,6 @@ index 28eacfdf05..d13a995d02 100644
  
  #define ARRAY_SIZE(X)         (sizeof(X)/sizeof((X)[0]))
  
-diff --git a/xbmc/XBDateTime.h b/xbmc/XBDateTime.h
-index 1deab13017..d1566f86c5 100644
---- a/xbmc/XBDateTime.h
-+++ b/xbmc/XBDateTime.h
-@@ -9,10 +9,8 @@
- #pragma once
- 
- #include "utils/IArchivable.h"
--
--#include <string>
--
- #include "PlatformDefs.h"
-+#include <string>
- 
- /*! \brief TIME_FORMAT enum/bitmask used for formatting time strings
-  Note the use of bitmasking, e.g.
 diff --git a/xbmc/addons/AddonDatabase.cpp b/xbmc/addons/AddonDatabase.cpp
 index 846d756ba1..19eca090ba 100644
 --- a/xbmc/addons/AddonDatabase.cpp
@@ -5478,37 +5461,6 @@ index 139352d4bb..b4599ad482 100644
  
  static const char *ContextStateToString(pa_context_state s)
  {
-diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkPi.cpp b/xbmc/cores/AudioEngine/Sinks/AESinkPi.cpp
-index 026c8b778e..edcaf09d3f 100644
---- a/xbmc/cores/AudioEngine/Sinks/AESinkPi.cpp
-+++ b/xbmc/cores/AudioEngine/Sinks/AESinkPi.cpp
-@@ -6,21 +6,19 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
--#include "AESinkPi.h"
-+#include <stdint.h>
-+#include <limits.h>
-+#include <cassert>
- 
-+#include "AESinkPi.h"
- #include "ServiceBroker.h"
- #include "cores/AudioEngine/AESinkFactory.h"
- #include "cores/AudioEngine/Utils/AEUtil.h"
-+#include "utils/log.h"
- #include "settings/Settings.h"
- #include "settings/SettingsComponent.h"
--#include "utils/log.h"
--
- #include "platform/linux/RBP.h"
- 
--#include <cassert>
--#include <limits.h>
--#include <stdint.h>
--
- #define CLASSNAME "CAESinkPi"
- 
- #define NUM_OMX_BUFFERS 2
 diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkSNDIO.cpp b/xbmc/cores/AudioEngine/Sinks/AESinkSNDIO.cpp
 index 97bec7063b..de1f6aea47 100644
 --- a/xbmc/cores/AudioEngine/Sinks/AESinkSNDIO.cpp
@@ -5540,36 +5492,6 @@ index 668a3b7b79..a5f3aacaa0 100644
  class CAESinkSNDIO : public IAESink
  {
  public:
-diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkWASAPI.cpp b/xbmc/cores/AudioEngine/Sinks/AESinkWASAPI.cpp
-index f65fc1e78e..91bb8145f8 100644
---- a/xbmc/cores/AudioEngine/Sinks/AESinkWASAPI.cpp
-+++ b/xbmc/cores/AudioEngine/Sinks/AESinkWASAPI.cpp
-@@ -7,19 +7,17 @@
-  */
- 
- #include "AESinkWASAPI.h"
-+#include <Audioclient.h>
-+#include <stdint.h>
-+#include <algorithm>
- 
- #include "cores/AudioEngine/AESinkFactory.h"
--#include "cores/AudioEngine/Utils/AEDeviceInfo.h"
- #include "cores/AudioEngine/Utils/AEUtil.h"
--#include "utils/StringUtils.h"
--#include "utils/TimeUtils.h"
- #include "utils/log.h"
--
--#include <algorithm>
--#include <stdint.h>
--
--#include <Audioclient.h>
-+#include "utils/TimeUtils.h"
-+#include "cores/AudioEngine/Utils/AEDeviceInfo.h"
- #include <Mmreg.h>
-+#include "utils/StringUtils.h"
- 
- #ifdef TARGET_WINDOWS_DESKTOP
- #  pragma comment(lib, "Avrt.lib")
 diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkWASAPI.h b/xbmc/cores/AudioEngine/Sinks/AESinkWASAPI.h
 index 1f735b8db0..6cdf22c9fc 100644
 --- a/xbmc/cores/AudioEngine/Sinks/AESinkWASAPI.h
