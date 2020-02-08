@@ -197,8 +197,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/cores/AudioEngine/Sinks/AESinkSNDIO.h         |  5 +-
  xbmc/cores/AudioEngine/Sinks/AESinkWASAPI.cpp      | 14 ++---
  xbmc/cores/AudioEngine/Sinks/AESinkWASAPI.h        |  7 +--
- xbmc/cores/AudioEngine/Sinks/AESinkXAudio.cpp      | 11 ++--
- xbmc/cores/AudioEngine/Sinks/AESinkXAudio.h        | 13 ++---
  .../AudioEngine/Sinks/alsa/ALSADeviceMonitor.cpp   | 10 ++--
  .../AudioEngine/Sinks/alsa/ALSAHControlMonitor.cpp |  8 +--
  .../AudioEngine/Sinks/alsa/ALSAHControlMonitor.h   |  2 +-
@@ -494,8 +492,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/dialogs/GUIDialogMediaFilter.cpp              |  5 +-
  xbmc/dialogs/GUIDialogMediaFilter.h                | 10 ++--
  xbmc/dialogs/GUIDialogMediaSource.h                |  4 +-
- xbmc/dialogs/GUIDialogNumeric.cpp                  | 12 ++--
- xbmc/dialogs/GUIDialogNumeric.h                    |  4 +-
  xbmc/dialogs/GUIDialogOK.cpp                       |  3 +-
  xbmc/dialogs/GUIDialogPlayEject.cpp                |  5 +-
  xbmc/dialogs/GUIDialogProgress.cpp                 |  7 +--
@@ -1337,13 +1333,9 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/platform/posix/PosixResourceCounter.cpp       |  4 +-
  xbmc/platform/posix/PosixResourceCounter.h         |  6 +-
  xbmc/platform/posix/PosixTimezone.h                |  3 +-
- xbmc/platform/posix/XFileUtils.h                   |  3 +-
  xbmc/platform/posix/XHandle.cpp                    |  3 +-
  xbmc/platform/posix/XHandle.h                      |  7 +--
- xbmc/platform/posix/filesystem/PosixDirectory.cpp  |  6 +-
  xbmc/platform/posix/filesystem/PosixFile.cpp       | 19 +++----
- xbmc/platform/posix/filesystem/SMBDirectory.cpp    | 12 ++--
- xbmc/platform/posix/filesystem/SMBDirectory.h      |  4 +-
  xbmc/platform/posix/filesystem/SMBFile.cpp         | 14 ++---
  xbmc/platform/posix/utils/FileHandle.h             |  4 +-
  xbmc/platform/posix/utils/Mmap.h                   |  4 +-
@@ -1504,7 +1496,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/utils/ActorProtocol.h                         |  2 +-
  xbmc/utils/AlarmClock.cpp                          |  6 +-
  xbmc/utils/Archive.cpp                             | 13 +++--
- xbmc/utils/Archive.h                               |  3 +-
  xbmc/utils/BitstreamStats.cpp                      |  1 -
  xbmc/utils/BooleanLogic.cpp                        |  3 +-
  xbmc/utils/BooleanLogic.h                          |  7 ++-
@@ -1562,7 +1553,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/utils/RingBuffer.cpp                          |  5 +-
  xbmc/utils/RssManager.cpp                          | 10 ++--
  xbmc/utils/RssManager.h                            | 11 ++--
- xbmc/utils/RssReader.h                             |  9 ++-
  xbmc/utils/SaveFileStateJob.cpp                    | 19 +++----
  xbmc/utils/ScraperUrl.cpp                          | 15 +++--
  xbmc/utils/ScraperUrl.h                            |  2 +-
@@ -1687,8 +1677,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/windowing/XBMC_events.h                       |  2 +-
  xbmc/windowing/android/AndroidUtils.cpp            | 37 ++++++------
  xbmc/windowing/android/AndroidUtils.h              |  6 +-
- xbmc/windowing/android/VideoSyncAndroid.cpp        | 12 ++--
- xbmc/windowing/android/VideoSyncAndroid.h          |  2 +-
  xbmc/windowing/android/WinEventsAndroid.cpp        |  2 +-
  xbmc/windowing/android/WinEventsAndroid.h          | 12 ++--
  xbmc/windowing/android/WinSystemAndroid.cpp        | 31 +++++------
@@ -1697,8 +1685,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  .../android/WinSystemAndroidGLESContext.h          |  4 +-
  xbmc/windowing/gbm/DRMAtomic.cpp                   | 12 ++--
  xbmc/windowing/gbm/DRMLegacy.cpp                   | 19 +++----
- xbmc/windowing/gbm/DRMUtils.cpp                    | 20 +++----
- xbmc/windowing/gbm/DRMUtils.h                      | 16 +++---
  xbmc/windowing/gbm/GBMUtils.cpp                    |  1 -
  xbmc/windowing/gbm/OffScreenModeSetting.cpp        |  1 -
  xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp      |  6 +-
@@ -5606,72 +5592,6 @@ index 1f735b8db0..6cdf22c9fc 100644
  #include <wrl/client.h>
  
  class CAESinkWASAPI : public IAESink
-diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkXAudio.cpp b/xbmc/cores/AudioEngine/Sinks/AESinkXAudio.cpp
-index 4450ced6ce..affe694b34 100644
---- a/xbmc/cores/AudioEngine/Sinks/AESinkXAudio.cpp
-+++ b/xbmc/cores/AudioEngine/Sinks/AESinkXAudio.cpp
-@@ -7,28 +7,25 @@
-  */
- 
- #include "AESinkXAudio.h"
--
- #include "ServiceBroker.h"
- #include "cores/AudioEngine/AESinkFactory.h"
- #include "cores/AudioEngine/Sinks/windows/AESinkFactoryWin.h"
- #include "cores/AudioEngine/Utils/AEDeviceInfo.h"
- #include "cores/AudioEngine/Utils/AEUtil.h"
-+#include "platform/win32/CharsetConverter.h"
-+#include "platform/win10/AsyncHelpers.h"
- #include "settings/AdvancedSettings.h"
- #include "settings/SettingsComponent.h"
-+#include "utils/log.h"
- #include "utils/StringUtils.h"
- #include "utils/TimeUtils.h"
--#include "utils/log.h"
--
--#include "platform/win10/AsyncHelpers.h"
--#include "platform/win32/CharsetConverter.h"
- 
- #include <algorithm>
--#include <stdint.h>
--
- #include <ksmedia.h>
- #include <mfapi.h>
- #include <mmdeviceapi.h>
- #include <mmreg.h>
-+#include <stdint.h>
- #include <wrl/implements.h>
- 
- using namespace Microsoft::WRL;
-diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkXAudio.h b/xbmc/cores/AudioEngine/Sinks/AESinkXAudio.h
-index 7c34e83800..16c683a333 100644
---- a/xbmc/cores/AudioEngine/Sinks/AESinkXAudio.h
-+++ b/xbmc/cores/AudioEngine/Sinks/AESinkXAudio.h
-@@ -8,18 +8,17 @@
- 
- #pragma once
- 
--#include "cores/AudioEngine/Interfaces/AESink.h"
--#include "cores/AudioEngine/Utils/AEDeviceInfo.h"
--
- #include <stdint.h>
--
- #include <mmdeviceapi.h>
--#include <ppltasks.h>
-+#include "cores/AudioEngine/Interfaces/AESink.h"
-+#include "cores/AudioEngine/Utils/AEDeviceInfo.h"
- #include <wrl/implements.h>
--#include <x3daudio.h>
--#include <xapofx.h>
-+#include <ppltasks.h>
-+
- #include <xaudio2.h>
- #include <xaudio2fx.h>
-+#include <x3daudio.h>
-+#include <xapofx.h>
- #pragma comment(lib,"xaudio2.lib")
- 
- class CAESinkXAudio : public IAESink
 diff --git a/xbmc/cores/AudioEngine/Sinks/alsa/ALSADeviceMonitor.cpp b/xbmc/cores/AudioEngine/Sinks/alsa/ALSADeviceMonitor.cpp
 index 13afdd8684..7cdbc86bca 100644
 --- a/xbmc/cores/AudioEngine/Sinks/alsa/ALSADeviceMonitor.cpp
@@ -11234,54 +11154,6 @@ index 10ee3e4b4b..f3b45fe41e 100644
  class CFileItemList;
  class CMediaSource;
  
-diff --git a/xbmc/dialogs/GUIDialogNumeric.cpp b/xbmc/dialogs/GUIDialogNumeric.cpp
-index 1958c8fb3a..11a6ed49ff 100644
---- a/xbmc/dialogs/GUIDialogNumeric.cpp
-+++ b/xbmc/dialogs/GUIDialogNumeric.cpp
-@@ -8,20 +8,20 @@
- 
- #include "GUIDialogNumeric.h"
- 
-+#include <cassert>
-+
- #include "ServiceBroker.h"
- #include "guilib/GUIComponent.h"
- #include "guilib/GUILabelControl.h"
- #include "guilib/GUIWindowManager.h"
--#include "guilib/LocalizeStrings.h"
--#include "input/Key.h"
- #include "input/XBMC_vkeys.h"
--#include "interfaces/AnnouncementManager.h"
--#include "messaging/helpers/DialogOKHelper.h"
- #include "utils/Digest.h"
- #include "utils/StringUtils.h"
- #include "utils/Variant.h"
--
--#include <cassert>
-+#include "input/Key.h"
-+#include "guilib/LocalizeStrings.h"
-+#include "interfaces/AnnouncementManager.h"
-+#include "messaging/helpers/DialogOKHelper.h"
- 
- #define CONTROL_HEADING_LABEL  1
- #define CONTROL_INPUT_LABEL    4
-diff --git a/xbmc/dialogs/GUIDialogNumeric.h b/xbmc/dialogs/GUIDialogNumeric.h
-index 33d9b5a014..04c4d54951 100644
---- a/xbmc/dialogs/GUIDialogNumeric.h
-+++ b/xbmc/dialogs/GUIDialogNumeric.h
-@@ -8,11 +8,9 @@
- 
- #pragma once
- 
--#include "guilib/GUIDialog.h"
--
- #include <cstdint>
--
- #include "PlatformDefs.h"
-+#include "guilib/GUIDialog.h"
- 
- enum class InputVerificationResult
- {
 diff --git a/xbmc/dialogs/GUIDialogOK.cpp b/xbmc/dialogs/GUIDialogOK.cpp
 index b004a8efab..40a9e1a9c6 100644
 --- a/xbmc/dialogs/GUIDialogOK.cpp
@@ -27317,21 +27189,6 @@ index 8272c4082d..9de4ca9217 100644
  
  class CSetting;
  struct StringSettingOption;
-diff --git a/xbmc/platform/posix/XFileUtils.h b/xbmc/platform/posix/XFileUtils.h
-index a246977a99..68760bbea7 100644
---- a/xbmc/platform/posix/XFileUtils.h
-+++ b/xbmc/platform/posix/XFileUtils.h
-@@ -8,9 +8,8 @@
- 
- #pragma once
- 
--#include "XHandlePublic.h"
--
- #include "PlatformDefs.h"
-+#include "XHandlePublic.h"
- 
- int WriteFile(HANDLE hFile, const void * lpBuffer, DWORD nNumberOfBytesToWrite,  unsigned int* lpNumberOfBytesWritten, void* lpOverlapped);
- int ReadFile( HANDLE hFile, void* lpBuffer, DWORD nNumberOfBytesToRead, unsigned int* lpNumberOfBytesRead, void* unsupportedlpOverlapped);
 diff --git a/xbmc/platform/posix/XHandle.cpp b/xbmc/platform/posix/XHandle.cpp
 index 7f754c783b..a42d5696f5 100644
 --- a/xbmc/platform/posix/XHandle.cpp
@@ -27370,28 +27227,6 @@ index 158817ed0f..6c9799ea9e 100644
  
  struct CXHandle {
  
-diff --git a/xbmc/platform/posix/filesystem/PosixDirectory.cpp b/xbmc/platform/posix/filesystem/PosixDirectory.cpp
-index 6bf5b88a09..4fc2226f0f 100644
---- a/xbmc/platform/posix/filesystem/PosixDirectory.cpp
-+++ b/xbmc/platform/posix/filesystem/PosixDirectory.cpp
-@@ -7,15 +7,13 @@
-  */
- 
- #include "PosixDirectory.h"
--
--#include "FileItem.h"
--#include "URL.h"
- #include "utils/AliasShortcutUtils.h"
- #include "utils/CharsetConverter.h"
- #include "utils/StringUtils.h"
- #include "utils/URIUtils.h"
--
-+#include "FileItem.h"
- #include "platform/posix/XTimeUtils.h"
-+#include "URL.h"
- 
- #include <dirent.h>
- #include <sys/stat.h>
 diff --git a/xbmc/platform/posix/filesystem/PosixFile.cpp b/xbmc/platform/posix/filesystem/PosixFile.cpp
 index 355a232952..340f4f17f6 100644
 --- a/xbmc/platform/posix/filesystem/PosixFile.cpp
@@ -27427,51 +27262,6 @@ index 355a232952..340f4f17f6 100644
  
  using namespace XFILE;
  
-diff --git a/xbmc/platform/posix/filesystem/SMBDirectory.cpp b/xbmc/platform/posix/filesystem/SMBDirectory.cpp
-index a38d3faa45..842a534e3c 100644
---- a/xbmc/platform/posix/filesystem/SMBDirectory.cpp
-+++ b/xbmc/platform/posix/filesystem/SMBDirectory.cpp
-@@ -18,19 +18,17 @@
- */
- 
- #include "SMBDirectory.h"
--
--#include "FileItem.h"
--#include "PasswordManager.h"
--#include "ServiceBroker.h"
- #include "Util.h"
- #include "guilib/LocalizeStrings.h"
-+#include "FileItem.h"
-+#include "ServiceBroker.h"
- #include "settings/AdvancedSettings.h"
- #include "settings/SettingsComponent.h"
--#include "threads/SingleLock.h"
- #include "utils/StringUtils.h"
--#include "utils/URIUtils.h"
- #include "utils/log.h"
--
-+#include "utils/URIUtils.h"
-+#include "threads/SingleLock.h"
-+#include "PasswordManager.h"
- #include "platform/posix/XTimeUtils.h"
- 
- #include <libsmbclient.h>
-diff --git a/xbmc/platform/posix/filesystem/SMBDirectory.h b/xbmc/platform/posix/filesystem/SMBDirectory.h
-index 693cfa033b..01de82d387 100644
---- a/xbmc/platform/posix/filesystem/SMBDirectory.h
-+++ b/xbmc/platform/posix/filesystem/SMBDirectory.h
-@@ -8,9 +8,9 @@
- 
- #pragma once
- 
--#include "MediaSource.h"
--#include "SMBFile.h"
- #include "filesystem/IDirectory.h"
-+#include "SMBFile.h"
-+#include "MediaSource.h"
- 
- namespace XFILE
- {
 diff --git a/xbmc/platform/posix/filesystem/SMBFile.cpp b/xbmc/platform/posix/filesystem/SMBFile.cpp
 index c3aad33658..71e6ec5a6c 100644
 --- a/xbmc/platform/posix/filesystem/SMBFile.cpp
@@ -30419,22 +30209,6 @@ index 830cd13703..fc4f21783e 100644
  #ifdef __GNUC__
  #pragma GCC diagnostic ignored "-Wlong-long"
  #endif
-diff --git a/xbmc/utils/Archive.h b/xbmc/utils/Archive.h
-index 48cbec8fd8..e6bf427d86 100644
---- a/xbmc/utils/Archive.h
-+++ b/xbmc/utils/Archive.h
-@@ -8,10 +8,9 @@
- 
- #pragma once
- 
--#include <memory>
- #include <string>
-+#include <memory>
- #include <vector>
--
- #include "PlatformDefs.h" // for SYSTEMTIME
- 
- #define CARCHIVE_BUFFER_MAX 4096
 diff --git a/xbmc/utils/BitstreamStats.cpp b/xbmc/utils/BitstreamStats.cpp
 index a35a757cf6..a536c4dfce 100644
 --- a/xbmc/utils/BitstreamStats.cpp
@@ -31536,30 +31310,6 @@ index 399cfa48a5..c99fb91e93 100644
  
  class CRssReader;
  class IRssObserver;
-diff --git a/xbmc/utils/RssReader.h b/xbmc/utils/RssReader.h
-index a22271a891..6ea8e42959 100644
---- a/xbmc/utils/RssReader.h
-+++ b/xbmc/utils/RssReader.h
-@@ -8,15 +8,14 @@
- 
- #pragma once
- 
--#include "threads/CriticalSection.h"
--#include "threads/Thread.h"
--#include "utils/IRssObserver.h"
--#include "utils/XBMCTinyXML.h"
--
- #include <list>
- #include <string>
- #include <vector>
- 
-+#include "threads/CriticalSection.h"
-+#include "threads/Thread.h"
-+#include "utils/IRssObserver.h"
-+#include "utils/XBMCTinyXML.h"
- #include "PlatformDefs.h"
- 
- class CRssReader : public CThread
 diff --git a/xbmc/utils/SaveFileStateJob.cpp b/xbmc/utils/SaveFileStateJob.cpp
 index 26b7b5c317..e0dca81eae 100644
 --- a/xbmc/utils/SaveFileStateJob.cpp
@@ -34325,182 +34075,6 @@ index ba9f9e315f..804fc6da77 100644
  
  /* Event enumerations */
  typedef enum {
-diff --git a/xbmc/windowing/android/VideoSyncAndroid.cpp b/xbmc/windowing/android/VideoSyncAndroid.cpp
-index fee3fb3ebb..7fb2117f7f 100644
---- a/xbmc/windowing/android/VideoSyncAndroid.cpp
-+++ b/xbmc/windowing/android/VideoSyncAndroid.cpp
-@@ -6,17 +6,15 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
--#include "VideoSyncAndroid.h"
--
-+#include "utils/log.h"
- #include "ServiceBroker.h"
-+#include "VideoSyncAndroid.h"
- #include "cores/VideoPlayer/VideoReferenceClock.h"
--#include "utils/MathUtils.h"
- #include "utils/TimeUtils.h"
--#include "utils/log.h"
--#include "windowing/GraphicContext.h"
--#include "windowing/WinSystem.h"
--
- #include "platform/android/activity/XBMCApp.h"
-+#include "windowing/WinSystem.h"
-+#include "windowing/GraphicContext.h"
-+#include "utils/MathUtils.h"
- #include "platform/posix/XTimeUtils.h"
- 
- 
-diff --git a/xbmc/windowing/android/VideoSyncAndroid.h b/xbmc/windowing/android/VideoSyncAndroid.h
-index ec261fe975..9a74db3657 100644
---- a/xbmc/windowing/android/VideoSyncAndroid.h
-+++ b/xbmc/windowing/android/VideoSyncAndroid.h
-@@ -8,8 +8,8 @@
- 
- #pragma once
- 
--#include "guilib/DispResource.h"
- #include "windowing/VideoSync.h"
-+#include "guilib/DispResource.h"
- 
- class CVideoSyncAndroid : public CVideoSync, IDispResource
- {
-diff --git a/xbmc/windowing/android/WinEventsAndroid.cpp b/xbmc/windowing/android/WinEventsAndroid.cpp
-index 4645923ee8..ad3025de5e 100644
---- a/xbmc/windowing/android/WinEventsAndroid.cpp
-+++ b/xbmc/windowing/android/WinEventsAndroid.cpp
-@@ -9,11 +9,11 @@
- #include "WinEventsAndroid.h"
- 
- #include "AppInboundProtocol.h"
--#include "ServiceBroker.h"
- #include "guilib/GUIComponent.h"
- #include "guilib/GUIWindowManager.h"
- #include "input/InputManager.h"
- #include "input/XBMC_vkeys.h"
-+#include "ServiceBroker.h"
- #include "utils/log.h"
- 
- #define ALMOST_ZERO 0.125f
-diff --git a/xbmc/windowing/android/WinEventsAndroid.h b/xbmc/windowing/android/WinEventsAndroid.h
-index afc8f3383d..81d36248b9 100644
---- a/xbmc/windowing/android/WinEventsAndroid.h
-+++ b/xbmc/windowing/android/WinEventsAndroid.h
-@@ -8,15 +8,15 @@
- 
- #pragma once
- 
--#include "threads/CriticalSection.h"
--#include "threads/Event.h"
--#include "threads/Thread.h"
--#include "windowing/WinEvents.h"
--
- #include <list>
- #include <queue>
--#include <string>
- #include <vector>
-+#include <string>
-+
-+#include "threads/Event.h"
-+#include "threads/Thread.h"
-+#include "threads/CriticalSection.h"
-+#include "windowing/WinEvents.h"
- 
- class CWinEventsAndroid : public IWinEvents, public CThread
- {
-diff --git a/xbmc/windowing/android/WinSystemAndroid.cpp b/xbmc/windowing/android/WinSystemAndroid.cpp
-index d86fe5b5c8..de521bc1bc 100644
---- a/xbmc/windowing/android/WinSystemAndroid.cpp
-+++ b/xbmc/windowing/android/WinSystemAndroid.cpp
-@@ -8,19 +8,28 @@
- 
- #include "WinSystemAndroid.h"
- 
--#include "OSScreenSaverAndroid.h"
--#include "ServiceBroker.h"
--#include "WinEventsAndroid.h"
-+#include <string.h>
-+#include <float.h>
-+
-+#include <EGL/egl.h>
-+#include <EGL/eglplatform.h>
-+
- #include "addons/interfaces/platform/android/System.h"
- #include "cores/RetroPlayer/process/android/RPProcessInfoAndroid.h"
- #include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererOpenGLES.h"
--#include "cores/VideoPlayer/DVDCodecs/Audio/DVDAudioCodecAndroidMediaCodec.h"
- #include "cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.h"
--#include "cores/VideoPlayer/Process/android/ProcessInfoAndroid.h"
-+#include "cores/VideoPlayer/DVDCodecs/Audio/DVDAudioCodecAndroidMediaCodec.h"
- #include "cores/VideoPlayer/VideoRenderers/HwDecRender/RendererMediaCodec.h"
-+#include "cores/VideoPlayer/Process/android/ProcessInfoAndroid.h"
- #include "cores/VideoPlayer/VideoRenderers/HwDecRender/RendererMediaCodecSurface.h"
- #include "guilib/DispResource.h"
-+#include "OSScreenSaverAndroid.h"
-+#include "platform/android/powermanagement/AndroidPowerSyscall.h"
-+#include "platform/android/media/drm/MediaDrmCryptoSession.h"
-+#include "platform/android/media/decoderfilter/MediaCodecDecoderFilterManager.h"
-+#include "platform/android/activity/XBMCApp.h"
- #include "rendering/gles/ScreenshotSurfaceGLES.h"
-+#include "ServiceBroker.h"
- #include "settings/DisplaySettings.h"
- #include "settings/Settings.h"
- #include "settings/SettingsComponent.h"
-@@ -28,17 +37,7 @@
- #include "utils/log.h"
- #include "windowing/GraphicContext.h"
- #include "windowing/Resolution.h"
--
--#include "platform/android/activity/XBMCApp.h"
--#include "platform/android/media/decoderfilter/MediaCodecDecoderFilterManager.h"
--#include "platform/android/media/drm/MediaDrmCryptoSession.h"
--#include "platform/android/powermanagement/AndroidPowerSyscall.h"
--
--#include <float.h>
--#include <string.h>
--
--#include <EGL/egl.h>
--#include <EGL/eglplatform.h>
-+#include "WinEventsAndroid.h"
- 
- using namespace KODI;
- 
-diff --git a/xbmc/windowing/android/WinSystemAndroid.h b/xbmc/windowing/android/WinSystemAndroid.h
-index 23eac63de1..34068c2363 100644
---- a/xbmc/windowing/android/WinSystemAndroid.h
-+++ b/xbmc/windowing/android/WinSystemAndroid.h
-@@ -9,11 +9,11 @@
- #pragma once
- 
- #include "AndroidUtils.h"
-+
- #include "rendering/gles/RenderSystemGLES.h"
- #include "threads/CriticalSection.h"
--#include "threads/Timer.h"
- #include "windowing/WinSystem.h"
--
-+#include "threads/Timer.h"
- #include <EGL/egl.h>
- 
- class CDecoderFilterManager;
-diff --git a/xbmc/windowing/android/WinSystemAndroidGLESContext.h b/xbmc/windowing/android/WinSystemAndroidGLESContext.h
-index 7194217b1a..f674e3dcd9 100644
---- a/xbmc/windowing/android/WinSystemAndroidGLESContext.h
-+++ b/xbmc/windowing/android/WinSystemAndroidGLESContext.h
-@@ -8,10 +8,10 @@
- 
- #pragma once
- 
--#include "WinSystemAndroid.h"
--#include "rendering/gles/RenderSystemGLES.h"
- #include "utils/EGLUtils.h"
-+#include "rendering/gles/RenderSystemGLES.h"
- #include "utils/GlobalsHandling.h"
-+#include "WinSystemAndroid.h"
- 
- class CWinSystemAndroidGLESContext : public CWinSystemAndroid, public CRenderSystemGLES
- {
 diff --git a/xbmc/windowing/gbm/DRMAtomic.cpp b/xbmc/windowing/gbm/DRMAtomic.cpp
 index dcd7903db2..0299fc9caa 100644
 --- a/xbmc/windowing/gbm/DRMAtomic.cpp
@@ -34570,45 +34144,6 @@ index 95f68f4910..bf51fd2bd7 100644
  using namespace KODI::WINDOWING::GBM;
  
  static int flip_happening = 0;
-diff --git a/xbmc/windowing/gbm/DRMUtils.cpp b/xbmc/windowing/gbm/DRMUtils.cpp
-index bbbc447498..ec10b6f5e4 100644
---- a/xbmc/windowing/gbm/DRMUtils.cpp
-+++ b/xbmc/windowing/gbm/DRMUtils.cpp
-@@ -6,25 +6,23 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
--#include "DRMUtils.h"
--
--#include "utils/StringUtils.h"
--#include "utils/log.h"
--#include "windowing/GraphicContext.h"
--
--#include "platform/posix/XTimeUtils.h"
--
- #include <errno.h>
-+#include <fcntl.h>
- #include <stdint.h>
- #include <stdio.h>
- #include <stdlib.h>
- #include <string.h>
--
--#include <EGL/egl.h>
- #include <drm_mode.h>
--#include <fcntl.h>
-+#include <EGL/egl.h>
- #include <unistd.h>
- 
-+#include "platform/posix/XTimeUtils.h"
-+#include "utils/log.h"
-+#include "utils/StringUtils.h"
-+#include "windowing/GraphicContext.h"
-+
-+#include "DRMUtils.h"
-+
- using namespace KODI::WINDOWING::GBM;
- 
- CDRMUtils::CDRMUtils()
 diff --git a/xbmc/windowing/gbm/DRMUtils.h b/xbmc/windowing/gbm/DRMUtils.h
 index 4ff5b78624..6d6275d31b 100644
 --- a/xbmc/windowing/gbm/DRMUtils.h
@@ -34698,38 +34233,6 @@ index e74561d0e8..ce5d6fc2e2 100644
  #include <memory>
  
  namespace KODI
-diff --git a/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp b/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp
-index 76b8eb85bf..dcdfc1d4b7 100644
---- a/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp
-+++ b/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp
-@@ -6,22 +6,19 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
--#include "WinSystemGbmGLContext.h"
--
--#include "OptionalsReg.h"
- #include "cores/RetroPlayer/process/gbm/RPProcessInfoGbm.h"
- #include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererGBM.h"
- #include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererOpenGL.h"
- #include "cores/VideoPlayer/DVDCodecs/DVDFactoryCodec.h"
- #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGL.h"
- #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
--#include "rendering/gl/ScreenshotSurfaceGL.h"
--#include "utils/log.h"
--
--#include "platform/posix/XTimeUtils.h"
--
- #include <EGL/egl.h>
- #include <EGL/eglext.h>
-+#include "WinSystemGbmGLContext.h"
-+#include "OptionalsReg.h"
-+#include "platform/posix/XTimeUtils.h"
-+#include "rendering/gl/ScreenshotSurfaceGL.h"
-+#include "utils/log.h"
- 
- using namespace KODI::WINDOWING::GBM;
- 
 diff --git a/xbmc/windowing/gbm/WinSystemGbmGLContext.h b/xbmc/windowing/gbm/WinSystemGbmGLContext.h
 index 3c053d4005..bca1eff0f4 100644
 --- a/xbmc/windowing/gbm/WinSystemGbmGLContext.h
