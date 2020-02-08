@@ -686,15 +686,15 @@ index 91def52a93..257f1e26c7 100644
 --- a/xbmc/cores/AudioEngine/Sinks/AESinkALSA.cpp
 +++ b/xbmc/cores/AudioEngine/Sinks/AESinkALSA.cpp
 @@ -25,6 +25,9 @@
- #include "threads/SingleLock.h"
  #include "settings/AdvancedSettings.h"
  #include "settings/SettingsComponent.h"
+ #include "threads/SingleLock.h"
 +#if defined(HAS_LIBAMCODEC)
 +#include "utils/AMLUtils.h"
 +#endif
- 
- #ifdef TARGET_POSIX
- #include "platform/posix/XTimeUtils.h"
+ #include "utils/MathUtils.h"
+ #include "utils/SystemInfo.h"
+ #include "utils/XTimeUtils.h"
 @@ -499,6 +502,12 @@ bool CAESinkALSA::Initialize(AEAudioFormat &format, std::string &device)
    {
      m_passthrough   = false;
