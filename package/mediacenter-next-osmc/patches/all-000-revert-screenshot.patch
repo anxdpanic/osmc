@@ -22,7 +22,6 @@ This reverts commit 2c9bcbcfc40e3cc8ee9881a06da51651edefe1a9.
  xbmc/utils/Screenshot.cpp                          | 187 ++++++++++++++++++---
  xbmc/utils/Screenshot.h                            |  25 +--
  xbmc/windowing/X11/WinSystemX11GLContext.cpp       |   3 -
- xbmc/windowing/android/WinSystemAndroid.cpp        |   4 -
  xbmc/windowing/gbm/WinSystemGbmGLContext.cpp       |   3 -
  xbmc/windowing/gbm/WinSystemGbmGLESContext.cpp     |   3 -
  xbmc/windowing/ios/WinSystemIOS.mm                 |   2 -
@@ -884,28 +883,6 @@ index 3f55941f2f..08ba6f074d 100644
    std::string gpuvendor;
    const char* vend = (const char*) glGetString(GL_VENDOR);
    if (vend)
-diff --git a/xbmc/windowing/android/WinSystemAndroid.cpp b/xbmc/windowing/android/WinSystemAndroid.cpp
-index de521bc1bc..7890f0437c 100644
---- a/xbmc/windowing/android/WinSystemAndroid.cpp
-+++ b/xbmc/windowing/android/WinSystemAndroid.cpp
-@@ -28,7 +28,6 @@
- #include "platform/android/media/drm/MediaDrmCryptoSession.h"
- #include "platform/android/media/decoderfilter/MediaCodecDecoderFilterManager.h"
- #include "platform/android/activity/XBMCApp.h"
--#include "rendering/gles/ScreenshotSurfaceGLES.h"
- #include "ServiceBroker.h"
- #include "settings/DisplaySettings.h"
- #include "settings/Settings.h"
-@@ -86,9 +85,6 @@ bool CWinSystemAndroid::InitWindowSystem()
-   ADDON::Interface_Android::Register();
-   DRM::CMediaDrmCryptoSession::Register();
-   VIDEOPLAYER::CProcessInfoAndroid::Register();
--
--  CScreenshotSurfaceGLES::Register();
--
-   return CWinSystemBase::InitWindowSystem();
- }
- 
 diff --git a/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp b/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp
 index 791028d869..37e3593614 100644
 --- a/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp
@@ -1032,27 +1009,6 @@ index 181583197f..dc7de3e8ab 100644
    return true;
  }
  
-diff --git a/xbmc/windowing/win10/WinSystemWin10.cpp b/xbmc/windowing/win10/WinSystemWin10.cpp
-index 9ecb5ed7e6..62a969b412 100644
---- a/xbmc/windowing/win10/WinSystemWin10.cpp
-+++ b/xbmc/windowing/win10/WinSystemWin10.cpp
-@@ -16,7 +16,6 @@
- #include "platform/win32/CharsetConverter.h"
- #include "rendering/dx/DirectXHelper.h"
- #include "rendering/dx/RenderContext.h"
--#include "rendering/dx/ScreenshotSurfaceWindows.h"
- #include "ServiceBroker.h"
- #include "settings/DisplaySettings.h"
- #include "settings/Settings.h"
-@@ -59,8 +58,6 @@ CWinSystemWin10::CWinSystemWin10()
- 
-   AE::CAESinkFactory::ClearSinks();
-   CAESinkXAudio::Register();
--  CScreenshotSurfaceWindows::Register();
--
-   if (CSysInfo::GetWindowsDeviceFamily() == CSysInfo::WindowsDeviceFamily::Desktop)
-   {
-     CAESinkWASAPI::Register();
 -- 
 2.16.4
 
