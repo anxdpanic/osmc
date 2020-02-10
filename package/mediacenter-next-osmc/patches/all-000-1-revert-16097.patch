@@ -41,7 +41,7 @@ diff --git a/xbmc/platform/linux/CMakeLists.txt b/xbmc/platform/linux/CMakeLists
 index a36f4e82fa..653227d944 100644
 --- a/xbmc/platform/linux/CMakeLists.txt
 +++ b/xbmc/platform/linux/CMakeLists.txt
-@@ -1,13 +1,11 @@
+@@ -1,12 +1,10 @@
  set(SOURCES CPUInfoLinux.cpp
              MemUtils.cpp
              OptionalsReg.cpp
@@ -50,7 +50,6 @@ index a36f4e82fa..653227d944 100644
  
  set(HEADERS CPUInfoLinux.h
              OptionalsReg.h
-             PlatformConstants.h
 -            SysfsPath.h
              TimeUtils.h)
  
