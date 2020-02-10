@@ -1696,9 +1696,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/windowing/ios/VideoSyncIos.h                  |  2 +-
  xbmc/windowing/ios/WinEventsIOS.mm                 |  8 +--
  xbmc/windowing/ios/WinSystemIOS.h                  |  8 +--
- xbmc/windowing/linux/OSScreenSaverFreedesktop.cpp  |  3 +-
- xbmc/windowing/linux/OSScreenSaverFreedesktop.h    |  4 +-
- xbmc/windowing/osx/OSScreenSaverOSX.h              |  4 +-
  xbmc/windowing/osx/VideoSyncOsx.cpp                | 11 ++--
  xbmc/windowing/osx/VideoSyncOsx.h                  |  2 +-
  xbmc/windowing/osx/WinEventsSDL.cpp                | 15 +++--
@@ -1718,8 +1715,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/windowing/wayland/InputProcessorPointer.cpp   |  4 +-
  xbmc/windowing/wayland/InputProcessorPointer.h     | 10 ++--
  xbmc/windowing/wayland/InputProcessorTouch.h       |  6 +-
- .../wayland/OSScreenSaverIdleInhibitUnstableV1.cpp |  4 +-
- .../wayland/OSScreenSaverIdleInhibitUnstableV1.h   |  6 +-
  xbmc/windowing/wayland/Output.h                    |  8 +--
  xbmc/windowing/wayland/Registry.cpp                |  6 +-
  xbmc/windowing/wayland/Registry.h                  |  4 +-
@@ -33755,24 +33750,6 @@ index 7d871dd9a0..b7077e192f 100644
  
  CGLContextGLX::CGLContextGLX(Display *dpy) : CGLContext(dpy)
  {
-diff --git a/xbmc/windowing/X11/OSScreenSaverX11.h b/xbmc/windowing/X11/OSScreenSaverX11.h
-index 60c9b45b22..63c5201029 100644
---- a/xbmc/windowing/X11/OSScreenSaverX11.h
-+++ b/xbmc/windowing/X11/OSScreenSaverX11.h
-@@ -8,11 +8,11 @@
- 
- #pragma once
- 
-+#include <X11/Xlib.h>
-+
- #include "../OSScreenSaver.h"
- #include "threads/Timer.h"
- 
--#include <X11/Xlib.h>
--
- class COSScreenSaverX11 : public KODI::WINDOWING::IOSScreenSaver
- {
- public:
 diff --git a/xbmc/windowing/X11/VideoSyncGLX.h b/xbmc/windowing/X11/VideoSyncGLX.h
 index e2bb34ec18..889bc27f5c 100644
 --- a/xbmc/windowing/X11/VideoSyncGLX.h
@@ -34233,40 +34210,6 @@ index 43381da2bd..1b0a864d19 100644
  static CCriticalSection g_inputCond;
  
  static std::list<XBMC_Event> events;
-diff --git a/xbmc/windowing/linux/OSScreenSaverFreedesktop.cpp b/xbmc/windowing/linux/OSScreenSaverFreedesktop.cpp
-index 69ece88226..3d63898a0e 100644
---- a/xbmc/windowing/linux/OSScreenSaverFreedesktop.cpp
-+++ b/xbmc/windowing/linux/OSScreenSaverFreedesktop.cpp
-@@ -9,11 +9,10 @@
- #include "OSScreenSaverFreedesktop.h"
- 
- #include "guilib/LocalizeStrings.h"
--#include "utils/log.h"
--
- #include "platform/linux/DBusMessage.h"
- #include "platform/linux/DBusUtil.h"
- #include "platform/linux/PlatformConstants.h"
-+#include "utils/log.h"
- 
- using namespace KODI::WINDOWING::LINUX;
- 
-diff --git a/xbmc/windowing/linux/OSScreenSaverFreedesktop.h b/xbmc/windowing/linux/OSScreenSaverFreedesktop.h
-index 60fd280f8f..41f0269d82 100644
---- a/xbmc/windowing/linux/OSScreenSaverFreedesktop.h
-+++ b/xbmc/windowing/linux/OSScreenSaverFreedesktop.h
-@@ -8,10 +8,10 @@
- 
- #pragma once
- 
--#include "../OSScreenSaver.h"
--
- #include <cstdint>
- 
-+#include "../OSScreenSaver.h"
-+
- namespace KODI
- {
- namespace WINDOWING
 diff --git a/xbmc/windowing/rpi/RPIUtils.h b/xbmc/windowing/rpi/RPIUtils.h
 index a90c22397c..e4f710920e 100644
 --- a/xbmc/windowing/rpi/RPIUtils.h
@@ -34522,42 +34465,6 @@ index 782749c5be..a71d88d455 100644
  
 +#include "input/touch/ITouchInputHandler.h"
 +#include "Seat.h"
-+
- namespace KODI
- {
- namespace WINDOWING
-diff --git a/xbmc/windowing/wayland/OSScreenSaverIdleInhibitUnstableV1.cpp b/xbmc/windowing/wayland/OSScreenSaverIdleInhibitUnstableV1.cpp
-index 32dbbc6cd8..238dc23813 100644
---- a/xbmc/windowing/wayland/OSScreenSaverIdleInhibitUnstableV1.cpp
-+++ b/xbmc/windowing/wayland/OSScreenSaverIdleInhibitUnstableV1.cpp
-@@ -8,10 +8,10 @@
- 
- #include "OSScreenSaverIdleInhibitUnstableV1.h"
- 
--#include "Registry.h"
--
- #include <cassert>
- 
-+#include "Registry.h"
-+
- using namespace KODI::WINDOWING::WAYLAND;
- 
- COSScreenSaverIdleInhibitUnstableV1* COSScreenSaverIdleInhibitUnstableV1::TryCreate(CConnection& connection, wayland::surface_t const& inhibitSurface)
-diff --git a/xbmc/windowing/wayland/OSScreenSaverIdleInhibitUnstableV1.h b/xbmc/windowing/wayland/OSScreenSaverIdleInhibitUnstableV1.h
-index 0303d60f24..f49d772712 100644
---- a/xbmc/windowing/wayland/OSScreenSaverIdleInhibitUnstableV1.h
-+++ b/xbmc/windowing/wayland/OSScreenSaverIdleInhibitUnstableV1.h
-@@ -8,11 +8,11 @@
- 
- #pragma once
- 
--#include "../OSScreenSaver.h"
--#include "Connection.h"
--
- #include <wayland-extra-protocols.hpp>
- 
-+#include "Connection.h"
-+#include "../OSScreenSaver.h"
 +
  namespace KODI
  {
