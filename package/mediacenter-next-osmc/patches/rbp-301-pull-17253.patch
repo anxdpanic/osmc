@@ -1,0 +1,32 @@
+From 12448270bbf19576a205dd79137f68b7af378213 Mon Sep 17 00:00:00 2001
+From: Balint Reczey <balint.reczey@canonical.com>
+Date: Fri, 24 Jan 2020 11:13:04 +0100
+Subject: [PATCH] [tools/EventClients] Bring back EXIF data of bluetooth.png
+ and add Copyright tag
+
+Fixes #17252
+---
+ tools/EventClients/icons/bluetooth.png | Bin 1732 -> 2676 bytes
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+
+diff --git a/tools/EventClients/icons/bluetooth.png b/tools/EventClients/icons/bluetooth.png
+index 17b49dd93db1f6b577ac61b6240ea9c750df0ca7..6b5837ef9340c7b551c5a9cbd46655610af771b9 100644
+GIT binary patch
+delta 970
+zcmaJ=&1(}u6rWUV?G{C7527F=J#5uxzgkPOWK%GWZ6sT&Ep2*{ZZ?zMG1(7xr)C=u
+zfgVKgq8E|kU*JI~c=MnK{{xR6RXlp};L$gmn6^|Lc)Rawelzd=-h4X$YwG#*BpMG_
+zwqt}QCb?wL!Rt$h*A7N|FIc(8N`dDQpP?lZw^$HnW7;JROzprIjAKg>X6)-&Q<OP;
+z*J|z7vG|aBo@I-8oe}DjXch}DW1%j~{ea}{#?*GLc3ZN$f?!9)VgTHs%*D(lc)8Lu
+z*Jl6j>2x}hL%mQ6BIozxk2?sVF;+3lW1oeK6Ux-Ht4~63y&<(q(=^cy(9faK%w=>I
+zv<%2*=E_iikeNYeQvV19H3VNY1=1Xu9Qa|!{wvhu0U4wV!q*B22TT9FR9#hcbpflY
+zKA+Py1^u`D<+bV~4F?gfrkbQ8^zz5yI6!`<8#PultGXR{lGO<6L`u96_4t{E#U!-s
+z7Gbzf9O@h5&-WihOdE!{b<0%DutZ$C(v8S^cXh+=w(NXETr3KOL<a<qFbgMM+mH3c
+z5K~|sbncc#oTjjrAyz!gA-Y~pXmcY7+E`VjoFW#5ULk5U_4`YA1{h!&;($ZWM`w<+
+zA*=a(URE?&)3T6}jrV+JC0Re71_%MC7%)3_L_<acA9GBr9_%th6a_qhX0&;P?Z^El
+z^d#tq%tNv&DKfxeT;Qgj-ndG9hq=Z1Tp`Ul;XIkSMH{CQ`@Uh`cBx*9)`FPwJ5t{%
+zss*{1o^>h$HOah)V?{y3Qy27#tHb7lF{F?9z*z+3y!-m)0uY<)Kdx{uqK?b{H99ws
+Xp3bS+dHQYP9v_cNd3EXS?VbHUHYgiQ
+
+delta 20
+bcmew&a)ft+@<xjpY@7_9u6{1-oD!M<PNxSC
+
