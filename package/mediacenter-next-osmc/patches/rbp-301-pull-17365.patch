@@ -1,0 +1,177 @@
+From db1d8c2cfa6cd0405b3d7075767228fe44871dba Mon Sep 17 00:00:00 2001
+From: Sebastian S <su4lfred@gmail.com>
+Date: Tue, 11 Feb 2020 22:13:57 +0100
+Subject: [PATCH] Added support for script.embuary.info
+
+---
+ addons/skin.estuary/xml/DialogVideoInfo.xml  | 26 +++++++++-
+ addons/skin.estuary/xml/Includes.xml         |  2 +-
+ addons/skin.estuary/xml/Includes_Buttons.xml | 50 ++++++++++++--------
+ 3 files changed, 57 insertions(+), 21 deletions(-)
+
+diff --git a/addons/skin.estuary/xml/DialogVideoInfo.xml b/addons/skin.estuary/xml/DialogVideoInfo.xml
+index 9767d68b8785..1b7cae162635 100644
+--- a/addons/skin.estuary/xml/DialogVideoInfo.xml
++++ b/addons/skin.estuary/xml/DialogVideoInfo.xml
+@@ -9,6 +9,7 @@
+ 			<height>1080</height>
+ 			<centerleft>50%</centerleft>
+ 			<width>1920</width>
++			<animation effect="fade" start="100" end="0" time="200" tween="sine" condition="Window.IsVisible(script-embuary-video.xml) | Window.IsVisible(script-embuary-person.xml) | Window.IsVisible(script-embuary-image.xml)">Conditional</animation>
+ 			<control type="group">
+ 				<top>150</top>
+ 				<left>66</left>
+@@ -156,12 +157,20 @@
+ 						<param name="control_id" value="147" />
+ 						<param name="label" value="$INFO[ListItem.Director,[COLOR button_focus]$LOCALIZE[20339]: [/COLOR]]" />
+ 						<param name="altlabel" value="$INFO[ListItem.Director,$LOCALIZE[20339]: ]" />
++						<param name="onclick_condition" value="System.hasAddon(script.embuary.info)" />
++						<param name="onclick" value="RunScript(script.embuary.info,call=person,query='$ESCINFO[ListItem.Director]')" />
++						<param name="altclick_condition" value="System.hasAddon(script.embuary.info)" />
++						<param name="altclick" value="RunScript(script.embuary.info,call=person,query='$ESCINFO[ListItem.Director]')" />
+ 						<param name="visible" value="!String.IsEmpty(ListItem.Director)" />
+ 					</include>
+ 					<include content="InfoDialogMetadata">
+ 						<param name="control_id" value="148" />
+ 						<param name="label" value="$INFO[ListItem.Writer,[COLOR button_focus]$LOCALIZE[20417]: [/COLOR]]" />
+ 						<param name="altlabel" value="$INFO[ListItem.Writer,$LOCALIZE[20417]: ]" />
++						<param name="onclick_condition" value="System.hasAddon(script.embuary.info)" />
++						<param name="onclick" value="RunScript(script.embuary.info,call=person,query='$ESCINFO[ListItem.Writer]')" />
++						<param name="altclick_condition" value="System.hasAddon(script.embuary.info)" />
++						<param name="altclick" value="RunScript(script.embuary.info,call=person,query='$ESCINFO[ListItem.Writer]')" />
+ 						<param name="visible" value="!String.IsEmpty(ListItem.Writer)" />
+ 					</include>
+ 					<include content="InfoDialogMetadata">
+@@ -283,6 +292,8 @@
+ 					<top>158</top>
+ 					<width>1235</width>
+ 					<height>370</height>
++					<onup condition="System.hasAddon(script.embuary.info) + Control.HasFocus(50) + !String.IsEqual(ListItem.DBType,set)">RunScript(script.embuary.info,call=person,query='$ESCINFO[Container(50).ListItem.Label]')</onup>
++					<onup condition="!System.hasAddon(script.embuary.info) + !String.IsEqual(ListItem.DBType,set)">InstallAddon(script.embuary.info)</onup>
+ 					<onleft>50</onleft>
+ 					<onright>50</onright>
+ 					<ondown>140</ondown>
+@@ -534,7 +545,7 @@
+ 							</include>
+ 							<label>$LOCALIZE[31033]</label>
+ 							<onleft>441</onleft>
+-							<onright>102</onright>
++							<onright>101</onright>
+ 							<onup>140</onup>
+ 							<enable>String.IsEmpty(Container.PluginName) + !Container.Content(Sets)</enable>
+ 							<ondown condition="Integer.IsEqual(Container(5000).CurrentItem,1)">SetFocus(50,0)</ondown>
+@@ -561,6 +572,18 @@
+ 							<visible>String.IsEmpty(ListItem.UserRating)</visible>
+ 						</control>
+ 					</control>
++					<include content="InfoDialogButton">
++						<param name="id" value="101" />
++						<param name="icon" value="icons/infodialogs/info.png" />
++						<param name="label" value="$LOCALIZE[31034]" />
++						<param name="onclick_1_condition" value="!String.IsEmpty(ListItem.DBID) + String.IsEqual(ListItem.DBType,movie)" />
++						<param name="onclick_1" value="RunScript(script.embuary.info,call=movie,dbid=$INFO[ListItem.DBID])" />
++						<param name="onclick_2_condition" value="!String.IsEmpty(ListItem.DBID) + String.IsEqual(ListItem.DBType,tvshow)" />
++						<param name="onclick_2" value="RunScript(script.embuary.info,call=tv,dbid=$INFO[ListItem.DBID])" />
++						<param name="onclick_3_condition" value="!String.IsEmpty(ListItem.DBID) + String.IsEqual(ListItem.DBType,episode)" />
++						<param name="onclick_3" value="RunScript(script.embuary.info,call=tv,query='$ESCINFO[ListItem.TVShowTitle]',year=$INFO[ListItem.Year])" />
++						<param name="visible" value="System.hasAddon(script.embuary.info) + !String.IsEmpty(ListItem.DBID) + [String.IsEqual(ListItem.DbType,movie) | String.IsEqual(ListItem.DbType,tvshow) | String.IsEqual(ListItem.DbType,episode)]" />
++					</include>
+ 					<include content="InfoDialogButton">
+ 						<param name="id" value="102" />
+ 						<param name="icon" value="icons/infodialogs/image.png" />
+@@ -635,6 +658,7 @@
+ 		<control type="group">
+ 			<animation effect="fade" start="0" end="100" time="300" delay="300">WindowOpen</animation>
+ 			<animation effect="fade" start="100" end="0" time="200">WindowClose</animation>
++			<animation effect="fade" start="100" end="0" time="200" tween="sine" condition="Window.IsVisible(script-embuary-video.xml) | Window.IsVisible(script-embuary-person.xml) | Window.IsVisible(script-embuary-image.xml)">Conditional</animation>
+ 			<centerleft>50%</centerleft>
+ 			<width>1920</width>
+ 			<bottom>0</bottom>
+diff --git a/addons/skin.estuary/xml/Includes.xml b/addons/skin.estuary/xml/Includes.xml
+index 15edd1720ccb..0fa756b7e9f4 100644
+--- a/addons/skin.estuary/xml/Includes.xml
++++ b/addons/skin.estuary/xml/Includes.xml
+@@ -34,7 +34,7 @@
+ 	<constant name="dialogbuttons_itemgap">-20</constant>
+ 	<constant name="list_y_offset">0</constant>
+ 	<constant name="list_item_height">80</constant>
+-	<expression name="infodialog_active">Window.IsActive(musicinformation) | Window.IsActive(songinformation) | Window.IsActive(movieinformation) | Window.IsActive(addoninformation) | Window.IsActive(pvrguideinfo) | Window.IsActive(pvrrecordinginfo) | Window.IsActive(pictureinfo)</expression>
++	<expression name="infodialog_active">Window.IsActive(musicinformation) | Window.IsActive(songinformation) | Window.IsActive(movieinformation) | Window.IsActive(addoninformation) | Window.IsActive(pvrguideinfo) | Window.IsActive(pvrrecordinginfo) | Window.IsActive(pictureinfo) | Window.IsVisible(script-embuary-video.xml) | Window.IsVisible(script-embuary-person.xml) | Window.IsVisible(script-embuary-image.xml)</expression>
+ 	<expression name="sidebar_visible">ControlGroup(9000).HasFocus | Control.HasFocus(6130) | Control.HasFocus(6131)</expression>
+ 	<include name="CommonScrollbars">
+ 		<control type="group">
+diff --git a/addons/skin.estuary/xml/Includes_Buttons.xml b/addons/skin.estuary/xml/Includes_Buttons.xml
+index 5b8374bf0be2..d8cdfe2ee498 100644
+--- a/addons/skin.estuary/xml/Includes_Buttons.xml
++++ b/addons/skin.estuary/xml/Includes_Buttons.xml
+@@ -19,23 +19,31 @@
+ 		<radioposy>0</radioposy>
+ 	</include>
+ 	<include name="InfoDialogMetadata">
+-		<control type="togglebutton" id="$PARAM[control_id]">
+-			<width>472</width>
+-			<height>49</height>
+-			<textoffsetx>16</textoffsetx>
+-			<aligny>center</aligny>
+-			<font>font12</font>
+-			<texturefocus colordiffuse="button_focus">lists/focus.png</texturefocus>
+-			<alttexturefocus colordiffuse="button_focus">lists/focus.png</alttexturefocus>
+-			<texturenofocus />
+-			<alttexturenofocus />
+-			<onclick>noop</onclick>
+-			<altclick>noop</altclick>
+-			<label>$PARAM[label]</label>
+-			<altlabel>$PARAM[altlabel]</altlabel>
+-			<usealttexture>Control.HasFocus($PARAM[control_id])</usealttexture>
+-			<visible>$PARAM[visible]</visible>
+-		</control>
++		<param name="onclick_condition">false</param>
++		<param name="onclick">noop</param>
++		<param name="altclick_condition">false</param>
++		<param name="altclick">noop</param>
++		<definition>
++			<control type="togglebutton" id="$PARAM[control_id]">
++				<width>472</width>
++				<height>49</height>
++				<textoffsetx>16</textoffsetx>
++				<aligny>center</aligny>
++				<font>font12</font>
++				<texturefocus colordiffuse="button_focus">lists/focus.png</texturefocus>
++				<alttexturefocus colordiffuse="button_focus">lists/focus.png</alttexturefocus>
++				<texturenofocus />
++				<alttexturenofocus />
++				<onclick>noop</onclick>
++				<onclick condition="$PARAM[onclick_condition]">$PARAM[onclick]</onclick>
++				<altclick>noop</altclick>
++				<altclick condition="$PARAM[altclick_condition]">$PARAM[altclick]</altclick>
++				<label>$PARAM[label]</label>
++				<altlabel>$PARAM[altlabel]</altlabel>
++				<usealttexture>Control.HasFocus($PARAM[control_id])</usealttexture>
++				<visible>$PARAM[visible]</visible>
++			</control>
++		</definition>
+ 	</include>
+ 	<include name="DefaultSettingButton">
+ 		<param name="height">70</param>
+@@ -219,6 +227,9 @@
+ 	</include>
+ 	<include name="InfoDialogButton">
+ 		<param name="width">262</param>
++		<param name="onclick_1_condition">true</param>
++		<param name="onclick_2_condition">true</param>
++		<param name="onclick_3_condition">true</param>
+ 		<definition>
+ 			<control type="radiobutton" id="$PARAM[id]">
+ 				<width>$PARAM[width]</width>
+@@ -240,8 +251,9 @@
+ 				<textureradiooffdisabled colordiffuse="disabled">$PARAM[icon]</textureradiooffdisabled>
+ 				<textureradioondisabled colordiffuse="disabled">$PARAM[icon]</textureradioondisabled>
+ 				<label>$PARAM[label]</label>
+-				<onclick>$PARAM[onclick_1]</onclick>
+-				<onclick>$PARAM[onclick_2]</onclick>
++				<onclick condition="$PARAM[onclick_1_condition]">$PARAM[onclick_1]</onclick>
++				<onclick condition="$PARAM[onclick_2_condition]">$PARAM[onclick_2]</onclick>
++				<onclick condition="$PARAM[onclick_3_condition]">$PARAM[onclick_3]</onclick>
+ 				<visible>$PARAM[visible]</visible>
+ 				<animation effect="fade" start="100" end="0" time="300" delay="300">Hidden</animation>
+ 			</control>
