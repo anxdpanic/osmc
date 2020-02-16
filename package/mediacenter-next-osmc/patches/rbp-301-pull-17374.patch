@@ -1,33 +1,17 @@
-From 0535b3aa45b043a4b577e40313ed8ce6e61c6f85 Mon Sep 17 00:00:00 2001
-From: Rechi <Rechi@users.noreply.github.com>
-Date: Sat, 15 Feb 2020 07:11:14 +0100
-Subject: [PATCH 1/4] move cacert.pem to system/certs
+From f38381feaafb98caa1a9e6bdce851e30b02e0a2b Mon Sep 17 00:00:00 2001
+From: Greg McCarthy <greg@gjmccarthy.co.uk>
+Date: Sun, 16 Feb 2020 19:37:59 +0000
+Subject: [PATCH] Add patch for curl
 
-This avoids rebuilding depends if cacert.pem gets updated
 ---
- .gitignore                                                | 3 ---
- cmake/installdata/common/certificates.txt                 | 2 +-
- {tools/depends/target/openssl => system/certs}/cacert.pem | 0
- tools/android/packaging/Makefile.in                       | 2 --
- 4 files changed, 1 insertion(+), 6 deletions(-)
- rename {tools/depends/target/openssl => system/certs}/cacert.pem (100%)
+ cmake/installdata/common/certificates.txt          |   2 +-
+ .../target/openssl => system/certs}/cacert.pem     | 220 +++++++++++++--------
+ tools/depends/target/curl/Makefile                 |   9 +-
+ 3 files changed, 149 insertions(+), 82 deletions(-)
+ rename {tools/depends/target/openssl => system/certs}/cacert.pem (96%)
 
-diff --git a/.gitignore b/.gitignore
-index d369a425bcec..63eb7712f16f 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -322,9 +322,6 @@ cmake_install.cmake
- /docs/html
- exclude_dll.txt
- 
--#certificates
--/system/certs/
--
- # VS git tools doesn't work for true out of tree builds and it's
- # useful to be able to work on multiple configs
- /build*/
 diff --git a/cmake/installdata/common/certificates.txt b/cmake/installdata/common/certificates.txt
-index 14e74a7536f1..e802c04b1b84 100644
+index 14e74a7536..e802c04b1b 100644
 --- a/cmake/installdata/common/certificates.txt
 +++ b/cmake/installdata/common/certificates.txt
 @@ -1 +1 @@
@@ -35,57 +19,11 @@ index 14e74a7536f1..e802c04b1b84 100644
 \ No newline at end of file
 +system/certs/*
 diff --git a/tools/depends/target/openssl/cacert.pem b/system/certs/cacert.pem
-similarity index 100%
+similarity index 96%
 rename from tools/depends/target/openssl/cacert.pem
 rename to system/certs/cacert.pem
-diff --git a/tools/android/packaging/Makefile.in b/tools/android/packaging/Makefile.in
-index bf2cdd8d1a93..b610f6f49059 100644
---- a/tools/android/packaging/Makefile.in
-+++ b/tools/android/packaging/Makefile.in
-@@ -75,8 +75,6 @@ shared:
- 	find `pwd`/assets/ -name "*.so" -exec rm {} \;
- 	find `pwd`/assets/addons/skin.*/media/* -depth -not -iname "Textures.xbt" -exec rm -rf {} \;
- 	cd `pwd`/assets/addons; rm -rf $(EXCLUDED_ADDONS)
--	mkdir -p assets/system/certs
--	cp $(CMAKE_SOURCE_DIR)/tools/depends/target/openssl/cacert.pem assets/system/certs
- 	cp $(CMAKE_SOURCE_DIR)/privacy-policy.txt assets
- 
- sharedapk: shared | xbmc/assets
-
-From 4a9c83ca6bb292715d091020ab821ec3ee91535e Mon Sep 17 00:00:00 2001
-From: Rechi <Rechi@users.noreply.github.com>
-Date: Sat, 15 Feb 2020 07:11:14 +0100
-Subject: [PATCH 2/4] [depends] add update-cacert target to curl
-
----
- tools/depends/target/curl/Makefile | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/tools/depends/target/curl/Makefile b/tools/depends/target/curl/Makefile
-index abfa6bd03bf8..81d96fee2dd6 100644
---- a/tools/depends/target/curl/Makefile
-+++ b/tools/depends/target/curl/Makefile
-@@ -46,3 +46,7 @@ clean:
- 
- distclean::
- 	rm -rf $(PLATFORM) .installed-$(PLATFORM)
-+
-+.PHONY: update-cacert
-+update-cacert: $(PLATFORM)
-+	$(PLATFORM)/lib/mk-ca-bundle.pl -u $(CMAKE_SOURCE_DIR)/system/certs/cacert.pem
-
-From 598c8dae634660e790e86e827e0b7c0dce8132fa Mon Sep 17 00:00:00 2001
-From: Rechi <Rechi@users.noreply.github.com>
-Date: Sat, 15 Feb 2020 07:11:14 +0100
-Subject: [PATCH 3/4] update SSL CA trust store
-
----
- system/certs/cacert.pem | 219 ++++++++++++++++++++++++++--------------
- 1 file changed, 142 insertions(+), 77 deletions(-)
-
-diff --git a/system/certs/cacert.pem b/system/certs/cacert.pem
-index aa6d05b35240..917f4121c12b 100644
---- a/system/certs/cacert.pem
+index aa6d05b352..fdf6cb472e 100644
+--- a/tools/depends/target/openssl/cacert.pem
 +++ b/system/certs/cacert.pem
 @@ -1,7 +1,7 @@
  ##
@@ -201,7 +139,7 @@ index aa6d05b35240..917f4121c12b 100644
  OISTE WISeKey Global Root GB CA
  ===============================
  -----BEGIN CERTIFICATE-----
-@@ -3399,3 +3324,143 @@ tlu3zM63Nwf9JtmYhST/WSMDmu2dnajkXjjO11INb9I/bbEFa0nOipFGc/T2L/Coc3cOZayhjWZS
+@@ -3399,3 +3324,144 @@ tlu3zM63Nwf9JtmYhST/WSMDmu2dnajkXjjO11INb9I/bbEFa0nOipFGc/T2L/Coc3cOZayhjWZS
  aX5LaAzHHjcng6WMxwLkFM1JAbBzs/3GkDpv0mztO+7skb6iQ12LAEpmJURw3kAP+HwV96LOPNde
  E4yBFxgX0b3xdxA61GU5wSesVywlVP+i2k+KYTlerj1KjL0=
  -----END CERTIFICATE-----
@@ -345,19 +283,9 @@ index aa6d05b35240..917f4121c12b 100644
 ++TaU33fD6Q3AOfF5u0aOq0NZJ7cguyPpVkAh7DE9ZapD8j3fcEThuk0mEDuYn/PIjhs4ViFqUZPT
 +kcpG2om3PVODLAgfi49T3f+sHw==
 +-----END CERTIFICATE-----
-
-From d7ca3d4ab6a35e9c66102e6613696ab22cdf03e3 Mon Sep 17 00:00:00 2001
-From: Rechi <Rechi@users.noreply.github.com>
-Date: Sat, 15 Feb 2020 07:11:14 +0100
-Subject: [PATCH 4/4] [depends] bump curl to 7.68.0
-
-7.51.0 fixed clock_gettime detection for darwin
----
- tools/depends/target/curl/Makefile | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
-
++
 diff --git a/tools/depends/target/curl/Makefile b/tools/depends/target/curl/Makefile
-index 81d96fee2dd6..eb02fe99e9c7 100644
+index abfa6bd03b..eb02fe99e9 100644
 --- a/tools/depends/target/curl/Makefile
 +++ b/tools/depends/target/curl/Makefile
 @@ -3,7 +3,7 @@ DEPS= ../../Makefile.include Makefile
@@ -379,3 +307,14 @@ index 81d96fee2dd6..eb02fe99e9c7 100644
  	cd $(PLATFORM); $(AUTORECONF) -vif
  	cd $(PLATFORM); $(CONFIGURE)
  
+@@ -46,3 +43,7 @@ clean:
+ 
+ distclean::
+ 	rm -rf $(PLATFORM) .installed-$(PLATFORM)
++
++.PHONY: update-cacert
++update-cacert: $(PLATFORM)
++	$(PLATFORM)/lib/mk-ca-bundle.pl -u $(CMAKE_SOURCE_DIR)/system/certs/cacert.pem
+-- 
+2.16.4
+
