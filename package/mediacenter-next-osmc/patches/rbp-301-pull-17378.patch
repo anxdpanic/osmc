@@ -1,0 +1,27 @@
+From 9a4e94dbfb08abad82979d8b6d74d674fd60323e Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Sun, 16 Feb 2020 02:04:20 +0100
+Subject: [PATCH] [build] add note to DEFAULT_NDK_VERSION and DEFAULT_NDK_API
+
+At the beginning a 20 (version) and then a 21 (api) confused me.
+This is a small note added so that others (without Android experience)
+do not get a question mark like me.
+---
+ tools/buildsteps/defaultenv | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tools/buildsteps/defaultenv b/tools/buildsteps/defaultenv
+index 4bda240ffaed..22514e35dcce 100644
+--- a/tools/buildsteps/defaultenv
++++ b/tools/buildsteps/defaultenv
+@@ -41,8 +41,8 @@ case $XBMC_PLATFORM_DIR in
+     ;;
+ 
+   android)
+-    DEFAULT_NDK_VERSION="20"
+-    DEFAULT_NDK_API="21"
++    DEFAULT_NDK_VERSION="20" # NDK package version (newer API can be inside)
++    DEFAULT_NDK_API="21" # Lollipop API level (21) defined in package ./sysroot/usr/include/android/api-level.h
+     DEFAULT_XBMC_DEPENDS_ROOT=$WORKSPACE/tools/depends/xbmc-depends
+     DEFAULT_CONFIGURATION="Debug"
+     ;;

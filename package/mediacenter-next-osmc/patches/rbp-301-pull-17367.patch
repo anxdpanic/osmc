@@ -1,0 +1,443 @@
+From c5a9418eeeb2f95680fbf1e532285c2bf7d0c8fc Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Mon, 10 Feb 2020 08:11:09 -0800
+Subject: [PATCH] PlatformDefs.h: remove inttypes definitions
+
+---
+ xbmc/TextureCacheJob.cpp                      |  2 ++
+ xbmc/dbwrappers/qry_dat.cpp                   |  3 +-
+ xbmc/events/BaseEvent.cpp                     |  1 +
+ xbmc/filesystem/FileCache.cpp                 |  3 +-
+ xbmc/filesystem/NFSFile.cpp                   | 11 ++++---
+ xbmc/guilib/TextureBundleXBT.cpp              |  2 ++
+ xbmc/guilib/TextureManager.cpp                |  2 ++
+ xbmc/interfaces/legacy/wsgi/WsgiResponse.cpp  |  2 +-
+ xbmc/network/AirPlayServer.cpp                |  2 ++
+ xbmc/network/WebServer.cpp                    | 10 ++++---
+ xbmc/network/upnp/UPnPRenderer.cpp            |  2 ++
+ .../darwin/network/ZeroconfBrowserDarwin.cpp  |  2 ++
+ .../darwin/network/ZeroconfDarwin.cpp         |  1 +
+ xbmc/platform/posix/PlatformDefs.h            | 29 -------------------
+ xbmc/platform/posix/filesystem/SMBFile.cpp    |  8 +++--
+ xbmc/utils/HttpRangeUtils.cpp                 |  2 ++
+ xbmc/utils/LabelFormatter.cpp                 |  1 +
+ xbmc/utils/SortUtils.cpp                      |  1 +
+ xbmc/utils/StringUtils.cpp                    | 23 ++++++++++-----
+ xbmc/utils/log.cpp                            |  3 ++
+ xbmc/windowing/X11/WinSystemX11.cpp           |  2 +-
+ xbmc/windows/GUIWindowDebugInfo.cpp           |  2 ++
+ 22 files changed, 62 insertions(+), 52 deletions(-)
+
+diff --git a/xbmc/TextureCacheJob.cpp b/xbmc/TextureCacheJob.cpp
+index c0085b348ea7..7afe6a49ff73 100644
+--- a/xbmc/TextureCacheJob.cpp
++++ b/xbmc/TextureCacheJob.cpp
+@@ -26,6 +26,8 @@
+ #include "cores/omxplayer/OMXImage.h"
+ #endif
+ 
++#include <inttypes.h>
++
+ CTextureCacheJob::CTextureCacheJob(const std::string &url, const std::string &oldHash):
+   m_url(url),
+   m_oldHash(oldHash),
+diff --git a/xbmc/dbwrappers/qry_dat.cpp b/xbmc/dbwrappers/qry_dat.cpp
+index 51bcb91c8cde..bc68d2d79ef3 100644
+--- a/xbmc/dbwrappers/qry_dat.cpp
++++ b/xbmc/dbwrappers/qry_dat.cpp
+@@ -17,11 +17,10 @@
+ 
+ #include "qry_dat.h"
+ 
++#include <inttypes.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ 
+-#include "PlatformDefs.h" // for PRId64
+-
+ #ifndef __GNUC__
+ #pragma warning (disable:4800)
+ #pragma warning (disable:4715)
+diff --git a/xbmc/events/BaseEvent.cpp b/xbmc/events/BaseEvent.cpp
+index 99e7d6b99848..70a942651423 100644
+--- a/xbmc/events/BaseEvent.cpp
++++ b/xbmc/events/BaseEvent.cpp
+@@ -12,6 +12,7 @@
+ #include "utils/StringUtils.h"
+ 
+ #include <chrono>
++#include <inttypes.h>
+ 
+ CBaseEvent::CBaseEvent(const std::string& identifier, const CVariant& label, const CVariant& description, EventLevel level /* = EventLevel::Information */)
+   : m_level(level),
+diff --git a/xbmc/filesystem/FileCache.cpp b/xbmc/filesystem/FileCache.cpp
+index 2c1568151c52..a98f6956cf78 100644
+--- a/xbmc/filesystem/FileCache.cpp
++++ b/xbmc/filesystem/FileCache.cpp
+@@ -23,8 +23,9 @@
+ #include "platform/posix/ConvUtils.h"
+ #endif
+ 
+-#include <cassert>
+ #include <algorithm>
++#include <cassert>
++#include <inttypes.h>
+ #include <memory>
+ 
+ #ifdef TARGET_POSIX
+diff --git a/xbmc/filesystem/NFSFile.cpp b/xbmc/filesystem/NFSFile.cpp
+index b1f673cea5a5..408b331e4da2 100644
+--- a/xbmc/filesystem/NFSFile.cpp
++++ b/xbmc/filesystem/NFSFile.cpp
+@@ -11,15 +11,18 @@
+ //////////////////////////////////////////////////////////////////////
+ 
+ #include "NFSFile.h"
++
++#include "network/DNSNameCache.h"
+ #include "threads/SingleLock.h"
+-#include "utils/log.h"
++#include "threads/SystemClock.h"
+ #include "utils/StringUtils.h"
+ #include "utils/URIUtils.h"
+-#include "network/DNSNameCache.h"
+-#include "threads/SystemClock.h"
++#include "utils/log.h"
++
++#include <inttypes.h>
+ 
+-#include <nfsc/libnfs.h>
+ #include <nfsc/libnfs-raw-mount.h>
++#include <nfsc/libnfs.h>
+ 
+ #ifdef TARGET_WINDOWS
+ #include <fcntl.h>
+diff --git a/xbmc/guilib/TextureBundleXBT.cpp b/xbmc/guilib/TextureBundleXBT.cpp
+index 839f00975b9f..e1ea47ce2f93 100644
+--- a/xbmc/guilib/TextureBundleXBT.cpp
++++ b/xbmc/guilib/TextureBundleXBT.cpp
+@@ -21,6 +21,8 @@
+ #include "utils/log.h"
+ #include "windowing/GraphicContext.h"
+ 
++#include <inttypes.h>
++
+ #include <lzo/lzo1x.h>
+ 
+ #ifdef TARGET_WINDOWS_DESKTOP
+diff --git a/xbmc/guilib/TextureManager.cpp b/xbmc/guilib/TextureManager.cpp
+index 66bb3d62caaf..a73a671e30ba 100644
+--- a/xbmc/guilib/TextureManager.cpp
++++ b/xbmc/guilib/TextureManager.cpp
+@@ -36,6 +36,8 @@
+ #endif
+ #include "FFmpegImage.h"
+ 
++#include <inttypes.h>
++
+ /************************************************************************/
+ /*                                                                      */
+ /************************************************************************/
+diff --git a/xbmc/interfaces/legacy/wsgi/WsgiResponse.cpp b/xbmc/interfaces/legacy/wsgi/WsgiResponse.cpp
+index 69aeb5d5fa25..b221e94bbe6a 100644
+--- a/xbmc/interfaces/legacy/wsgi/WsgiResponse.cpp
++++ b/xbmc/interfaces/legacy/wsgi/WsgiResponse.cpp
+@@ -11,9 +11,9 @@
+ #include "utils/StringUtils.h"
+ #include "utils/log.h"
+ 
++#include <inttypes.h>
+ #include <utility>
+ 
+-
+ namespace XBMCAddon
+ {
+   namespace xbmcwsgi
+diff --git a/xbmc/network/AirPlayServer.cpp b/xbmc/network/AirPlayServer.cpp
+index 23c95b98fb66..f3976cf7a8e7 100644
+--- a/xbmc/network/AirPlayServer.cpp
++++ b/xbmc/network/AirPlayServer.cpp
+@@ -36,6 +36,8 @@
+ #include "network/Zeroconf.h"
+ #endif // HAS_ZEROCONF
+ 
++#include <inttypes.h>
++
+ #include <plist/plist.h>
+ 
+ using namespace KODI::MESSAGING;
+diff --git a/xbmc/network/WebServer.cpp b/xbmc/network/WebServer.cpp
+index 586a2499c1a0..768e59426f5f 100644
+--- a/xbmc/network/WebServer.cpp
++++ b/xbmc/network/WebServer.cpp
+@@ -17,22 +17,24 @@
+ #include <pthread.h>
+ #endif
+ 
++#include "ServiceBroker.h"
++#include "Util.h"
++#include "XBDateTime.h"
+ #include "filesystem/File.h"
+ #include "network/httprequesthandler/HTTPRequestHandlerUtils.h"
+ #include "network/httprequesthandler/IHTTPRequestHandler.h"
+ #include "settings/AdvancedSettings.h"
+ #include "settings/Settings.h"
+ #include "settings/SettingsComponent.h"
+-#include "ServiceBroker.h"
+ #include "threads/SingleLock.h"
+-#include "Util.h"
+ #include "utils/FileUtils.h"
+-#include "utils/log.h"
+ #include "utils/Mime.h"
+ #include "utils/StringUtils.h"
+ #include "utils/URIUtils.h"
+ #include "utils/Variant.h"
+-#include "XBDateTime.h"
++#include "utils/log.h"
++
++#include <inttypes.h>
+ 
+ #define MAX_POST_BUFFER_SIZE 2048
+ 
+diff --git a/xbmc/network/upnp/UPnPRenderer.cpp b/xbmc/network/upnp/UPnPRenderer.cpp
+index 77b3ceaf10fd..ea85ef2848d0 100644
+--- a/xbmc/network/upnp/UPnPRenderer.cpp
++++ b/xbmc/network/upnp/UPnPRenderer.cpp
+@@ -32,6 +32,8 @@
+ #include "utils/URIUtils.h"
+ #include "utils/Variant.h"
+ 
++#include <inttypes.h>
++
+ #include <Platinum/Source/Platinum/Platinum.h>
+ 
+ NPT_SET_LOCAL_LOGGER("xbmc.upnp.renderer")
+diff --git a/xbmc/platform/darwin/network/ZeroconfBrowserDarwin.cpp b/xbmc/platform/darwin/network/ZeroconfBrowserDarwin.cpp
+index 719c13470e31..f2344a9a3f19 100644
+--- a/xbmc/platform/darwin/network/ZeroconfBrowserDarwin.cpp
++++ b/xbmc/platform/darwin/network/ZeroconfBrowserDarwin.cpp
+@@ -18,6 +18,8 @@
+ 
+ #include "platform/darwin/DarwinUtils.h"
+ 
++#include <inttypes.h>
++
+ #include <arpa/inet.h>
+ #include <netinet/in.h>
+ 
+diff --git a/xbmc/platform/darwin/network/ZeroconfDarwin.cpp b/xbmc/platform/darwin/network/ZeroconfDarwin.cpp
+index 6821974a3373..7f8778209130 100644
+--- a/xbmc/platform/darwin/network/ZeroconfDarwin.cpp
++++ b/xbmc/platform/darwin/network/ZeroconfDarwin.cpp
+@@ -11,6 +11,7 @@
+ #include "threads/SingleLock.h"
+ #include "utils/log.h"
+ 
++#include <inttypes.h>
+ #include <sstream>
+ #include <string>
+ 
+diff --git a/xbmc/platform/posix/PlatformDefs.h b/xbmc/platform/posix/PlatformDefs.h
+index ce9005231fbb..fce82b5dd93b 100644
+--- a/xbmc/platform/posix/PlatformDefs.h
++++ b/xbmc/platform/posix/PlatformDefs.h
+@@ -21,7 +21,6 @@
+ #ifndef __STDC_FORMAT_MACROS
+   #define __STDC_FORMAT_MACROS
+ #endif
+-#include <inttypes.h>
+ #include <sys/sysctl.h>
+ #include <mach/mach.h>
+ #if defined(TARGET_DARWIN_OSX)
+@@ -52,34 +51,6 @@
+ 
+ #include <stdint.h>
+ 
+-#ifndef PRId64
+-#ifdef TARGET_WINDOWS
+-#define PRId64 "I64d"
+-#else
+-#if __WORDSIZE == 64
+-#define PRId64 "ld"
+-#else
+-#define PRId64 "lld"
+-#endif
+-#endif
+-#endif
+-
+-#ifndef PRIu64
+-#ifdef TARGET_WINDOWS
+-#define PRIu64 "I64u"
+-#else
+-#if __WORDSIZE == 64
+-#define PRIu64 "lu"
+-#else
+-#define PRIu64 "llu"
+-#endif
+-#endif
+-#endif
+-
+-#ifndef PRIdS
+-#define PRIdS "zd"
+-#endif
+-
+ #define _fdopen fdopen
+ #define _vsnprintf vsnprintf
+ #define _stricmp  strcasecmp
+diff --git a/xbmc/platform/posix/filesystem/SMBFile.cpp b/xbmc/platform/posix/filesystem/SMBFile.cpp
+index 13e48b6cefee..ad8a119a0c34 100644
+--- a/xbmc/platform/posix/filesystem/SMBFile.cpp
++++ b/xbmc/platform/posix/filesystem/SMBFile.cpp
+@@ -27,6 +27,8 @@
+ #include "utils/URIUtils.h"
+ #include "utils/log.h"
+ 
++#include <inttypes.h>
++
+ #include <libsmbclient.h>
+ 
+ using namespace XFILE;
+@@ -531,12 +533,14 @@ ssize_t CSMBFile::Read(void *lpBuf, size_t uiBufSize)
+ 
+   if (m_allowRetry && bytesRead < 0 && errno == EINVAL )
+   {
+-    CLog::Log(LOGERROR, "%s - Error( %" PRIdS ", %d, %s ) - Retrying", __FUNCTION__, bytesRead, errno, strerror(errno));
++    CLog::Log(LOGERROR, "{} - Error( {}, {}, {} ) - Retrying", __FUNCTION__, bytesRead, errno,
++              strerror(errno));
+     bytesRead = smbc_read(m_fd, lpBuf, (int)uiBufSize);
+   }
+ 
+   if ( bytesRead < 0 )
+-    CLog::Log(LOGERROR, "%s - Error( %" PRIdS ", %d, %s )", __FUNCTION__, bytesRead, errno, strerror(errno));
++    CLog::Log(LOGERROR, "{} - Error( {}, {}, {} )", __FUNCTION__, bytesRead, errno,
++              strerror(errno));
+ 
+   return bytesRead;
+ }
+diff --git a/xbmc/utils/HttpRangeUtils.cpp b/xbmc/utils/HttpRangeUtils.cpp
+index e73488813e17..e25ccf67a9c2 100644
+--- a/xbmc/utils/HttpRangeUtils.cpp
++++ b/xbmc/utils/HttpRangeUtils.cpp
+@@ -16,6 +16,8 @@
+ #include "utils/StringUtils.h"
+ #include "utils/Variant.h"
+ 
++#include <inttypes.h>
++
+ #define HEADER_NEWLINE        "\r\n"
+ #define HEADER_SEPARATOR      HEADER_NEWLINE HEADER_NEWLINE
+ #define HEADER_BOUNDARY       "--"
+diff --git a/xbmc/utils/LabelFormatter.cpp b/xbmc/utils/LabelFormatter.cpp
+index 65cb0948581d..2c7602256a0f 100644
+--- a/xbmc/utils/LabelFormatter.cpp
++++ b/xbmc/utils/LabelFormatter.cpp
+@@ -25,6 +25,7 @@
+ 
+ #include <cassert>
+ #include <cstdlib>
++#include <inttypes.h>
+ 
+ using namespace MUSIC_INFO;
+ 
+diff --git a/xbmc/utils/SortUtils.cpp b/xbmc/utils/SortUtils.cpp
+index 96fced883908..469815ed7c12 100644
+--- a/xbmc/utils/SortUtils.cpp
++++ b/xbmc/utils/SortUtils.cpp
+@@ -16,6 +16,7 @@
+ #include "utils/Variant.h"
+ 
+ #include <algorithm>
++#include <inttypes.h>
+ 
+ std::string ArrayToString(SortAttribute attributes, const CVariant &variant, const std::string &separator = " / ")
+ {
+diff --git a/xbmc/utils/StringUtils.cpp b/xbmc/utils/StringUtils.cpp
+index af872cbdd7a6..988753e4006c 100644
+--- a/xbmc/utils/StringUtils.cpp
++++ b/xbmc/utils/StringUtils.cpp
+@@ -26,23 +26,30 @@
+ #include <androidjni/JNIThreading.h>
+ #endif
+ 
+-#include "StringUtils.h"
+ #include "CharsetConverter.h"
+ #include "LangInfo.h"
++#include "StringUtils.h"
+ #include "Util.h"
+-#include <fstrcmp.h>
+-#include <functional>
++
++#include <algorithm>
+ #include <array>
+-#include <iomanip>
+ #include <assert.h>
++#include <functional>
++#include <inttypes.h>
++#include <iomanip>
+ #include <math.h>
+-#include <time.h>
++#include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+-#include <stdio.h>
++#include <time.h>
++
++#include <fstrcmp.h>
+ #include <memory.h>
+-#include <algorithm>
+-#include "utils/RegExp.h" // don't move or std functions end up in PCRE namespace
++
++// don't move or std functions end up in PCRE namespace
++// clang-format off
++#include "utils/RegExp.h"
++// clang-format on
+ 
+ #define FORMAT_BLOCK_SIZE 512 // # of bytes for initial allocation for printf
+ 
+diff --git a/xbmc/utils/log.cpp b/xbmc/utils/log.cpp
+index 0f2c50e9e153..e51a5f3d6f76 100644
+--- a/xbmc/utils/log.cpp
++++ b/xbmc/utils/log.cpp
+@@ -7,6 +7,7 @@
+  */
+ 
+ #include "log.h"
++
+ #include "CompileInfo.h"
+ #include "ServiceBroker.h"
+ #include "settings/AdvancedSettings.h"
+@@ -16,6 +17,8 @@
+ #include "threads/Thread.h"
+ #include "utils/StringUtils.h"
+ 
++#include <inttypes.h>
++
+ #if defined(TARGET_POSIX)
+ #include "platform/posix/utils/PosixInterfaceForCLog.h"
+ typedef class CPosixInterfaceForCLog PlatformInterfaceForCLog;
+diff --git a/xbmc/windowing/X11/WinSystemX11.cpp b/xbmc/windowing/X11/WinSystemX11.cpp
+index 779327a764a0..7f22a13f456e 100644
+--- a/xbmc/windowing/X11/WinSystemX11.cpp
++++ b/xbmc/windowing/X11/WinSystemX11.cpp
+@@ -365,7 +365,7 @@ void CWinSystemX11::UpdateResolutions()
+   XOutput *out = g_xrandr.GetOutput(m_userOutput);
+   if (out != NULL)
+   {
+-    CLog::Log(LOGINFO, "Output '%s' has %" PRIdS" modes", out->name.c_str(), out->modes.size());
++    CLog::Log(LOGINFO, "Output '{}' has {} modes", out->name, out->modes.size());
+ 
+     for (auto mode : out->modes)
+     {
+diff --git a/xbmc/windows/GUIWindowDebugInfo.cpp b/xbmc/windows/GUIWindowDebugInfo.cpp
+index 5c4a085c3f2d..c67fa003b972 100644
+--- a/xbmc/windows/GUIWindowDebugInfo.cpp
++++ b/xbmc/windows/GUIWindowDebugInfo.cpp
+@@ -28,6 +28,8 @@
+ #include "utils/Variant.h"
+ #include "utils/log.h"
+ 
++#include <inttypes.h>
++
+ CGUIWindowDebugInfo::CGUIWindowDebugInfo(void)
+   : CGUIDialog(WINDOW_DEBUG_INFO, "", DialogModalityType::MODELESS)
+ {
