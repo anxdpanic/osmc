@@ -468,8 +468,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/dbwrappers/DatabaseQuery.h                    |  2 +-
  xbmc/dbwrappers/dataset.cpp                        |  4 +-
  xbmc/dbwrappers/dataset.h                          |  5 +-
- xbmc/dbwrappers/qry_dat.cpp                        |  3 +-
- xbmc/dbwrappers/qry_dat.h                          |  6 +-
  xbmc/dbwrappers/sqlitedataset.h                    |  4 +-
  xbmc/dialogs/GUIDialogBoxBase.cpp                  |  3 +-
  xbmc/dialogs/GUIDialogBoxBase.h                    |  4 +-
@@ -508,7 +506,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/dialogs/GUIDialogYesNo.cpp                    |  3 +-
  xbmc/events/AddonEvent.h                           |  2 +-
  xbmc/events/AddonManagementEvent.cpp               |  1 -
- xbmc/events/BaseEvent.cpp                          |  5 +-
  xbmc/events/EventLog.cpp                           |  1 -
  xbmc/events/EventLog.h                             |  6 +-
  xbmc/events/EventLogManager.cpp                    |  1 -
@@ -10469,43 +10466,6 @@ index ec87d059ba..b014db3da8 100644
  
  namespace dbiplus {
  class Dataset;		// forward declaration of class Dataset
-diff --git a/xbmc/dbwrappers/qry_dat.cpp b/xbmc/dbwrappers/qry_dat.cpp
-index 3bac6c7c66..3522e37a23 100644
---- a/xbmc/dbwrappers/qry_dat.cpp
-+++ b/xbmc/dbwrappers/qry_dat.cpp
-@@ -16,12 +16,11 @@
-  **********************************************************************/
- 
- #include "qry_dat.h"
-+#include "PlatformDefs.h" // for PRId64
- 
- #include <stdio.h>
- #include <stdlib.h>
- 
--#include "PlatformDefs.h" // for PRId64
--
- #ifndef __GNUC__
- #pragma warning (disable:4800)
- #pragma warning (disable:4715)
-diff --git a/xbmc/dbwrappers/qry_dat.h b/xbmc/dbwrappers/qry_dat.h
-index 5ebdc07a4a..3a7b0f560a 100644
---- a/xbmc/dbwrappers/qry_dat.h
-+++ b/xbmc/dbwrappers/qry_dat.h
-@@ -12,11 +12,11 @@
- 
- #pragma once
- 
--#include <iostream>
- #include <map>
--#include <stdint.h>
--#include <string>
- #include <vector>
-+#include <iostream>
-+#include <string>
-+#include <stdint.h>
- 
- namespace dbiplus {
- 
 diff --git a/xbmc/dbwrappers/sqlitedataset.h b/xbmc/dbwrappers/sqlitedataset.h
 index 5132935542..cd8970d1d8 100644
 --- a/xbmc/dbwrappers/sqlitedataset.h
@@ -11351,26 +11311,6 @@ index 626c7eb136..b6a7abeaa4 100644
  #include "addons/GUIDialogAddonInfo.h"
  #include "filesystem/AddonsDirectory.h"
  #include "guilib/LocalizeStrings.h"
-diff --git a/xbmc/events/BaseEvent.cpp b/xbmc/events/BaseEvent.cpp
-index 99e7d6b998..e0092a5e7a 100644
---- a/xbmc/events/BaseEvent.cpp
-+++ b/xbmc/events/BaseEvent.cpp
-@@ -6,13 +6,12 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
--#include "BaseEvent.h"
-+#include <chrono>
- 
-+#include "BaseEvent.h"
- #include "guilib/LocalizeStrings.h"
- #include "utils/StringUtils.h"
- 
--#include <chrono>
--
- CBaseEvent::CBaseEvent(const std::string& identifier, const CVariant& label, const CVariant& description, EventLevel level /* = EventLevel::Information */)
-   : m_level(level),
-     m_identifier(identifier),
 diff --git a/xbmc/events/EventLog.cpp b/xbmc/events/EventLog.cpp
 index cae71e842a..5380fb169b 100644
 --- a/xbmc/events/EventLog.cpp
