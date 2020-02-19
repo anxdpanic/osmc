@@ -1014,8 +1014,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/interfaces/legacy/wsgi/WsgiErrorStream.h      |  4 +-
  xbmc/interfaces/legacy/wsgi/WsgiInputStream.cpp    |  1 -
  xbmc/interfaces/legacy/wsgi/WsgiInputStream.h      |  4 +-
- xbmc/interfaces/legacy/wsgi/WsgiResponse.cpp       |  6 +-
- xbmc/interfaces/legacy/wsgi/WsgiResponse.h         |  4 +-
  xbmc/interfaces/python/CallbackHandler.cpp         |  1 -
  xbmc/interfaces/python/CallbackHandler.h           |  4 +-
  xbmc/interfaces/python/ContextItemAddonInvoker.cpp |  9 ++-
@@ -20968,45 +20966,6 @@ index c3234da59c..10c6c477de 100644
  struct HTTPPythonRequest;
  
  namespace XBMCAddon
-diff --git a/xbmc/interfaces/legacy/wsgi/WsgiResponse.cpp b/xbmc/interfaces/legacy/wsgi/WsgiResponse.cpp
-index 73e65f2d67..7cfcaec109 100644
---- a/xbmc/interfaces/legacy/wsgi/WsgiResponse.cpp
-+++ b/xbmc/interfaces/legacy/wsgi/WsgiResponse.cpp
-@@ -8,11 +8,11 @@
- 
- #include "WsgiResponse.h"
- 
--#include "utils/StringUtils.h"
--#include "utils/log.h"
--
- #include <utility>
- 
-+#include "utils/log.h"
-+#include "utils/StringUtils.h"
-+
- 
- namespace XBMCAddon
- {
-diff --git a/xbmc/interfaces/legacy/wsgi/WsgiResponse.h b/xbmc/interfaces/legacy/wsgi/WsgiResponse.h
-index 58ad40c580..19ad8c11e2 100644
---- a/xbmc/interfaces/legacy/wsgi/WsgiResponse.h
-+++ b/xbmc/interfaces/legacy/wsgi/WsgiResponse.h
-@@ -8,13 +8,13 @@
- 
- #pragma once
- 
-+#include <vector>
-+
- #include "interfaces/legacy/AddonClass.h"
- #include "interfaces/legacy/Tuple.h"
- #include "interfaces/legacy/wsgi/WsgiResponseBody.h"
- #include "network/httprequesthandler/python/HTTPPythonRequest.h"
- 
--#include <vector>
--
- namespace XBMCAddon
- {
-   namespace xbmcwsgi
 diff --git a/xbmc/interfaces/python/AddonPythonInvoker.cpp b/xbmc/interfaces/python/AddonPythonInvoker.cpp
 index 7bfdf41aa8..dbc5918a18 100644
 --- a/xbmc/interfaces/python/AddonPythonInvoker.cpp
