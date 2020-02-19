@@ -1127,8 +1127,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  .../httprequesthandler/HTTPPythonHandler.cpp       |  5 +-
  .../httprequesthandler/HTTPRequestHandlerUtils.cpp |  5 +-
  .../httprequesthandler/HTTPRequestHandlerUtils.h   |  4 +-
- xbmc/network/httprequesthandler/HTTPVfsHandler.cpp |  1 -
- xbmc/network/httprequesthandler/HTTPVfsHandler.h   |  4 +-
  .../HTTPWebinterfaceAddonsHandler.cpp              |  1 -
  .../HTTPWebinterfaceAddonsHandler.h                |  4 +-
  .../httprequesthandler/HTTPWebinterfaceHandler.cpp |  1 -
@@ -23431,76 +23429,6 @@ index 3af2f571fb..9a07801914 100644
  class HTTPRequestHandlerUtils
  {
  public:
-diff --git a/xbmc/network/httprequesthandler/HTTPVfsHandler.cpp b/xbmc/network/httprequesthandler/HTTPVfsHandler.cpp
-index 7a65af5cf4..cbf5abd159 100644
---- a/xbmc/network/httprequesthandler/HTTPVfsHandler.cpp
-+++ b/xbmc/network/httprequesthandler/HTTPVfsHandler.cpp
-@@ -7,7 +7,6 @@
-  */
- 
- #include "HTTPVfsHandler.h"
--
- #include "MediaSource.h"
- #include "URL.h"
- #include "filesystem/File.h"
-diff --git a/xbmc/network/httprequesthandler/HTTPVfsHandler.h b/xbmc/network/httprequesthandler/HTTPVfsHandler.h
-index af66bad172..792a273c3e 100644
---- a/xbmc/network/httprequesthandler/HTTPVfsHandler.h
-+++ b/xbmc/network/httprequesthandler/HTTPVfsHandler.h
-@@ -8,10 +8,10 @@
- 
- #pragma once
- 
--#include "network/httprequesthandler/HTTPFileHandler.h"
--
- #include <string>
- 
-+#include "network/httprequesthandler/HTTPFileHandler.h"
-+
- class CHTTPVfsHandler : public CHTTPFileHandler
- {
- public:
-diff --git a/xbmc/network/httprequesthandler/HTTPWebinterfaceAddonsHandler.cpp b/xbmc/network/httprequesthandler/HTTPWebinterfaceAddonsHandler.cpp
-index 589c721ed8..01a6b503bd 100644
---- a/xbmc/network/httprequesthandler/HTTPWebinterfaceAddonsHandler.cpp
-+++ b/xbmc/network/httprequesthandler/HTTPWebinterfaceAddonsHandler.cpp
-@@ -7,7 +7,6 @@
-  */
- 
- #include "HTTPWebinterfaceAddonsHandler.h"
--
- #include "ServiceBroker.h"
- #include "addons/AddonManager.h"
- #include "network/WebServer.h"
-diff --git a/xbmc/network/httprequesthandler/HTTPWebinterfaceAddonsHandler.h b/xbmc/network/httprequesthandler/HTTPWebinterfaceAddonsHandler.h
-index f2ab1491d4..e9b1c6d29a 100644
---- a/xbmc/network/httprequesthandler/HTTPWebinterfaceAddonsHandler.h
-+++ b/xbmc/network/httprequesthandler/HTTPWebinterfaceAddonsHandler.h
-@@ -8,10 +8,10 @@
- 
- #pragma once
- 
--#include "network/httprequesthandler/IHTTPRequestHandler.h"
--
- #include <string>
- 
-+#include "network/httprequesthandler/IHTTPRequestHandler.h"
-+
- class CHTTPWebinterfaceAddonsHandler : public IHTTPRequestHandler
- {
- public:
-diff --git a/xbmc/network/httprequesthandler/HTTPWebinterfaceHandler.cpp b/xbmc/network/httprequesthandler/HTTPWebinterfaceHandler.cpp
-index a142111b74..6c091783ab 100644
---- a/xbmc/network/httprequesthandler/HTTPWebinterfaceHandler.cpp
-+++ b/xbmc/network/httprequesthandler/HTTPWebinterfaceHandler.cpp
-@@ -7,7 +7,6 @@
-  */
- 
- #include "HTTPWebinterfaceHandler.h"
--
- #include "ServiceBroker.h"
- #include "addons/AddonManager.h"
- #include "addons/AddonSystemSettings.h"
 diff --git a/xbmc/network/httprequesthandler/HTTPWebinterfaceHandler.h b/xbmc/network/httprequesthandler/HTTPWebinterfaceHandler.h
 index 5618c75d77..1f5a36a5e0 100644
 --- a/xbmc/network/httprequesthandler/HTTPWebinterfaceHandler.h
