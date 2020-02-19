@@ -43,7 +43,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/GUIInfoManager.h                              | 12 ++--
  xbmc/GUILargeTextureManager.cpp                    |  9 ++-
  xbmc/GUILargeTextureManager.h                      |  6 +-
- xbmc/GUIPassword.cpp                               | 17 +++---
  xbmc/GUIPassword.h                                 |  8 +--
  xbmc/InfoScanner.cpp                               |  3 +-
  xbmc/LangInfo.cpp                                  | 14 ++---
@@ -2533,69 +2532,6 @@ index af4317fa04..27df447366 100644
  /*!
   \ingroup textures,jobs
   \brief Image loader job class
-diff --git a/xbmc/GUIPassword.cpp b/xbmc/GUIPassword.cpp
-index 4513e4023e..ef4859fa8f 100644
---- a/xbmc/GUIPassword.cpp
-+++ b/xbmc/GUIPassword.cpp
-@@ -7,28 +7,27 @@
-  */
- 
- #include "GUIPassword.h"
--
--#include "FileItem.h"
- #include "GUIUserMessages.h"
- #include "ServiceBroker.h"
--#include "Util.h"
-+#include "messaging/ApplicationMessenger.h"
- #include "dialogs/GUIDialogGamepad.h"
--#include "dialogs/GUIDialogNumeric.h"
- #include "guilib/GUIComponent.h"
- #include "guilib/GUIKeyboardFactory.h"
--#include "guilib/GUIWindowManager.h"
--#include "guilib/LocalizeStrings.h"
--#include "messaging/ApplicationMessenger.h"
--#include "messaging/helpers/DialogOKHelper.h"
-+#include "dialogs/GUIDialogNumeric.h"
- #include "profiles/ProfileManager.h"
- #include "profiles/dialogs/GUIDialogLockSettings.h"
- #include "profiles/dialogs/GUIDialogProfileSettings.h"
-+#include "Util.h"
- #include "settings/MediaSourceSettings.h"
- #include "settings/Settings.h"
- #include "settings/SettingsComponent.h"
-+#include "guilib/GUIWindowManager.h"
-+#include "FileItem.h"
-+#include "guilib/LocalizeStrings.h"
-+#include "messaging/helpers/DialogOKHelper.h"
- #include "utils/StringUtils.h"
--#include "utils/Variant.h"
- #include "view/ViewStateSettings.h"
-+#include "utils/Variant.h"
- 
- #include <utility>
- 
-diff --git a/xbmc/GUIPassword.h b/xbmc/GUIPassword.h
-index 2585ea860d..18d0179dde 100644
---- a/xbmc/GUIPassword.h
-+++ b/xbmc/GUIPassword.h
-@@ -8,13 +8,13 @@
- 
- #pragma once
- 
--#include "LockType.h"
--#include "settings/lib/ISettingCallback.h"
--#include "settings/lib/SettingLevel.h"
--
- #include <string>
- #include <vector>
- 
-+#include "settings/lib/ISettingCallback.h"
-+#include "settings/lib/SettingLevel.h"
-+#include "LockType.h"
-+
- class CFileItem;
- class CMediaSource;
- 
 diff --git a/xbmc/InfoScanner.cpp b/xbmc/InfoScanner.cpp
 index db505bf510..558dd67757 100644
 --- a/xbmc/InfoScanner.cpp
