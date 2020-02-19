@@ -1535,7 +1535,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/utils/JSONVariantParser.h                     |  4 +-
  xbmc/utils/JSONVariantWriter.cpp                   |  4 +-
  xbmc/utils/JobManager.h                            |  9 ++-
- xbmc/utils/LabelFormatter.cpp                      | 22 ++++----
  xbmc/utils/LangCodeExpander.cpp                    |  7 +--
  xbmc/utils/LegacyPathTranslation.cpp               |  3 +-
  xbmc/utils/Locale.cpp                              |  1 -
@@ -30793,47 +30792,6 @@ index ac4aa4edc5..255c241263 100644
 +#include "Job.h"
  
  class CJobManager;
- 
-diff --git a/xbmc/utils/LabelFormatter.cpp b/xbmc/utils/LabelFormatter.cpp
-index 01c678287d..162d1e057a 100644
---- a/xbmc/utils/LabelFormatter.cpp
-+++ b/xbmc/utils/LabelFormatter.cpp
-@@ -6,25 +6,25 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
--#include "LabelFormatter.h"
-+#include <cstdlib>
- 
--#include "FileItem.h"
--#include "RegExp.h"
-+#include "LabelFormatter.h"
- #include "ServiceBroker.h"
--#include "StringUtils.h"
--#include "URIUtils.h"
--#include "Util.h"
--#include "Variant.h"
--#include "guilib/LocalizeStrings.h"
--#include "music/tags/MusicInfoTag.h"
--#include "pictures/PictureInfoTag.h"
- #include "settings/AdvancedSettings.h"
- #include "settings/Settings.h"
- #include "settings/SettingsComponent.h"
-+#include "RegExp.h"
-+#include "Util.h"
- #include "video/VideoInfoTag.h"
-+#include "music/tags/MusicInfoTag.h"
-+#include "pictures/PictureInfoTag.h"
-+#include "FileItem.h"
-+#include "StringUtils.h"
-+#include "URIUtils.h"
-+#include "guilib/LocalizeStrings.h"
-+#include "Variant.h"
- 
- #include <cassert>
--#include <cstdlib>
- 
- using namespace MUSIC_INFO;
  
 diff --git a/xbmc/utils/LangCodeExpander.cpp b/xbmc/utils/LangCodeExpander.cpp
 index 39539d38b4..7edcd7567f 100644
