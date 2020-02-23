@@ -124,7 +124,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/addons/binary-addons/BinaryAddonManager.cpp   |  4 +-
  xbmc/addons/binary-addons/BinaryAddonType.cpp      |  4 +-
  xbmc/addons/binary-addons/BinaryAddonType.h        |  3 +-
- xbmc/addons/interfaces/GUI/AddonGUIWindow.cpp      |  2 +-
  xbmc/addons/interfaces/GUI/AddonGUIWindow.h        |  3 +-
  xbmc/addons/interfaces/GUI/General.cpp             | 12 ++--
  xbmc/addons/interfaces/GUI/ListItem.cpp            |  4 +-
@@ -4071,35 +4070,6 @@ index ebf5c8e581..53b934f91c 100644
  
  using namespace ADDON;
  
-diff --git a/xbmc/addons/interfaces/GUI/AddonGUIWindow.cpp b/xbmc/addons/interfaces/GUI/AddonGUIWindow.cpp
-index 30fe80cbc5..358788ee96 100644
---- a/xbmc/addons/interfaces/GUI/AddonGUIWindow.cpp
-+++ b/xbmc/addons/interfaces/GUI/AddonGUIWindow.cpp
-@@ -17,8 +17,8 @@
- #include "guilib/TextureManager.h"
- #include "input/Key.h"
- #include "messaging/ApplicationMessenger.h"
--#include "utils/URIUtils.h"
- #include "utils/log.h"
-+#include "utils/URIUtils.h"
- 
- #define CONTROL_BTNVIEWASICONS  2
- #define CONTROL_BTNSORTBY       3
-diff --git a/xbmc/addons/interfaces/GUI/AddonGUIWindow.h b/xbmc/addons/interfaces/GUI/AddonGUIWindow.h
-index 0831446cec..058d9f85fa 100644
---- a/xbmc/addons/interfaces/GUI/AddonGUIWindow.h
-+++ b/xbmc/addons/interfaces/GUI/AddonGUIWindow.h
-@@ -9,8 +9,9 @@
- #pragma once
- 
- #include "addons/kodi-addon-dev-kit/include/kodi/libKODI_guilib.h"
--#include "threads/Event.h"
-+
- #include "windows/GUIMediaWindow.h"
-+#include "threads/Event.h"
- 
- namespace ADDON
- {
 diff --git a/xbmc/addons/interfaces/GUI/General.cpp b/xbmc/addons/interfaces/GUI/General.cpp
 index 5072e12a85..f03a040dd6 100644
 --- a/xbmc/addons/interfaces/GUI/General.cpp
