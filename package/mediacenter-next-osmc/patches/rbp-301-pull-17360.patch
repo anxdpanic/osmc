@@ -1,0 +1,86 @@
+From 6b7f8b1de067ca93d47b2268ef275744251e2677 Mon Sep 17 00:00:00 2001
+From: Jakob Linskeseder <jakob.linskeseder@gmail.com>
+Date: Mon, 10 Feb 2020 22:11:56 +0100
+Subject: [PATCH] Remove outdated distribute dependency
+
+As stated on PyPi (https://pypi.org/project/distribute/),
+`distribute` is a legacy package and compatibility layer
+that installs Setuptools 0.7+.
+
+Since Setuptools (v41) gets already installed, this wrapper
+is not needed anymore.
+
+Related to #12804.
+---
+ tools/depends/native/Makefile            |  7 +++---
+ tools/depends/native/distribute/Makefile | 29 ------------------------
+ 2 files changed, 3 insertions(+), 33 deletions(-)
+ delete mode 100644 tools/depends/native/distribute/Makefile
+
+diff --git a/tools/depends/native/Makefile b/tools/depends/native/Makefile
+index e3cf4268defb..332270dc4a9d 100644
+--- a/tools/depends/native/Makefile
++++ b/tools/depends/native/Makefile
+@@ -9,7 +9,7 @@ NATIVE= m4 gettext heimdal autoconf automake \
+         gas-preprocessor libffi python3 zlib \
+         pcre swig \
+         libpng libjpeg-turbo liblzo2 giflib \
+-        distribute distutilscross JsonSchemaBuilder TexturePacker \
++        setuptools distutilscross JsonSchemaBuilder TexturePacker \
+         flatbuffers
+ 
+ 
+@@ -23,7 +23,7 @@ endif
+ 
+ ifeq ($(OS),linux)
+   ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),raspberry-pi gbm))
+-    NATIVE += meson ninja setuptools
++    NATIVE += meson ninja
+   endif
+ endif
+ 
+@@ -48,8 +48,7 @@ libpng: zlib
+ meson: python3 setuptools
+ ninja: python3
+ swig: pcre
+-distribute: python3
+-distutilscross: python3 distribute
++distutilscross: python3
+ tar: xz automake
+ python3: $(EXPAT) libffi pkg-config zlib
+ setuptools: python3
+diff --git a/tools/depends/native/distribute/Makefile b/tools/depends/native/distribute/Makefile
+deleted file mode 100644
+index ee7ea71a59d0..000000000000
+--- a/tools/depends/native/distribute/Makefile
++++ /dev/null
+@@ -1,29 +0,0 @@
+-include ../../Makefile.include
+-PREFIX=$(NATIVEPREFIX)
+-PLATFORM=$(NATIVEPLATFORM)
+-DEPS= ../../Makefile.include Makefile
+-
+-# lib name, version
+-LIBNAME=distribute
+-VERSION=0.6.21
+-ARCHIVE=$(LIBNAME)-$(VERSION).tar.gz
+-
+-all: .installed-$(PLATFORM)
+-
+-$(TARBALLS_LOCATION)/$(ARCHIVE):
+-	cd $(TARBALLS_LOCATION); $(RETRIEVE_TOOL) $(RETRIEVE_TOOL_FLAGS) $(BASE_URL)/$(ARCHIVE)
+-	cd $(TARBALLS_LOCATION); chmod +x $(ARCHIVE)
+-
+-$(PLATFORM): $(TARBALLS_LOCATION)/$(ARCHIVE) $(DEPS)
+-	-rm -rf $(PLATFORM)/*; mkdir -p $(PLATFORM)
+-	cd $(PLATFORM); $(ARCHIVE_TOOL) $(ARCHIVE_TOOL_FLAGS) $(TARBALLS_LOCATION)/$(ARCHIVE)
+-
+-.installed-$(PLATFORM): $(PLATFORM)
+-	cd $(PLATFORM); $(PREFIX)/bin/python3 setup.py install --prefix=$(PREFIX)
+-	touch $@
+-
+-clean:
+-	rm -f .installed-$(PLATFORM)
+-
+-distclean::
+-	rm -rf $(PLATFORM) .installed-$(PLATFORM)
