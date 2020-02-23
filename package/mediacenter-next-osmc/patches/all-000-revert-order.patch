@@ -125,7 +125,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/addons/binary-addons/BinaryAddonType.cpp      |  4 +-
  xbmc/addons/binary-addons/BinaryAddonType.h        |  3 +-
  .../interfaces/Addon/AddonCallbacksAddon.cpp       | 20 +++----
- xbmc/addons/interfaces/Filesystem.cpp              | 10 ++--
  xbmc/addons/interfaces/GUI/AddonCallbacksGUI.cpp   | 20 +++----
  xbmc/addons/interfaces/GUI/AddonGUIWindow.cpp      |  2 +-
  xbmc/addons/interfaces/GUI/AddonGUIWindow.h        |  3 +-
@@ -1346,7 +1345,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/platform/win10/storage/Win10StorageProvider.h |  6 +-
  xbmc/platform/win32/CharsetConverter.cpp           |  4 +-
  xbmc/platform/win32/Environment.cpp                |  3 -
- xbmc/platform/win32/Filesystem.cpp                 |  1 -
  xbmc/platform/win32/IMMNotificationClient.h        |  5 +-
  xbmc/platform/win32/MessagePrinter.cpp             |  2 -
  xbmc/platform/win32/WIN32Util.h                    |  4 +-
@@ -4115,35 +4113,6 @@ index 3b73e99380..3d53190878 100644
 +#include "filesystem/SpecialProtocol.h"
  
  using namespace ADDON;
- using namespace XFILE;
-diff --git a/xbmc/addons/interfaces/Filesystem.cpp b/xbmc/addons/interfaces/Filesystem.cpp
-index a771f89259..a20775b107 100644
---- a/xbmc/addons/interfaces/Filesystem.cpp
-+++ b/xbmc/addons/interfaces/Filesystem.cpp
-@@ -6,19 +6,19 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
-+#include <vector>
-+
- #include "Filesystem.h"
-+#include "addons/kodi-addon-dev-kit/include/kodi/Filesystem.h"
- 
- #include "Util.h"
- #include "addons/binary-addons/AddonDll.h"
--#include "addons/kodi-addon-dev-kit/include/kodi/Filesystem.h"
--#include "filesystem/Directory.h"
- #include "filesystem/File.h"
-+#include "filesystem/Directory.h"
- #include "filesystem/SpecialProtocol.h"
- #include "utils/Crc32.h"
--#include "utils/StringUtils.h"
- #include "utils/log.h"
--
--#include <vector>
-+#include "utils/StringUtils.h"
- 
- using namespace kodi; // addon-dev-kit namespace
  using namespace XFILE;
 diff --git a/xbmc/addons/interfaces/GUI/AddonCallbacksGUI.cpp b/xbmc/addons/interfaces/GUI/AddonCallbacksGUI.cpp
 index 7e2205cd59..326be91cc1 100644
@@ -26640,18 +26609,6 @@ index 28a4f7dd1a..afa9d32592 100644
  #include <Windows.h>
  
  // --------------------- Internal Function ---------------------
-diff --git a/xbmc/platform/win32/Filesystem.cpp b/xbmc/platform/win32/Filesystem.cpp
-index 5de937f850..3b6846cf79 100644
---- a/xbmc/platform/win32/Filesystem.cpp
-+++ b/xbmc/platform/win32/Filesystem.cpp
-@@ -7,7 +7,6 @@
-  */
- 
- #include "platform/Filesystem.h"
--
- #include "platform/win32/CharsetConverter.h"
- 
- #include <Windows.h>
 diff --git a/xbmc/platform/win32/IMMNotificationClient.h b/xbmc/platform/win32/IMMNotificationClient.h
 index defd6ffb35..39ed24c64c 100644
 --- a/xbmc/platform/win32/IMMNotificationClient.h
