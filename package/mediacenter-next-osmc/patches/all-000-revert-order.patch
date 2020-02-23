@@ -118,7 +118,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/addons/VFSEntry.h                             |  2 +-
  xbmc/addons/Visualization.h                        |  2 +-
  xbmc/addons/Webinterface.cpp                       |  3 +-
- xbmc/addons/binary-addons/AddonInstanceHandler.cpp |  4 +-
  xbmc/addons/binary-addons/BinaryAddonBase.h        |  1 +
  xbmc/addons/binary-addons/BinaryAddonManager.cpp   |  4 +-
  xbmc/addons/binary-addons/BinaryAddonType.cpp      |  4 +-
@@ -4032,23 +4031,6 @@ index 04fd034882..858ee62668 100644
  
  using namespace ADDON;
  
-diff --git a/xbmc/addons/binary-addons/AddonInstanceHandler.cpp b/xbmc/addons/binary-addons/AddonInstanceHandler.cpp
-index e8f4b4a01f..b0d9c1f7d3 100644
---- a/xbmc/addons/binary-addons/AddonInstanceHandler.cpp
-+++ b/xbmc/addons/binary-addons/AddonInstanceHandler.cpp
-@@ -7,10 +7,10 @@
-  */
- 
- #include "AddonInstanceHandler.h"
--
- #include "BinaryAddonBase.h"
--#include "utils/StringUtils.h"
-+
- #include "utils/log.h"
-+#include "utils/StringUtils.h"
- 
- namespace ADDON
- {
 diff --git a/xbmc/addons/interfaces/GUI/General.cpp b/xbmc/addons/interfaces/GUI/General.cpp
 index 5072e12a85..f03a040dd6 100644
 --- a/xbmc/addons/interfaces/GUI/General.cpp
