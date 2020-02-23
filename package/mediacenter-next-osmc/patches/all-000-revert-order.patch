@@ -119,7 +119,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/addons/Visualization.h                        |  2 +-
  xbmc/addons/Webinterface.cpp                       |  3 +-
  xbmc/addons/binary-addons/AddonInstanceHandler.cpp |  4 +-
- xbmc/addons/binary-addons/BinaryAddonBase.cpp      |  4 +-
  xbmc/addons/binary-addons/BinaryAddonBase.h        |  1 +
  xbmc/addons/binary-addons/BinaryAddonManager.cpp   |  4 +-
  xbmc/addons/binary-addons/BinaryAddonType.cpp      |  4 +-
@@ -4050,26 +4049,6 @@ index e8f4b4a01f..b0d9c1f7d3 100644
  
  namespace ADDON
  {
-diff --git a/xbmc/addons/binary-addons/BinaryAddonBase.cpp b/xbmc/addons/binary-addons/BinaryAddonBase.cpp
-index ebf5c8e581..53b934f91c 100644
---- a/xbmc/addons/binary-addons/BinaryAddonBase.cpp
-+++ b/xbmc/addons/binary-addons/BinaryAddonBase.cpp
-@@ -7,13 +7,13 @@
-  */
- 
- #include "BinaryAddonBase.h"
--
- #include "AddonDll.h"
-+
- #include "filesystem/SpecialProtocol.h"
- #include "threads/SingleLock.h"
-+#include "utils/log.h"
- #include "utils/URIUtils.h"
- #include "utils/XMLUtils.h"
--#include "utils/log.h"
- 
- using namespace ADDON;
- 
 diff --git a/xbmc/addons/interfaces/GUI/General.cpp b/xbmc/addons/interfaces/GUI/General.cpp
 index 5072e12a85..f03a040dd6 100644
 --- a/xbmc/addons/interfaces/GUI/General.cpp
