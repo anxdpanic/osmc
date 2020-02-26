@@ -1,0 +1,567 @@
+From 622dd2df14ababd8c12b179bcdccbbbe67520494 Mon Sep 17 00:00:00 2001
+From: howie-f <rftc@gmx.de>
+Date: Wed, 19 Feb 2020 10:37:55 +0100
+Subject: [PATCH 1/2] refactor: enum MediaLockState
+
+---
+ xbmc/FileItem.cpp                             |  5 +++--
+ xbmc/GUIPassword.cpp                          | 18 ++++++++++-------
+ xbmc/MediaSource.cpp                          |  5 +++--
+ xbmc/MediaSource.h                            |  5 +++--
+ xbmc/dialogs/GUIDialogContextMenu.cpp         | 20 ++++++++++++-------
+ xbmc/filesystem/SourcesDirectory.cpp          |  6 ++++--
+ xbmc/games/windows/GUIWindowGames.cpp         |  5 +++--
+ xbmc/interfaces/json-rpc/FileOperations.cpp   |  5 +++--
+ .../httprequesthandler/HTTPVfsHandler.cpp     |  7 ++++---
+ xbmc/pictures/GUIWindowPictures.cpp           |  5 +++--
+ xbmc/playlists/PlayListXML.cpp                |  7 ++++---
+ xbmc/programs/GUIWindowPrograms.cpp           |  5 +++--
+ xbmc/settings/MediaSourceSettings.cpp         |  5 +++--
+ xbmc/utils/FileUtils.cpp                      | 13 +++++++-----
+ 14 files changed, 68 insertions(+), 43 deletions(-)
+
+diff --git a/xbmc/FileItem.cpp b/xbmc/FileItem.cpp
+index 6dc3b3dd66dd..376cbc92f55e 100644
+--- a/xbmc/FileItem.cpp
++++ b/xbmc/FileItem.cpp
+@@ -1,5 +1,5 @@
+ /*
+- *  Copyright (C) 2005-2018 Team Kodi
++ *  Copyright (C) 2005-2020 Team Kodi
+  *  This file is part of Kodi - https://kodi.tv
+  *
+  *  SPDX-License-Identifier: GPL-2.0-or-later
+@@ -25,6 +25,7 @@
+ #include "games/addons/GameClient.h"
+ #include "games/tags/GameInfoTag.h"
+ #include "guilib/LocalizeStrings.h"
++#include "media/MediaLockState.h"
+ #include "music/Album.h"
+ #include "music/Artist.h"
+ #include "music/MusicDatabase.h"
+@@ -492,7 +493,7 @@ void CFileItem::Initialize()
+   m_idepth = 1;
+   m_iLockMode = LOCK_MODE_EVERYONE;
+   m_iBadPwdCount = 0;
+-  m_iHasLock = 0;
++  m_iHasLock = LOCK_STATE_NO_LOCK;
+   m_bCanQueue = true;
+   m_specialSort = SortSpecialNone;
+   m_doContentLookup = true;
+diff --git a/xbmc/GUIPassword.cpp b/xbmc/GUIPassword.cpp
+index dcab49c3a1f0..d3706bd7fbda 100644
+--- a/xbmc/GUIPassword.cpp
++++ b/xbmc/GUIPassword.cpp
+@@ -64,9 +64,10 @@ bool CGUIPassword::IsItemUnlocked(T pItem,
+                    CSettings::SETTING_MASTERLOCK_MAXRETRIES) &&
+           pItem->m_iBadPwdCount >= CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(
+                                        CSettings::SETTING_MASTERLOCK_MAXRETRIES))
+-      { // user previously exhausted all retries, show access denied error
++      {
++        // user previously exhausted all retries, show access denied error
+         HELPERS::ShowOKDialogText(CVariant{12345}, CVariant{12346});
+-        return false; //             "Access denied"      "Password retry limit exceeded."
++        return false;
+       }
+       // show the appropriate lock dialog
+       iResult = VerifyPassword(pItem->m_iLockMode, strLockCode, strHeading);
+@@ -164,7 +165,7 @@ bool CGUIPassword::CheckStartUpLock()
+ 
+         // PopUp OK and Display: MasterLock mode has changed but no new Mastercode has been set!
+         HELPERS::ShowOKDialogLines(CVariant{12360}, CVariant{12367}, CVariant{strLabel}, CVariant{""});
+-      } //                             "Master lock"    "Master code is not valid..."
++      }
+       else
+         i=g_passwordManager.iMasterLockRetriesLeft;
+     }
+@@ -190,8 +191,9 @@ bool CGUIPassword::SetMasterLockMode(bool bDetails)
+   if (profile)
+   {
+     CProfile::CLock locks = profile->GetLocks();
++    // prompt user for master lock
+     if (CGUIDialogLockSettings::ShowAndGetLock(locks, 12360, true, bDetails))
+-    { //                                          "Master lock"
++    {
+       profile->SetLocks(locks);
+       return true;
+     }
+@@ -239,8 +241,9 @@ bool CGUIPassword::IsProfileLockUnlocked(int iProfile, bool& bCanceled, bool pro
+     else
+     {
+       if (profileManager->GetMasterProfile().getLockMode() != LOCK_MODE_EVERYONE)
++        // prompt user for profile lock code
+         return CheckLock(profile->getLockMode(),profile->getLockCode(),20095,bCanceled);
+-    } //                                                          "Enter profile lock code"
++    }
+   }
+ 
+   return true;
+@@ -316,15 +319,16 @@ void CGUIPassword::UpdateMasterLockRetryCount(bool bResetCount)
+         g_passwordManager.iMasterLockRetriesLeft = 0;
+         // Tell the user they ran out of retry attempts
+         HELPERS::ShowOKDialogText(CVariant{12345}, CVariant{12346});
+-        return; //                    "Access denied"    "Password retry limit exceeded."
++        return;
+       }
+     }
+     std::string dlgLine1 = "";
+     if (0 < g_passwordManager.iMasterLockRetriesLeft)
+       dlgLine1 = StringUtils::Format("%d %s", g_passwordManager.iMasterLockRetriesLeft,
+                                      g_localizeStrings.Get(12343).c_str()); // "retries left"
++    // prompt user for master lock code
+     HELPERS::ShowOKDialogLines(CVariant{20075}, CVariant{12345}, CVariant{std::move(dlgLine1)}, CVariant{0});
+-  } //                    "Enter master lock code"     "Access denied"
++  }
+   else
+     g_passwordManager.iMasterLockRetriesLeft = CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_MASTERLOCK_MAXRETRIES); // user entered correct mastercode, reset retries to max allowed
+ }
+diff --git a/xbmc/MediaSource.cpp b/xbmc/MediaSource.cpp
+index adc5e357bccd..6782ca3f1c08 100644
+--- a/xbmc/MediaSource.cpp
++++ b/xbmc/MediaSource.cpp
+@@ -1,5 +1,5 @@
+ /*
+- *  Copyright (C) 2005-2018 Team Kodi
++ *  Copyright (C) 2005-2020 Team Kodi
+  *  This file is part of Kodi - https://kodi.tv
+  *
+  *  SPDX-License-Identifier: GPL-2.0-or-later
+@@ -11,6 +11,7 @@
+ #include "URL.h"
+ #include "Util.h"
+ #include "filesystem/MultiPathDirectory.h"
++#include "media/MediaLockState.h"
+ #include "utils/StringUtils.h"
+ #include "utils/URIUtils.h"
+ 
+@@ -41,7 +42,7 @@ void CMediaSource::FromNameAndPaths(const std::string &category, const std::stri
+   m_iLockMode = LOCK_MODE_EVERYONE;
+   m_strLockCode = "0";
+   m_iBadPwdCount = 0;
+-  m_iHasLock = 0;
++  m_iHasLock = LOCK_STATE_NO_LOCK;
+   m_allowSharing = true;
+ 
+   if (URIUtils::IsMultiPath(strPath))
+diff --git a/xbmc/MediaSource.h b/xbmc/MediaSource.h
+index 37b3112487c6..1afbea2ac755 100644
+--- a/xbmc/MediaSource.h
++++ b/xbmc/MediaSource.h
+@@ -1,5 +1,5 @@
+ /*
+- *  Copyright (C) 2005-2018 Team Kodi
++ *  Copyright (C) 2005-2020 Team Kodi
+  *  This file is part of Kodi - https://kodi.tv
+  *
+  *  SPDX-License-Identifier: GPL-2.0-or-later
+@@ -9,6 +9,7 @@
+ #pragma once
+ 
+ #include "LockType.h"
++#include "media/MediaLockState.h"
+ 
+ #include <string>
+ #include <vector>
+@@ -79,7 +80,7 @@ class CMediaSource final
+   */
+   LockType m_iLockMode = LOCK_MODE_EVERYONE;
+   std::string m_strLockCode;  ///< Input code for Lock UI to verify, can be chosen freely.
+-  int m_iHasLock = 0;
++  int m_iHasLock = LOCK_STATE_NO_LOCK;
+   int m_iBadPwdCount = 0; ///< Number of wrong passwords user has entered since share was last unlocked
+ 
+   std::string m_strThumbnailImage; ///< Path to a thumbnail image for the share, or blank for default
+diff --git a/xbmc/dialogs/GUIDialogContextMenu.cpp b/xbmc/dialogs/GUIDialogContextMenu.cpp
+index 26587c4d7ae0..ba7819dc30b3 100644
+--- a/xbmc/dialogs/GUIDialogContextMenu.cpp
++++ b/xbmc/dialogs/GUIDialogContextMenu.cpp
+@@ -1,5 +1,5 @@
+ /*
+- *  Copyright (C) 2005-2018 Team Kodi
++ *  Copyright (C) 2005-2020 Team Kodi
+  *  This file is part of Kodi - https://kodi.tv
+  *
+  *  SPDX-License-Identifier: GPL-2.0-or-later
+@@ -26,6 +26,7 @@
+ #include "guilib/GUIWindowManager.h"
+ #include "guilib/LocalizeStrings.h"
+ #include "input/Key.h"
++#include "media/MediaLockState.h"
+ #include "profiles/ProfileManager.h"
+ #include "profiles/dialogs/GUIDialogLockSettings.h"
+ #include "settings/MediaSourceSettings.h"
+@@ -249,11 +250,15 @@ void CGUIDialogContextMenu::GetContextButtons(const std::string &type, const CFi
+   }
+   if (share && LOCK_MODE_EVERYONE != CServiceBroker::GetSettingsComponent()->GetProfileManager()->GetMasterProfile().getLockMode())
+   {
+-    if (share->m_iHasLock == 0 && (CServiceBroker::GetSettingsComponent()->GetProfileManager()->GetCurrentProfile().canWriteSources() || g_passwordManager.bMasterUser))
++    if (share->m_iHasLock == LOCK_STATE_NO_LOCK && (CServiceBroker::GetSettingsComponent()
++                                                        ->GetProfileManager()
++                                                        ->GetCurrentProfile()
++                                                        .canWriteSources() ||
++                                                    g_passwordManager.bMasterUser))
+       buttons.Add(CONTEXT_BUTTON_ADD_LOCK, 12332);
+-    else if (share->m_iHasLock == 1)
++    else if (share->m_iHasLock == LOCK_STATE_LOCK_BUT_UNLOCKED)
+       buttons.Add(CONTEXT_BUTTON_REMOVE_LOCK, 12335);
+-    else if (share->m_iHasLock == 2)
++    else if (share->m_iHasLock == LOCK_STATE_LOCKED)
+     {
+       buttons.Add(CONTEXT_BUTTON_REMOVE_LOCK, 12335);
+ 
+@@ -267,7 +272,7 @@ void CGUIDialogContextMenu::GetContextButtons(const std::string &type, const CFi
+         buttons.Add(CONTEXT_BUTTON_CHANGE_LOCK, 12356);
+     }
+   }
+-  if (share && !g_passwordManager.bMasterUser && item->m_iHasLock == 1)
++  if (share && !g_passwordManager.bMasterUser && item->m_iHasLock == LOCK_STATE_LOCK_BUT_UNLOCKED)
+     buttons.Add(CONTEXT_BUTTON_REACTIVATE_LOCK, 12353);
+ }
+ 
+@@ -438,7 +443,7 @@ bool CGUIDialogContextMenu::OnContextButton(const std::string &type, const CFile
+       if (!CGUIDialogLockSettings::ShowAndGetLock(share->m_iLockMode,strNewPassword))
+         return false;
+       // password entry and re-entry succeeded, write out the lock data
+-      share->m_iHasLock = 2;
++      share->m_iHasLock = LOCK_STATE_LOCKED;
+       CMediaSourceSettings::GetInstance().UpdateSource(type, share->strName, "lockcode", strNewPassword);
+       strNewPassword = StringUtils::Format("%i", share->m_iLockMode);
+       CMediaSourceSettings::GetInstance().UpdateSource(type, share->strName, "lockmode", strNewPassword);
+@@ -466,10 +471,11 @@ bool CGUIDialogContextMenu::OnContextButton(const std::string &type, const CFile
+       if (!g_passwordManager.IsMasterLockUnlocked(true))
+         return false;
+ 
++      // prompt user if they want to really remove the lock
+       if (!CGUIDialogYesNo::ShowAndGetInput(CVariant{12335}, CVariant{750}))
+         return false;
+ 
+-      share->m_iHasLock = 0;
++      share->m_iHasLock = LOCK_STATE_NO_LOCK;
+       CMediaSourceSettings::GetInstance().UpdateSource(type, share->strName, "lockmode", "0");
+       CMediaSourceSettings::GetInstance().UpdateSource(type, share->strName, "lockcode", "0");
+       CMediaSourceSettings::GetInstance().UpdateSource(type, share->strName, "badpwdcount", "0");
+diff --git a/xbmc/filesystem/SourcesDirectory.cpp b/xbmc/filesystem/SourcesDirectory.cpp
+index 5147aa1cde61..c87c9abef3be 100644
+--- a/xbmc/filesystem/SourcesDirectory.cpp
++++ b/xbmc/filesystem/SourcesDirectory.cpp
+@@ -1,5 +1,5 @@
+ /*
+- *  Copyright (C) 2005-2018 Team Kodi
++ *  Copyright (C) 2005-2020 Team Kodi
+  *  This file is part of Kodi - https://kodi.tv
+  *
+  *  SPDX-License-Identifier: GPL-2.0-or-later
+@@ -14,6 +14,7 @@
+ #include "URL.h"
+ #include "Util.h"
+ #include "guilib/TextureManager.h"
++#include "media/MediaLockState.h"
+ #include "profiles/ProfileManager.h"
+ #include "settings/MediaSourceSettings.h"
+ #include "storage/MediaManager.h"
+@@ -88,7 +89,8 @@ bool CSourcesDirectory::GetDirectory(const VECSOURCES &sources, CFileItemList &i
+       strIcon = "DefaultHardDisk.png";
+ 
+     pItem->SetArt("icon", strIcon);
+-    if (share.m_iHasLock == 2 && m_profileManager->GetMasterProfile().getLockMode() != LOCK_MODE_EVERYONE)
++    if (share.m_iHasLock == LOCK_STATE_LOCKED &&
++        m_profileManager->GetMasterProfile().getLockMode() != LOCK_MODE_EVERYONE)
+       pItem->SetOverlayImage(CGUIListItem::ICON_OVERLAY_LOCKED);
+     else
+       pItem->SetOverlayImage(CGUIListItem::ICON_OVERLAY_NONE);
+diff --git a/xbmc/games/windows/GUIWindowGames.cpp b/xbmc/games/windows/GUIWindowGames.cpp
+index 42e331349853..bef066dfb111 100644
+--- a/xbmc/games/windows/GUIWindowGames.cpp
++++ b/xbmc/games/windows/GUIWindowGames.cpp
+@@ -1,5 +1,5 @@
+ /*
+- *  Copyright (C) 2012-2018 Team Kodi
++ *  Copyright (C) 2012-2020 Team Kodi
+  *  This file is part of Kodi - https://kodi.tv
+  *
+  *  SPDX-License-Identifier: GPL-2.0-or-later
+@@ -23,6 +23,7 @@
+ #include "guilib/GUIComponent.h"
+ #include "guilib/GUIWindowManager.h"
+ #include "guilib/WindowIDs.h"
++#include "media/MediaLockState.h"
+ #include "settings/MediaSourceSettings.h"
+ #include "settings/Settings.h"
+ #include "settings/SettingsComponent.h"
+@@ -292,7 +293,7 @@ std::string CGUIWindowGames::GetStartFolder(const std::string &dir)
+   int iIndex = CUtil::GetMatchingSource(dir, shares, bIsSourceName);
+   if (iIndex >= 0)
+   {
+-    if (iIndex < (int)shares.size() && shares[iIndex].m_iHasLock == 2)
++    if (iIndex < static_cast<int>(shares.size()) && shares[iIndex].m_iHasLock == LOCK_STATE_LOCKED)
+     {
+       CFileItem item(shares[iIndex]);
+       if (!g_passwordManager.IsItemUnlocked(&item, "games"))
+diff --git a/xbmc/interfaces/json-rpc/FileOperations.cpp b/xbmc/interfaces/json-rpc/FileOperations.cpp
+index ef29960dc642..70c075682e08 100644
+--- a/xbmc/interfaces/json-rpc/FileOperations.cpp
++++ b/xbmc/interfaces/json-rpc/FileOperations.cpp
+@@ -1,5 +1,5 @@
+ /*
+- *  Copyright (C) 2005-2018 Team Kodi
++ *  Copyright (C) 2005-2020 Team Kodi
+  *  This file is part of Kodi - https://kodi.tv
+  *
+  *  SPDX-License-Identifier: GPL-2.0-or-later
+@@ -17,6 +17,7 @@
+ #include "VideoLibrary.h"
+ #include "filesystem/Directory.h"
+ #include "filesystem/File.h"
++#include "media/MediaLockState.h"
+ #include "settings/AdvancedSettings.h"
+ #include "settings/MediaSourceSettings.h"
+ #include "settings/SettingsComponent.h"
+@@ -41,7 +42,7 @@ JSONRPC_STATUS CFileOperations::GetRootDirectory(const std::string &method, ITra
+     for (unsigned int i = 0; i < (unsigned int)sources->size(); i++)
+     {
+       // Do not show sources which are locked
+-      if (sources->at(i).m_iHasLock == 2)
++      if (sources->at(i).m_iHasLock == LOCK_STATE_LOCKED)
+         continue;
+ 
+       items.Add(CFileItemPtr(new CFileItem(sources->at(i))));
+diff --git a/xbmc/network/httprequesthandler/HTTPVfsHandler.cpp b/xbmc/network/httprequesthandler/HTTPVfsHandler.cpp
+index c82803d39faa..3e03e7046e5a 100644
+--- a/xbmc/network/httprequesthandler/HTTPVfsHandler.cpp
++++ b/xbmc/network/httprequesthandler/HTTPVfsHandler.cpp
+@@ -1,5 +1,5 @@
+ /*
+- *  Copyright (C) 2011-2018 Team Kodi
++ *  Copyright (C) 2011-2020 Team Kodi
+  *  This file is part of Kodi - https://kodi.tv
+  *
+  *  SPDX-License-Identifier: GPL-2.0-or-later
+@@ -13,6 +13,7 @@
+ #include "URL.h"
+ #include "Util.h"
+ #include "filesystem/File.h"
++#include "media/MediaLockState.h"
+ #include "network/WebServer.h"
+ #include "settings/MediaSourceSettings.h"
+ #include "storage/MediaManager.h"
+@@ -57,7 +58,7 @@ CHTTPVfsHandler::CHTTPVfsHandler(const HTTPRequest &request)
+               break;
+ 
+             // don't allow access to locked / disabled sharing sources
+-            if (source.m_iHasLock == 2 || !source.m_allowSharing)
++            if (source.m_iHasLock == LOCK_STATE_LOCKED || !source.m_allowSharing)
+               continue;
+ 
+             for (const auto& path : source.vecPaths)
+@@ -80,7 +81,7 @@ CHTTPVfsHandler::CHTTPVfsHandler(const HTTPRequest &request)
+           CServiceBroker::GetMediaManager().GetRemovableDrives(removableSources);
+           int sourceIndex = CUtil::GetMatchingSource(realPath, removableSources, isSource);
+           if (sourceIndex >= 0 && sourceIndex < static_cast<int>(removableSources.size()) &&
+-              removableSources.at(sourceIndex).m_iHasLock != 2 &&
++              removableSources.at(sourceIndex).m_iHasLock != LOCK_STATE_LOCKED &&
+               removableSources.at(sourceIndex).m_allowSharing)
+             accessible = true;
+         }
+diff --git a/xbmc/pictures/GUIWindowPictures.cpp b/xbmc/pictures/GUIWindowPictures.cpp
+index 342342b393a6..edb1e34af14a 100644
+--- a/xbmc/pictures/GUIWindowPictures.cpp
++++ b/xbmc/pictures/GUIWindowPictures.cpp
+@@ -1,5 +1,5 @@
+ /*
+- *  Copyright (C) 2005-2018 Team Kodi
++ *  Copyright (C) 2005-2020 Team Kodi
+  *  This file is part of Kodi - https://kodi.tv
+  *
+  *  SPDX-License-Identifier: GPL-2.0-or-later
+@@ -24,6 +24,7 @@
+ #include "guilib/GUIComponent.h"
+ #include "guilib/GUIWindowManager.h"
+ #include "interfaces/AnnouncementManager.h"
++#include "media/MediaLockState.h"
+ #include "messaging/helpers/DialogOKHelper.h"
+ #include "playlists/PlayList.h"
+ #include "playlists/PlayListFactory.h"
+@@ -600,7 +601,7 @@ std::string CGUIWindowPictures::GetStartFolder(const std::string &dir)
+   int iIndex = CUtil::GetMatchingSource(dir, shares, bIsSourceName);
+   if (iIndex > -1)
+   {
+-    if (iIndex < (int)shares.size() && shares[iIndex].m_iHasLock == 2)
++    if (iIndex < static_cast<int>(shares.size()) && shares[iIndex].m_iHasLock == LOCK_STATE_LOCKED)
+     {
+       CFileItem item(shares[iIndex]);
+       if (!g_passwordManager.IsItemUnlocked(&item,"pictures"))
+diff --git a/xbmc/playlists/PlayListXML.cpp b/xbmc/playlists/PlayListXML.cpp
+index a8fa257c9f19..5876ba78b378 100644
+--- a/xbmc/playlists/PlayListXML.cpp
++++ b/xbmc/playlists/PlayListXML.cpp
+@@ -1,5 +1,5 @@
+ /*
+- *  Copyright (C) 2005-2018 Team Kodi
++ *  Copyright (C) 2005-2020 Team Kodi
+  *  This file is part of Kodi - https://kodi.tv
+  *
+  *  SPDX-License-Identifier: GPL-2.0-or-later
+@@ -10,6 +10,7 @@
+ 
+ #include "Util.h"
+ #include "filesystem/File.h"
++#include "media/MediaLockState.h"
+ #include "utils/StringUtils.h"
+ #include "utils/URIUtils.h"
+ #include "utils/Variant.h"
+@@ -136,7 +137,7 @@ bool CPlayListXML::Load( const std::string& strFileName )
+        if ( !lockpass.empty() )
+        {
+          newItem->m_strLockCode = lockpass;
+-         newItem->m_iHasLock = 2;
++         newItem->m_iHasLock = LOCK_STATE_LOCKED;
+          newItem->m_iLockMode = LOCK_MODE_NUMERIC;
+        }
+ 
+@@ -181,7 +182,7 @@ void CPlayListXML::Save(const std::string& strFileName) const
+     if ( !item->GetProperty("remotechannel").empty() )
+       write += StringUtils::Format("    <channel>%s</channel>", item->GetProperty("remotechannel").c_str() );
+ 
+-    if ( item->m_iHasLock > 0 )
++    if (item->m_iHasLock > LOCK_STATE_NO_LOCK)
+       write += StringUtils::Format("    <lockpassword>%s<lockpassword>", item->m_strLockCode.c_str() );
+ 
+     write += StringUtils::Format("  </stream>\n\n" );
+diff --git a/xbmc/programs/GUIWindowPrograms.cpp b/xbmc/programs/GUIWindowPrograms.cpp
+index ca5a2b2f1f40..b0894ae9a7b2 100644
+--- a/xbmc/programs/GUIWindowPrograms.cpp
++++ b/xbmc/programs/GUIWindowPrograms.cpp
+@@ -1,5 +1,5 @@
+ /*
+- *  Copyright (C) 2005-2018 Team Kodi
++ *  Copyright (C) 2005-2020 Team Kodi
+  *  This file is part of Kodi - https://kodi.tv
+  *
+  *  SPDX-License-Identifier: GPL-2.0-or-later
+@@ -18,6 +18,7 @@
+ #include "guilib/GUIComponent.h"
+ #include "guilib/GUIWindowManager.h"
+ #include "input/Key.h"
++#include "media/MediaLockState.h"
+ #include "settings/MediaSourceSettings.h"
+ #include "utils/StringUtils.h"
+ 
+@@ -158,7 +159,7 @@ std::string CGUIWindowPrograms::GetStartFolder(const std::string &dir)
+   int iIndex = CUtil::GetMatchingSource(dir, shares, bIsSourceName);
+   if (iIndex > -1)
+   {
+-    if (iIndex < (int)shares.size() && shares[iIndex].m_iHasLock == 2)
++    if (iIndex < static_cast<int>(shares.size()) && shares[iIndex].m_iHasLock == LOCK_STATE_LOCKED)
+     {
+       CFileItem item(shares[iIndex]);
+       if (!g_passwordManager.IsItemUnlocked(&item,"programs"))
+diff --git a/xbmc/settings/MediaSourceSettings.cpp b/xbmc/settings/MediaSourceSettings.cpp
+index 4cfcfc65722d..84fde884481c 100644
+--- a/xbmc/settings/MediaSourceSettings.cpp
++++ b/xbmc/settings/MediaSourceSettings.cpp
+@@ -1,5 +1,5 @@
+ /*
+- *  Copyright (C) 2013-2018 Team Kodi
++ *  Copyright (C) 2013-2020 Team Kodi
+  *  This file is part of Kodi - https://kodi.tv
+  *
+  *  SPDX-License-Identifier: GPL-2.0-or-later
+@@ -12,6 +12,7 @@
+ #include "URL.h"
+ #include "Util.h"
+ #include "filesystem/File.h"
++#include "media/MediaLockState.h"
+ #include "network/WakeOnAccess.h"
+ #include "profiles/ProfileManager.h"
+ #include "settings/SettingsComponent.h"
+@@ -399,7 +400,7 @@ bool CMediaSourceSettings::GetSource(const std::string &category, const TiXmlNod
+   if (pLockMode)
+   {
+     share.m_iLockMode = (LockType)std::strtol(pLockMode->FirstChild()->Value(), NULL, 10);
+-    share.m_iHasLock = 2;
++    share.m_iHasLock = LOCK_STATE_LOCKED;
+   }
+ 
+   if (pLockCode && pLockCode->FirstChild())
+diff --git a/xbmc/utils/FileUtils.cpp b/xbmc/utils/FileUtils.cpp
+index a1431f634334..7217f242e2cf 100644
+--- a/xbmc/utils/FileUtils.cpp
++++ b/xbmc/utils/FileUtils.cpp
+@@ -1,5 +1,5 @@
+ /*
+- *  Copyright (C) 2010-2018 Team Kodi
++ *  Copyright (C) 2010-2020 Team Kodi
+  *  This file is part of Kodi - https://kodi.tv
+  *
+  *  SPDX-License-Identifier: GPL-2.0-or-later
+@@ -144,17 +144,20 @@ bool CFileUtils::RemoteAccessAllowed(const std::string &strPath)
+   {
+     VECSOURCES* sources = CMediaSourceSettings::GetInstance().GetSources(sourceName);
+     int sourceIndex = CUtil::GetMatchingSource(realPath, *sources, isSource);
+-    if (sourceIndex >= 0 && sourceIndex < (int)sources->size() && sources->at(sourceIndex).m_iHasLock != 2 && sources->at(sourceIndex).m_allowSharing)
++    if (sourceIndex >= 0 && sourceIndex < static_cast<int>(sources->size()) &&
++        sources->at(sourceIndex).m_iHasLock != LOCK_STATE_LOCKED &&
++        sources->at(sourceIndex).m_allowSharing)
+       return true;
+-  }  
++  }
+   // Check auto-mounted sources
+   VECSOURCES sources;
+   CServiceBroker::GetMediaManager().GetRemovableDrives(
+       sources); // Sources returned allways have m_allowsharing = true
+   //! @todo Make sharing of auto-mounted sources user configurable
+   int sourceIndex = CUtil::GetMatchingSource(realPath, sources, isSource);
+-  if (sourceIndex >= 0 && sourceIndex < static_cast<int>(sources.size()) && 
+-      sources.at(sourceIndex).m_iHasLock != 2 && sources.at(sourceIndex).m_allowSharing)
++  if (sourceIndex >= 0 && sourceIndex < static_cast<int>(sources.size()) &&
++      sources.at(sourceIndex).m_iHasLock != LOCK_STATE_LOCKED &&
++      sources.at(sourceIndex).m_allowSharing)
+     return true;
+ 
+   return false;
+
+From 603ac2db2417624529b65c9c68517cc7c72914d3 Mon Sep 17 00:00:00 2001
+From: howie-f <rftc@gmx.de>
+Date: Sat, 22 Feb 2020 08:54:54 +0100
+Subject: [PATCH 2/2] GUIPassword.h: fix doxygen header
+
+---
+ xbmc/GUIPassword.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/xbmc/GUIPassword.h b/xbmc/GUIPassword.h
+index ade1c7bab3cd..9e165afa5721 100644
+--- a/xbmc/GUIPassword.h
++++ b/xbmc/GUIPassword.h
+@@ -1,5 +1,5 @@
+ /*
+- *  Copyright (C) 2005-2018 Team Kodi
++ *  Copyright (C) 2005-2020 Team Kodi
+  *  This file is part of Kodi - https://kodi.tv
+  *
+  *  SPDX-License-Identifier: GPL-2.0-or-later
+@@ -30,13 +30,13 @@ class CGUIPassword : public ISettingCallback
+                       const std::string& strType,
+                       const std::string& strLabel,
+                       const std::string& strHeading);
+-  /* \brief Tests if the user is allowed to access the share folder
++  /*! \brief Tests if the user is allowed to access the share folder
+    \param pItem The share folder item to access
+    \param strType The type of share being accessed, e.g. "music", "video", etc. See CSettings::UpdateSources()
+    \return If access is granted, returns \e true
+    */
+   bool IsItemUnlocked(CFileItem* pItem, const std::string &strType);
+-  /* \brief Tests if the user is allowed to access the Mediasource
++  /*! \brief Tests if the user is allowed to access the Mediasource
+    \param pItem The share folder item to access
+    \param strType The type of share being accessed, e.g. "music", "video", etc. See CSettings::UpdateSources()
+    \return If access is granted, returns \e true
+@@ -64,7 +64,7 @@ class CGUIPassword : public ISettingCallback
+   void LockSources(bool lock);
+   void RemoveSourceLocks();
+   bool IsDatabasePathUnlocked(const std::string& strPath, VECSOURCES& vecSources);
+-  /* \brief Tests if the user is allowed to access the path by looking up the matching Mediasource
++  /*! \brief Tests if the user is allowed to access the path by looking up the matching Mediasource
+    \param strPath The folder path to access
+    \param strType The type of share being accessed, e.g. "music", "video", etc. See CSettings::UpdateSources()
+    \return If access is granted, returns \e true
