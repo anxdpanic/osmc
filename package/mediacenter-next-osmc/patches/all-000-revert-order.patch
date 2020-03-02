@@ -26958,40 +26958,6 @@ index 8717bc142b..d88829787c 100644
  using namespace KODI;
  using namespace KODI::MESSAGING;
  
-diff --git a/xbmc/settings/MediaSourceSettings.cpp b/xbmc/settings/MediaSourceSettings.cpp
-index 4cfcfc6572..48120af130 100644
---- a/xbmc/settings/MediaSourceSettings.cpp
-+++ b/xbmc/settings/MediaSourceSettings.cpp
-@@ -6,23 +6,22 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
--#include "MediaSourceSettings.h"
-+#include <cstdlib>
-+#include <string>
- 
--#include "ServiceBroker.h"
-+#include "MediaSourceSettings.h"
- #include "URL.h"
- #include "Util.h"
- #include "filesystem/File.h"
--#include "network/WakeOnAccess.h"
- #include "profiles/ProfileManager.h"
- #include "settings/SettingsComponent.h"
-+#include "utils/log.h"
- #include "utils/StringUtils.h"
- #include "utils/URIUtils.h"
- #include "utils/XBMCTinyXML.h"
- #include "utils/XMLUtils.h"
--#include "utils/log.h"
--
--#include <cstdlib>
--#include <string>
-+#include "network/WakeOnAccess.h"
-+#include "ServiceBroker.h"
- 
- #define SOURCES_FILE  "sources.xml"
- #define XML_SOURCES   "sources"
 diff --git a/xbmc/settings/MediaSourceSettings.h b/xbmc/settings/MediaSourceSettings.h
 index 7fe456e7d0..565ed89284 100644
 --- a/xbmc/settings/MediaSourceSettings.h
