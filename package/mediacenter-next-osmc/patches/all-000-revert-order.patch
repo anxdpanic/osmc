@@ -442,7 +442,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/dialogs/GUIDialogButtonMenu.cpp               |  1 -
  xbmc/dialogs/GUIDialogCache.cpp                    |  9 ++-
  xbmc/dialogs/GUIDialogCache.h                      |  3 +-
- xbmc/dialogs/GUIDialogContextMenu.cpp              | 35 ++++++------
  xbmc/dialogs/GUIDialogContextMenu.h                |  4 +-
  xbmc/dialogs/GUIDialogExtendedProgressBar.cpp      |  4 +-
  xbmc/dialogs/GUIDialogExtendedProgressBar.h        |  4 +-
@@ -9770,62 +9769,6 @@ index 5e693855c8..ca4f3df52b 100644
  #include <string>
  
  class CGUIDialogProgress;
-diff --git a/xbmc/dialogs/GUIDialogContextMenu.cpp b/xbmc/dialogs/GUIDialogContextMenu.cpp
-index cbf11502e3..5841234261 100644
---- a/xbmc/dialogs/GUIDialogContextMenu.cpp
-+++ b/xbmc/dialogs/GUIDialogContextMenu.cpp
-@@ -7,34 +7,33 @@
-  */
- 
- #include "GUIDialogContextMenu.h"
--
--#include "FileItem.h"
-+#include "guilib/GUIComponent.h"
-+#include "guilib/GUIButtonControl.h"
-+#include "guilib/GUIControlGroupList.h"
- #include "GUIDialogFileBrowser.h"
--#include "GUIDialogMediaSource.h"
--#include "GUIDialogYesNo.h"
--#include "GUIPassword.h"
- #include "GUIUserMessages.h"
-+#include "GUIPassword.h"
- #include "ServiceBroker.h"
--#include "TextureCache.h"
--#include "URL.h"
- #include "Util.h"
--#include "addons/Scraper.h"
--#include "filesystem/File.h"
--#include "guilib/GUIButtonControl.h"
--#include "guilib/GUIComponent.h"
--#include "guilib/GUIControlGroupList.h"
--#include "guilib/GUIWindowManager.h"
--#include "guilib/LocalizeStrings.h"
--#include "input/Key.h"
--#include "profiles/ProfileManager.h"
--#include "profiles/dialogs/GUIDialogLockSettings.h"
-+#include "utils/URIUtils.h"
- #include "settings/MediaSourceSettings.h"
- #include "settings/Settings.h"
- #include "settings/SettingsComponent.h"
-+#include "GUIDialogMediaSource.h"
-+#include "profiles/ProfileManager.h"
-+#include "profiles/dialogs/GUIDialogLockSettings.h"
- #include "storage/MediaManager.h"
-+#include "guilib/GUIWindowManager.h"
-+#include "input/Key.h"
-+#include "GUIDialogYesNo.h"
-+#include "FileItem.h"
-+#include "filesystem/File.h"
-+#include "guilib/LocalizeStrings.h"
-+#include "TextureCache.h"
-+#include "URL.h"
- #include "utils/StringUtils.h"
--#include "utils/URIUtils.h"
- #include "utils/Variant.h"
-+#include "addons/Scraper.h"
- 
- #define BACKGROUND_IMAGE       999
- #define GROUP_LIST             996
 diff --git a/xbmc/dialogs/GUIDialogContextMenu.h b/xbmc/dialogs/GUIDialogContextMenu.h
 index c6122408ce..3e8194aa30 100644
 --- a/xbmc/dialogs/GUIDialogContextMenu.h
