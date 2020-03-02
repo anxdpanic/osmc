@@ -35,7 +35,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/DbUrl.h                                       |  2 +-
  xbmc/DynamicDll.cpp                                |  1 -
  xbmc/DynamicDll.h                                  |  3 +-
- xbmc/FileItem.cpp                                  | 54 +++++++++---------
  xbmc/FileItem.h                                    | 16 +++---
  xbmc/FileItemListModification.cpp                  |  2 +-
  xbmc/FileItemListModification.h                    |  4 +-
@@ -47,8 +46,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/InfoScanner.cpp                               |  3 +-
  xbmc/LangInfo.cpp                                  | 14 ++---
  xbmc/LangInfo.h                                    | 14 ++---
- xbmc/MediaSource.cpp                               |  5 +-
- xbmc/MediaSource.h                                 |  3 +-
  xbmc/NfoFile.cpp                                   |  7 +--
  xbmc/NfoFile.h                                     |  6 +-
  xbmc/PartyModeManager.cpp                          | 14 ++---
@@ -1424,7 +1421,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/storage/cdioSupport.cpp                       |  8 +--
  xbmc/storage/cdioSupport.h                         | 10 ++--
  xbmc/test/TestBasicEnvironment.h                   |  4 +-
- xbmc/test/TestFileItem.cpp                         |  4 +-
  xbmc/test/TestTextureUtils.cpp                     |  2 +-
  xbmc/test/xbmc-test.cpp                            |  7 ++-
  xbmc/threads/Condition.h                           |  2 +-
@@ -2265,96 +2261,6 @@ index cb09c0423a..b556a05183 100644
  
  ///////////////////////////////////////////////////////////
  //
-diff --git a/xbmc/FileItem.cpp b/xbmc/FileItem.cpp
-index 2bc5760780..568df70165 100644
---- a/xbmc/FileItem.cpp
-+++ b/xbmc/FileItem.cpp
-@@ -6,58 +6,58 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
--#include "FileItem.h"
-+#include <cstdlib>
- 
--#include "CueDocument.h"
-+#include "FileItem.h"
- #include "ServiceBroker.h"
--#include "URL.h"
-+#include "guilib/LocalizeStrings.h"
-+#include "utils/StringUtils.h"
-+#include "utils/URIUtils.h"
-+#include "utils/Archive.h"
- #include "Util.h"
--#include "events/IEvent.h"
--#include "filesystem/CurlFile.h"
-+#include "playlists/PlayListFactory.h"
-+#include "utils/Crc32.h"
- #include "filesystem/Directory.h"
- #include "filesystem/File.h"
-+#include "filesystem/StackDirectory.h"
-+#include "filesystem/CurlFile.h"
- #include "filesystem/MultiPathDirectory.h"
- #include "filesystem/MusicDatabaseDirectory.h"
--#include "filesystem/StackDirectory.h"
- #include "filesystem/VideoDatabaseDirectory.h"
- #include "filesystem/VideoDatabaseDirectory/QueryParams.h"
--#include "games/GameUtils.h"
- #include "games/addons/GameClient.h"
-+#include "games/GameUtils.h"
- #include "games/tags/GameInfoTag.h"
--#include "guilib/LocalizeStrings.h"
--#include "music/Album.h"
--#include "music/Artist.h"
--#include "music/MusicDatabase.h"
--#include "music/tags/MusicInfoTag.h"
- #include "music/tags/MusicInfoTagLoaderFactory.h"
--#include "pictures/PictureInfoTag.h"
--#include "playlists/PlayListFactory.h"
-+#include "CueDocument.h"
-+#include "video/VideoDatabase.h"
-+#include "music/MusicDatabase.h"
- #include "pvr/PVRManager.h"
--#include "pvr/channels/PVRChannel.h"
- #include "pvr/channels/PVRChannelGroupsContainer.h"
-+#include "pvr/channels/PVRChannel.h"
- #include "pvr/epg/EpgInfoTag.h"
- #include "pvr/recordings/PVRRecording.h"
- #include "pvr/timers/PVRTimerInfoTag.h"
-+#include "video/Bookmark.h"
-+#include "video/VideoInfoTag.h"
-+#include "threads/SingleLock.h"
-+#include "music/tags/MusicInfoTag.h"
-+#include "pictures/PictureInfoTag.h"
-+#include "music/Artist.h"
-+#include "music/Album.h"
-+#include "URL.h"
- #include "settings/AdvancedSettings.h"
- #include "settings/Settings.h"
- #include "settings/SettingsComponent.h"
--#include "threads/SingleLock.h"
--#include "utils/Archive.h"
--#include "utils/Crc32.h"
- #include "utils/FileExtensionProvider.h"
--#include "utils/Mime.h"
--#include "utils/Random.h"
- #include "utils/RegExp.h"
--#include "utils/StringUtils.h"
--#include "utils/URIUtils.h"
--#include "utils/Variant.h"
- #include "utils/log.h"
--#include "video/Bookmark.h"
--#include "video/VideoDatabase.h"
--#include "video/VideoInfoTag.h"
-+#include "utils/Variant.h"
-+#include "utils/Mime.h"
-+#include "utils/Random.h"
-+#include "events/IEvent.h"
- 
- #include <algorithm>
--#include <cstdlib>
- 
- using namespace KODI;
- using namespace XFILE;
 diff --git a/xbmc/FileItemListModification.cpp b/xbmc/FileItemListModification.cpp
 index 8496ee9136..02cf21a5c4 100644
 --- a/xbmc/FileItemListModification.cpp
@@ -2586,41 +2492,6 @@ index 899620256e..d088e2a670 100644
  #ifdef TARGET_WINDOWS
  #ifdef GetDateFormat
  #undef GetDateFormat
-diff --git a/xbmc/MediaSource.cpp b/xbmc/MediaSource.cpp
-index adc5e357bc..7b42efa2da 100644
---- a/xbmc/MediaSource.cpp
-+++ b/xbmc/MediaSource.cpp
-@@ -7,12 +7,11 @@
-  */
- 
- #include "MediaSource.h"
--
--#include "URL.h"
- #include "Util.h"
-+#include "URL.h"
- #include "filesystem/MultiPathDirectory.h"
--#include "utils/StringUtils.h"
- #include "utils/URIUtils.h"
-+#include "utils/StringUtils.h"
- 
- using namespace XFILE;
- 
-diff --git a/xbmc/MediaSource.h b/xbmc/MediaSource.h
-index 37b3112487..ea14f9281e 100644
---- a/xbmc/MediaSource.h
-+++ b/xbmc/MediaSource.h
-@@ -8,10 +8,9 @@
- 
- #pragma once
- 
--#include "LockType.h"
--
- #include <string>
- #include <vector>
-+#include "LockType.h"
- 
- /*!
- \ingroup windows
 diff --git a/xbmc/NfoFile.cpp b/xbmc/NfoFile.cpp
 index c9aa48b642..b7003681b8 100644
 --- a/xbmc/NfoFile.cpp
