@@ -1340,7 +1340,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/playlists/PlayListPLS.h                       |  4 +-
  xbmc/playlists/PlayListURL.cpp                     |  3 +-
  xbmc/playlists/PlayListWPL.cpp                     | 11 ++--
- xbmc/playlists/PlayListXML.cpp                     |  7 +--
  xbmc/playlists/PlayListXSPF.cpp                    |  4 +-
  xbmc/playlists/SmartPlayList.cpp                   | 15 +++--
  xbmc/playlists/SmartPlayList.h                     | 10 ++--
@@ -26166,28 +26165,6 @@ index 7cf51b0551..63b0dae57c 100644
  
  using namespace XFILE;
  using namespace PLAYLIST;
-diff --git a/xbmc/playlists/PlayListXML.cpp b/xbmc/playlists/PlayListXML.cpp
-index a8fa257c9f..8d13db3abf 100644
---- a/xbmc/playlists/PlayListXML.cpp
-+++ b/xbmc/playlists/PlayListXML.cpp
-@@ -7,14 +7,13 @@
-  */
- 
- #include "PlayListXML.h"
--
--#include "Util.h"
- #include "filesystem/File.h"
-+#include "Util.h"
-+#include "utils/log.h"
- #include "utils/StringUtils.h"
- #include "utils/URIUtils.h"
--#include "utils/Variant.h"
- #include "utils/XMLUtils.h"
--#include "utils/log.h"
-+#include "utils/Variant.h"
- 
- using namespace PLAYLIST;
- using namespace XFILE;
 diff --git a/xbmc/playlists/PlayListXSPF.cpp b/xbmc/playlists/PlayListXSPF.cpp
 index 06b496ae14..b7ab7f646b 100644
 --- a/xbmc/playlists/PlayListXSPF.cpp
