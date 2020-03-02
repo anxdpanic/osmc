@@ -907,7 +907,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/interfaces/json-rpc/FavouritesOperations.cpp  |  9 ++-
  xbmc/interfaces/json-rpc/FileItemHandler.cpp       | 31 +++++------
  xbmc/interfaces/json-rpc/FileItemHandler.h         |  6 +-
- xbmc/interfaces/json-rpc/FileOperations.cpp        | 11 ++--
  xbmc/interfaces/json-rpc/FileOperations.h          |  2 +-
  xbmc/interfaces/json-rpc/GUIOperations.cpp         | 13 ++---
  xbmc/interfaces/json-rpc/JSONRPC.cpp               | 13 ++---
@@ -18554,38 +18553,6 @@ index d481138ab5..d7719b3090 100644
  
  class CThumbLoader;
  class CVariant;
-diff --git a/xbmc/interfaces/json-rpc/FileOperations.cpp b/xbmc/interfaces/json-rpc/FileOperations.cpp
-index c5b2125a13..b4d316db30 100644
---- a/xbmc/interfaces/json-rpc/FileOperations.cpp
-+++ b/xbmc/interfaces/json-rpc/FileOperations.cpp
-@@ -7,22 +7,21 @@
-  */
- 
- #include "FileOperations.h"
--
-+#include "VideoLibrary.h"
- #include "AudioLibrary.h"
--#include "FileItem.h"
- #include "MediaSource.h"
- #include "ServiceBroker.h"
--#include "URL.h"
--#include "Util.h"
--#include "VideoLibrary.h"
- #include "filesystem/Directory.h"
- #include "filesystem/File.h"
-+#include "FileItem.h"
- #include "settings/AdvancedSettings.h"
- #include "settings/MediaSourceSettings.h"
- #include "settings/SettingsComponent.h"
-+#include "Util.h"
-+#include "URL.h"
- #include "utils/FileExtensionProvider.h"
--#include "utils/FileUtils.h"
- #include "utils/URIUtils.h"
-+#include "utils/FileUtils.h"
- #include "utils/Variant.h"
- #include "video/VideoDatabase.h"
- 
 diff --git a/xbmc/interfaces/json-rpc/FileOperations.h b/xbmc/interfaces/json-rpc/FileOperations.h
 index c3b13db554..ed529145a6 100644
 --- a/xbmc/interfaces/json-rpc/FileOperations.h
