@@ -559,7 +559,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/filesystem/ShoutcastFile.h                    |  2 +-
  xbmc/filesystem/SmartPlaylistDirectory.cpp         |  5 +-
  xbmc/filesystem/SmartPlaylistDirectory.h           |  1 -
- xbmc/filesystem/SourcesDirectory.cpp               | 11 ++--
  xbmc/filesystem/SourcesDirectory.h                 |  4 +-
  xbmc/filesystem/SpecialProtocolDirectory.cpp       |  5 +-
  xbmc/filesystem/SpecialProtocolFile.cpp            |  1 -
@@ -12087,34 +12086,6 @@ index 145c2620d8..7de963fe93 100644
  #include <string>
  
  class CSmartPlaylist;
-diff --git a/xbmc/filesystem/SourcesDirectory.cpp b/xbmc/filesystem/SourcesDirectory.cpp
-index 34f5bb8093..702b2cd629 100644
---- a/xbmc/filesystem/SourcesDirectory.cpp
-+++ b/xbmc/filesystem/SourcesDirectory.cpp
-@@ -6,18 +6,17 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
--#include "SourcesDirectory.h"
--
--#include "File.h"
--#include "FileItem.h"
- #include "ServiceBroker.h"
-+#include "SourcesDirectory.h"
-+#include "utils/URIUtils.h"
- #include "URL.h"
- #include "Util.h"
--#include "guilib/TextureManager.h"
-+#include "FileItem.h"
-+#include "File.h"
- #include "profiles/ProfileManager.h"
- #include "settings/MediaSourceSettings.h"
-+#include "guilib/TextureManager.h"
- #include "storage/MediaManager.h"
--#include "utils/URIUtils.h"
- 
- using namespace XFILE;
- 
 diff --git a/xbmc/filesystem/SourcesDirectory.h b/xbmc/filesystem/SourcesDirectory.h
 index 84df8f0c1a..9f6c0d4f8a 100644
 --- a/xbmc/filesystem/SourcesDirectory.h
