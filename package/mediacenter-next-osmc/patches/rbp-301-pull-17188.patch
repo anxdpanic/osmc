@@ -1,0 +1,21 @@
+From 57f29252ce8420b66b317169fafe290baa88279b Mon Sep 17 00:00:00 2001
+From: ronie <ronie@kodi.tv>
+Date: Tue, 14 Jan 2020 02:48:19 +0100
+Subject: [PATCH] [python] set abi to 3.0.0
+
+---
+ addons/xbmc.python/addon.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/addons/xbmc.python/addon.xml b/addons/xbmc.python/addon.xml
+index a1998b9ae4eb..72d2955a4d5a 100644
+--- a/addons/xbmc.python/addon.xml
++++ b/addons/xbmc.python/addon.xml
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <addon id="xbmc.python" version="3.0.0" provider-name="Team Kodi">
+-  <backwards-compatibility abi="2.1.0"/>
++  <backwards-compatibility abi="3.0.0"/>
+   <requires>
+     <import addon="xbmc.core" version="0.1.0"/>
+   </requires>

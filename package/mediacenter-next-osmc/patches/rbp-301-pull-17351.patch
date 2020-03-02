@@ -1,0 +1,173 @@
+From 8cbfe3a77e15815b3e8d9e8d0a402a7d570199c7 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?P=C3=A4r=20Bj=C3=B6rklund?= <per.bjorklund@gmail.com>
+Date: Fri, 14 Feb 2020 18:48:06 +0100
+Subject: [PATCH 1/2] Revert enum fix, didn't work
+
+---
+ xbmc/utils/StringUtils.h | 56 +++++++++++++++-------------------------
+ 1 file changed, 21 insertions(+), 35 deletions(-)
+
+diff --git a/xbmc/utils/StringUtils.h b/xbmc/utils/StringUtils.h
+index a8d6d43cccdf..79c530f873ad 100644
+--- a/xbmc/utils/StringUtils.h
++++ b/xbmc/utils/StringUtils.h
+@@ -19,17 +19,26 @@
+ //
+ //------------------------------------------------------------------------
+ 
+-#include "XBDateTime.h"
+-#include "utils/params_check_macros.h"
+-
+-#include <locale>
+-#include <ostream>
+-#include <sstream>
+ #include <stdarg.h>
+ #include <stdint.h>
+ #include <string>
+-#include <type_traits>
+ #include <vector>
++#include <sstream>
++#include <locale>
++
++// workaround for broken [[depreciated]] in coverity
++#if defined(__COVERITY__)
++#undef FMT_DEPRECATED
++#define FMT_DEPRECATED
++#endif
++#include <fmt/format.h>
++
++#if FMT_VERSION >= 40000
++#include <fmt/printf.h>
++#endif
++
++#include "XBDateTime.h"
++#include "utils/params_check_macros.h"
+ 
+ /*! \brief  C-processor Token stringification
+ 
+@@ -47,39 +56,16 @@ DEF_TO_STR_VALUE(foo) // outputs "4"
+ #define DEF_TO_STR_NAME(x) #x
+ #define DEF_TO_STR_VALUE(x) DEF_TO_STR_NAME(x)
+ 
+-// clang-format off
+-// This is required to format enum classes with fmt as they're not implicitly
+-// convertible to int.
+-// This operator has to be declared before including format.h and ostream.h.
+-// We keep clang format disabled to avoid reordering and breaking things
+-// https://github.com/fmtlib/fmt/issues/391
+-template<typename T, typename std::enable_if_t<std::is_enum<T>::value, int> = 0>
+-std::ostream& operator<<(std::ostream& os, const T& value)
+-{
+-  return os << static_cast<int>(value);
+-}
+-
+-// workaround for broken [[deprecated]] in coverity
+-#if defined(__COVERITY__)
+-#undef FMT_DEPRECATED
+-#define FMT_DEPRECATED
+-#endif
+-#include <fmt/format.h>
+-
+-#if FMT_VERSION >= 30000
+-#include <fmt/ostream.h>
+-#endif
+-
+-#if FMT_VERSION >= 40000
+-#include <fmt/printf.h>
+-#endif
+-// clang-format on
+-
+ class StringUtils
+ {
+ public:
+   /*! \brief Get a formatted string similar to sprintf
+ 
++  Beware that this does not support directly passing in
++  std::string objects. You need to call c_str() to pass
++  the const char* buffer representing the value of the
++  std::string object.
++
+   \param fmt Format of the resulting string
+   \param ... variable number of value type arguments
+   \return Formatted string
+
+From 7bcb3fb350b2789511aeb00aeaff78cd1e01ee31 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?P=C3=A4r=20Bj=C3=B6rklund?= <per.bjorklund@gmail.com>
+Date: Fri, 14 Feb 2020 18:56:17 +0100
+Subject: [PATCH 2/2] Fix enum formatting
+
+This attempt removes the enums from fmt altogether, fmt never sees an enum,
+only ints.
+---
+ xbmc/utils/StringUtils.h            | 19 +++++++++++++++----
+ xbmc/utils/test/TestStringUtils.cpp | 11 +++++++++++
+ 2 files changed, 26 insertions(+), 4 deletions(-)
+
+diff --git a/xbmc/utils/StringUtils.h b/xbmc/utils/StringUtils.h
+index 79c530f873ad..fc9c71531c9f 100644
+--- a/xbmc/utils/StringUtils.h
++++ b/xbmc/utils/StringUtils.h
+@@ -56,6 +56,17 @@ DEF_TO_STR_VALUE(foo) // outputs "4"
+ #define DEF_TO_STR_NAME(x) #x
+ #define DEF_TO_STR_VALUE(x) DEF_TO_STR_NAME(x)
+ 
++template<typename T, std::enable_if_t<!std::is_enum<T>::value, int> = 0>
++constexpr auto&& EnumToInt(T&& arg) noexcept
++{
++  return arg;
++}
++template<typename T, std::enable_if_t<std::is_enum<T>::value, int> = 0>
++constexpr auto EnumToInt(T&& arg) noexcept
++{
++  return static_cast<int>(arg);
++}
++
+ class StringUtils
+ {
+ public:
+@@ -74,9 +85,9 @@ class StringUtils
+   static std::string Format(const std::string& fmt, Args&&... args)
+   {
+     // coverity[fun_call_w_exception : FALSE]
+-    auto result = ::fmt::format(fmt, std::forward<Args>(args)...);
++    auto result = ::fmt::format(fmt, EnumToInt(std::forward<Args>(args))...);
+     if (result == fmt)
+-      result = ::fmt::sprintf(fmt, std::forward<Args>(args)...);
++      result = ::fmt::sprintf(fmt, EnumToInt(std::forward<Args>(args))...);
+ 
+     return result;
+   }
+@@ -84,9 +95,9 @@ class StringUtils
+   static std::wstring Format(const std::wstring& fmt, Args&&... args)
+   {
+     // coverity[fun_call_w_exception : FALSE]
+-    auto result = ::fmt::format(fmt, std::forward<Args>(args)...);
++    auto result = ::fmt::format(fmt, EnumToInt(std::forward<Args>(args))...);
+     if (result == fmt)
+-      result = ::fmt::sprintf(fmt, std::forward<Args>(args)...);
++      result = ::fmt::sprintf(fmt, EnumToInt(std::forward<Args>(args))...);
+ 
+     return result;
+   }
+diff --git a/xbmc/utils/test/TestStringUtils.cpp b/xbmc/utils/test/TestStringUtils.cpp
+index d4ab7dd69c4b..0a063cc6c698 100644
+--- a/xbmc/utils/test/TestStringUtils.cpp
++++ b/xbmc/utils/test/TestStringUtils.cpp
+@@ -66,6 +66,17 @@ TEST(TestStringUtils, FormatEnum)
+   EXPECT_STREQ(one, varstr.c_str());
+ }
+ 
++TEST(TestStringUtils, FormatEnumWidth)
++{
++  const char* one = "01";
++
++  std::string varstr = StringUtils::Format("{:02d}", ECG::B);
++  EXPECT_STREQ(one, varstr.c_str());
++
++  varstr = StringUtils::Format("%02d", EG::D);
++  EXPECT_STREQ(one, varstr.c_str());
++}
++
+ TEST(TestStringUtils, ToUpper)
+ {
+   std::string refstr = "TEST";
