@@ -1358,7 +1358,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/profiles/dialogs/GUIDialogProfileSettings.h   |  4 +-
  xbmc/profiles/windows/GUIWindowSettingsProfile.cpp | 21 ++++---
  xbmc/programs/GUIViewStatePrograms.cpp             |  5 +-
- xbmc/programs/GUIWindowPrograms.cpp                | 11 ++--
  xbmc/programs/GUIWindowPrograms.h                  |  4 +-
  xbmc/rendering/MatrixGL.h                          |  4 +-
  xbmc/rendering/RenderSystem.cpp                    |  5 +-
@@ -26581,35 +26580,6 @@ index 2ca33fc4e9..0c851531ec 100644
  #include "view/ViewStateSettings.h"
  
  using namespace XFILE;
-diff --git a/xbmc/programs/GUIWindowPrograms.cpp b/xbmc/programs/GUIWindowPrograms.cpp
-index ca5a2b2f1f..813d6d7b97 100644
---- a/xbmc/programs/GUIWindowPrograms.cpp
-+++ b/xbmc/programs/GUIWindowPrograms.cpp
-@@ -7,19 +7,18 @@
-  */
- 
- #include "GUIWindowPrograms.h"
--
--#include "Autorun.h"
--#include "FileItem.h"
--#include "GUIPassword.h"
--#include "ServiceBroker.h"
- #include "Util.h"
-+#include "GUIPassword.h"
- #include "addons/GUIDialogAddonInfo.h"
-+#include "Autorun.h"
- #include "dialogs/GUIDialogMediaSource.h"
- #include "guilib/GUIComponent.h"
- #include "guilib/GUIWindowManager.h"
--#include "input/Key.h"
-+#include "FileItem.h"
- #include "settings/MediaSourceSettings.h"
-+#include "input/Key.h"
- #include "utils/StringUtils.h"
-+#include "ServiceBroker.h"
- 
- #define CONTROL_BTNVIEWASICONS 2
- #define CONTROL_BTNSORTBY      3
 diff --git a/xbmc/programs/GUIWindowPrograms.h b/xbmc/programs/GUIWindowPrograms.h
 index 21156de714..27e5403f28 100644
 --- a/xbmc/programs/GUIWindowPrograms.h
