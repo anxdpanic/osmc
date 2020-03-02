@@ -667,7 +667,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/games/ports/Port.h                            |  2 +-
  xbmc/games/tags/GameInfoTag.cpp                    |  1 -
  xbmc/games/windows/GUIViewStateWindowGames.cpp     |  5 +-
- xbmc/games/windows/GUIWindowGames.cpp              | 15 +++--
  xbmc/guilib/D3DResource.cpp                        |  5 +-
  xbmc/guilib/D3DResource.h                          |  5 +-
  xbmc/guilib/DDSImage.cpp                           |  7 +--
@@ -13984,43 +13983,6 @@ index 5ebd15e585..2a509e56a8 100644
  
  #include <assert.h>
  #include <set>
-diff --git a/xbmc/games/windows/GUIWindowGames.cpp b/xbmc/games/windows/GUIWindowGames.cpp
-index f3a6168966..355442386f 100644
---- a/xbmc/games/windows/GUIWindowGames.cpp
-+++ b/xbmc/games/windows/GUIWindowGames.cpp
-@@ -7,25 +7,24 @@
-  */
- 
- #include "GUIWindowGames.h"
--
--#include "Application.h"
--#include "FileItem.h"
--#include "GUIPassword.h"
--#include "PlayListPlayer.h"
--#include "ServiceBroker.h"
--#include "URL.h"
--#include "Util.h"
- #include "addons/GUIDialogAddonInfo.h"
-+#include "Application.h"
- #include "dialogs/GUIDialogContextMenu.h"
- #include "dialogs/GUIDialogMediaSource.h"
- #include "dialogs/GUIDialogProgress.h"
-+#include "FileItem.h"
- #include "games/addons/GameClient.h"
- #include "guilib/GUIComponent.h"
- #include "guilib/GUIWindowManager.h"
- #include "guilib/WindowIDs.h"
-+#include "GUIPassword.h"
-+#include "PlayListPlayer.h"
-+#include "ServiceBroker.h"
- #include "settings/MediaSourceSettings.h"
- #include "settings/Settings.h"
- #include "settings/SettingsComponent.h"
-+#include "URL.h"
-+#include "Util.h"
- #include "utils/StringUtils.h"
- #include "utils/URIUtils.h"
- 
 diff --git a/xbmc/guilib/D3DResource.cpp b/xbmc/guilib/D3DResource.cpp
 index 0deb5b8ac5..bc87dd7b10 100644
 --- a/xbmc/guilib/D3DResource.cpp
