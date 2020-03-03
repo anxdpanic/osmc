@@ -520,6 +520,15 @@ index 2dd75e4034..315d0d769a 100644
    int m_displayTime = 0;
    double m_dtsAtDisplayTime;
    bool m_seekToKeyFrame = false;
+@ -177,7 +177,7 @@ CDVDDemuxFFmpeg::CDVDDemuxFFmpeg() : CDVDDemux()
+   m_pkt.result = -1;
+   memset(&m_pkt.pkt, 0, sizeof(AVPacket));
+   m_streaminfo = true; /* set to true if we want to look for streams before playback */
+-  m_checkTransportStream = false;
++  m_checkvideo = false;
+   m_dtsAtDisplayTime = DVD_NOPTS_VALUE;
+ }
+
 -- 
 2.16.4
 
