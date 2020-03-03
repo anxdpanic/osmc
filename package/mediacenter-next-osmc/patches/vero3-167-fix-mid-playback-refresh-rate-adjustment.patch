@@ -538,6 +538,15 @@ index 2dd75e4034..315d0d769a 100644
      skipCreateStreams = true;
    }
    else if (!iformat || (strcmp(iformat->name, "mpegts") != 0))
+@@ -517,7 +517,7 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool streami
+   else
+   {
+     m_program = 0;
+-    m_checkTransportStream = true;
++    m_checkvideo = true;
+     skipCreateStreams = true;
+   }
+
 -- 
 2.16.4
 
