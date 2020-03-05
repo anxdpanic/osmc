@@ -6,10 +6,10 @@
 . ../common.sh
 if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ]
 then
-pull_source "https://github.com/popcornmix/xbmc/archive/4c774a8b6aa71b86cdc1ea5c209b7965b50ba0ca.tar.gz" "$(pwd)/src"
+pull_source "https://github.com/popcornmix/xbmc/archive/78f79b5700b90f402da48190ee00dd08d3d6c594.tar.gz" "$(pwd)/src"
 API_VERSION="19"
 else
-pull_source "https://github.com/xbmc/xbmc/archive/3375a26606b3a6913bea18f4ef7b85a72b724915.tar.gz" "$(pwd)/src"
+pull_source "https://github.com/xbmc/xbmc/archive/4acc5fa99de6de40a51dd940f75061a7ee53de20.tar.gz" "$(pwd)/src"
 API_VERSION="19"
 
 
@@ -342,7 +342,7 @@ then
 	cd build
         #ADDONS_AUDIO_DECODERS="audiodecoder.modplug audiodecoder.nosefart audiodecoder.sidplay audiodecoder.snesapu"
         ADDONS_AUDIO_ENCODERS="audioencoder.flac audioencoder.lame audioencoder.vorbis audioencoder.wav"
-        ADDONS_INPUTSTREAM="inputstream.mpd inputstream.adaptive inputstream.rtmp"
+        ADDONS_INPUTSTREAM="inputstream.ffmpegdirect inputstream.adaptive inputstream.rtmp"
 	ADDONS_PERIPHERAL="peripheral.xarcade peripheral.joystick peripheral.steamcontroller" #imagedecoder.raw
 	ADDONS_PVR="pvr.waipu pvr.sledovanitv.cz pvr.argustv pvr.mythtv pvr.hts pvr.pctv pvr.stalker pvr.filmon pvr.octonet pvr.zattoo pvr.vbox pvr.wmc pvr.nextpvr pvr.njoy pvr.teleboy pvr.vdr.vnsi pvr.vuplus pvr.dvbviewer pvr.dvblink pvr.hdhomerun pvr.iptvsimple pvr.demo pvr.mediaportal.tvserver"
 	#ADDONS_SCREENSAVERS="screensaver.biogenesis screensaver.greynetic screensaver.matrixtrails screensaver.pingpong screensaver.pyro screensaver.stars screensaver.shadertoy"
