@@ -512,7 +512,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/filesystem/IDirectory.cpp                     |  7 +--
  xbmc/filesystem/IDirectory.h                       |  3 +-
  xbmc/filesystem/IFile.cpp                          |  2 -
- xbmc/filesystem/ISOFile.cpp                        |  2 -
  xbmc/filesystem/ImageFile.cpp                      |  3 +-
  xbmc/filesystem/LibraryDirectory.cpp               | 17 +++---
  xbmc/filesystem/MultiPathDirectory.cpp             | 13 ++---
@@ -11175,23 +11174,6 @@ index 19fcee9587..1a29242405 100644
  #include <cstring>
  #include <errno.h>
  
-diff --git a/xbmc/filesystem/ISOFile.cpp b/xbmc/filesystem/ISOFile.cpp
-index 06c343653d..5cd0efa194 100644
---- a/xbmc/filesystem/ISOFile.cpp
-+++ b/xbmc/filesystem/ISOFile.cpp
-@@ -9,12 +9,10 @@
-  */
- 
- #include "ISOFile.h"
--
- #include "URL.h"
- #include "iso9660.h"
- 
- #include <algorithm>
--
- #include <sys/stat.h>
- 
- using namespace XFILE;
 diff --git a/xbmc/filesystem/ImageFile.cpp b/xbmc/filesystem/ImageFile.cpp
 index 5b4f81c6c2..7daca2310c 100644
 --- a/xbmc/filesystem/ImageFile.cpp
