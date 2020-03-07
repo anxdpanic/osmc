@@ -559,8 +559,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/filesystem/SpecialProtocolFile.cpp            |  1 -
  xbmc/filesystem/StackDirectory.cpp                 | 14 ++---
  xbmc/filesystem/StackDirectory.h                   |  1 -
- xbmc/filesystem/UDFDirectory.cpp                   |  7 +--
- xbmc/filesystem/UDFFile.cpp                        |  4 +-
  xbmc/filesystem/UPnPDirectory.cpp                  | 17 +++---
  xbmc/filesystem/UPnPFile.cpp                       |  3 +-
  xbmc/filesystem/VideoDatabaseDirectory.cpp         | 11 ++--
@@ -11970,45 +11968,6 @@ index 5f61fe3ac7..1ddfb2d90c 100644
  #include <string>
  #include <vector>
  
-diff --git a/xbmc/filesystem/UDFDirectory.cpp b/xbmc/filesystem/UDFDirectory.cpp
-index 015075fae7..ae6a26137f 100644
---- a/xbmc/filesystem/UDFDirectory.cpp
-+++ b/xbmc/filesystem/UDFDirectory.cpp
-@@ -9,11 +9,10 @@
-  *  See LICENSES/README.md for more information.
-  */
- #include "UDFDirectory.h"
--
--#include "FileItem.h"
--#include "URL.h"
--#include "Util.h"
- #include "udf25.h"
-+#include "Util.h"
-+#include "URL.h"
-+#include "FileItem.h"
- #include "utils/URIUtils.h"
- 
- using namespace XFILE;
-diff --git a/xbmc/filesystem/UDFFile.cpp b/xbmc/filesystem/UDFFile.cpp
-index 1fa6f96ef7..bbe909517b 100644
---- a/xbmc/filesystem/UDFFile.cpp
-+++ b/xbmc/filesystem/UDFFile.cpp
-@@ -9,14 +9,12 @@
-  *  See LICENSES/README.md for more information.
-  */
- #include "UDFFile.h"
--
- #include "URL.h"
- 
-+#include <sys/stat.h>
- #include <errno.h>
- #include <limits.h>
- 
--#include <sys/stat.h>
--
- using namespace XFILE;
- 
- //////////////////////////////////////////////////////////////////////
 diff --git a/xbmc/filesystem/UPnPDirectory.cpp b/xbmc/filesystem/UPnPDirectory.cpp
 index a1d269d839..dac8a68acd 100644
 --- a/xbmc/filesystem/UPnPDirectory.cpp
