@@ -595,7 +595,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/filesystem/test/TestFile.cpp                  |  2 +-
  xbmc/filesystem/test/TestNfsFile.cpp               |  2 +-
  xbmc/filesystem/test/TestZipFile.cpp               |  8 +--
- xbmc/filesystem/udf25.cpp                          |  8 +--
  xbmc/games/GameServices.cpp                        |  1 -
  xbmc/games/GameSettings.cpp                        |  3 +-
  xbmc/games/GameUtils.cpp                           |  9 ++-
@@ -12614,27 +12613,6 @@ index 6ed17d605e..f8dea7af24 100644
  
  #include <errno.h>
  
-diff --git a/xbmc/filesystem/udf25.cpp b/xbmc/filesystem/udf25.cpp
-index 169e21bf07..b24b1ddf67 100644
---- a/xbmc/filesystem/udf25.cpp
-+++ b/xbmc/filesystem/udf25.cpp
-@@ -8,13 +8,11 @@
-  *  SPDX-License-Identifier: GPL-2.0-or-later
-  *  See LICENSES/README.md for more information.
-  */
--#include "udf25.h"
--
--#include "File.h"
--#include "utils/log.h"
--
- #include <stdio.h>
- #include <stdlib.h>
-+#include "utils/log.h"
-+#include "udf25.h"
-+#include "File.h"
- 
- /* For direct data access, LSB first */
- #define GETN1(p) ((uint8_t)data[p])
 diff --git a/xbmc/games/GameServices.cpp b/xbmc/games/GameServices.cpp
 index 49a20c9aaf..5fbad15ae3 100644
 --- a/xbmc/games/GameServices.cpp
