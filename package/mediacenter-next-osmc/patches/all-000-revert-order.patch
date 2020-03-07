@@ -370,8 +370,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  .../VideoPlayer/VideoRenderers/DebugRenderer.h     |  1 -
  .../VideoRenderers/FrameBufferObject.cpp           |  1 -
  .../VideoRenderers/HwDecRender/MMALRenderer.h      | 16 +++---
- .../HwDecRender/RendererDRMPRIMEGLES.cpp           |  2 +-
- .../HwDecRender/RendererDRMPRIMEGLES.h             |  2 +-
  .../HwDecRender/RendererMediaCodec.cpp             |  8 +--
  .../HwDecRender/RendererMediaCodecSurface.cpp      | 13 ++---
  .../VideoRenderers/HwDecRender/RendererVAAPIGL.cpp |  7 +--
@@ -8294,34 +8292,6 @@ index 4b77f90589..9718fb056d 100644
  
  // worst case number of buffers. 12 for decoder. 8 for multi-threading in ffmpeg. NUM_BUFFERS for renderer.
  // Note, generally these won't necessarily result in allocated pictures
-diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.cpp
-index 0cfae7a01b..bbe8409cba 100644
---- a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.cpp
-+++ b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.cpp
-@@ -8,8 +8,8 @@
- 
- #include "RendererDRMPRIMEGLES.h"
- 
--#include "ServiceBroker.h"
- #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
-+#include "ServiceBroker.h"
- #include "utils/EGLFence.h"
- #include "utils/log.h"
- #include "windowing/gbm/WinSystemGbmGLESContext.h"
-diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.h b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.h
-index 79ee788968..e6ef033982 100644
---- a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.h
-+++ b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.h
-@@ -8,8 +8,8 @@
- 
- #pragma once
- 
--#include "DRMPRIMEEGL.h"
- #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h"
-+#include "DRMPRIMEEGL.h"
- 
- #include <array>
- #include <memory>
 diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererMediaCodec.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererMediaCodec.cpp
 index 475cb9580a..a69ff2b871 100644
 --- a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererMediaCodec.cpp
