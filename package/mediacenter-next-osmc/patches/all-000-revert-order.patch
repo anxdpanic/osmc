@@ -1328,7 +1328,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/playlists/PlayListURL.cpp                     |  3 +-
  xbmc/playlists/PlayListWPL.cpp                     | 11 ++--
  xbmc/playlists/PlayListXSPF.cpp                    |  4 +-
- xbmc/playlists/SmartPlayList.cpp                   | 15 +++--
  xbmc/playlists/SmartPlayList.h                     | 10 ++--
  .../SmartPlaylistFileItemListModifier.cpp          |  5 +-
  xbmc/playlists/SmartPlaylistFileItemListModifier.h |  4 +-
@@ -25785,70 +25784,6 @@ index 06b496ae14..b7ab7f646b 100644
  
  using namespace PLAYLIST;
  
-diff --git a/xbmc/playlists/SmartPlayList.cpp b/xbmc/playlists/SmartPlayList.cpp
-index 0c566985a0..92dd118869 100644
---- a/xbmc/playlists/SmartPlayList.cpp
-+++ b/xbmc/playlists/SmartPlayList.cpp
-@@ -6,8 +6,13 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
--#include "SmartPlayList.h"
-+#include <cstdlib>
-+#include <memory>
-+#include <set>
-+#include <string>
-+#include <vector>
- 
-+#include "SmartPlayList.h"
- #include "Util.h"
- #include "dbwrappers/Database.h"
- #include "filesystem/File.h"
-@@ -16,19 +21,13 @@
- #include "utils/DatabaseUtils.h"
- #include "utils/JSONVariantParser.h"
- #include "utils/JSONVariantWriter.h"
-+#include "utils/log.h"
- #include "utils/StreamDetails.h"
- #include "utils/StringUtils.h"
- #include "utils/StringValidation.h"
- #include "utils/URIUtils.h"
- #include "utils/Variant.h"
- #include "utils/XMLUtils.h"
--#include "utils/log.h"
--
--#include <cstdlib>
--#include <memory>
--#include <set>
--#include <string>
--#include <vector>
- 
- using namespace XFILE;
- 
-diff --git a/xbmc/playlists/SmartPlayList.h b/xbmc/playlists/SmartPlayList.h
-index a05fe8515d..5c9ca09261 100644
---- a/xbmc/playlists/SmartPlayList.h
-+++ b/xbmc/playlists/SmartPlayList.h
-@@ -8,14 +8,14 @@
- 
- #pragma once
- 
--#include "dbwrappers/DatabaseQuery.h"
--#include "utils/SortUtils.h"
--#include "utils/XBMCTinyXML.h"
--
--#include <memory>
- #include <set>
- #include <string>
- #include <vector>
-+#include <memory>
-+
-+#include "dbwrappers/DatabaseQuery.h"
-+#include "utils/SortUtils.h"
-+#include "utils/XBMCTinyXML.h"
- 
- class CURL;
- class CVariant;
 diff --git a/xbmc/playlists/SmartPlaylistFileItemListModifier.cpp b/xbmc/playlists/SmartPlaylistFileItemListModifier.cpp
 index 7249bb5c0d..92aab843c3 100644
 --- a/xbmc/playlists/SmartPlaylistFileItemListModifier.cpp
