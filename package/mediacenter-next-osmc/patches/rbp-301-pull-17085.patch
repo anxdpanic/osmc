@@ -1,0 +1,59 @@
+From a448e200b3b58443d9a5cf0af824ba6b955d5de4 Mon Sep 17 00:00:00 2001
+From: CastagnaIT <gottardo.stefano.83@gmail.com>
+Date: Fri, 27 Dec 2019 15:31:54 +0100
+Subject: [PATCH 1/2] Revert "[subtitles] decode html escape characters
+ (reverted from commit 56ff2ab08874ab78b7341be092aed0d9b37bb175)"
+
+This reverts commit 3044a1367e819e9a63a7856df51ffcbea5dfc230.
+---
+ xbmc/cores/VideoPlayer/DVDSubtitles/DVDSubtitleTagSami.cpp | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDSubtitles/DVDSubtitleTagSami.cpp b/xbmc/cores/VideoPlayer/DVDSubtitles/DVDSubtitleTagSami.cpp
+index a6b8126b2009..d23be532530f 100644
+--- a/xbmc/cores/VideoPlayer/DVDSubtitles/DVDSubtitleTagSami.cpp
++++ b/xbmc/cores/VideoPlayer/DVDSubtitles/DVDSubtitleTagSami.cpp
+@@ -10,6 +10,8 @@
+ 
+ #include "DVDCodecs/Overlay/DVDOverlayText.h"
+ #include "DVDSubtitleStream.h"
++#include "utils/CharsetConverter.h"
++#include "utils/HTMLUtil.h"
+ #include "utils/RegExp.h"
+ #include "utils/StringUtils.h"
+ 
+@@ -185,6 +187,11 @@ void CDVDSubtitleTagSami::ConvertLine(CDVDOverlayText* pOverlay, const char* lin
+   if( strUTF8[strUTF8.size()-1] == '\n' )
+     strUTF8.erase(strUTF8.size()-1);
+ 
++  std::wstring wStrHtml, wStr;
++  g_charsetConverter.utf8ToW(strUTF8, wStrHtml);
++  HTML::CHTMLUtil::ConvertHTMLToW(wStrHtml, wStr);
++  g_charsetConverter.wToUTF8(wStr, strUTF8);
++
+   // add a new text element to our container
+   pOverlay->AddElement(new CDVDOverlayText::CElementText(strUTF8.c_str()));
+ }
+
+From 249fceb8a3eac66dbc81094ae62c6198c96939df Mon Sep 17 00:00:00 2001
+From: CastagnaIT <gottardo.stefano.83@gmail.com>
+Date: Fri, 27 Dec 2019 15:40:28 +0100
+Subject: [PATCH 2/2] Do not force flip for hebrew/arabic languages
+
+---
+ xbmc/cores/VideoPlayer/DVDSubtitles/DVDSubtitleTagSami.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDSubtitles/DVDSubtitleTagSami.cpp b/xbmc/cores/VideoPlayer/DVDSubtitles/DVDSubtitleTagSami.cpp
+index d23be532530f..2dbae7356b6e 100644
+--- a/xbmc/cores/VideoPlayer/DVDSubtitles/DVDSubtitleTagSami.cpp
++++ b/xbmc/cores/VideoPlayer/DVDSubtitles/DVDSubtitleTagSami.cpp
+@@ -188,7 +188,7 @@ void CDVDSubtitleTagSami::ConvertLine(CDVDOverlayText* pOverlay, const char* lin
+     strUTF8.erase(strUTF8.size()-1);
+ 
+   std::wstring wStrHtml, wStr;
+-  g_charsetConverter.utf8ToW(strUTF8, wStrHtml);
++  g_charsetConverter.utf8ToW(strUTF8, wStrHtml, false);
+   HTML::CHTMLUtil::ConvertHTMLToW(wStrHtml, wStr);
+   g_charsetConverter.wToUTF8(wStr, strUTF8);
+ 

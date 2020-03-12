@@ -1,0 +1,35 @@
+From 9a07fa3c3c9798fd037f218301343bff256b0edd Mon Sep 17 00:00:00 2001
+From: Arne Morten Kvarving <spiff@kodi.tv>
+Date: Tue, 19 Nov 2019 11:53:07 +0100
+Subject: [PATCH] fixed: trim platform string prior to split
+
+if not a tag like
+<platforms>
+  all
+</platforms>
+
+will fail to match since the "all" entry will contain a newline
+---
+ xbmc/addons/addoninfo/AddonInfoBuilder.cpp | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/addons/addoninfo/AddonInfoBuilder.cpp b/xbmc/addons/addoninfo/AddonInfoBuilder.cpp
+index 233789587d96..14e0ba60557d 100644
+--- a/xbmc/addons/addoninfo/AddonInfoBuilder.cpp
++++ b/xbmc/addons/addoninfo/AddonInfoBuilder.cpp
+@@ -281,7 +281,14 @@ bool CAddonInfoBuilder::ParseXML(const AddonInfoPtr& addon, const TiXmlElement*
+       /* Parse addon.xml "<platform">...</platform>" */
+       element = child->FirstChildElement("platform");
+       if (element && element->GetText() != nullptr)
+-        addon->m_platforms = StringUtils::Split(element->GetText(), " ");
++      {
++        auto platforms = StringUtils::Split(element->GetText(),
++                                            {" ", "\t", "\n", "\r"});
++        platforms.erase(std::remove_if(platforms.begin(), platforms.end(),
++                        [](const std::string& platform) { return platform.empty(); }),
++                        platforms.cend());
++        addon->m_platforms = platforms;
++      }
+ 
+       /* Parse addon.xml "<license">...</license>" */
+       element = child->FirstChildElement("license");
