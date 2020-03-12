@@ -330,7 +330,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  .../VideoPlayer/DVDSubtitles/DVDSubtitleStream.cpp | 13 ++---
  .../VideoPlayer/DVDSubtitles/DVDSubtitleStream.h   |  2 +-
  .../DVDSubtitles/DVDSubtitleTagMicroDVD.cpp        |  1 -
- .../DVDSubtitles/DVDSubtitleTagSami.cpp            |  3 +-
  .../DVDSubtitles/DVDSubtitlesLibass.cpp            |  8 +--
  .../VideoPlayer/DVDSubtitles/DVDSubtitlesLibass.h  |  2 +-
  xbmc/cores/VideoPlayer/Edl.cpp                     |  3 +-
@@ -7550,21 +7549,6 @@ index d34f42969b..488d87212b 100644
  #include "DVDSubtitleTagMicroDVD.h"
 -
  #include "DVDCodecs/Overlay/DVDOverlayText.h"
- #include "utils/StringUtils.h"
- 
-diff --git a/xbmc/cores/VideoPlayer/DVDSubtitles/DVDSubtitleTagSami.cpp b/xbmc/cores/VideoPlayer/DVDSubtitles/DVDSubtitleTagSami.cpp
-index a6b8126b20..9fba640c0d 100644
---- a/xbmc/cores/VideoPlayer/DVDSubtitles/DVDSubtitleTagSami.cpp
-+++ b/xbmc/cores/VideoPlayer/DVDSubtitles/DVDSubtitleTagSami.cpp
-@@ -7,9 +7,8 @@
-  */
- 
- #include "DVDSubtitleTagSami.h"
--
--#include "DVDCodecs/Overlay/DVDOverlayText.h"
- #include "DVDSubtitleStream.h"
-+#include "DVDCodecs/Overlay/DVDOverlayText.h"
- #include "utils/RegExp.h"
  #include "utils/StringUtils.h"
  
 diff --git a/xbmc/cores/VideoPlayer/DVDSubtitles/DVDSubtitlesLibass.cpp b/xbmc/cores/VideoPlayer/DVDSubtitles/DVDSubtitlesLibass.cpp
