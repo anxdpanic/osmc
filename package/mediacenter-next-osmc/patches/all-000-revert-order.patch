@@ -1029,7 +1029,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/music/jobs/MusicLibraryProgressJob.h          |  2 +-
  xbmc/music/jobs/MusicLibraryScanningJob.cpp        |  1 -
  xbmc/music/jobs/MusicLibraryScanningJob.h          |  4 +-
- xbmc/music/tags/MusicInfoTag.cpp                   |  9 ++-
  xbmc/music/tags/MusicInfoTagLoaderCDDA.cpp         |  5 +-
  xbmc/music/tags/MusicInfoTagLoaderDatabase.cpp     |  5 +-
  xbmc/music/tags/MusicInfoTagLoaderFFmpeg.cpp       |  3 +-
@@ -20988,30 +20987,6 @@ index 6c5ea13cc5..849eb233d8 100644
  /*!
   \brief Music library job implementation for scanning items.
   Uses CMusicInfoScanner for scanning and can be run with  or
-diff --git a/xbmc/music/tags/MusicInfoTag.cpp b/xbmc/music/tags/MusicInfoTag.cpp
-index 70efa0a7da..dd3f91eccb 100644
---- a/xbmc/music/tags/MusicInfoTag.cpp
-+++ b/xbmc/music/tags/MusicInfoTag.cpp
-@@ -7,15 +7,14 @@
-  */
- 
- #include "MusicInfoTag.h"
--
--#include "ServiceBroker.h"
--#include "guilib/LocalizeStrings.h"
- #include "music/Artist.h"
-+#include "utils/StringUtils.h"
-+#include "guilib/LocalizeStrings.h"
-+#include "ServiceBroker.h"
- #include "settings/AdvancedSettings.h"
- #include "settings/SettingsComponent.h"
--#include "utils/Archive.h"
--#include "utils/StringUtils.h"
- #include "utils/Variant.h"
-+#include "utils/Archive.h"
- 
- #include <algorithm>
- 
 diff --git a/xbmc/music/tags/MusicInfoTagLoaderCDDA.cpp b/xbmc/music/tags/MusicInfoTagLoaderCDDA.cpp
 index 563a713575..47283094e7 100644
 --- a/xbmc/music/tags/MusicInfoTagLoaderCDDA.cpp
