@@ -1,18 +1,18 @@
-From 31fb6df96a2ebdbecaccebc3c862fd7e5d264bc4 Mon Sep 17 00:00:00 2001
+From 0d24915f2fc10a9219c911acc26d544ade8503c2 Mon Sep 17 00:00:00 2001
 From: Greg McCarthy <greg@gjmccarthy.co.uk>
-Date: Thu, 27 Feb 2020 11:55:23 +0000
-Subject: [PATCH] Patch
+Date: Mon, 16 Mar 2020 14:52:16 +0000
+Subject: [PATCH] Update patch
 
 ---
- .../VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp     | 254 ++++++---------------
- .../cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.h |  17 +-
- 2 files changed, 70 insertions(+), 201 deletions(-)
+ .../VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp     | 253 ++++++---------------
+ .../cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.h |  15 +-
+ 2 files changed, 68 insertions(+), 200 deletions(-)
 
 diff --git a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp
-index c70dd20d86..b851ecba01 100644
+index 6d12551626..b056c907d4 100644
 --- a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp
-@@ -177,7 +177,7 @@ CDVDDemuxFFmpeg::CDVDDemuxFFmpeg() : CDVDDemux()
+@@ -178,7 +178,7 @@ CDVDDemuxFFmpeg::CDVDDemuxFFmpeg() : CDVDDemux()
    m_pkt.result = -1;
    memset(&m_pkt.pkt, 0, sizeof(AVPacket));
    m_streaminfo = true; /* set to true if we want to look for streams before playback */
@@ -21,12 +21,12 @@ index c70dd20d86..b851ecba01 100644
    m_dtsAtDisplayTime = DVD_NOPTS_VALUE;
  }
  
-@@ -261,30 +261,12 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool streami
-         strFile = url.Get();
+@@ -291,30 +291,12 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool streami
+         }
        }
      }
 -    if (result < 0)
-+    if (result < 0 && avformat_open_input(&m_pFormatContext, strFile.c_str(), iformat, &options) < 0 )
++    if (result < 0 && avformat_open_input(&m_pFormatContext, strFile.c_str(), iformat, &options) < 0 ) 
      {
 -      m_pFormatContext->flags |= AVFMT_FLAG_PRIV_OPT;
 -      if (avformat_open_input(&m_pFormatContext, strFile.c_str(), iformat, &options) < 0)
@@ -56,7 +56,7 @@ index c70dd20d86..b851ecba01 100644
      }
      av_dict_free(&options);
    }
-@@ -459,7 +441,7 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool streami
+@@ -489,7 +471,7 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool streami
    if (iformat && (strcmp(iformat->name, "mpegts") == 0) && !fileinfo && !isBluray)
    {
      av_opt_set_int(m_pFormatContext, "analyzeduration", 500000, 0);
@@ -65,7 +65,7 @@ index c70dd20d86..b851ecba01 100644
      skipCreateStreams = true;
    }
    else if (!iformat || (strcmp(iformat->name, "mpegts") != 0))
-@@ -493,7 +475,7 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool streami
+@@ -523,7 +505,7 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool streami
            m_pInput->IsStreamType(DVDSTREAM_TYPE_BLURAY) ||
            (m_pFormatContext->nb_streams == 1 &&
             m_pFormatContext->streams[0]->codecpar->codec_id == AV_CODEC_ID_AC3) ||
@@ -74,19 +74,19 @@ index c70dd20d86..b851ecba01 100644
        {
          // special case, our codecs can still handle it.
        }
-@@ -505,10 +487,8 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool streami
+@@ -535,10 +517,7 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool streami
      }
      CLog::Log(LOGDEBUG, "%s - av_find_stream_info finished", __FUNCTION__);
  
 -    // print some extra information
 -    av_dump_format(m_pFormatContext, 0, CURL::GetRedacted(strFile).c_str(), 0);
- 
+-
 -    if (m_checkTransportStream)
 +    if (m_checkvideo)
      {
        // make sure we start video with an i-frame
        ResetVideoStreams();
-@@ -527,17 +507,14 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool streami
+@@ -557,17 +536,14 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool streami
    // if format can be nonblocking, let's use that
    m_pFormatContext->flags |= AVFMT_FLAG_NONBLOCK;
  
@@ -107,7 +107,7 @@ index c70dd20d86..b851ecba01 100644
    // in case of mpegts and we have not seen pat/pmt, defer creation of streams
    if (!skipCreateStreams || m_pFormatContext->nb_programs > 0)
    {
-@@ -545,14 +522,16 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool streami
+@@ -575,14 +551,16 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool streami
      if (m_pFormatContext->nb_programs > 0)
      {
        // select the correct program if requested
@@ -120,14 +120,14 @@ index c70dd20d86..b851ecba01 100644
          for (unsigned int i = 0; i < m_pFormatContext->nb_programs; ++i)
          {
 -          if (m_pFormatContext->programs[i]->program_num == static_cast<int>(m_initialProgramNumber))
-+          if (m_pFormatContext->programs[i]->program_num == programNumber) 
++          if (m_pFormatContext->programs[i]->program_num == programNumber)
            {
              nProgram = i;
 -            m_initialProgramNumber = UINT_MAX;
              break;
            }
          }
-@@ -583,26 +562,14 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool streami
+@@ -613,26 +591,14 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool streami
      CreateStreams(nProgram);
    }
  
@@ -155,7 +155,7 @@ index c70dd20d86..b851ecba01 100644
  
    // seems to be a bug in ffmpeg, hls jumps back to start after a couple of seconds
    // this cures the issue
-@@ -925,12 +892,12 @@ double CDVDDemuxFFmpeg::ConvertTimestamp(int64_t pts, int den, int num)
+@@ -955,12 +921,12 @@ double CDVDDemuxFFmpeg::ConvertTimestamp(int64_t pts, int den, int num)
    if (!menu && m_pFormatContext->start_time != (int64_t)AV_NOPTS_VALUE)
      starttime = (double)m_pFormatContext->start_time / AV_TIME_BASE;
  
@@ -170,7 +170,7 @@ index c70dd20d86..b851ecba01 100644
        timestamp -= starttime;
      // allow for largest possible difference in pts and dts for a single packet
      else if (timestamp + 0.5f > starttime)
-@@ -1002,9 +969,6 @@ DemuxPacket* CDVDDemuxFFmpeg::Read()
+@@ -1032,9 +998,6 @@ DemuxPacket* CDVDDemuxFFmpeg::Read()
  
        if (IsProgramChange())
        {
@@ -180,7 +180,7 @@ index c70dd20d86..b851ecba01 100644
          // update streams
          CreateStreams(m_program);
  
-@@ -1017,7 +981,7 @@ DemuxPacket* CDVDDemuxFFmpeg::Read()
+@@ -1047,7 +1010,7 @@ DemuxPacket* CDVDDemuxFFmpeg::Read()
  
        AVStream* stream = m_pFormatContext->streams[m_pkt.pkt.stream_index];
  
@@ -189,7 +189,7 @@ index c70dd20d86..b851ecba01 100644
        {
          if (m_program != UINT_MAX)
          {
-@@ -1186,48 +1150,21 @@ bool CDVDDemuxFFmpeg::SeekTime(double time, bool backwards, double* startpts)
+@@ -1216,48 +1179,19 @@ bool CDVDDemuxFFmpeg::SeekTime(double time, bool backwards, double* startpts)
    int64_t seek_pts = (int64_t)time * (AV_TIME_BASE / 1000);
    bool ismp3 = m_pFormatContext->iformat && (strcmp(m_pFormatContext->iformat->name, "mp3") == 0);
  
@@ -238,12 +238,10 @@ index c70dd20d86..b851ecba01 100644
 -        starttime =
 -            av_rescale(static_cast<int64_t>(m_startTime), st->time_base.num, st->time_base.den);
 -      }
-+      if (!m_streaminfo)
-+        starttime = m_startTime * AV_TIME_BASE;
  
        // demuxer can return failure, if seeking behind eof
        if (m_pFormatContext->duration &&
-@@ -1339,7 +1276,7 @@ std::vector<CDemuxStream*> CDVDDemuxFFmpeg::GetStreams() const
+@@ -1369,7 +1303,7 @@ std::vector<CDemuxStream*> CDVDDemuxFFmpeg::GetStreams() const
  
  int CDVDDemuxFFmpeg::GetNrOfStreams() const
  {
@@ -252,7 +250,7 @@ index c70dd20d86..b851ecba01 100644
  }
  
  int CDVDDemuxFFmpeg::GetPrograms(std::vector<ProgramInfo>& programs)
-@@ -1370,7 +1307,7 @@ int CDVDDemuxFFmpeg::GetPrograms(std::vector<ProgramInfo>& programs)
+@@ -1400,7 +1334,7 @@ int CDVDDemuxFFmpeg::GetPrograms(std::vector<ProgramInfo>& programs)
      prog.name = os.str();
      programs.push_back(prog);
    }
@@ -261,7 +259,7 @@ index c70dd20d86..b851ecba01 100644
  }
  
  void CDVDDemuxFFmpeg::SetProgram(int progId)
-@@ -1446,8 +1383,6 @@ void CDVDDemuxFFmpeg::CreateStreams(unsigned int program)
+@@ -1476,8 +1410,6 @@ void CDVDDemuxFFmpeg::CreateStreams(unsigned int program)
      }
      if (m_program != UINT_MAX)
      {
@@ -270,7 +268,7 @@ index c70dd20d86..b851ecba01 100644
        // add streams from selected program
        for (unsigned int i = 0; i < m_pFormatContext->programs[m_program]->nb_stream_indexes; i++)
        {
-@@ -1667,7 +1602,7 @@ CDemuxStream* CDVDDemuxFFmpeg::AddStream(int streamIdx)
+@@ -1697,7 +1629,7 @@ CDemuxStream* CDVDDemuxFFmpeg::AddStream(int streamIdx)
        default:
        {
          // if analyzing streams is skipped, unknown streams may become valid later
@@ -279,7 +277,7 @@ index c70dd20d86..b851ecba01 100644
          {
            CLog::Log(LOGDEBUG, "CDVDDemuxFFmpeg::AddStream - discarding unknown stream with id: %d", pStream->index);
            pStream->discard = AVDISCARD_ALL;
-@@ -1953,21 +1888,6 @@ bool CDVDDemuxFFmpeg::IsProgramChange()
+@@ -1983,21 +1915,6 @@ bool CDVDDemuxFFmpeg::IsProgramChange()
    if (m_program == 0 && !m_pFormatContext->nb_programs)
      return false;
  
@@ -301,7 +299,7 @@ index c70dd20d86..b851ecba01 100644
    if (m_program != m_newProgram)
    {
      m_program = m_newProgram;
-@@ -2027,7 +1947,7 @@ unsigned int CDVDDemuxFFmpeg::HLSSelectProgram()
+@@ -2057,7 +1974,7 @@ unsigned int CDVDDemuxFFmpeg::HLSSelectProgram()
        }
      }
  
@@ -310,7 +308,7 @@ index c70dd20d86..b851ecba01 100644
        continue;
  
      bool want = false;
-@@ -2165,122 +2085,82 @@ void CDVDDemuxFFmpeg::ParsePacket(AVPacket* pkt)
+@@ -2195,122 +2112,82 @@ void CDVDDemuxFFmpeg::ParsePacket(AVPacket* pkt)
    }
  }
  
@@ -321,15 +319,15 @@ index c70dd20d86..b851ecba01 100644
 -  bool hasAudio = false;
 +  AVStream *st;
 +  bool hasVideo = false;
- 
--  if (m_program != UINT_MAX)
++
 +  if (!m_checkvideo)
 +    return true;
 +
 +  if (m_program == 0 && !m_pFormatContext->nb_programs)
 +    return false;
-+
-+  if(m_program != UINT_MAX)
+ 
+-  if (m_program != UINT_MAX)
+++  if(m_program != UINT_MAX)
    {
      for (unsigned int i = 0; i < m_pFormatContext->programs[m_program]->nb_stream_indexes; i++)
      {
@@ -472,7 +470,7 @@ index c70dd20d86..b851ecba01 100644
  
  void CDVDDemuxFFmpeg::ResetVideoStreams()
 diff --git a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.h b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.h
-index 2dd75e4034..315d0d769a 100644
+index 2dd75e4034..518c7a39dd 100644
 --- a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.h
 +++ b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.h
 @@ -22,13 +22,6 @@ extern "C" {
@@ -502,16 +500,7 @@ index 2dd75e4034..315d0d769a 100644
    void ResetVideoStreams();
    AVDictionary* GetFFMpegOptionsFromInput();
    double ConvertTimestamp(int64_t pts, int den, int num);
-@@ -154,8 +145,6 @@ protected:
-   unsigned int m_program;
-   unsigned int m_streamsInProgram;
-   unsigned int m_newProgram;
--  unsigned int m_initialProgramNumber;
--  int m_seekStream;
- 
-   XbmcThreads::EndTime  m_timeout;
- 
-@@ -169,7 +158,7 @@ protected:
+@@ -169,7 +160,7 @@ protected:
    }m_pkt;
  
    bool m_streaminfo;
@@ -520,42 +509,6 @@ index 2dd75e4034..315d0d769a 100644
    int m_displayTime = 0;
    double m_dtsAtDisplayTime;
    bool m_seekToKeyFrame = false;
-@ -177,7 +177,7 @@ CDVDDemuxFFmpeg::CDVDDemuxFFmpeg() : CDVDDemux()
-   m_pkt.result = -1;
-   memset(&m_pkt.pkt, 0, sizeof(AVPacket));
-   m_streaminfo = true; /* set to true if we want to look for streams before playback */
--  m_checkTransportStream = false;
-+  m_checkvideo = false;
-   m_dtsAtDisplayTime = DVD_NOPTS_VALUE;
- }
-
-@@ -459,7 +459,7 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool streami
-   if (iformat && (strcmp(iformat->name, "mpegts") == 0) && !fileinfo && !isBluray)
-   {
-     av_opt_set_int(m_pFormatContext, "analyzeduration", 500000, 0);
--    m_checkTransportStream = true;
-+    m_checkvideo = true;
-     skipCreateStreams = true;
-   }
-   else if (!iformat || (strcmp(iformat->name, "mpegts") != 0))
-@@ -517,7 +517,7 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool streami
-   else
-   {
-     m_program = 0;
--    m_checkTransportStream = true;
-+    m_checkvideo = true;
-     skipCreateStreams = true;
-   }
-
-@@ -547,7 +547,7 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool streami
-   else
-   {
-     m_program = 0;
--    m_checkTransportStream = true;
-+    m_checkvideo = true;
-     skipCreateStreams = true;
-   }
-
 -- 
 2.16.4
 
