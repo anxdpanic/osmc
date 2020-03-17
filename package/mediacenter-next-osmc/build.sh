@@ -182,10 +182,10 @@ then
 	echo "Depends: ${1}-mediacenter-next-osmc (=${VERSION_NUM})" >> files-debug/DEBIAN/control
 	pushd src/xbmc-*
 	
-	#Temp hack to install rbp python patches before everything else.
+	#Temp hack to revert rbp patches before everything else.
 	if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ]
 	then 
-		install_patch "../../patches" "rpy"
+		install_patch "../../patches" "rrev"
 	fi
 
 	install_patch "../../patches" "all"
