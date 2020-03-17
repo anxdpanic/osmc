@@ -1,0 +1,69 @@
+From c4e565cc78d3de115c7848cba513830941fb0751 Mon Sep 17 00:00:00 2001
+From: ronie <ronie@kodi.tv>
+Date: Thu, 12 Mar 2020 23:33:29 +0100
+Subject: [PATCH] [EPG] change season/episode infolabels for specials
+
+---
+ xbmc/pvr/epg/EpgInfoTag.cpp            | 2 +-
+ xbmc/pvr/epg/EpgInfoTag.h              | 6 +++---
+ xbmc/pvr/guilib/guiinfo/PVRGUIInfo.cpp | 9 +++------
+ 3 files changed, 7 insertions(+), 10 deletions(-)
+
+diff --git a/xbmc/pvr/epg/EpgInfoTag.cpp b/xbmc/pvr/epg/EpgInfoTag.cpp
+index e82798719080..36d6c71b68aa 100644
+--- a/xbmc/pvr/epg/EpgInfoTag.cpp
++++ b/xbmc/pvr/epg/EpgInfoTag.cpp
+@@ -643,7 +643,7 @@ bool CPVREpgInfoTag::IsPlayable() const
+ 
+ bool CPVREpgInfoTag::IsSeries() const
+ {
+-  if ((m_iFlags & EPG_TAG_FLAG_IS_SERIES) > 0 || SeriesNumber() > 0 || EpisodeNumber() > 0 || EpisodePart() > 0)
++  if ((m_iFlags & EPG_TAG_FLAG_IS_SERIES) > 0 || SeriesNumber() >= 0 || EpisodeNumber() >= 0 || EpisodePart() >= 0)
+     return true;
+   else
+     return false;
+diff --git a/xbmc/pvr/epg/EpgInfoTag.h b/xbmc/pvr/epg/EpgInfoTag.h
+index dd0abfb637ee..c74c7864c996 100644
+--- a/xbmc/pvr/epg/EpgInfoTag.h
++++ b/xbmc/pvr/epg/EpgInfoTag.h
+@@ -442,9 +442,9 @@ namespace PVR
+     int m_iGenreSubType = 0; /*!< genre subtype */
+     int m_iParentalRating = 0; /*!< parental rating */
+     int m_iStarRating = 0; /*!< star rating */
+-    int m_iSeriesNumber = 0; /*!< series number */
+-    int m_iEpisodeNumber = 0; /*!< episode number */
+-    int m_iEpisodePart = 0; /*!< episode part number */
++    int m_iSeriesNumber = -1; /*!< series number */
++    int m_iEpisodeNumber = -1; /*!< episode number */
++    int m_iEpisodePart = -1; /*!< episode part number */
+     unsigned int m_iUniqueBroadcastID = 0; /*!< unique broadcast ID */
+     std::string m_strTitle; /*!< title */
+     std::string m_strPlotOutline; /*!< plot outline */
+diff --git a/xbmc/pvr/guilib/guiinfo/PVRGUIInfo.cpp b/xbmc/pvr/guilib/guiinfo/PVRGUIInfo.cpp
+index b824fff57f5e..54112d31f34e 100644
+--- a/xbmc/pvr/guilib/guiinfo/PVRGUIInfo.cpp
++++ b/xbmc/pvr/guilib/guiinfo/PVRGUIInfo.cpp
+@@ -564,7 +564,7 @@ bool CPVRGUIInfo::GetListItemAndPlayerLabel(const CFileItem* item, const CGUIInf
+         return false;
+       case VIDEOPLAYER_SEASON:
+       case LISTITEM_SEASON:
+-        if (epgTag->SeriesNumber() > 0)
++        if (epgTag->SeriesNumber() >= 0)
+         {
+           strValue = StringUtils::Format("%i", epgTag->SeriesNumber());
+           return true;
+@@ -572,12 +572,9 @@ bool CPVRGUIInfo::GetListItemAndPlayerLabel(const CFileItem* item, const CGUIInf
+         return false;
+       case VIDEOPLAYER_EPISODE:
+       case LISTITEM_EPISODE:
+-        if (epgTag->EpisodeNumber() > 0)
++        if (epgTag->EpisodeNumber() >= 0)
+         {
+-          if (epgTag->SeriesNumber() == 0) // prefix episode with 'S'
+-            strValue = StringUtils::Format("S%i", epgTag->EpisodeNumber());
+-          else
+-            strValue = StringUtils::Format("%i", epgTag->EpisodeNumber());
++          strValue = StringUtils::Format("%i", epgTag->EpisodeNumber());
+           return true;
+         }
+         return false;
