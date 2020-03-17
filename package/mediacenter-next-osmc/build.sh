@@ -187,7 +187,7 @@ then
 	#Temp hack to revert rbp patches before everything else.
 
 
-	if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ] || [ "$1" == "vero2" ] || [ "$1" == "vero3" ]; them install_patch "../../patches" "arev"; fi
+	if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ] || [ "$1" == "vero2" ] || [ "$1" == "vero3" ]; then install_patch "../../patches" "arev"; fi
 
 
 	if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ]
