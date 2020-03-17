@@ -187,6 +187,7 @@ then
 	then 
 		install_patch "../../patches" "rrev"
 	fi
+	if [ "$1" == "vero2" } || [ "$1" == "vero3"]; then install_patch "../../patches" "vrev"; fi     #Revert vero patches
 
 	install_patch "../../patches" "all"
 	test "$1" == pc && install_patch "../../patches" "pc"
@@ -198,7 +199,6 @@ then
 	test "$1" == vero2 && install_patch "../../patches" "vero2"
 	test "$1" == vero3 && install_patch "../../patches" "vero3"
 
-	if [ "$1" == "vero2" } || [ "$1" == "vero3"]; then install_patch "../../patches" "vrev"; fi	#Revert vero patches
         if [ "$1" == "pc" ]; then
         COMPFLAGS="-O3 -fomit-frame-pointer -Wl,-rpath=/usr/osmc/lib -L/usr/osmc/lib " && \
         export CFLAGS+=${COMPFLAGS} && \
