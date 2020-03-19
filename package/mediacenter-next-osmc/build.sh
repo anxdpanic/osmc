@@ -351,7 +351,7 @@ then
         ADDONS_AUDIO_ENCODERS="audioencoder.flac audioencoder.lame audioencoder.vorbis audioencoder.wav"
         ADDONS_INPUTSTREAM="inputstream.ffmpegdirect inputstream.adaptive inputstream.rtmp"
 	ADDONS_PERIPHERAL="peripheral.xarcade peripheral.joystick peripheral.steamcontroller" #imagedecoder.raw
-	ADDONS_PVR="pvr.waipu pvr.sledovanitv.cz pvr.mythtv pvr.pctv pvr.stalker pvr.octonet pvr.zattoo pvr.vbox pvr.wmc pvr.nextpvr pvr.njoy pvr.teleboy pvr.vdr.vnsi pvr.vuplus pvr.dvbviewer pvr.hdhomerun pvr.iptvsimple pvr.demo pvr.mediaportal.tvserver pvr.argustv" #pvr.dvblink  pvr.hts
+	ADDONS_PVR="pvr.waipu pvr.sledovanitv.cz pvr.mythtv pvr.pctv pvr.stalker pvr.octonet pvr.zattoo pvr.vbox pvr.wmc pvr.nextpvr pvr.njoy pvr.teleboy pvr.vdr.vnsi pvr.vuplus pvr.dvbviewer pvr.hdhomerun pvr.iptvsimple pvr.demo pvr.mediaportal.tvserver" # pvr.argustv pvr.dvblink  pvr.hts
 	#ADDONS_SCREENSAVERS="screensaver.biogenesis screensaver.greynetic screensaver.matrixtrails screensaver.pingpong screensaver.pyro screensaver.stars screensaver.shadertoy"
 	ADDONS_VFS="vfs.libarchive vfs.rar vfs.sftp"
         #ADDONS_VISUALIZATIONS="visualization.fishbmc visualization.goom visualization.projectm visualization.shadertoy visualization.spectrum visualization.vsxu visualization.waveform"
