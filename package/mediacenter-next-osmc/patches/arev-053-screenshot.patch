@@ -913,18 +913,19 @@ index ae93681651..619b75bd9f 100644
  #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h"
  #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
 -#include "rendering/gles/ScreenshotSurfaceGLES.h"
- #include "utils/XTimeUtils.h"
- #include "utils/log.h"
- 
+
+ #include "utils/BufferObjectFactory.h"
+ #include "utils/DumbBufferObject.h"
+ #include "utils/GBMBufferObject.h"
 @@ -69,8 +68,6 @@ bool CWinSystemGbmGLESContext::InitWindowSystem()
    CDVDVideoCodecDRMPRIME::Register();
    VIDEOPLAYER::CProcessInfoGBM::Register();
  
 -  CScreenshotSurfaceGLES::Register();
 -
-   return true;
- }
- 
+   CBufferObjectFactory::ClearBufferObjects();
+   CDumbBufferObject::Register();
+ #if defined(HAS_GBM_BO_MAP)
 diff --git a/xbmc/windowing/rpi/WinSystemRpiGLESContext.cpp b/xbmc/windowing/rpi/WinSystemRpiGLESContext.cpp
 index 06c328ecba..a949c85e8b 100644
 --- a/xbmc/windowing/rpi/WinSystemRpiGLESContext.cpp
