@@ -974,8 +974,8 @@ index 181583197f..dc7de3e8ab 100644
 +++ b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.cpp
 @@ -15,7 +15,6 @@
  #include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererOpenGLES.h"
- #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
  #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h"
+ #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
 -#include "rendering/gles/ScreenshotSurfaceGLES.h"
  #include "utils/log.h"
  
