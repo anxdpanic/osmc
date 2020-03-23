@@ -1663,10 +1663,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/windowing/wayland/WinEventsWayland.cpp        | 18 +++---
  xbmc/windowing/wayland/WinEventsWayland.h          |  6 +-
  xbmc/windowing/wayland/WinSystemWayland.h          | 28 +++++-----
- .../wayland/WinSystemWaylandEGLContextGL.cpp       |  8 +--
- .../wayland/WinSystemWaylandEGLContextGL.h         |  2 +-
- .../wayland/WinSystemWaylandEGLContextGLES.cpp     |  8 +--
- .../wayland/WinSystemWaylandEGLContextGLES.h       |  2 +-
  xbmc/windowing/wayland/WindowDecorator.cpp         | 10 ++--
  xbmc/windowing/wayland/WindowDecorator.h           | 19 +++----
  xbmc/windowing/wayland/XkbcommonKeymap.cpp         |  8 +--
