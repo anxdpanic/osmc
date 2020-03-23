@@ -1664,7 +1664,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/windowing/wayland/WinEventsWayland.cpp        | 18 +++---
  xbmc/windowing/wayland/WinEventsWayland.h          |  6 +-
  xbmc/windowing/wayland/WinSystemWayland.h          | 28 +++++-----
- .../windowing/wayland/WinSystemWaylandEGLContext.h |  2 +-
  .../wayland/WinSystemWaylandEGLContextGL.cpp       |  8 +--
  .../wayland/WinSystemWaylandEGLContextGL.h         |  2 +-
  .../wayland/WinSystemWaylandEGLContextGLES.cpp     |  8 +--
@@ -31927,100 +31926,6 @@ index 939095601a..6c55dcdb13 100644
  namespace wayland
  {
  class event_queue_t;
-diff --git a/xbmc/windowing/wayland/WinSystemWaylandEGLContext.h b/xbmc/windowing/wayland/WinSystemWaylandEGLContext.h
-index e36e2dd7f4..a43faea6a0 100644
---- a/xbmc/windowing/wayland/WinSystemWaylandEGLContext.h
-+++ b/xbmc/windowing/wayland/WinSystemWaylandEGLContext.h
-@@ -8,8 +8,8 @@
- 
- #pragma once
- 
--#include "WinSystemWayland.h"
- #include "utils/EGLUtils.h"
-+#include "WinSystemWayland.h"
- 
- #include <wayland-egl.hpp>
- 
-diff --git a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp
-index c5e8c3fa39..82f1250db0 100644
---- a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp
-+++ b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp
-@@ -7,17 +7,17 @@
-  */
- 
- #include "WinSystemWaylandEGLContextGL.h"
--
- #include "OptionalsReg.h"
-+
-+#include <EGL/egl.h>
-+#include <EGL/eglext.h>
-+
- #include "cores/RetroPlayer/process/RPProcessInfo.h"
- #include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererOpenGL.h"
- #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGL.h"
- #include "rendering/gl/ScreenshotSurfaceGL.h"
- #include "utils/log.h"
- 
--#include <EGL/egl.h>
--#include <EGL/eglext.h>
--
- using namespace KODI::WINDOWING::WAYLAND;
- 
- std::unique_ptr<CWinSystemBase> CWinSystemBase::CreateWinSystem()
-diff --git a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.h b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.h
-index 5a0800269b..72209961e6 100644
---- a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.h
-+++ b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.h
-@@ -8,8 +8,8 @@
- 
- #pragma once
- 
--#include "WinSystemWaylandEGLContext.h"
- #include "rendering/gl/RenderSystemGL.h"
-+#include "WinSystemWaylandEGLContext.h"
- 
- class CVaapiProxy;
- 
-diff --git a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.cpp b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.cpp
-index fdba55326d..181583197f 100644
---- a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.cpp
-+++ b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.cpp
-@@ -7,17 +7,17 @@
-  */
- 
- #include "WinSystemWaylandEGLContextGLES.h"
--
- #include "OptionalsReg.h"
-+
-+#include <EGL/egl.h>
-+
- #include "cores/RetroPlayer/process/RPProcessInfo.h"
- #include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererOpenGLES.h"
--#include "cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h"
- #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
-+#include "cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h"
- #include "rendering/gles/ScreenshotSurfaceGLES.h"
- #include "utils/log.h"
- 
--#include <EGL/egl.h>
--
- using namespace KODI::WINDOWING::WAYLAND;
- 
- std::unique_ptr<CWinSystemBase> CWinSystemBase::CreateWinSystem()
-diff --git a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.h b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.h
-index 26834ef975..a9a838561c 100644
---- a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.h
-+++ b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.h
-@@ -8,8 +8,8 @@
- 
- #pragma once
- 
--#include "WinSystemWaylandEGLContext.h"
- #include "rendering/gles/RenderSystemGLES.h"
-+#include "WinSystemWaylandEGLContext.h"
- 
- class CVaapiProxy;
- 
 diff --git a/xbmc/windowing/wayland/WindowDecorator.cpp b/xbmc/windowing/wayland/WindowDecorator.cpp
 index 9f7888e67d..ce5f8cf38b 100644
 --- a/xbmc/windowing/wayland/WindowDecorator.cpp
