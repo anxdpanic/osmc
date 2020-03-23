@@ -213,7 +213,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/cores/RetroPlayer/audio/AudioTranslator.h     |  2 +-
  .../cores/RetroPlayer/buffers/BaseRenderBuffer.cpp |  1 -
  .../RetroPlayer/buffers/BaseRenderBufferPool.cpp   |  1 -
- xbmc/cores/RetroPlayer/buffers/RenderBufferGBM.cpp |  1 -
  xbmc/cores/RetroPlayer/buffers/RenderBufferGBM.h   |  4 +-
  .../RetroPlayer/buffers/RenderBufferManager.cpp    |  1 -
  .../RetroPlayer/buffers/RenderBufferManager.h      |  2 +-
@@ -5472,18 +5471,6 @@ index 83aa4cee84..a2fcc2d7dc 100644
  #include "IRenderBuffer.h"
  #include "cores/RetroPlayer/rendering/VideoRenderers/RPBaseRenderer.h"
  #include "threads/SingleLock.h"
-diff --git a/xbmc/cores/RetroPlayer/buffers/RenderBufferGBM.cpp b/xbmc/cores/RetroPlayer/buffers/RenderBufferGBM.cpp
-index e1871e852a..03a6ab3dfc 100644
---- a/xbmc/cores/RetroPlayer/buffers/RenderBufferGBM.cpp
-+++ b/xbmc/cores/RetroPlayer/buffers/RenderBufferGBM.cpp
-@@ -7,7 +7,6 @@
-  */
- 
- #include "RenderBufferGBM.h"
--
- #include "ServiceBroker.h"
- #include "utils/EGLImage.h"
- #include "utils/GBMBufferObject.h"
 diff --git a/xbmc/cores/RetroPlayer/buffers/RenderBufferGBM.h b/xbmc/cores/RetroPlayer/buffers/RenderBufferGBM.h
 index 0f373a4891..dc4d50f62e 100644
 --- a/xbmc/cores/RetroPlayer/buffers/RenderBufferGBM.h
