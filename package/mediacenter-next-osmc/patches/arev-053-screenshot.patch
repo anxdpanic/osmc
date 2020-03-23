@@ -979,7 +979,7 @@ index 181583197f..dc7de3e8ab 100644
 -#include "rendering/gles/ScreenshotSurfaceGLES.h"
  #include "utils/log.h"
  
- using namespace KODI::WINDOWING::WAYLAND;
+ #include <EGL/egl.h> 
 @@ -46,8 +45,6 @@ bool CWinSystemWaylandEGLContextGLES::InitWindowSystem()
      ::WAYLAND::VAAPIRegister(m_vaapiProxy.get(), deepColor);
    }
