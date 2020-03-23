@@ -913,7 +913,6 @@ index ae93681651..619b75bd9f 100644
  #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h"
  #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
 -#include "rendering/gles/ScreenshotSurfaceGLES.h"
-
  #include "utils/BufferObjectFactory.h"
  #include "utils/DumbBufferObject.h"
  #include "utils/GBMBufferObject.h"
