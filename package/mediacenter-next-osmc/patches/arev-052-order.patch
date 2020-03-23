@@ -1618,7 +1618,6 @@ This reverts commit d324e77adc7b31bc9ebd5b4e13513b7fcdcd4bd1.
  xbmc/windowing/gbm/GBMUtils.cpp                    |  1 -
  xbmc/windowing/gbm/OffScreenModeSetting.cpp        |  1 -
  xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp      |  6 +-
- xbmc/windowing/gbm/WinSystemGbmEGLContext.h        |  3 +-
  xbmc/windowing/gbm/WinSystemGbmGLContext.cpp       | 13 ++---
  xbmc/windowing/gbm/WinSystemGbmGLContext.h         |  5 +-
  xbmc/windowing/gbm/WinSystemGbmGLESContext.cpp     | 16 +++---
@@ -31182,119 +31181,6 @@ index 106b6c5518..0715c19591 100644
  #include "utils/log.h"
  
  using namespace KODI::WINDOWING::GBM;
-diff --git a/xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp b/xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp
-index 1116c67780..cb453a541f 100644
---- a/xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp
-+++ b/xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp
-@@ -6,12 +6,12 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
--#include "WinSystemGbmEGLContext.h"
--
--#include "OptionalsReg.h"
- #include "cores/VideoPlayer/DVDCodecs/DVDFactoryCodec.h"
- #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
-+
-+#include "OptionalsReg.h"
- #include "utils/log.h"
-+#include "WinSystemGbmEGLContext.h"
- 
- using namespace KODI::WINDOWING::GBM;
- 
-diff --git a/xbmc/windowing/gbm/WinSystemGbmEGLContext.h b/xbmc/windowing/gbm/WinSystemGbmEGLContext.h
-index e74561d0e8..ce5d6fc2e2 100644
---- a/xbmc/windowing/gbm/WinSystemGbmEGLContext.h
-+++ b/xbmc/windowing/gbm/WinSystemGbmEGLContext.h
-@@ -8,9 +8,8 @@
- 
- #pragma once
- 
--#include "WinSystemGbm.h"
- #include "utils/EGLUtils.h"
--
-+#include "WinSystemGbm.h"
- #include <memory>
- 
- namespace KODI
-diff --git a/xbmc/windowing/gbm/WinSystemGbmGLContext.h b/xbmc/windowing/gbm/WinSystemGbmGLContext.h
-index 3c053d4005..bca1eff0f4 100644
---- a/xbmc/windowing/gbm/WinSystemGbmGLContext.h
-+++ b/xbmc/windowing/gbm/WinSystemGbmGLContext.h
-@@ -8,10 +8,9 @@
- 
- #pragma once
- 
--#include "WinSystemGbmEGLContext.h"
--#include "rendering/gl/RenderSystemGL.h"
- #include "utils/EGLUtils.h"
--
-+#include "rendering/gl/RenderSystemGL.h"
-+#include "WinSystemGbmEGLContext.h"
- #include <memory>
- 
- class CVaapiProxy;
-diff --git a/xbmc/windowing/ios/VideoSyncIos.cpp b/xbmc/windowing/ios/VideoSyncIos.cpp
-index a8c20a0b99..8bfc66625e 100644
---- a/xbmc/windowing/ios/VideoSyncIos.cpp
-+++ b/xbmc/windowing/ios/VideoSyncIos.cpp
-@@ -6,14 +6,13 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
-+#include "utils/log.h"
- #include "VideoSyncIos.h"
--
--#include "cores/VideoPlayer/VideoReferenceClock.h"
- #include "utils/MathUtils.h"
--#include "utils/TimeUtils.h"
--#include "utils/log.h"
-+#include "cores/VideoPlayer/VideoReferenceClock.h"
- #include "windowing/GraphicContext.h"
- #include "windowing/ios/WinSystemIOS.h"
-+#include "utils/TimeUtils.h"
- 
- bool CVideoSyncIos::Setup(PUPDATECLOCK func)
- {
-diff --git a/xbmc/windowing/ios/VideoSyncIos.h b/xbmc/windowing/ios/VideoSyncIos.h
-index fe5d582735..da60af2054 100644
---- a/xbmc/windowing/ios/VideoSyncIos.h
-+++ b/xbmc/windowing/ios/VideoSyncIos.h
-@@ -8,8 +8,8 @@
- 
- #pragma once
- 
--#include "guilib/DispResource.h"
- #include "windowing/VideoSync.h"
-+#include "guilib/DispResource.h"
- 
- class CWinSystemIOS;
- 
-diff --git a/xbmc/windowing/ios/WinEventsIOS.mm b/xbmc/windowing/ios/WinEventsIOS.mm
-index 43381da2bd..1b0a864d19 100644
---- a/xbmc/windowing/ios/WinEventsIOS.mm
-+++ b/xbmc/windowing/ios/WinEventsIOS.mm
-@@ -6,17 +6,15 @@
-  *  See LICENSES/README.md for more information.
-  */
- 
-+#include <list>
- #include "WinEventsIOS.h"
--
--#include "AppInboundProtocol.h"
--#include "guilib/GUIWindowManager.h"
- #include "input/InputManager.h"
- #include "input/XBMC_vkeys.h"
-+#include "AppInboundProtocol.h"
- #include "threads/CriticalSection.h"
-+#include "guilib/GUIWindowManager.h"
- #include "utils/log.h"
- 
--#include <list>
--
- static CCriticalSection g_inputCond;
- 
- static std::list<XBMC_Event> events;
 diff --git a/xbmc/windowing/rpi/RPIUtils.h b/xbmc/windowing/rpi/RPIUtils.h
 index a90c22397c..e4f710920e 100644
 --- a/xbmc/windowing/rpi/RPIUtils.h
