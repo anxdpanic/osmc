@@ -85,15 +85,15 @@ diff --git a/xbmc/cores/VideoPlayer/Interface/Addon/DemuxPacket.h b/xbmc/cores/V
 index f8ceab2..c7e04be 100644
 --- a/xbmc/cores/VideoPlayer/Interface/Addon/DemuxPacket.h
 +++ b/xbmc/cores/VideoPlayer/Interface/Addon/DemuxPacket.h
-@@ -17,6 +17,8 @@
- 
- struct DemuxCryptoInfo;
- 
-+struct AVPacket;
+@@ -23,6 +23,8 @@ extern "C"
+
+   struct DemuxCryptoInfo;
+
++  struct AVPacket;
 +
- typedef struct DemuxPacket
- {
-   DemuxPacket() = default;
+   typedef struct DemuxPacket
+   {
+     DemuxPacket() = default;
 @@ -33,6 +35,7 @@ typedef struct DemuxPacket
    double pts = DVD_NOPTS_VALUE;
    double dts = DVD_NOPTS_VALUE;
