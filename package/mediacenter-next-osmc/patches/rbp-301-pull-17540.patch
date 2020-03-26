@@ -1,0 +1,747 @@
+From b3de6646cb8ee5bb5fea7ff78dc591a87ac27736 Mon Sep 17 00:00:00 2001
+From: the-black-eagle <g.moore@gmx.co.uk>
+Date: Fri, 21 Feb 2020 07:49:03 +0000
+Subject: [PATCH 1/2] [music] read, process and display sample rate, bit rate
+ and no of channels in music files
+
+---
+ xbmc/GUIInfoManager.cpp              | 25 ++++++++++++
+ xbmc/dbwrappers/DatabaseQuery.cpp    |  2 +-
+ xbmc/guilib/guiinfo/GUIInfoLabels.h  |  3 ++
+ xbmc/guilib/guiinfo/MusicGUIInfo.cpp | 27 +++++++++++++
+ xbmc/music/MusicDatabase.cpp         | 58 ++++++++++++++++++++--------
+ xbmc/music/MusicDatabase.h           | 11 +++++-
+ xbmc/music/Song.cpp                  | 10 +++++
+ xbmc/music/Song.h                    |  3 ++
+ xbmc/music/tags/MusicInfoTag.cpp     | 42 ++++++++++++++++++++
+ xbmc/music/tags/MusicInfoTag.h       |  9 +++++
+ xbmc/music/tags/TagLoaderTagLib.cpp  |  7 +++-
+ xbmc/playlists/SmartPlayList.cpp     |  6 +++
+ xbmc/utils/DatabaseUtils.cpp         | 12 ++++++
+ xbmc/utils/DatabaseUtils.h           |  3 ++
+ xbmc/utils/LabelFormatter.cpp        |  1 +
+ 15 files changed, 199 insertions(+), 20 deletions(-)
+
+diff --git a/xbmc/GUIInfoManager.cpp b/xbmc/GUIInfoManager.cpp
+index 2f09b69d210a..ed81fd2167e2 100644
+--- a/xbmc/GUIInfoManager.cpp
++++ b/xbmc/GUIInfoManager.cpp
+@@ -5871,6 +5871,28 @@ const infomap container_str[]  = {{ "property",         CONTAINER_PROPERTY },
+ ///     @skinning_v19 **[New Infolabel]** \link ListItem_UniqueID `ListItem.UniqueID(name)`\endlink
+ ///     <p>
+ ///   }
++///   \table_row3{   <b>`ListItem.BitRate`</b>,
++///                  \anchor ListItem_BitRate
++///                  _string_,
++///     @return The bitrate of a song. Actual rate for CBR, average rate for VBR.
++///     <p><hr>
++///     @skinning_v19 **[New Infolabel]** \link ListItem_BitRate `ListItem.BitRate`\endlink
++///     <p>
++///   }///   \table_row3{   <b>`ListItem.SampleRate`</b>,
++///                  \anchor ListItem_SampleRate
++///                  _string_,
++///     @return The sample rate of a song / 1000.0 eg 44.1, 48, 96 etc.
++///     <p><hr>
++///     @skinning_v19 **[New Infolabel]** \link ListItem_SampleRate `ListItem.SampleRate`\endlink
++///     <p>
++///   }///   \table_row3{   <b>`ListItem.MusicChannels`</b>,
++///                  \anchor ListItem_MusicChannels
++///                  _string_,
++///     @return The number of audio channels of a song.
++///     <p><hr>
++///     @skinning_v19 **[New Infolabel]** \link ListItem_No_Of_Channels `ListItem.NoOfChannels`\endlink
++///     <p>
++///   }
+ /// \table_end
+ ///
+ /// -----------------------------------------------------------------------------
+@@ -6071,6 +6093,9 @@ const infomap listitem_labels[]= {{ "thumb",            LISTITEM_THUMB },
+                                   { "originaldate",     LISTITEM_ORIGINALDATE },
+                                   { "bpm",              LISTITEM_BPM },
+                                   { "uniqueid",         LISTITEM_UNIQUEID },
++                                  { "bitrate",          LISTITEM_BITRATE },
++                                  { "samplerate",       LISTITEM_SAMPLERATE },
++                                  { "musicchannels",    LISTITEM_MUSICCHANNELS },
+ };
+ 
+ /// \page modules__infolabels_boolean_conditions
+diff --git a/xbmc/dbwrappers/DatabaseQuery.cpp b/xbmc/dbwrappers/DatabaseQuery.cpp
+index 08bea37e0c77..8196a5a2f324 100644
+--- a/xbmc/dbwrappers/DatabaseQuery.cpp
++++ b/xbmc/dbwrappers/DatabaseQuery.cpp
+@@ -397,7 +397,7 @@ std::string CDatabaseQueryRule::FormatWhereClause(const std::string &negate, con
+   {
+     std::string fmt = "%s";
+     if (GetFieldType(m_field) == NUMERIC_FIELD)
+-      fmt = "CAST(%s as DECIMAL(5,1))";
++      fmt = "CAST(%s as DECIMAL(6,1))";
+     else if (GetFieldType(m_field) == SECONDS_FIELD)
+       fmt = "CAST(%s as INTEGER)";
+ 
+diff --git a/xbmc/guilib/guiinfo/GUIInfoLabels.h b/xbmc/guilib/guiinfo/GUIInfoLabels.h
+index 520cdb4fa415..54d0ae6fb17b 100644
+--- a/xbmc/guilib/guiinfo/GUIInfoLabels.h
++++ b/xbmc/guilib/guiinfo/GUIInfoLabels.h
+@@ -901,6 +901,9 @@
+ #define LISTITEM_ORIGINALDATE       (LISTITEM_START + 194)
+ #define LISTITEM_BPM                (LISTITEM_START + 195)
+ #define LISTITEM_UNIQUEID           (LISTITEM_START + 196)
++#define LISTITEM_BITRATE            (LISTITEM_START + 197)
++#define LISTITEM_SAMPLERATE         (LISTITEM_START + 198)
++#define LISTITEM_MUSICCHANNELS      (LISTITEM_START + 199)
+ 
+ #define LISTITEM_END                (LISTITEM_START + 2500)
+ 
+diff --git a/xbmc/guilib/guiinfo/MusicGUIInfo.cpp b/xbmc/guilib/guiinfo/MusicGUIInfo.cpp
+index 1f5e56dc1b99..f8b0b68a89d1 100644
+--- a/xbmc/guilib/guiinfo/MusicGUIInfo.cpp
++++ b/xbmc/guilib/guiinfo/MusicGUIInfo.cpp
+@@ -313,6 +313,33 @@ bool CMusicGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
+         return true;
+       }
+       break;
++      case LISTITEM_BITRATE:
++      {
++        int BitRate = tag->GetBitRate();
++        if (BitRate > 0)
++        {
++          value = StringUtils::Format("%i", BitRate);
++          return true;
++        }
++      }
++      case LISTITEM_SAMPLERATE:
++      {
++        int sampleRate = tag->GetSampleRate();
++        if (sampleRate > 0)
++        {
++          value = StringUtils::Format("%.5g", static_cast<double>(sampleRate) / 1000.0);
++          return true;
++        }
++      }
++      case LISTITEM_MUSICCHANNELS:
++      {
++        int channels = tag->GetNoOfChannels();
++        if (channels > 0)
++        {
++          value = StringUtils::Format("%i", channels);
++          return true;
++        }
++      }
+       case LISTITEM_FILENAME:
+       case LISTITEM_FILE_EXTENSION:
+         if (item->IsMusicDb())
+diff --git a/xbmc/music/MusicDatabase.cpp b/xbmc/music/MusicDatabase.cpp
+index ff602630acdf..797cb20ba69a 100644
+--- a/xbmc/music/MusicDatabase.cpp
++++ b/xbmc/music/MusicDatabase.cpp
+@@ -191,7 +191,9 @@ void CMusicDatabase::CreateTables()
+               " lastplayed varchar(20) default NULL, "
+               " rating FLOAT NOT NULL DEFAULT 0, votes INTEGER NOT NULL DEFAULT 0, "
+               " userrating INTEGER NOT NULL DEFAULT 0, "
+-              " comment text, mood text, iBPM integer, strReplayGain text, dateAdded text)");
++              " comment text, mood text, iBPM integer, iBitRate INTEGER NOT NULL DEFAULT 0, "
++              " iSampleRate INTEGER NOT NULL DEFAULT 0, iChannels INTEGER NOT NULL DEFAULT 0, "
++              " strReplayGain text, dateAdded text)");
+   CLog::Log(LOGINFO, "create song_artist table");
+   m_pDS->exec("CREATE TABLE song_artist (idArtist integer, idSong integer, idRole integer, iOrder integer, strArtist text)");
+   CLog::Log(LOGINFO, "create song_genre table");
+@@ -324,7 +326,10 @@ void CMusicDatabase::CreateViews()
+               "        song.mood as mood,"
+               "        song.dateAdded as dateAdded, "
+               "        song.strReplayGain, "
+-              "        song.iBPM "
++              "        song.iBPM, "
++              "        song.iBitRate, "
++              "        song.iSampleRate, "
++              "        song.iChannels "
+               "FROM song"
+               "  JOIN album ON"
+               "    song.idAlbum=album.idAlbum"
+@@ -469,7 +474,7 @@ bool CMusicDatabase::AddAlbum(CAlbum& album, int idSource)
+                            song->rating,
+                            song->userrating,
+                            song->votes,
+-                           song->iBPM,
++                           song->iBPM, song->iBitRate, song->iSampleRate, song->iChannels,
+                            song->replayGain);
+ 
+     if (song->artistCredits.empty())
+@@ -660,7 +665,7 @@ int CMusicDatabase::AddSong(const int idAlbum,
+                             std::string& strDiscSubtitle,
+                             const int iTimesPlayed, int iStartOffset, int iEndOffset,
+                             const CDateTime& dtLastPlayed, float rating, int userrating, int votes,
+-                            int iBPM,
++                            int iBPM, int iBitRate, int iSampleRate, int iChannels,
+                             const ReplayGain& replayGain)
+ {
+   int idSong = -1;
+@@ -717,13 +722,17 @@ int CMusicDatabase::AddSong(const int idAlbum,
+                      "idSong,idAlbum,idPath,strArtistDisp,"
+                      "strTitle, iTrack, iDuration, "
+                      "strReleaseDate, strOrigReleaseDate, iBPM, "
++                     "iBitrate, iSampleRate, iChannels, "
+                      "strDiscSubtitle,strFileName,"
+                      "strMusicBrainzTrackID, strArtistSort, "
+                      "iTimesPlayed,iStartOffset, "
+                      "iEndOffset,lastplayed,rating,userrating,votes,comment,mood,strReplayGain"
+-                     ") values (NULL, %i, %i, '%s', '%s', %i, %i, '%s', '%s', %i, '%s', '%s'",
++                     ") values (NULL, %i, %i, '%s', '%s', %i, %i, '%s', '%s', %i, %i, %i, %i, "
++                     " '%s', '%s'",
+                      idAlbum, idPath, artistDisp.c_str(), strTitle.c_str(), iTrack, iDuration,
+-                     strRelease.c_str(), strOriginal.c_str(), iBPM, strDiscSubtitle.c_str(),
++                     strRelease.c_str(), strOriginal.c_str(), iBPM,
++                     iBitRate, iSampleRate, iChannels,
++                     strDiscSubtitle.c_str(),
+                      strFileName.c_str());
+ 
+       if (strMusicBrainzTrackID.empty())
+@@ -753,9 +762,9 @@ int CMusicDatabase::AddSong(const int idAlbum,
+       m_pDS->close();
+       UpdateSong(idSong, strTitle, strMusicBrainzTrackID, strPathAndFileName, strComment, strMood,
+                  strThumb, artistDisp, artistSort, genres, iTrack, iDuration, 
+-                 strReleaseDate, strOrigReleaseDate,
+-                 strDiscSubtitle, iTimesPlayed, iStartOffset, iEndOffset, dtLastPlayed,
+-                 rating, userrating, votes, replayGain, iBPM);
++                 strReleaseDate, strOrigReleaseDate, strDiscSubtitle, iTimesPlayed,
++                 iStartOffset, iEndOffset, dtLastPlayed, rating, userrating, votes, replayGain,
++                 iBPM, iBitRate, iSampleRate, iChannels);
+     }
+     if (!strThumb.empty())
+       SetArtForItem(idSong, MediaTypeSong, "thumb", strThumb);
+@@ -849,7 +858,7 @@ bool CMusicDatabase::UpdateSong(CSong& song, bool bArtists /*= true*/)
+                     song.userrating,
+                     song.votes,
+                     song.replayGain,
+-                    song.iBPM);
++                    song.iBPM, song.iBitRate, song.iSampleRate, song.iChannels);
+   if (result < 0)
+     return false;
+ 
+@@ -891,7 +900,9 @@ int CMusicDatabase::UpdateSong(int idSong,
+                                const std::string& strDiscSubtitle,
+                                int iTimesPlayed, int iStartOffset, int iEndOffset,
+                                const CDateTime& dtLastPlayed, float rating, int userrating, int votes,
+-                               const ReplayGain& replayGain, int iBPM)
++                               const ReplayGain& replayGain, int iBPM, int iBitRate,
++                               int iSampleRate,
++                               int iChannels)
+ {
+   if (idSong < 0)
+     return -1;
+@@ -908,9 +919,9 @@ int CMusicDatabase::UpdateSong(int idSong,
+ 
+   strSQL = PrepareSQL(
+       "UPDATE song SET idPath = %i, strArtistDisp = '%s', strGenres = '%s', "
+-      " strTitle = '%s', iTrack = %i, iDuration = %i, "
+-      "strReleaseDate = '%s', strOrigReleaseDate = '%s', strDiscSubtitle = '%s', "
+-      "strFileName = '%s', iBPM = %i",
++      " strTitle = '%s', iTrack = %i, iDuration = %i, strReleaseDate = '%s', "
++      "strOrigReleaseDate = '%s', strDiscSubtitle = '%s', "
++      "strFileName = '%s', iBPM = %i, iBitrate = %i, iSampleRate = %i, iChannels = %i",
+       idPath, artistDisp.c_str(),
+       StringUtils::Join(
+           genres,
+@@ -919,7 +930,7 @@ int CMusicDatabase::UpdateSong(int idSong,
+       strTitle.c_str(), iTrack, iDuration,
+       strRelease.c_str(), strOriginal.c_str(),
+       strDiscSubtitle.c_str(),
+-      strFileName.c_str(), iBPM);
++      strFileName.c_str(), iBPM, iBitRate, iSampleRate, iChannels);
+   if (strMusicBrainzTrackID.empty())
+     strSQL += PrepareSQL(", strMusicBrainzTrackID = NULL");
+   else
+@@ -2331,6 +2342,9 @@ CSong CMusicDatabase::GetSongFromDataset(const dbiplus::sql_record* const record
+   // Get filename with full path
+   song.strFileName = URIUtils::AddFileToFolder(record->at(offset + song_strPath).get_asString(), record->at(offset + song_strFileName).get_asString());
+   song.iBPM = record->at(offset + song_iBPM).get_asInt();
++  song.iBitRate = record->at(offset + song_iBitRate).get_asInt();
++  song.iSampleRate = record->at(offset + song_iSampleRate).get_asInt();
++  song.iChannels = record->at(offset + song_iChannels).get_asInt();
+   return song;
+ }
+ 
+@@ -2378,6 +2392,9 @@ void CMusicDatabase::GetFileItemFromDataset(const dbiplus::sql_record* const rec
+   item->GetMusicInfoTag()->SetAlbumArtist(record->at(song_strAlbumArtists).get_asString());
+   item->GetMusicInfoTag()->SetAlbumReleaseType(CAlbum::ReleaseTypeFromString(record->at(song_strAlbumReleaseType).get_asString()));
+   item->GetMusicInfoTag()->SetBPM(record->at(song_iBPM).get_asInt());
++  item->GetMusicInfoTag()->SetBitRate(record->at(song_iBitRate).get_asInt());
++  item->GetMusicInfoTag()->SetSampleRate(record->at(song_iSampleRate).get_asInt());
++  item->GetMusicInfoTag()->SetNoOfChannels(record->at(song_iChannels).get_asInt());
+   // Replay gain data (needed for songs from cuesheets, both separate .cue files and embedded metadata)
+   ReplayGain replaygain;
+   replaygain.Set(record->at(song_strReplayGain).get_asString());
+@@ -6448,6 +6465,9 @@ static const translateJSONField JSONtoDBSong[] = {
+   { "bpm",                      "integer", true,  "iBPM",                   "" },
+   { "originaldate",             "string" , true,  "song.strOrigReleaseDate","" },
+   { "releasedate",              "string" , true,  "song.strReleaseDate",    "" },
++  { "bitrate",                  "integer", true,  "iBitRate",               "" },
++  { "samplerate",               "integer", true,  "iSampleRate",            "" },
++  { "channels",                 "integer", true,  "iChannels",              "" },
+ 
+   // JOIN fields (multivalue), same order as _JoinToSongFields 
+   { "albumartistid",              "array", false, "idAlbumArtist",          "album_artist.idArtist AS idAlbumArtist" },
+@@ -7896,6 +7916,12 @@ void CMusicDatabase::UpdateTables(int version)
+     m_pDS->exec("DROP TABLE song");
+     m_pDS->exec("ALTER TABLE song_new RENAME TO song");
+   }
++  if (version < 75)
++  {
++    m_pDS->exec("ALTER TABLE song ADD iBitRate INTEGER NOT NULL DEFAULT 0");
++    m_pDS->exec("ALTER TABLE song ADD iSampleRate INTEGER NOT NULL DEFAULT 0");
++    m_pDS->exec("ALTER TABLE song ADD iChannels INTEGER NOT NULL DEFAULT 0");
++  }
+ 
+   // Set the verion of tag scanning required.
+   // Not every schema change requires the tags to be rescanned, set to the highest schema version
+@@ -7917,7 +7943,7 @@ void CMusicDatabase::UpdateTables(int version)
+ 
+ int CMusicDatabase::GetSchemaVersion() const
+ {
+-  return 74;
++  return 75;
+ }
+ 
+ int CMusicDatabase::GetMusicNeedsTagScan()
+diff --git a/xbmc/music/MusicDatabase.h b/xbmc/music/MusicDatabase.h
+index 537f31f19fa0..5aa9eef36fb7 100644
+--- a/xbmc/music/MusicDatabase.h
++++ b/xbmc/music/MusicDatabase.h
+@@ -155,7 +155,7 @@ class CMusicDatabase : public CDatabase
+               std::string& strDiscSubtitle,
+               const int iTimesPlayed, int iStartOffset, int iEndOffset,
+               const CDateTime& dtLastPlayed, float rating, int userrating, int votes,
+-              int iBPM,
++              int iBPM, int iBitRate, int iSampleRate, int iChannels,
+               const ReplayGain& replayGain);
+   bool GetSong(int idSong, CSong& song);
+ 
+@@ -190,6 +190,10 @@ class CMusicDatabase : public CDatabase
+    \param userrating [in] a userrating (my rating) for the song
+    \param votes [in] a vote counter for the song rating
+    \param replayGain [in] album and track replaygain and peak values
++   \param iBPM [in] the beats per minute of a song
++   \param iBitRate [in] the bitrate of the song file
++   \param iSampleRate [in] the sample rate of the song file
++   \param iChannels [in] the number of audio channels in the song file
+    \return the id of the song
+    */
+   int UpdateSong(int idSong,
+@@ -205,7 +209,7 @@ class CMusicDatabase : public CDatabase
+                  int iTimesPlayed, int iStartOffset, int iEndOffset,
+                  const CDateTime& dtLastPlayed, float rating, int userrating, int votes,
+                  const ReplayGain& replayGain,
+-                 int iBPM);
++                 int iBPM, int iBitRate, int iSampleRate, int iChannels);
+ 
+   //// Misc Song
+   bool GetSongByFileName(const std::string& strFileName, CSong& song, int64_t startOffset = 0);
+@@ -802,6 +806,9 @@ void SetLibraryLastUpdated();
+     song_dateAdded,
+     song_strReplayGain,
+     song_iBPM,
++    song_iBitRate,
++    song_iSampleRate,
++    song_iChannels,
+     song_enumCount // end of the enum, do not add past here
+   } SongFields;
+ 
+diff --git a/xbmc/music/Song.cpp b/xbmc/music/Song.cpp
+index d69a610719c4..41da1b4a956c 100644
+--- a/xbmc/music/Song.cpp
++++ b/xbmc/music/Song.cpp
+@@ -73,6 +73,9 @@ CSong::CSong(CFileItem& item)
+   iTimesPlayed = 0;
+   idAlbum = -1;
+   iBPM = tag.GetBPM();
++  iSampleRate = tag.GetSampleRate();
++  iBitRate = tag.GetBitRate();
++  iChannels = tag.GetNoOfChannels();
+ }
+ 
+ CSong::CSong()
+@@ -234,6 +237,9 @@ void CSong::Serialize(CVariant& value) const
+   value["albumid"] = idAlbum;
+   value["albumreleasedate"] = strReleaseDate;
+   value["bpm"] = iBPM;
++  value["bitrate"] = iBitRate;
++  value["samplerate"] = iSampleRate;
++  value["channels"] = iChannels;
+ }
+ 
+ void CSong::Clear()
+@@ -269,6 +275,10 @@ void CSong::Clear()
+   bCompilation = false;
+   embeddedArt.Clear();
+   iBPM = 0;
++  iBitRate = 0;
++  iSampleRate = 0;
++  iChannels =  0;
++  
+   replayGain = ReplayGain();
+ }
+ const std::vector<std::string> CSong::GetArtist() const
+diff --git a/xbmc/music/Song.h b/xbmc/music/Song.h
+index 74a97f3f8601..b5c6ff432bb3 100644
+--- a/xbmc/music/Song.h
++++ b/xbmc/music/Song.h
+@@ -187,6 +187,9 @@ class CSong final : public ISerializable
+   int iEndOffset;
+   bool bCompilation;
+   int iBPM;
++  int iSampleRate;
++  int iBitRate;
++  int iChannels;
+   std::string strRecordLabel; // Record label from tag for album processing by CMusicInfoScanner::FileItemsToAlbums
+   std::string strAlbumType; // (Musicbrainz release type) album type from tag for album processing by CMusicInfoScanner::FileItemsToAlbums
+ 
+diff --git a/xbmc/music/tags/MusicInfoTag.cpp b/xbmc/music/tags/MusicInfoTag.cpp
+index 3ef789f95a2a..e0fbc201f972 100644
+--- a/xbmc/music/tags/MusicInfoTag.cpp
++++ b/xbmc/music/tags/MusicInfoTag.cpp
+@@ -281,6 +281,21 @@ int CMusicInfoTag::GetBPM() const
+   return m_iBPM;
+ }
+ 
++int CMusicInfoTag::GetBitRate() const
++{
++  return m_bitrate;
++}
++
++int CMusicInfoTag::GetSampleRate() const
++{
++  return m_samplerate;
++}
++
++int CMusicInfoTag::GetNoOfChannels() const
++{
++  return m_channels;
++}
++
+ const std::string& CMusicInfoTag::GetReleaseDate() const
+ {
+   return m_strReleaseDate;
+@@ -488,6 +503,21 @@ void CMusicInfoTag::SetDuration(int iSec)
+   m_iDuration = iSec;
+ }
+ 
++void CMusicInfoTag::SetBitRate(int bitrate)
++{
++  m_bitrate = bitrate;
++}
++
++void CMusicInfoTag::SetNoOfChannels(int channels)
++{
++  m_channels = channels;
++}
++
++void CMusicInfoTag::SetSampleRate(int samplerate)
++{
++  m_samplerate = samplerate;
++}
++
+ void CMusicInfoTag::SetComment(const std::string& comment)
+ {
+   m_strComment = comment;
+@@ -788,6 +818,9 @@ void CMusicInfoTag::SetSong(const CSong& song)
+   SetAlbumId(song.idAlbum);
+   SetDatabaseId(song.idSong, MediaTypeSong);
+   SetBPM(song.iBPM);
++  SetBitRate(song.iBitRate);
++  SetSampleRate(song.iSampleRate);
++  SetNoOfChannels(song.iChannels);
+ 
+   if (song.replayGain.Get(ReplayGain::TRACK).Valid())
+     m_replayGain.Set(ReplayGain::TRACK, song.replayGain.Get(ReplayGain::TRACK));
+@@ -966,6 +999,9 @@ void CMusicInfoTag::Archive(CArchive& ar)
+     ar << m_cuesheet;
+     ar << static_cast<int>(m_albumReleaseType);
+     ar << m_iBPM;
++    ar << m_samplerate;
++    ar << m_bitrate;
++    ar << m_channels;
+   }
+   else
+   {
+@@ -1029,6 +1065,9 @@ void CMusicInfoTag::Archive(CArchive& ar)
+     ar >> albumReleaseType;
+     m_albumReleaseType = static_cast<CAlbum::ReleaseType>(albumReleaseType);
+     ar >> m_iBPM;
++    ar >> m_samplerate;
++    ar >> m_bitrate;
++    ar >> m_channels;
+   }
+ }
+ 
+@@ -1076,6 +1115,9 @@ void CMusicInfoTag::Clear()
+   m_Votes = 0;
+   m_iDiscTotal = 0;
+   m_iBPM = 0;
++  m_samplerate = 0;
++  m_bitrate = 0;
++  m_channels = 0;
+ }
+ 
+ void CMusicInfoTag::AppendArtist(const std::string &artist)
+diff --git a/xbmc/music/tags/MusicInfoTag.h b/xbmc/music/tags/MusicInfoTag.h
+index a903e9aa82b1..e4eccd654cc9 100644
+--- a/xbmc/music/tags/MusicInfoTag.h
++++ b/xbmc/music/tags/MusicInfoTag.h
+@@ -79,6 +79,9 @@ class CMusicInfoTag final : public IArchivable, public ISerializable, public ISo
+   int GetVotes() const;
+   int GetListeners() const;
+   int GetPlayCount() const;
++  int GetBitRate() const;
++  int GetNoOfChannels() const;
++  int GetSampleRate() const;
+   const EmbeddedArtInfo &GetCoverArtInfo() const;
+   const ReplayGain& GetReplayGain() const;
+   CAlbum::ReleaseType GetAlbumReleaseType() const;
+@@ -141,6 +144,9 @@ class CMusicInfoTag final : public IArchivable, public ISerializable, public ISo
+   void SetDiscSubtitle(const std::string& strDiscSubtitle);
+   void SetTotalDiscs(int iDiscTotal);
+   void SetBPM(int iBPM);
++  void SetBitRate(int bitrate);
++  void SetNoOfChannels(int channels);
++  void SetSampleRate(int samplerate);
+ 
+   /*! \brief Append a unique artist to the artist list
+    Checks if we have this artist already added, and if not adds it to the songs artist list.
+@@ -231,6 +237,9 @@ class CMusicInfoTag final : public IArchivable, public ISerializable, public ISo
+   bool m_bBoxset;
+   int m_iBPM;
+   CAlbum::ReleaseType m_albumReleaseType;
++  int m_samplerate;
++  int m_channels;
++  int m_bitrate;
+ 
+   EmbeddedArtInfo m_coverArt; ///< art information
+ 
+diff --git a/xbmc/music/tags/TagLoaderTagLib.cpp b/xbmc/music/tags/TagLoaderTagLib.cpp
+index 9da84d0de5e3..432265f6f75f 100644
+--- a/xbmc/music/tags/TagLoaderTagLib.cpp
++++ b/xbmc/music/tags/TagLoaderTagLib.cpp
+@@ -1309,8 +1309,13 @@ bool CTagLoaderTagLib::Load(const std::string& strFileName, CMusicInfoTag& tag,
+     genericTag = file->tag();
+ 
+   if (file->audioProperties())
++  {
+     tag.SetDuration(file->audioProperties()->length());
+-
++    tag.SetBitRate(file->audioProperties()->bitrate());
++    tag.SetNoOfChannels(file->audioProperties()->channels());
++    tag.SetSampleRate(file->audioProperties()->sampleRate());
++  }
++  
+   if (asf)
+     ParseTag(asf, art, tag);
+   if (id3v1)
+diff --git a/xbmc/playlists/SmartPlayList.cpp b/xbmc/playlists/SmartPlayList.cpp
+index 03fc916a11c1..57116117b411 100644
+--- a/xbmc/playlists/SmartPlayList.cpp
++++ b/xbmc/playlists/SmartPlayList.cpp
+@@ -123,6 +123,9 @@ static const translateField fields[] = {
+   { "totaldiscs",        FieldTotalDiscs,              CDatabaseQueryRule::NUMERIC_FIELD,  StringValidation::IsPositiveInteger,  false, 38077 },
+   { "originalyear",      FieldOrigYear,                CDatabaseQueryRule::NUMERIC_FIELD,  StringValidation::IsPositiveInteger,  true,  38078 },
+   { "bpm",               FieldBPM,                     CDatabaseQueryRule::NUMERIC_FIELD,  NULL,                                 false, 38080 },
++  { "samplerate",        FieldSampleRate,              CDatabaseQueryRule::NUMERIC_FIELD,  NULL,                                 false, 613 },
++  { "bitrate",           FieldMusicBitRate,            CDatabaseQueryRule::NUMERIC_FIELD,  NULL,                                 false, 623 },
++  { "channels",          FieldNoOfChannels,            CDatabaseQueryRule::NUMERIC_FIELD,  StringValidation::IsPositiveInteger,  false, 253 },
+ };
+ // clang format on
+ 
+@@ -323,6 +326,9 @@ std::vector<Field> CSmartPlaylistRule::GetFields(const std::string &type)
+     fields.push_back(FieldComment);
+     fields.push_back(FieldMoods);
+     fields.push_back(FieldBPM);
++    fields.push_back(FieldSampleRate);
++    fields.push_back(FieldMusicBitRate);
++    fields.push_back(FieldNoOfChannels);
+   }
+   else if (type == "albums")
+   {
+diff --git a/xbmc/utils/DatabaseUtils.cpp b/xbmc/utils/DatabaseUtils.cpp
+index c736f87fdd0a..eb933e1618a8 100644
+--- a/xbmc/utils/DatabaseUtils.cpp
++++ b/xbmc/utils/DatabaseUtils.cpp
+@@ -106,6 +106,12 @@ std::string DatabaseUtils::GetField(Field field, const MediaType &mediaType, Dat
+       return "songview.strDiscSubtitle";
+     else if (field == FieldBPM)
+         return "songview.iBPM";
++    else if (field == FieldMusicBitRate)
++        return "songview.iBitRate";
++    else if (field == FieldSampleRate)
++        return "songview.iSampleRate";
++    else if (field == FieldNoOfChannels)
++        return "songview.iChannels";
+   }
+   else if (mediaType == MediaTypeArtist)
+   {
+@@ -539,6 +545,12 @@ int DatabaseUtils::GetField(Field field, const MediaType &mediaType, bool asInde
+     else if (field == FieldDateAdded) return CMusicDatabase::song_dateAdded;
+     else if (field == FieldBPM)
+       return CMusicDatabase::song_iBPM;
++    else if (field == FieldMusicBitRate)
++        return CMusicDatabase::song_iBitRate;
++    else if (field == FieldSampleRate)
++        return CMusicDatabase::song_iSampleRate;
++    else if (field == FieldNoOfChannels)
++        return CMusicDatabase::song_iChannels;
+   }
+   else if (mediaType == MediaTypeArtist)
+   {
+diff --git a/xbmc/utils/DatabaseUtils.h b/xbmc/utils/DatabaseUtils.h
+index 0f078a506a58..20602b347f74 100644
+--- a/xbmc/utils/DatabaseUtils.h
++++ b/xbmc/utils/DatabaseUtils.h
+@@ -138,6 +138,9 @@ typedef enum {
+   FieldRelevance, // Used for actors' appearances
+   FieldClientChannelOrder,
+   FieldBPM,
++  FieldMusicBitRate,
++  FieldSampleRate,
++  FieldNoOfChannels,
+   FieldMax
+ } Field;
+ 
+diff --git a/xbmc/utils/LabelFormatter.cpp b/xbmc/utils/LabelFormatter.cpp
+index 2308ba9a133b..55eeb4fda787 100644
+--- a/xbmc/utils/LabelFormatter.cpp
++++ b/xbmc/utils/LabelFormatter.cpp
+@@ -371,6 +371,7 @@ std::string CLabelFormatter::GetMaskContent(const CMaskString &mask, const CFile
+   case 'f': // BPM
+     if (music)
+       value = StringUtils::Format("%i", music->GetBPM());
++    break;
+   }
+   if (!value.empty())
+     return mask.m_prefix + value + mask.m_postfix;
+
+From 1660eb844fe7a3cebbe88fa0c0b0af84dc9cac46 Mon Sep 17 00:00:00 2001
+From: the-black-eagle <g.moore@gmx.co.uk>
+Date: Sat, 7 Mar 2020 08:07:13 +0000
+Subject: [PATCH 2/2] [json][music] add support for fetching sample rate, bit
+ rate and number of channels for songs
+
+---
+ xbmc/guilib/guiinfo/MusicGUIInfo.cpp        |  3 +++
+ xbmc/interfaces/json-rpc/schema/types.json  | 20 ++++++++++++++------
+ xbmc/interfaces/json-rpc/schema/version.txt |  2 +-
+ xbmc/music/tags/MusicInfoTag.cpp            |  3 +++
+ 4 files changed, 21 insertions(+), 7 deletions(-)
+
+diff --git a/xbmc/guilib/guiinfo/MusicGUIInfo.cpp b/xbmc/guilib/guiinfo/MusicGUIInfo.cpp
+index f8b0b68a89d1..614a4135d3a4 100644
+--- a/xbmc/guilib/guiinfo/MusicGUIInfo.cpp
++++ b/xbmc/guilib/guiinfo/MusicGUIInfo.cpp
+@@ -321,6 +321,7 @@ bool CMusicGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
+           value = StringUtils::Format("%i", BitRate);
+           return true;
+         }
++        break;
+       }
+       case LISTITEM_SAMPLERATE:
+       {
+@@ -330,6 +331,7 @@ bool CMusicGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
+           value = StringUtils::Format("%.5g", static_cast<double>(sampleRate) / 1000.0);
+           return true;
+         }
++        break;
+       }
+       case LISTITEM_MUSICCHANNELS:
+       {
+@@ -339,6 +341,7 @@ bool CMusicGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
+           value = StringUtils::Format("%i", channels);
+           return true;
+         }
++        break;
+       }
+       case LISTITEM_FILENAME:
+       case LISTITEM_FILE_EXTENSION:
+diff --git a/xbmc/interfaces/json-rpc/schema/types.json b/xbmc/interfaces/json-rpc/schema/types.json
+index 192b9e2cd7fe..18e4e2f3693e 100644
+--- a/xbmc/interfaces/json-rpc/schema/types.json
++++ b/xbmc/interfaces/json-rpc/schema/types.json
+@@ -108,7 +108,7 @@
+                   "album", "albumtype", "genre", "country", "year", "rating", "userrating", "votes", "top250", "programcount",
+                   "playlist", "episode", "season", "totalepisodes", "watchedepisodes", "tvshowstatus", "tvshowtitle",
+                   "sorttitle", "productioncode", "mpaa", "studio", "dateadded", "lastplayed", "playcount", "listeners",
+-                  "bitrate", "random", "totaldiscs", "originalyear", "bpm" ]
++                  "bitrate", "random", "totaldiscs", "originaldate", "bpm" ]
+       },
+       "order": { "type": "string", "default": "ascending", "enum": [ "ascending", "descending" ] },
+       "ignorearticle": { "type": "boolean", "default": false },
+@@ -534,7 +534,7 @@
+                 "votes", "userrating", "mood", "contributors",
+                 "displaycomposer", "displayconductor", "displayorchestra", "displaylyricist",
+                 "sortartist", "art", "sourceid", "disctitle", "releasedate", "originaldate",
+-                "bpm"]
++                "bpm", "samplerate", "bitrate", "channels"]
+     }
+   },
+   "Audio.Album.ReleaseType": {
+@@ -676,7 +676,10 @@
+       "genreid": { "$ref": "Array.Integer"},
+       "sourceid": { "$ref": "Array.Integer" },
+       "disctitle": { "type": "string" },
+-      "bpm": { "type": "Integer" }
++      "bpm": { "type": "Integer" },
++      "samplerate": { "type": "Integer" },
++      "bitrate": { "type": "Integer"},
++      "channels": { "type": "Integer"}
+     }
+   },
+   "Audio.Property.Name": {
+@@ -1505,7 +1508,10 @@
+       "disctitle": { "type": "string" },
+       "releasedate": { "type": "string" },
+       "originaldate": { "type": "string" },
+-      "bpm": { "type": "integer" }
++      "bpm": { "type": "integer" },
++      "bitrate": { "type": "integer" },
++      "samplerate": { "type": "integer" },
++      "channels": { "type": "integer"}
+     }
+   },
+   "List.Fields.All": {
+@@ -1527,7 +1533,8 @@
+                 "specialsortepisode", "compilation", "releasetype", "albumreleasetype",
+                 "contributors", "displaycomposer", "displayconductor", "displayorchestra", "displaylyricist",
+                 "userrating", "votes", "sortartist", "musicbrainzreleasegroupid", "mediapath", "dynpath",
+-                "isboxset", "totaldiscs", "disctitle", "releasedate", "originaldate", "bpm"]
++                "isboxset", "totaldiscs", "disctitle", "releasedate", "originaldate", "bpm",
++                "bitrate", "samplerate", "channels"]
+     }
+   },
+   "List.Item.All": {
+@@ -1558,7 +1565,8 @@
+                 "description", "theme", "mood", "style", "albumlabel", "sorttitle",
+                 "episodeguide", "uniqueid", "dateadded", "size", "lastmodified", "mimetype",
+                 "specialsortseason", "specialsortepisode", "sortartist", "musicbrainzreleasegroupid",
+-                "isboxset", "totaldiscs", "disctitle", "releasedate", "originaldate", "bpm"]
++                "isboxset", "totaldiscs", "disctitle", "releasedate", "originaldate", "bpm",
++                "bitrate", "samplerate", "channels"]
+     }
+   },
+   "List.Item.File": {
+diff --git a/xbmc/interfaces/json-rpc/schema/version.txt b/xbmc/interfaces/json-rpc/schema/version.txt
+index e0e0d11ff9f6..982ae9219c88 100644
+--- a/xbmc/interfaces/json-rpc/schema/version.txt
++++ b/xbmc/interfaces/json-rpc/schema/version.txt
+@@ -1 +1 @@
+-JSONRPC_VERSION 11.5.0
++JSONRPC_VERSION 11.6.0
+\ No newline at end of file
+diff --git a/xbmc/music/tags/MusicInfoTag.cpp b/xbmc/music/tags/MusicInfoTag.cpp
+index e0fbc201f972..5b14e9d4e0df 100644
+--- a/xbmc/music/tags/MusicInfoTag.cpp
++++ b/xbmc/music/tags/MusicInfoTag.cpp
+@@ -902,6 +902,9 @@ void CMusicInfoTag::Serialize(CVariant& value) const
+   value["releasedate"] = m_strReleaseDate;
+   value["originaldate"] = m_strOriginalDate;
+   value["bpm"] = m_iBPM;
++  value["bitrate"] = m_bitrate;
++  value["samplerate"] = m_samplerate;
++  value["channels"] = m_channels;
+ }
+ 
+ void CMusicInfoTag::ToSortable(SortItem& sortable, Field field) const

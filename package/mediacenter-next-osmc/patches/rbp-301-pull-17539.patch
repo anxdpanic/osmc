@@ -1,0 +1,42 @@
+From 660b089176bd27163859f6b88e41cf0f1689f843 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Sun, 22 Mar 2020 12:34:45 +0100
+Subject: [PATCH] [addons][vfs] fix Kodi start crash if incompatible VFS addon
+ present
+
+Before does Kodi always crash if a incompatible VFS addon was present, that
+was comming during his version checks on start and try to send a GUI message
+without a available GUI!
+
+This add a check about GUIManager is present and prevent his call if not.
+The wanted message is still be shown as this is cached and handled after
+GUI start.
+
+Backtrace:
+```
+Thread 1 "kodi-x11" received signal SIGSEGV, Segmentation fault.
+0x00005555565a00c4 in CGUIComponent::GetWindowManager() ()
+(gdb) bt
+```
+---
+ xbmc/addons/binary-addons/AddonDll.cpp | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/addons/binary-addons/AddonDll.cpp b/xbmc/addons/binary-addons/AddonDll.cpp
+index 0e99823ef3c2..4814f54858e9 100644
+--- a/xbmc/addons/binary-addons/AddonDll.cpp
++++ b/xbmc/addons/binary-addons/AddonDll.cpp
+@@ -471,8 +471,11 @@ bool CAddonDll::CheckAPIVersion(int type)
+       addonMinVersion.asString(),
+       addonVersion.asString());
+ 
+-    CEventLog &eventLog = CServiceBroker::GetEventLog();
+-    eventLog.AddWithNotification(EventPtr(new CNotificationEvent(Name(), 24152, EventLevel::Error)));
++    if (CServiceBroker::GetGUI())
++    {
++      CEventLog &eventLog = CServiceBroker::GetEventLog();
++      eventLog.AddWithNotification(EventPtr(new CNotificationEvent(Name(), 24152, EventLevel::Error)));
++    }
+ 
+     return false;
+   }
