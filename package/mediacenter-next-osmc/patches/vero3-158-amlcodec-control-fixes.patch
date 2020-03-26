@@ -211,12 +211,12 @@ diff --git a/xbmc/cores/VideoPlayer/VideoPlayerVideo.cpp b/xbmc/cores/VideoPlaye
 index 2721d7ee83c1..a0a737488f46 100644
 --- a/xbmc/cores/VideoPlayer/VideoPlayerVideo.cpp
 +++ b/xbmc/cores/VideoPlayer/VideoPlayerVideo.cpp
-@@ -23,6 +23,7 @@
- #include <numeric>
+@@ -25,6 +25,7 @@
  #include <iterator>
- #include "utils/log.h"
+ #include <numeric>
+ #include <sstream>
 +#include <chrono>
- 
+
  class CDVDMsgVideoCodecChange : public CDVDMsg
  {
 @@ -116,7 +117,8 @@ bool CVideoPlayerVideo::OpenStream(CDVDStreamInfo hint)
