@@ -80,14 +80,14 @@ index e4900f4649..2e730dba6b 100644
 +++ b/xbmc/cores/VideoPlayer/VideoRenderers/BaseRenderer.cpp
 @@ -19,7 +19,9 @@
  #include "guilib/LocalizeStrings.h"
- #include "utils/log.h"
- #include "utils/MathUtils.h"
+ #include "settings/DisplaySettings.h"
+ #include "settings/Settings.h"
 +#include "utils/SysfsUtils.h"
- #include "cores/VideoPlayer/VideoRenderers/RenderFlags.h"
+ #include "settings/SettingsComponent.h"
 +#include "xbmc/Application.h"
- 
- 
- CBaseRenderer::CBaseRenderer()
+ #include "settings/lib/SettingDefinitions.h"
+ #include "utils/MathUtils.h"
+ #include "utils/log.h"
 @@ -117,6 +119,44 @@ void CBaseRenderer::CalcNormalRenderRect(float offsetX, float offsetY, float wid
    // and the output pixel ratio setting)
  
