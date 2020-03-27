@@ -14,14 +14,14 @@ index 25d93985a6..854878dbd8 100644
 --- a/xbmc/utils/EGLUtils.cpp
 +++ b/xbmc/utils/EGLUtils.cpp
 @@ -17,8 +17,6 @@
- 
- #include <EGL/eglext.h>
+ #include "settings/AdvancedSettings.h"
+ #include "settings/SettingsComponent.h"
  
 -#include <map>
 -
+ #include <EGL/eglext.h>
+
  namespace
- {
- //! @todo remove when Raspberry Pi updates their EGL headers
 @@ -36,7 +34,7 @@ namespace
  #endif
  
