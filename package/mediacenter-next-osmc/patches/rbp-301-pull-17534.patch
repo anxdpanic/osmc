@@ -1,0 +1,24 @@
+From 534bdc497ac8feb350718852fc272fde6ddb91de Mon Sep 17 00:00:00 2001
+From: fritsch <Peter.Fruehberger@gmail.com>
+Date: Sat, 21 Mar 2020 19:33:51 +0100
+Subject: [PATCH] Revert "DVDVideoCodecAndroidMediaCodec: Properly set MAX
+ WIDTH and MAX HEIGHT (thanks to cerarp)"
+
+This reverts commit 6e81f5a91cfa7010c33b4ba59ef23899cac8d707.
+---
+ .../DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp          | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp
+index e65be02f583e..86b2244c574c 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp
+@@ -1172,8 +1172,6 @@ bool CDVDVideoCodecAndroidMediaCodec::ConfigureMediaCodec(void)
+   AMediaFormat_setString(mediaformat, AMEDIAFORMAT_KEY_MIME, m_mime.c_str());
+   AMediaFormat_setInt32(mediaformat, AMEDIAFORMAT_KEY_WIDTH, m_hints.width);
+   AMediaFormat_setInt32(mediaformat, AMEDIAFORMAT_KEY_HEIGHT, m_hints.height);
+-  AMediaFormat_setInt32(mediaformat, AMEDIAFORMAT_KEY_MAX_WIDTH, m_hints.width);
+-  AMediaFormat_setInt32(mediaformat, AMEDIAFORMAT_KEY_MAX_HEIGHT, m_hints.height);
+   AMediaFormat_setInt32(mediaformat, AMEDIAFORMAT_KEY_MAX_INPUT_SIZE, 0);
+ 
+   if (CJNIBase::GetSDKVersion() >= 23 && m_render_surface)

@@ -1,0 +1,650 @@
+From 1529964eadda19f1dd89b6ef9bccdbd3ef65e4d4 Mon Sep 17 00:00:00 2001
+From: phunkyfish <phunkyfish@gmail.com>
+Date: Thu, 26 Mar 2020 14:31:14 +0000
+Subject: [PATCH] [pvr] Recording sizes and folder total sizes, sorting and in
+ progress callback
+
+---
+ addons/skin.estuary/xml/DialogPVRInfo.xml     |  2 +-
+ addons/skin.estuary/xml/Includes_PVR.xml      |  6 +-
+ addons/skin.estuary/xml/Variables.xml         |  7 +++
+ xbmc/FileItem.cpp                             |  1 +
+ .../include/kodi/versions.h                   |  4 +-
+ .../include/kodi/xbmc_pvr_dll.h               | 11 ++++
+ .../include/kodi/xbmc_pvr_types.h             |  3 +
+ xbmc/guilib/GUIListItem.cpp                   |  7 +++
+ xbmc/guilib/GUIListItem.h                     |  1 +
+ xbmc/pvr/PVRManager.cpp                       | 11 ++++
+ xbmc/pvr/PVRManager.h                         |  5 ++
+ xbmc/pvr/addons/PVRClient.cpp                 |  9 +++
+ xbmc/pvr/addons/PVRClient.h                   | 18 ++++++
+ xbmc/pvr/addons/PVRClients.cpp                | 11 ++++
+ xbmc/pvr/addons/PVRClients.h                  |  6 ++
+ xbmc/pvr/filesystem/PVRGUIDirectory.cpp       | 13 +++++
+ xbmc/pvr/guilib/guiinfo/PVRGUIInfo.cpp        |  7 +++
+ xbmc/pvr/recordings/PVRRecording.cpp          | 58 ++++++++++++++++++-
+ xbmc/pvr/recordings/PVRRecording.h            | 26 +++++++++
+ xbmc/pvr/recordings/PVRRecordings.cpp         | 24 ++++++++
+ xbmc/pvr/recordings/PVRRecordings.h           |  5 ++
+ xbmc/pvr/windows/GUIViewStatePVR.cpp          |  4 ++
+ 22 files changed, 232 insertions(+), 7 deletions(-)
+
+diff --git a/addons/skin.estuary/xml/DialogPVRInfo.xml b/addons/skin.estuary/xml/DialogPVRInfo.xml
+index f843933bee16..6a287f56ab7b 100644
+--- a/addons/skin.estuary/xml/DialogPVRInfo.xml
++++ b/addons/skin.estuary/xml/DialogPVRInfo.xml
+@@ -49,7 +49,7 @@
+ 					<width>1050</width>
+ 					<height>425</height>
+ 					<align>justify</align>
+-					<label>$INFO[ListItem.ChannelName,[B],[/B][CR]]$INFO[ListItem.Date,[COLOR grey]$LOCALIZE[552]:[/COLOR] ,[CR]]$INFO[ListItem.Duration,[COLOR grey]$LOCALIZE[180]:[/COLOR] ,[CR]]$VAR[PremieredLabel]$INFO[ListItem.Rating,[COLOR grey]$LOCALIZE[563]:[/COLOR] ,[CR]]$VAR[ExpirationDateTimeLabel]$INFO[ListItem.Genre,[COLOR grey]$LOCALIZE[515]:[/COLOR] ,[CR]]$INFO[ListItem.Writer,[COLOR grey]$LOCALIZE[20417]:[/COLOR] ,[CR]]$INFO[ListItem.Director,[COLOR grey]$LOCALIZE[20339]:[/COLOR] ,[CR]]$INFO[ListItem.Cast,[COLOR grey]$LOCALIZE[206]:[/COLOR] ,[CR]][CR]$INFO[ListItem.Plot]</label>
++					<label>$INFO[ListItem.ChannelName,[B],[/B][CR]]$INFO[ListItem.Date,[COLOR grey]$LOCALIZE[552]:[/COLOR] ,[CR]]$INFO[ListItem.Duration,[COLOR grey]$LOCALIZE[180]:[/COLOR] ,[CR]]$VAR[RecordingSizeLabel]$VAR[PremieredLabel]$INFO[ListItem.Rating,[COLOR grey]$LOCALIZE[563]:[/COLOR] ,[CR]]$VAR[ExpirationDateTimeLabel]$INFO[ListItem.Genre,[COLOR grey]$LOCALIZE[515]:[/COLOR] ,[CR]]$INFO[ListItem.Writer,[COLOR grey]$LOCALIZE[20417]:[/COLOR] ,[CR]]$INFO[ListItem.Director,[COLOR grey]$LOCALIZE[20339]:[/COLOR] ,[CR]]$INFO[ListItem.Cast,[COLOR grey]$LOCALIZE[206]:[/COLOR] ,[CR]][CR]$INFO[ListItem.Plot]</label>
+ 					<autoscroll time="3000" delay="4000" repeat="5000">Skin.HasSetting(AutoScroll)</autoscroll>
+ 				</control>
+ 				<control type="grouplist" id="9000">
+diff --git a/addons/skin.estuary/xml/Includes_PVR.xml b/addons/skin.estuary/xml/Includes_PVR.xml
+index 39b732fc33db..dd4440410aab 100644
+--- a/addons/skin.estuary/xml/Includes_PVR.xml
++++ b/addons/skin.estuary/xml/Includes_PVR.xml
+@@ -288,7 +288,7 @@
+ 				<top>10</top>
+ 				<width>830</width>
+ 				<height>262</height>
+-				<label>$LOCALIZE[19076] ($INFO[Container(5000).NumItems,[B],[/B] $LOCALIZE[31036]])</label>
++				<label>$LOCALIZE[19076] ($INFO[Container(5000).NumItems,[B],[/B] $LOCALIZE[31036]]) $INFO[ListItem.Property(recordingsize),- $LOCALIZE[20161]: [B],[/B]]</label>
+ 				<font>font37</font>
+ 				<visible>!ListItem.IsParentFolder</visible>
+ 			</control>
+@@ -307,7 +307,7 @@
+ 							<height>90</height>
+ 							<width>830</width>
+ 							<aligny>center</aligny>
+-							<label>$INFO[ListItem.Date,[COLOR grey],[/COLOR][CR]]$INFO[ListItem.Label]$INFO[ListItem.EpisodeName, (,)]</label>
++							<label>$VAR[RecordingDateSizeLabel]$INFO[ListItem.Label]$INFO[ListItem.EpisodeName, (,)]</label>
+ 							<shadowcolor>text_shadow</shadowcolor>
+ 						</control>
+ 					</focusedlayout>
+@@ -317,7 +317,7 @@
+ 							<height>90</height>
+ 							<width>830</width>
+ 							<aligny>center</aligny>
+-							<label>$INFO[ListItem.Date,[COLOR grey],[/COLOR][CR]]$INFO[ListItem.Label]$INFO[ListItem.EpisodeName, (,)]</label>
++							<label>$VAR[RecordingDateSizeLabel]$INFO[ListItem.Label]$INFO[ListItem.EpisodeName, (,)]</label>
+ 							<shadowcolor>text_shadow</shadowcolor>
+ 						</control>
+ 					</itemlayout>
+diff --git a/addons/skin.estuary/xml/Variables.xml b/addons/skin.estuary/xml/Variables.xml
+index 550cc2695245..a1cc43ed3db9 100644
+--- a/addons/skin.estuary/xml/Variables.xml
++++ b/addons/skin.estuary/xml/Variables.xml
+@@ -488,6 +488,13 @@
+ 		<value condition="ListItem.IsNew + String.IsEmpty(ListItem.Season) + String.IsEmpty(ListItem.Episode) + String.IsEmpty(ListItem.EpisodeName)">[B][COLOR button_focus]$LOCALIZE[842][/COLOR][/B]</value>
+ 		<value condition="ListItem.IsNew">[B][COLOR button_focus]$LOCALIZE[842][/COLOR][/B] - </value>
+ 	</variable>
++	<variable name="RecordingSizeLabel">
++		<value condition="!String.IsEmpty(ListItem.Size) + !String.IsEqual(ListItem.Size,0 B)">$INFO[ListItem.Size,[COLOR grey]$LOCALIZE[22031]:[/COLOR] ,[CR]]</value>
++	</variable>
++	<variable name="RecordingDateSizeLabel">
++		<value condition="!String.IsEmpty(ListItem.Size) + !String.IsEqual(ListItem.Size,0 B)">$INFO[ListItem.Date,[COLOR grey],[/COLOR]]$INFO[ListItem.Size, (,)[CR]]</value>
++		<value>$INFO[ListItem.Date,[COLOR grey],[/COLOR][CR]]</value>
++	</variable>
+ 	<variable name="ExpirationDateTimeLabel">
+ 		<value condition="!String.IsEmpty(ListItem.ExpirationDate)">[COLOR grey]$LOCALIZE[19299]:[/COLOR] $INFO[ListItem.ExpirationDate] $INFO[ListItem.ExpirationTime][CR]</value>
+ 	</variable>
+diff --git a/xbmc/FileItem.cpp b/xbmc/FileItem.cpp
+index 1a7ad35f272f..9f61e78746bc 100644
+--- a/xbmc/FileItem.cpp
++++ b/xbmc/FileItem.cpp
+@@ -216,6 +216,7 @@ CFileItem::CFileItem(const std::shared_ptr<CPVRRecording>& record)
+   m_strPath = record->m_strFileNameAndPath;
+   SetLabel(record->m_strTitle);
+   m_dateTime = record->RecordingTimeAsLocalTime();
++  m_dwSize = record->GetSizeInBytes();
+ 
+   // Set art
+   if (!record->m_strIconPath.empty())
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
+index 3ee44121d53f..2ecc14d092ae 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
+@@ -97,8 +97,8 @@
+ #define ADDON_INSTANCE_VERSION_PERIPHERAL_DEPENDS     "addon-instance/Peripheral.h" \
+                                                       "addon-instance/PeripheralUtils.h"
+ 
+-#define ADDON_INSTANCE_VERSION_PVR                    "6.2.0"
+-#define ADDON_INSTANCE_VERSION_PVR_MIN                "6.2.0"
++#define ADDON_INSTANCE_VERSION_PVR                    "6.3.0"
++#define ADDON_INSTANCE_VERSION_PVR_MIN                "6.3.0"
+ #define ADDON_INSTANCE_VERSION_PVR_XML_ID             "kodi.binary.instance.pvr"
+ #define ADDON_INSTANCE_VERSION_PVR_DEPENDS            "xbmc_pvr_dll.h" \
+                                                       "xbmc_pvr_types.h" \
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_dll.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_dll.h
+index 26e9099a7157..d48d6da2043b 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_dll.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_dll.h
+@@ -343,6 +343,16 @@ extern "C"
+    */
+   PVR_ERROR GetRecordingEdl(const PVR_RECORDING& recording, PVR_EDL_ENTRY edl[], int *size);
+ 
++  /*!
++   * Retrieve the size of a recording on the backend.
++   * @param[in] recording in: The recording to get the size in bytes for.
++   * @param[out] sizeInBytes out: The size in bytes of the recording
++   * @return PVR_ERROR_NO_ERROR if the recording's size has been set successfully.
++   * @remarks Required if bSupportsRecordingSize is set to true.
++   *          Return PVR_ERROR_NOT_IMPLEMENTED if this add-on won't provide this function.
++   */
++  PVR_ERROR GetRecordingSize(const PVR_RECORDING* recording, int64_t* sizeInBytes);
++
+   /*!
+    * Retrieve the timer types supported by the backend.
+    * @param types out: The function has to write the definition of the supported timer types into this array.
+@@ -732,6 +742,7 @@ extern "C"
+     pClient->toAddon.SetRecordingLastPlayedPosition = SetRecordingLastPlayedPosition;
+     pClient->toAddon.GetRecordingLastPlayedPosition = GetRecordingLastPlayedPosition;
+     pClient->toAddon.GetRecordingEdl                = GetRecordingEdl;
++    pClient->toAddon.GetRecordingSize               = GetRecordingSize;
+ 
+     pClient->toAddon.GetTimerTypes                  = GetTimerTypes;
+     pClient->toAddon.GetTimersAmount                = GetTimersAmount;
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
+index d88ce5986def..0c16e07fc828 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
+@@ -316,6 +316,7 @@ extern "C" {
+     bool bSupportsRecordingsLifetimeChange; /*!< @brief true if the backend supports changing lifetime for recordings. */
+     bool bSupportsDescrambleInfo;       /*!< @brief true if the backend supports descramble information for playing channels. */
+     bool bSupportsAsyncEPGTransfer;     /*!< @brief true if this addon-on supports asynchronous transfer of epg events to Kodi using the callback function EpgEventStateChange. */
++    bool bSupportsRecordingSize;        /*!< @brief true if this addon-on supports retrieving size of recordings. */
+ 
+     unsigned int iRecordingsLifetimesSize; /*!< @brief (required) Count of possible values for PVR_RECORDING.iLifetime. 0 means lifetime is not supported for recordings or no own value definition wanted, but to use Kodi defaults of 1..365. */
+     PVR_ATTRIBUTE_INT_VALUE recordingsLifetimeValues[PVR_ADDON_ATTRIBUTE_VALUES_ARRAY_SIZE]; /*!< @brief (optional) Array containing the possible values for PVR_RECORDING.iLifetime. Must be filled if iLifetimesSize > 0 */
+@@ -575,6 +576,7 @@ extern "C" {
+     PVR_RECORDING_CHANNEL_TYPE channelType;               /*!< @brief (optional) channel type. Set to PVR_RECORDING_CHANNEL_TYPE_UNKNOWN if the type cannot be determined. */
+     char   strFirstAired[PVR_ADDON_DATE_STRING_LENGTH];   /*!< @brief (optional) first aired date of this recording. Used only for display purposes. Specify in W3C date format "YYYY-MM-DD". */
+     unsigned int iFlags;                                  /*!< @brief (optional) bit field of independent flags associated with the recording */
++    int64_t sizeInBytes;                                  /*!< @brief (optional) size of the recording in bytes */
+   } ATTRIBUTE_PACKED PVR_RECORDING;
+ 
+   /*!
+@@ -689,6 +691,7 @@ extern "C" {
+     PVR_ERROR (__cdecl* SetRecordingLastPlayedPosition)(const PVR_RECORDING&, int);
+     int (__cdecl* GetRecordingLastPlayedPosition)(const PVR_RECORDING&);
+     PVR_ERROR (__cdecl* GetRecordingEdl)(const PVR_RECORDING&, PVR_EDL_ENTRY[], int*);
++    PVR_ERROR (__cdecl* GetRecordingSize)(const PVR_RECORDING*, int64_t*);
+     PVR_ERROR (__cdecl* GetTimerTypes)(PVR_TIMER_TYPE[], int*);
+     int (__cdecl* GetTimersAmount)(void);
+     PVR_ERROR (__cdecl* GetTimers)(ADDON_HANDLE);
+diff --git a/xbmc/guilib/GUIListItem.cpp b/xbmc/guilib/GUIListItem.cpp
+index 6e0ab9f23945..e815e4da334b 100644
+--- a/xbmc/guilib/GUIListItem.cpp
++++ b/xbmc/guilib/GUIListItem.cpp
+@@ -410,6 +410,13 @@ void CGUIListItem::IncrementProperty(const std::string &strKey, int nVal)
+   SetProperty(strKey, i);
+ }
+ 
++void CGUIListItem::IncrementProperty(const std::string& strKey, int64_t nVal)
++{
++  int64_t i = GetProperty(strKey).asInteger();
++  i += nVal;
++  SetProperty(strKey, i);
++}
++
+ void CGUIListItem::IncrementProperty(const std::string &strKey, double dVal)
+ {
+   double d = GetProperty(strKey).asDouble();
+diff --git a/xbmc/guilib/GUIListItem.h b/xbmc/guilib/GUIListItem.h
+index 56ab46cfc4ad..1693ba933efe 100644
+--- a/xbmc/guilib/GUIListItem.h
++++ b/xbmc/guilib/GUIListItem.h
+@@ -140,6 +140,7 @@ class CGUIListItem
+   void SetProperty(const std::string &strKey, const CVariant &value);
+ 
+   void IncrementProperty(const std::string &strKey, int nVal);
++  void IncrementProperty(const std::string& strKey, int64_t nVal);
+   void IncrementProperty(const std::string &strKey, double dVal);
+ 
+   void ClearProperties();
+diff --git a/xbmc/pvr/PVRManager.cpp b/xbmc/pvr/PVRManager.cpp
+index 65a53e8303fe..118e28b95174 100644
+--- a/xbmc/pvr/PVRManager.cpp
++++ b/xbmc/pvr/PVRManager.cpp
+@@ -531,6 +531,10 @@ void CPVRManager::Process()
+       /* try to play channel on startup */
+       TriggerPlayChannelOnStartup();
+     }
++
++    if (m_addons->AnyClientSupportingRecordingsSize())
++      TriggerRecordingsSizeInProgressUpdate();
++
+     /* execute the next pending jobs if there are any */
+     try
+     {
+@@ -758,6 +762,13 @@ void CPVRManager::TriggerRecordingsUpdate()
+   });
+ }
+ 
++void CPVRManager::TriggerRecordingsSizeInProgressUpdate()
++{
++  m_pendingUpdates->Append("pvr-update-recordings-size", [this]() {
++    return Recordings()->UpdateInProgressSize();
++  });
++}
++
+ void CPVRManager::TriggerTimersUpdate()
+ {
+   m_pendingUpdates->Append("pvr-update-timers", [this]() {
+diff --git a/xbmc/pvr/PVRManager.h b/xbmc/pvr/PVRManager.h
+index 351f499ab38f..c94dd4db543a 100644
+--- a/xbmc/pvr/PVRManager.h
++++ b/xbmc/pvr/PVRManager.h
+@@ -265,6 +265,11 @@ namespace PVR
+      */
+     void TriggerRecordingsUpdate();
+ 
++    /*!
++     * @brief Let the background thread update the size for any in progress recordings.
++     */
++    void TriggerRecordingsSizeInProgressUpdate();
++
+     /*!
+      * @brief Let the background thread update the timer list.
+      */
+diff --git a/xbmc/pvr/addons/PVRClient.cpp b/xbmc/pvr/addons/PVRClient.cpp
+index ed4e50101973..31048dcde480 100644
+--- a/xbmc/pvr/addons/PVRClient.cpp
++++ b/xbmc/pvr/addons/PVRClient.cpp
+@@ -923,6 +923,15 @@ PVR_ERROR CPVRClient::GetRecordingEdl(const CPVRRecording& recording, std::vecto
+   }, m_clientCapabilities.SupportsRecordingsEdl());
+ }
+ 
++PVR_ERROR CPVRClient::GetRecordingSize(const CPVRRecording& recording, int64_t& sizeInBytes)
++{
++  return DoAddonCall(__FUNCTION__, [&recording, &sizeInBytes](const AddonInstance* addon) {
++    PVR_RECORDING tag;
++    WriteClientRecordingInfo(recording, tag);
++    return addon->GetRecordingSize(&tag, &sizeInBytes);
++  }, m_clientCapabilities.SupportsRecordingsSize());
++}
++
+ PVR_ERROR CPVRClient::GetTimersAmount(int& iTimers)
+ {
+   iTimers = -1;
+diff --git a/xbmc/pvr/addons/PVRClient.h b/xbmc/pvr/addons/PVRClient.h
+index e3c89d40e0f8..433fbaa1537f 100644
+--- a/xbmc/pvr/addons/PVRClient.h
++++ b/xbmc/pvr/addons/PVRClient.h
+@@ -181,6 +181,16 @@ namespace PVR
+      */
+     void GetRecordingsLifetimeValues(std::vector<std::pair<std::string, int>>& list) const;
+ 
++    /*!
++     * @brief Check whether this add-on supports retrieving the size recordings..
++     * @return True if supported, false otherwise.
++     */
++    bool SupportsRecordingsSize() const
++    {
++      return m_addonCapabilities && m_addonCapabilities->bSupportsRecordings &&
++             m_addonCapabilities->bSupportsRecordingSize;
++    }
++
+     /////////////////////////////////////////////////////////////////////////////////
+     //
+     // Streams
+@@ -550,6 +560,14 @@ namespace PVR
+     */
+     PVR_ERROR GetRecordingEdl(const CPVRRecording& recording, std::vector<PVR_EDL_ENTRY>& edls);
+ 
++    /*!
++    * @brief Retrieve the size of a recording on the backend.
++    * @param recording The recording.
++    * @param sizeInBytes The size in bytes
++    * @return PVR_ERROR_NO_ERROR on success, respective error code otherwise.
++    */
++    PVR_ERROR GetRecordingSize(const CPVRRecording& recording, int64_t& sizeInBytes);
++
+     /*!
+     * @brief Retrieve the edit decision list (EDL) from the backend.
+     * @param epgTag The EPG tag.
+diff --git a/xbmc/pvr/addons/PVRClients.cpp b/xbmc/pvr/addons/PVRClients.cpp
+index 52aff6b9a485..1d6ad65b661c 100644
+--- a/xbmc/pvr/addons/PVRClients.cpp
++++ b/xbmc/pvr/addons/PVRClients.cpp
+@@ -552,6 +552,17 @@ std::vector<std::shared_ptr<CPVRClient>> CPVRClients::GetClientsSupportingChanne
+   return possibleSettingsClients;
+ }
+ 
++bool CPVRClients::AnyClientSupportingRecordingsSize() const
++{
++  std::vector<std::shared_ptr<CPVRClient>> recordingSizeClients;
++  ForCreatedClients(__FUNCTION__, [&recordingSizeClients](const std::shared_ptr<CPVRClient>& client) {
++    if (client->GetClientCapabilities().SupportsRecordingsSize())
++      recordingSizeClients.emplace_back(client);
++    return PVR_ERROR_NO_ERROR;
++  });
++  return recordingSizeClients.size() != 0;
++}
++
+ void CPVRClients::OnSystemSleep()
+ {
+   ForCreatedClients(__FUNCTION__, [](const std::shared_ptr<CPVRClient>& client) {
+diff --git a/xbmc/pvr/addons/PVRClients.h b/xbmc/pvr/addons/PVRClients.h
+index 6a5f41d38725..1b3dcd8ea164 100644
+--- a/xbmc/pvr/addons/PVRClients.h
++++ b/xbmc/pvr/addons/PVRClients.h
+@@ -267,6 +267,12 @@ namespace PVR
+      */
+     std::vector<std::shared_ptr<CPVRClient>> GetClientsSupportingChannelSettings(bool bRadio) const;
+ 
++    /*!
++     * @brief Get whether or not any client supports recording size.
++     * @return True if any client supports recording size.
++     */
++    bool AnyClientSupportingRecordingsSize() const;
++
+     //@}
+ 
+     /*! @name Power management methods */
+diff --git a/xbmc/pvr/filesystem/PVRGUIDirectory.cpp b/xbmc/pvr/filesystem/PVRGUIDirectory.cpp
+index f2d2ec95cfcf..5d6daa299118 100644
+--- a/xbmc/pvr/filesystem/PVRGUIDirectory.cpp
++++ b/xbmc/pvr/filesystem/PVRGUIDirectory.cpp
+@@ -205,6 +205,7 @@ void GetSubDirectories(const CPVRRecordingsPath& recParentPath,
+       item->SetProperty("totalepisodes", 0);
+       item->SetProperty("watchedepisodes", 0);
+       item->SetProperty("unwatchedepisodes", 0);
++      item->SetProperty("sizeinbytes", UINT64_C(0));
+ 
+       // Assume all folders are watched, we'll change the overlay later
+       item->SetOverlayImage(CGUIListItem::ICON_OVERLAY_WATCHED, false);
+@@ -230,6 +231,18 @@ void GetSubDirectories(const CPVRRecordingsPath& recParentPath,
+     item->SetLabel2(StringUtils::Format("%s / %s",
+         item->GetProperty("watchedepisodes").asString().c_str(),
+         item->GetProperty("totalepisodes").asString().c_str()));
++
++    item->IncrementProperty("sizeinbytes", recording->GetSizeInBytes());
++  }
++
++  // Replace the incremental size of the recordings with a string equivalent
++  for (auto& item : results.GetList())
++  {
++    int64_t size = item->GetProperty("sizeinbytes").asInteger();
++    item->ClearProperty("sizeinbytes");
++    item->m_dwSize = size; // We'll also sort recording folders by size
++    if (size > 0)
++      item->SetProperty("recordingsize", StringUtils::SizeToString(size));
+   }
+ 
+   // Change the watched overlay to unwatched for folders containing unwatched entries
+diff --git a/xbmc/pvr/guilib/guiinfo/PVRGUIInfo.cpp b/xbmc/pvr/guilib/guiinfo/PVRGUIInfo.cpp
+index b46ba337bfca..5b125c276d33 100644
+--- a/xbmc/pvr/guilib/guiinfo/PVRGUIInfo.cpp
++++ b/xbmc/pvr/guilib/guiinfo/PVRGUIInfo.cpp
+@@ -441,6 +441,13 @@ bool CPVRGUIInfo::GetListItemAndPlayerLabel(const CFileItem* item, const CGUIInf
+           return true;
+         }
+         return false;
++      case LISTITEM_SIZE:
++        if (recording->GetSizeInBytes() > 0)
++        {
++          strValue = StringUtils::SizeToString(recording->GetSizeInBytes());
++          return true;
++        }
++        return false;
+     }
+     return false;
+   }
+diff --git a/xbmc/pvr/recordings/PVRRecording.cpp b/xbmc/pvr/recordings/PVRRecording.cpp
+index 394fdc8db9ce..0d0e68c1722f 100644
+--- a/xbmc/pvr/recordings/PVRRecording.cpp
++++ b/xbmc/pvr/recordings/PVRRecording.cpp
+@@ -97,6 +97,7 @@ CPVRRecording::CPVRRecording(const PVR_RECORDING& recording, unsigned int iClien
+   if (strlen(recording.strFirstAired) > 0)
+     m_firstAired.SetFromW3CDateTime(recording.strFirstAired);
+   m_iFlags = recording.iFlags;
++  m_sizeInBytes = recording.sizeInBytes;
+ 
+   SetGenre(recording.iGenreType, recording.iGenreSubType, recording.strGenreDescription);
+   CVideoInfoTag::SetPlayCount(recording.iPlayCount);
+@@ -137,6 +138,7 @@ CPVRRecording::CPVRRecording(const PVR_RECORDING& recording, unsigned int iClien
+ 
+ bool CPVRRecording::operator ==(const CPVRRecording& right) const
+ {
++  CSingleLock lock(m_critSection);
+   return (this == &right) ||
+       (m_strRecordingId == right.m_strRecordingId &&
+        m_iClientId == right.m_iClientId &&
+@@ -166,7 +168,8 @@ bool CPVRRecording::operator ==(const CPVRRecording& right) const
+        m_iGenreType == right.m_iGenreType &&
+        m_iGenreSubType == right.m_iGenreSubType &&
+        m_firstAired == right.m_firstAired &&
+-       m_iFlags == right.m_iFlags);
++       m_iFlags == right.m_iFlags &&
++       m_sizeInBytes == right.m_sizeInBytes);
+ }
+ 
+ bool CPVRRecording::operator !=(const CPVRRecording& right) const
+@@ -199,6 +202,15 @@ void CPVRRecording::Serialize(CVariant& value) const
+     value["art"]["fanart"] = m_strFanartPath;
+ }
+ 
++void CPVRRecording::ToSortable(SortItem& sortable, Field field) const
++{
++  CSingleLock lock(m_critSection);
++  if (field == FieldSize)
++    sortable[FieldSize] = m_sizeInBytes;
++  else
++    CVideoInfoTag::ToSortable(sortable, field);
++}
++
+ void CPVRRecording::Reset()
+ {
+   m_strRecordingId     .clear();
+@@ -220,6 +232,10 @@ void CPVRRecording::Reset()
+   m_iChannelUid = PVR_CHANNEL_INVALID_UID;
+   m_bRadio = false;
+   m_iFlags = PVR_RECORDING_FLAG_UNDEFINED;
++  {
++    CSingleLock lock(m_critSection);
++    m_sizeInBytes = 0;
++  }
+ 
+   m_recordingTime.Reset();
+   CVideoInfoTag::Reset();
+@@ -315,6 +331,30 @@ CBookmark CPVRRecording::GetResumePoint() const
+   return CVideoInfoTag::GetResumePoint();
+ }
+ 
++bool CPVRRecording::UpdateRecordingSize()
++{
++  const std::shared_ptr<CPVRClient> client = CServiceBroker::GetPVRManager().GetClient(m_iClientId);
++  if (client && client->GetClientCapabilities().SupportsRecordingsSize() &&
++      m_recordingSizeRefetchTimeout.IsTimePast())
++  {
++    // @todo: root cause should be fixed. details: https://github.com/xbmc/xbmc/pull/14961
++    m_recordingSizeRefetchTimeout.Set(10000); // update size from backend at most every 10 secs
++
++    int64_t sizeInBytes = -1;
++    client->GetRecordingSize(*this, sizeInBytes);
++
++    CSingleLock lock(m_critSection);
++    if (sizeInBytes >= 0 && sizeInBytes != m_sizeInBytes)
++    {
++      CSingleLock lock(m_critSection);
++      m_sizeInBytes = sizeInBytes;
++      return true;
++    }
++  }
++
++  return false;
++}
++
+ void CPVRRecording::UpdateMetadata(CVideoDatabase& db)
+ {
+   if (m_bGotMetaData || !db.IsOpen())
+@@ -372,6 +412,10 @@ void CPVRRecording::Update(const CPVRRecording& tag)
+   m_bRadio = tag.m_bRadio;
+   m_firstAired = tag.m_firstAired;
+   m_iFlags = tag.m_iFlags;
++  {
++    CSingleLock lock(m_critSection);
++    m_sizeInBytes = tag.m_sizeInBytes;
++  }
+ 
+   CVideoInfoTag::SetPlayCount(tag.GetLocalPlayCount());
+   CVideoInfoTag::SetResumePoint(tag.GetLocalResumePoint());
+@@ -555,3 +599,15 @@ bool CPVRRecording::IsFinale() const
+ {
+   return (m_iFlags & PVR_RECORDING_FLAG_IS_FINALE) > 0;
+ }
++
++int64_t CPVRRecording::GetSizeInBytes() const
++{
++  CSingleLock lock(m_critSection);
++  return m_sizeInBytes;
++}
++
++void CPVRRecording::SetSizeInBytes(int64_t sizeInBytes)
++{
++  CSingleLock lock(m_critSection);
++  m_sizeInBytes = sizeInBytes;
++}
+diff --git a/xbmc/pvr/recordings/PVRRecording.h b/xbmc/pvr/recordings/PVRRecording.h
+index 599c38fc4536..a2149788e78c 100644
+--- a/xbmc/pvr/recordings/PVRRecording.h
++++ b/xbmc/pvr/recordings/PVRRecording.h
+@@ -25,6 +25,7 @@
+  */
+ 
+ #include "XBDateTime.h"
++#include "threads/CriticalSection.h"
+ #include "threads/SystemClock.h"
+ #include "video/Bookmark.h"
+ #include "video/VideoInfoTag.h"
+@@ -87,6 +88,9 @@ namespace PVR
+ 
+     void Serialize(CVariant& value) const override;
+ 
++    // ISortable implementation
++    void ToSortable(SortItem& sortable, Field field) const override;
++
+     /*!
+      * @brief Reset this tag to it's initial state.
+      */
+@@ -159,6 +163,12 @@ namespace PVR
+      */
+     CBookmark GetResumePoint() const override;
+ 
++    /*!
++     * @brief Update this recording's size. The value will be obtained from the backend if it supports server-side size retrieval.
++     * @return true if the the updated value is differnt, false otherwise.
++     */
++    bool UpdateRecordingSize();
++
+     /*!
+      * @brief Get this recording's local resume point. The value will not be obtained from the backend even if it supports server-side resume points.
+      * @return the resume point.
+@@ -353,6 +363,18 @@ namespace PVR
+     */
+    unsigned int Flags() const { return m_iFlags; }
+ 
++   /*!
++    * @brief Return the size of this recording in bytes.
++    * @return the size in bytes.
++    */
++   int64_t GetSizeInBytes() const;
++
++   /*!
++    * @brief set the size in bytes of this recording
++    * @param sizeInBytes The size in bytes
++    */
++   void SetSizeInBytes(int64_t sizeInBytes);
++
+   private:
+     CDateTime m_recordingTime; /*!< start time of the recording */
+     bool m_bGotMetaData;
+@@ -364,7 +386,11 @@ namespace PVR
+     int m_iGenreSubType = 0; /*!< genre subtype */
+     mutable XbmcThreads::EndTime m_resumePointRefetchTimeout;
+     unsigned int m_iFlags = 0; /*!< the flags applicable to this recording */
++    mutable XbmcThreads::EndTime m_recordingSizeRefetchTimeout;
++    int64_t m_sizeInBytes = 0; /*!< the size of the recording in bytes */
+ 
+     void UpdatePath();
++
++    mutable CCriticalSection m_critSection;
+   };
+ }
+diff --git a/xbmc/pvr/recordings/PVRRecordings.cpp b/xbmc/pvr/recordings/PVRRecordings.cpp
+index 17f0e5e5cd6c..4626283e63ad 100644
+--- a/xbmc/pvr/recordings/PVRRecordings.cpp
++++ b/xbmc/pvr/recordings/PVRRecordings.cpp
+@@ -76,6 +76,30 @@ void CPVRRecordings::Update()
+   CServiceBroker::GetPVRManager().PublishEvent(PVREvent::RecordingsInvalidated);
+ }
+ 
++void CPVRRecordings::UpdateInProgressSize()
++{
++  CSingleLock lock(m_critSection);
++  if (m_bIsUpdating)
++    return;
++  m_bIsUpdating = true;
++
++  CLog::LogFC(LOGDEBUG, LOGPVR, "Updating recordings size");
++  bool bHaveUpdatedInProgessRecording = false;
++  for (auto& recording : m_recordings)
++  {
++    if (recording.second->IsInProgress())
++    {
++      if (recording.second->UpdateRecordingSize())
++        bHaveUpdatedInProgessRecording = true;
++    }
++  }
++
++  m_bIsUpdating = false;
++
++  if (bHaveUpdatedInProgessRecording)
++    CServiceBroker::GetPVRManager().PublishEvent(PVREvent::RecordingsInvalidated);
++}
++
+ int CPVRRecordings::GetNumTVRecordings() const
+ {
+   CSingleLock lock(m_critSection);
+diff --git a/xbmc/pvr/recordings/PVRRecordings.h b/xbmc/pvr/recordings/PVRRecordings.h
+index 086bdbfd5ae3..b28b3ce581af 100644
+--- a/xbmc/pvr/recordings/PVRRecordings.h
++++ b/xbmc/pvr/recordings/PVRRecordings.h
+@@ -48,6 +48,11 @@ namespace PVR
+      */
+     void Update();
+ 
++    /*!
++     * @brief refresh the size of any in progress recordings from the clients.
++     */
++    void UpdateInProgressSize();
++
+     int GetNumTVRecordings() const;
+     bool HasDeletedTVRecordings() const;
+     int GetNumRadioRecordings() const;
+diff --git a/xbmc/pvr/windows/GUIViewStatePVR.cpp b/xbmc/pvr/windows/GUIViewStatePVR.cpp
+index 6fff308b570e..05a9d7893935 100644
+--- a/xbmc/pvr/windows/GUIViewStatePVR.cpp
++++ b/xbmc/pvr/windows/GUIViewStatePVR.cpp
+@@ -10,6 +10,8 @@
+ 
+ #include "FileItem.h"
+ #include "ServiceBroker.h"
++#include "pvr/PVRManager.h"
++#include "pvr/addons/PVRClients.h"
+ #include "pvr/recordings/PVRRecordingsPath.h"
+ #include "pvr/timers/PVRTimersPath.h"
+ #include "settings/Settings.h"
+@@ -45,6 +47,8 @@ CGUIViewStateWindowPVRRecordings::CGUIViewStateWindowPVRRecordings(const int win
+   AddSortMethod(SortByDate,  552, LABEL_MASKS("%L", "%d", "%L", "%d")); // "Date"     : Filename, DateTime | Foldername, DateTime
+   AddSortMethod(SortByTime,  180, LABEL_MASKS("%L", "%D", "%L", ""));   // "Duration" : Filename, Duration | Foldername, empty
+   AddSortMethod(SortByFile,  561, LABEL_MASKS("%L", "%d", "%L", ""));   // "File"     : Filename, DateTime | Foldername, empty
++  if (CServiceBroker::GetPVRManager().Clients()->AnyClientSupportingRecordingsSize())
++    AddSortMethod(SortBySize,  553, LABEL_MASKS("%L", "%I", "%L", "%I")); // "Size"   : Filename, DateTime | Foldername, empty
+ 
+   // Default sorting
+   SetSortMethod(SortByDate);
