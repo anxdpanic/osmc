@@ -1,0 +1,185 @@
+From c7d9f773c6e4bc5b112b3753c1412236354e28c6 Mon Sep 17 00:00:00 2001
+From: mediaminister <mediaminister@gmail.com>
+Date: Wed, 11 Mar 2020 17:26:24 +0100
+Subject: [PATCH] Support double precision in bookmarks
+
+---
+ xbmc/interfaces/json-rpc/VideoLibrary.cpp   |  8 ++++----
+ xbmc/interfaces/json-rpc/schema/types.json  |  4 ++--
+ xbmc/interfaces/json-rpc/schema/version.txt |  2 +-
+ xbmc/utils/XMLUtils.cpp                     |  8 +++++++-
+ xbmc/utils/XMLUtils.h                       |  3 ++-
+ xbmc/video/Bookmark.cpp                     |  8 ++++----
+ xbmc/video/VideoDatabase.cpp                |  4 ++--
+ xbmc/video/VideoInfoTag.cpp                 | 10 +++++-----
+ 8 files changed, 27 insertions(+), 20 deletions(-)
+
+diff --git a/xbmc/interfaces/json-rpc/VideoLibrary.cpp b/xbmc/interfaces/json-rpc/VideoLibrary.cpp
+index c987b17317b9..fa3de223f85a 100644
+--- a/xbmc/interfaces/json-rpc/VideoLibrary.cpp
++++ b/xbmc/interfaces/json-rpc/VideoLibrary.cpp
+@@ -1050,14 +1050,14 @@ void CVideoLibrary::UpdateResumePoint(const CVariant &parameterObject, CVideoInf
+ {
+   if (!parameterObject["resume"].isNull())
+   {
+-    int position = (int)parameterObject["resume"]["position"].asInteger();
+-    if (position == 0)
++    double position = (double)parameterObject["resume"]["position"].asDouble();
++    if (position == 0.0)
+       videodatabase.ClearBookMarksOfFile(details.m_strFileNameAndPath, CBookmark::RESUME);
+     else
+     {
+       CBookmark bookmark;
+-      int total = (int)parameterObject["resume"]["total"].asInteger();
+-      if (total <= 0 && !videodatabase.GetResumeBookMark(details.m_strFileNameAndPath, bookmark))
++      double total = (double)parameterObject["resume"]["total"].asDouble();
++      if (total <= 0.0 && !videodatabase.GetResumeBookMark(details.m_strFileNameAndPath, bookmark))
+         bookmark.totalTimeInSeconds = details.m_streamDetails.GetVideoDuration();
+       else
+         bookmark.totalTimeInSeconds = total;
+diff --git a/xbmc/interfaces/json-rpc/schema/types.json b/xbmc/interfaces/json-rpc/schema/types.json
+index 450ead397f67..5de34c55ac7c 100644
+--- a/xbmc/interfaces/json-rpc/schema/types.json
++++ b/xbmc/interfaces/json-rpc/schema/types.json
+@@ -804,8 +804,8 @@
+   "Video.Resume": {
+     "type": "object",
+     "properties": {
+-      "position": { "type": "number", "minimum": 0 },
+-      "total": { "type": "number", "minimum": 0 }
++      "position": { "type": "number", "minimum": 0.0 },
++      "total": { "type": "number", "minimum": 0.0 }
+     },
+     "additionalProperties": false
+   },
+diff --git a/xbmc/interfaces/json-rpc/schema/version.txt b/xbmc/interfaces/json-rpc/schema/version.txt
+index 2de555d827c8..b97b0d70ffa2 100644
+--- a/xbmc/interfaces/json-rpc/schema/version.txt
++++ b/xbmc/interfaces/json-rpc/schema/version.txt
+@@ -1 +1 @@
+-JSONRPC_VERSION 11.3.0
++JSONRPC_VERSION 11.4.0
+diff --git a/xbmc/utils/XMLUtils.cpp b/xbmc/utils/XMLUtils.cpp
+index a92529b9479e..c7ec9b0583dc 100644
+--- a/xbmc/utils/XMLUtils.cpp
++++ b/xbmc/utils/XMLUtils.cpp
+@@ -67,7 +67,7 @@ bool XMLUtils::GetInt(const TiXmlNode* pRootNode, const char* strTag, int &value
+   return false;
+ }
+ 
+-bool XMLUtils::GetDouble(const TiXmlNode *root, const char *tag, double &value)
++bool XMLUtils::GetDouble(const TiXmlNode* root, const char* tag, double& value)
+ {
+   const TiXmlNode* node = root->FirstChild(tag);
+   if (!node || !node->FirstChild()) return false;
+@@ -306,6 +306,12 @@ TiXmlNode* XMLUtils::SetFloat(TiXmlNode* pRootNode, const char *strTag, float va
+   return SetString(pRootNode, strTag, strValue);
+ }
+ 
++TiXmlNode* XMLUtils::SetDouble(TiXmlNode* pRootNode, const char* strTag, double value)
++{
++  std::string strValue = StringUtils::Format("%lf", value);
++  return SetString(pRootNode, strTag, strValue);
++}
++
+ void XMLUtils::SetBoolean(TiXmlNode* pRootNode, const char *strTag, bool value)
+ {
+   SetString(pRootNode, strTag, value ? "true" : "false");
+diff --git a/xbmc/utils/XMLUtils.h b/xbmc/utils/XMLUtils.h
+index bad1754e950e..fcd23bdb7f4e 100644
+--- a/xbmc/utils/XMLUtils.h
++++ b/xbmc/utils/XMLUtils.h
+@@ -25,7 +25,7 @@ class XMLUtils
+   static bool GetUInt(const TiXmlNode* pRootNode, const char* strTag, uint32_t& dwUIntValue);
+   static bool GetLong(const TiXmlNode* pRootNode, const char* strTag, long& lLongValue);
+   static bool GetFloat(const TiXmlNode* pRootNode, const char* strTag, float& value);
+-  static bool GetDouble(const TiXmlNode* pRootNode, const char* strTag, double &value);
++  static bool GetDouble(const TiXmlNode* pRootNode, const char* strTag, double& value);
+   static bool GetInt(const TiXmlNode* pRootNode, const char* strTag, int& iIntValue);
+   static bool GetBoolean(const TiXmlNode* pRootNode, const char* strTag, bool& bBoolValue);
+ 
+@@ -82,6 +82,7 @@ class XMLUtils
+   static void SetStringArray(TiXmlNode* pRootNode, const char *strTag, const std::vector<std::string>& arrayValue);
+   static TiXmlNode* SetInt(TiXmlNode* pRootNode, const char *strTag, int value);
+   static TiXmlNode* SetFloat(TiXmlNode* pRootNode, const char *strTag, float value);
++  static TiXmlNode* SetDouble(TiXmlNode* pRootNode, const char* strTag, double value);
+   static void SetBoolean(TiXmlNode* pRootNode, const char *strTag, bool value);
+   static void SetHex(TiXmlNode* pRootNode, const char *strTag, uint32_t value);
+   static void SetPath(TiXmlNode* pRootNode, const char *strTag, const std::string& strValue);
+diff --git a/xbmc/video/Bookmark.cpp b/xbmc/video/Bookmark.cpp
+index d714d4abc633..89a2b66650f7 100644
+--- a/xbmc/video/Bookmark.cpp
++++ b/xbmc/video/Bookmark.cpp
+@@ -17,18 +17,18 @@ void CBookmark::Reset()
+ {
+   episodeNumber = 0;
+   seasonNumber = 0;
+-  timeInSeconds = 0.0f;
+-  totalTimeInSeconds = 0.0f;
++  timeInSeconds = 0.0;
++  totalTimeInSeconds = 0.0;
+   partNumber = 0;
+   type = STANDARD;
+ }
+ 
+ bool CBookmark::IsSet() const
+ {
+-  return totalTimeInSeconds > 0.0f;
++  return totalTimeInSeconds > 0.0;
+ }
+ 
+ bool CBookmark::IsPartWay() const
+ {
+-  return totalTimeInSeconds > 0.0f && timeInSeconds > 0.0f;
++  return totalTimeInSeconds > 0.0 && timeInSeconds > 0.0;
+ }
+diff --git a/xbmc/video/VideoDatabase.cpp b/xbmc/video/VideoDatabase.cpp
+index 9e352e8309ce..d21d5846201a 100644
+--- a/xbmc/video/VideoDatabase.cpp
++++ b/xbmc/video/VideoDatabase.cpp
+@@ -2290,8 +2290,8 @@ bool CVideoDatabase::GetFileInfo(const std::string& strFilenameAndPath, CVideoIn
+       details.m_dateAdded.SetFromDBDateTime(m_pDS->fv("files.dateAdded").get_asString());
+     if (!details.GetResumePoint().IsSet())
+     {
+-      details.SetResumePoint(m_pDS->fv("bookmark.timeInSeconds").get_asInt(),
+-                             m_pDS->fv("bookmark.totalTimeInSeconds").get_asInt(),
++      details.SetResumePoint(m_pDS->fv("bookmark.timeInSeconds").get_asDouble(),
++                             m_pDS->fv("bookmark.totalTimeInSeconds").get_asDouble(),
+                              m_pDS->fv("bookmark.playerState").get_asString());
+     }
+ 
+diff --git a/xbmc/video/VideoInfoTag.cpp b/xbmc/video/VideoInfoTag.cpp
+index e39ed86a68ff..f77e7f80a841 100644
+--- a/xbmc/video/VideoInfoTag.cpp
++++ b/xbmc/video/VideoInfoTag.cpp
+@@ -132,7 +132,7 @@ bool CVideoInfoTag::Save(TiXmlNode *node, const std::string &tag, bool savePathI
+   if (m_EpBookmark.timeInSeconds > 0)
+   {
+     TiXmlElement epbookmark("episodebookmark");
+-    XMLUtils::SetFloat(&epbookmark, "position", (float)m_EpBookmark.timeInSeconds);
++    XMLUtils::SetDouble(&epbookmark, "position", m_EpBookmark.timeInSeconds);
+     if (!m_EpBookmark.playerState.empty())
+     {
+       TiXmlElement playerstate("playerstate");
+@@ -291,8 +291,8 @@ bool CVideoInfoTag::Save(TiXmlNode *node, const std::string &tag, bool savePathI
+   }
+ 
+   TiXmlElement resume("resume");
+-  XMLUtils::SetFloat(&resume, "position", (float)m_resumePoint.timeInSeconds);
+-  XMLUtils::SetFloat(&resume, "total", (float)m_resumePoint.totalTimeInSeconds);
++  XMLUtils::SetDouble(&resume, "position", m_resumePoint.timeInSeconds);
++  XMLUtils::SetDouble(&resume, "total", m_resumePoint.totalTimeInSeconds);
+   if (!m_resumePoint.playerState.empty())
+   {
+     TiXmlElement playerstate("playerstate");
+@@ -617,8 +617,8 @@ void CVideoInfoTag::Serialize(CVariant& value) const
+   value["showlink"] = m_showLink;
+   m_streamDetails.Serialize(value["streamdetails"]);
+   CVariant resume = CVariant(CVariant::VariantTypeObject);
+-  resume["position"] = (float)m_resumePoint.timeInSeconds;
+-  resume["total"] = (float)m_resumePoint.totalTimeInSeconds;
++  resume["position"] = m_resumePoint.timeInSeconds;
++  resume["total"] = m_resumePoint.totalTimeInSeconds;
+   value["resume"] = resume;
+   value["tvshowid"] = m_iIdShow;
+   value["dateadded"] = m_dateAdded.IsValid() ? m_dateAdded.GetAsDBDateTime() : StringUtils::Empty;
