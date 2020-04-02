@@ -352,7 +352,8 @@ then
         ADDONS_INPUTSTREAM="inputstream.ffmpegdirect inputstream.adaptive inputstream.rtmp"
 	ADDONS_PERIPHERAL="peripheral.xarcade peripheral.joystick peripheral.steamcontroller" #imagedecoder.raw
 	ADDONS_PVR="pvr.waipu pvr.sledovanitv.cz pvr.mythtv pvr.pctv pvr.stalker pvr.zattoo pvr.vbox pvr.wmc pvr.nextpvr pvr.njoy pvr.teleboy pvr.vdr.vnsi pvr.dvbviewer pvr.hdhomerun pvr.iptvsimple pvr.demo pvr.mediaportal.tvserver pvr.argustv pvr.dvblink  pvr.hts pvr.octonet pvr.vuplus pvr.freebox"
-	#ADDONS_SCREENSAVERS="screensaver.biogenesis screensaver.greynetic screensaver.matrixtrails screensaver.pingpong screensaver.pyro screensaver.stars screensaver.shadertoy"
+	#ADDONS_SCREENSAVERS="screensaver.biogenesis screensaver.greynetic screensaver.matrixtrails screensaver.pingpong screensaver.pyro screensaver.stars"
+        ADDONS_SCREENSAVERS="screensaver.shadertoy"
 	ADDONS_VFS="vfs.libarchive vfs.rar vfs.sftp"
         #ADDONS_VISUALIZATIONS="visualization.fishbmc visualization.goom visualization.projectm visualization.shadertoy visualization.spectrum visualization.vsxu visualization.waveform"
 	ADDONS_GAME="game.libretro.mame2000 game.libretro.mame2003 game.libretro.scummvm game.libretro game.libretro.2048 game.libretro.beetle-gba game.libretro.fceumm game.libretro.gw game.libretro.beetle-pce-fast game.libretro.bnes game.libretro.nestopia game.libretro.bsnes-mercury-balanced game.libretro.bluemsx game.libretro.vecx game.libretro.gambatte game.libretro.beetle-bsnes game.libretro.meteor game.libretro.mgba game.libretro.vba-next game.libretro.quicknes game.libretro.snes9x game.libretro.stella game.libretro.dosbox game.libretro.vbam game.libretro.genplus"
