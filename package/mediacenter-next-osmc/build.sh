@@ -376,7 +376,7 @@ then
            ADDONS_TO_BUILD="${ADDONS_INPUTSTREAM} ${ADDONS_PERIPHERAL} ${ADDONS_PVR}"
            PLATFORM=""
 	fi
-        cmake -DOVERRIDE_PATHS=1 -DCMAKE_INSTALL_PREFIX=${out}/usr/ -DBUILD_DIR=$(pwd) -DBUILD_SHARED_LIBS=OFF -DADDONS_TO_BUILD="${ADDONS_TO_BUILD}" "$PLATFORM" ../
+        cmake -DAPP_RENDER_SYSTEM=1 -DOVERRIDE_PATHS=1 -DCMAKE_INSTALL_PREFIX=${out}/usr/ -DBUILD_DIR=$(pwd) -DBUILD_SHARED_LIBS=OFF -DADDONS_TO_BUILD="${ADDONS_TO_BUILD}" "$PLATFORM" ../
 	if [ $? != 0 ]; then echo "Configuring binary addons failed" && exit 1; fi
 	cd ../
 	$BUILD kodiplatform_DIR=$(pwd) CMAKE_PREFIX_PATH=/usr/osmc -C build/
