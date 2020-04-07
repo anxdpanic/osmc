@@ -1,0 +1,24 @@
+From 2b6b03d6f2a36fd7f2d1a2de3fed22511dfae9a9 Mon Sep 17 00:00:00 2001
+From: Bernd Kuhls <bernd.kuhls@t-online.de>
+Date: Sun, 5 Apr 2020 15:47:49 +0200
+Subject: [PATCH] cmake: add check for python3.8
+
+---
+ cmake/modules/FindPython.cmake | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/cmake/modules/FindPython.cmake b/cmake/modules/FindPython.cmake
+index e0dd9eaa7129..e39d4e51baf4 100644
+--- a/cmake/modules/FindPython.cmake
++++ b/cmake/modules/FindPython.cmake
+@@ -10,8 +10,8 @@ if(PKG_CONFIG_FOUND)
+ endif()
+ 
+ find_program(PYTHON_EXECUTABLE python3 ONLY_CMAKE_FIND_ROOT_PATH)
+-find_library(PYTHON_LIBRARY NAMES python3.7 python3.6 python3.5 PATHS ${PC_PYTHON_LIBDIR})
+-find_path(PYTHON_INCLUDE_DIR NAMES Python.h PATHS ${PC_PYTHON_INCLUDE_DIRS} PATH_SUFFIXES python3.7 python3.6 python3.5)
++find_library(PYTHON_LIBRARY NAMES python3.8 python3.7 python3.6 python3.5 PATHS ${PC_PYTHON_LIBDIR})
++find_path(PYTHON_INCLUDE_DIR NAMES Python.h PATHS ${PC_PYTHON_INCLUDE_DIRS} PATH_SUFFIXES python3.8 python3.7 python3.6 python3.5)
+ 
+ if(KODI_DEPENDSBUILD)
+   find_library(FFI_LIBRARY ffi REQUIRED)

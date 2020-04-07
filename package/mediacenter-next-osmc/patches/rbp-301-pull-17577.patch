@@ -1,0 +1,22 @@
+From 8cb92f1929a7a0fd644f82d9427d5c3f4d7dafbd Mon Sep 17 00:00:00 2001
+From: Harish Yadav <41642498+H-KY@users.noreply.github.com>
+Date: Sun, 29 Mar 2020 09:12:50 +0530
+Subject: [PATCH] Spelling Mistake in IMemoryStream.h
+
+---
+ xbmc/cores/RetroPlayer/streams/memory/IMemoryStream.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/cores/RetroPlayer/streams/memory/IMemoryStream.h b/xbmc/cores/RetroPlayer/streams/memory/IMemoryStream.h
+index 5547ccaa62b6..574187e43573 100644
+--- a/xbmc/cores/RetroPlayer/streams/memory/IMemoryStream.h
++++ b/xbmc/cores/RetroPlayer/streams/memory/IMemoryStream.h
+@@ -49,7 +49,7 @@ namespace RETRO
+      * \brief Initialize memory stream
+      *
+      * \param frameSize The size of the serialized memory state
+-     * \param maxFrameCount The maximum number of frames this steam can hold
++     * \param maxFrameCount The maximum number of frames this stream can hold
+      */
+     virtual void Init(size_t frameSize, uint64_t maxFrameCount) = 0;
+ 
