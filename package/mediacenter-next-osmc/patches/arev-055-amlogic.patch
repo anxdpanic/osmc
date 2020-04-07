@@ -3842,7 +3842,7 @@ index 0000000000..3eaf8437c5
 +#include "DVDVideoCodec.h"
 +#include "DVDStreamInfo.h"
 +#include "threads/CriticalSection.h"
-+#include "cores/VideoPlayer/Process/VideoBuffer.h"
++#include "cores/VideoPlayer/Process/Buffers/VideoBuffer.h"
 +
 +#include <set>
 +#include <atomic>
