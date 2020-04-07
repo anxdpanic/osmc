@@ -5,16 +5,16 @@ Subject: [PATCH 01/10] IBufferObject: format is required during buffer
  creation
 
 ---
- xbmc/cores/RetroPlayer/buffers/RenderBufferGBM.cpp | 4 ++--
+ xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp | 4 ++--
  xbmc/utils/GBMBufferObject.cpp                     | 7 +++----
  xbmc/utils/GBMBufferObject.h                       | 5 ++---
  xbmc/utils/IBufferObject.h                         | 2 +-
  4 files changed, 8 insertions(+), 10 deletions(-)
 
-diff --git a/xbmc/cores/RetroPlayer/buffers/RenderBufferGBM.cpp b/xbmc/cores/RetroPlayer/buffers/RenderBufferGBM.cpp
+diff --git a/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp b/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp
 index e1871e852a3a..aca1ad68ed90 100644
---- a/xbmc/cores/RetroPlayer/buffers/RenderBufferGBM.cpp
-+++ b/xbmc/cores/RetroPlayer/buffers/RenderBufferGBM.cpp
+--- a/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp
++++ b/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp
 @@ -22,7 +22,7 @@ CRenderBufferGBM::CRenderBufferGBM(CRenderContext &context,
    m_context(context),
    m_fourcc(fourcc),
