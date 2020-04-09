@@ -5120,9 +5120,9 @@ index f073e3ca0b..357cb2edfc 100644
 +  list(APPEND HEADERS ScreenshotAML.h)
 +endif()
 +
- if(CORE_PLATFORM_NAME_LC STREQUAL gbm)
-   list(APPEND SOURCES EGLImage.cpp)
-   list(APPEND HEADERS EGLImage.h)
+ if(CORE_PLATFORM_NAME_LC STREQUAL gbm OR CORE_PLATFORM_NAME_LC STREQUAL wayland)
+   list(APPEND SOURCES BufferObject.cpp
+                       BufferObjectFactory.cpp
 diff --git a/xbmc/utils/Screenshot.cpp b/xbmc/utils/Screenshot.cpp
 index a6fc4d7b0f..ff77b5dcb8 100644
 --- a/xbmc/utils/Screenshot.cpp
