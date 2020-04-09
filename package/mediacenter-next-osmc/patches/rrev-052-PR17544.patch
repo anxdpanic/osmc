@@ -1,0 +1,301 @@
+From 3d56d7e3ee5950d1dfa7714f01afb777f61173ea Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Sun, 22 Mar 2020 09:08:59 -0700
+Subject: [PATCH 1/5] [RetroPlayer] CRPRendererDMA: only create buffer pool if
+ buffer objects are registered
+
+---
+ .../rendering/VideoRenderers/RPRendererDMA.cpp        |  4 ++++
+ xbmc/utils/BufferObjectFactory.cpp                    | 11 ++++++++---
+ xbmc/utils/BufferObjectFactory.h                      |  4 ++--
+ 3 files changed, 14 insertions(+), 5 deletions(-)
+
+diff --git a/xbmc/cores/RetroPlayer/rendering/VideoRenderers/RPRendererDMA.cpp b/xbmc/cores/RetroPlayer/rendering/VideoRenderers/RPRendererDMA.cpp
+index 1982f9855de9..9919b34119b5 100644
+--- a/xbmc/cores/RetroPlayer/rendering/VideoRenderers/RPRendererDMA.cpp
++++ b/xbmc/cores/RetroPlayer/rendering/VideoRenderers/RPRendererDMA.cpp
+@@ -12,6 +12,7 @@
+ #include "cores/RetroPlayer/buffers/RenderBufferPoolDMA.h"
+ #include "cores/RetroPlayer/rendering/RenderContext.h"
+ #include "cores/RetroPlayer/rendering/RenderVideoSettings.h"
++#include "utils/BufferObjectFactory.h"
+ #include "utils/GLUtils.h"
+ 
+ #include <cassert>
+@@ -34,6 +35,9 @@ CRPBaseRenderer* CRendererFactoryDMA::CreateRenderer(const CRenderSettings& sett
+ 
+ RenderBufferPoolVector CRendererFactoryDMA::CreateBufferPools(CRenderContext& context)
+ {
++  if (!CBufferObjectFactory::CreateBufferObject())
++    return {};
++
+   return {std::make_shared<CRenderBufferPoolDMA>(context)};
+ }
+ 
+diff --git a/xbmc/utils/BufferObjectFactory.cpp b/xbmc/utils/BufferObjectFactory.cpp
+index effe317ef21e..356771cf2ff5 100644
+--- a/xbmc/utils/BufferObjectFactory.cpp
++++ b/xbmc/utils/BufferObjectFactory.cpp
+@@ -8,17 +8,22 @@
+ 
+ #include "BufferObjectFactory.h"
+ 
+-std::vector<std::function<std::unique_ptr<CBufferObject>()>> CBufferObjectFactory::m_bufferObjects;
++std::list<std::function<std::unique_ptr<CBufferObject>()>> CBufferObjectFactory::m_bufferObjects;
+ 
+ std::unique_ptr<CBufferObject> CBufferObjectFactory::CreateBufferObject()
+ {
+-  return m_bufferObjects.back()();
++  for (const auto bufferObject : m_bufferObjects)
++  {
++    return bufferObject();
++  }
++
++  return nullptr;
+ }
+ 
+ void CBufferObjectFactory::RegisterBufferObject(
+     std::function<std::unique_ptr<CBufferObject>()> createFunc)
+ {
+-  m_bufferObjects.emplace_back(createFunc);
++  m_bufferObjects.emplace_front(createFunc);
+ }
+ 
+ void CBufferObjectFactory::ClearBufferObjects()
+diff --git a/xbmc/utils/BufferObjectFactory.h b/xbmc/utils/BufferObjectFactory.h
+index 692566c88a37..eb4185f084ed 100644
+--- a/xbmc/utils/BufferObjectFactory.h
++++ b/xbmc/utils/BufferObjectFactory.h
+@@ -11,8 +11,8 @@
+ #include "BufferObject.h"
+ 
+ #include <functional>
++#include <list>
+ #include <memory>
+-#include <vector>
+ 
+ /**
+  * @brief Factory that provides CBufferObject registration and creation
+@@ -44,5 +44,5 @@ class CBufferObjectFactory
+   static void ClearBufferObjects();
+ 
+ protected:
+-  static std::vector<std::function<std::unique_ptr<CBufferObject>()>> m_bufferObjects;
++  static std::list<std::function<std::unique_ptr<CBufferObject>()>> m_bufferObjects;
+ };
+
+From ed2bc06082e74289296de499b1a39338abf68c97 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Sun, 22 Mar 2020 08:05:17 -0700
+Subject: [PATCH 2/5] [RetroPlayer] allow using wayland with CRPRendererDMA
+
+---
+ xbmc/cores/RetroPlayer/buffers/CMakeLists.txt     |  2 +-
+ .../cores/RetroPlayer/buffers/RenderBufferDMA.cpp | 15 +++++++++++----
+ .../rendering/VideoRenderers/CMakeLists.txt       |  2 +-
+ .../rendering/VideoRenderers/RPRendererDMA.h      |  2 ++
+ xbmc/utils/CMakeLists.txt                         | 14 ++++++++------
+ 5 files changed, 23 insertions(+), 12 deletions(-)
+
+diff --git a/xbmc/cores/RetroPlayer/buffers/CMakeLists.txt b/xbmc/cores/RetroPlayer/buffers/CMakeLists.txt
+index 8410f6abdc88..f48420e16d27 100644
+--- a/xbmc/cores/RetroPlayer/buffers/CMakeLists.txt
++++ b/xbmc/cores/RetroPlayer/buffers/CMakeLists.txt
+@@ -24,7 +24,7 @@ if(OPENGL_FOUND)
+                       RenderBufferPoolOpenGL.cpp)
+ endif()
+ 
+-if(CORE_PLATFORM_NAME_LC STREQUAL gbm AND OPENGLES_FOUND)
++if(CORE_PLATFORM_NAME_LC STREQUAL gbm OR CORE_PLATFORM_NAME_LC STREQUAL wayland)
+   list(APPEND SOURCES RenderBufferDMA.cpp
+                       RenderBufferPoolDMA.cpp)
+   list(APPEND HEADERS RenderBufferDMA.h
+diff --git a/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp b/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp
+index 0b13e2365129..aab9e39b5b88 100644
+--- a/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp
++++ b/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp
+@@ -11,19 +11,26 @@
+ #include "ServiceBroker.h"
+ #include "utils/BufferObject.h"
+ #include "utils/EGLImage.h"
+-#include "windowing/gbm/WinSystemGbmEGLContext.h"
++#include "windowing/WinSystem.h"
++#include "windowing/linux/WinSystemEGL.h"
+ 
+-using namespace KODI::WINDOWING::GBM;
+ using namespace KODI;
+ using namespace RETRO;
+ 
+ CRenderBufferDMA::CRenderBufferDMA(CRenderContext& context, int fourcc)
+   : m_context(context),
+     m_fourcc(fourcc),
+-    m_egl(new CEGLImage(
+-        static_cast<CWinSystemGbmEGLContext*>(CServiceBroker::GetWinSystem())->GetEGLDisplay())),
+     m_bo(CBufferObject::GetBufferObject())
+ {
++  auto winSystemEGL =
++      dynamic_cast<KODI::WINDOWING::LINUX::CWinSystemEGL*>(CServiceBroker::GetWinSystem());
++
++  if (winSystemEGL == nullptr)
++    throw std::runtime_error("dynamic_cast failed to cast to CWinSystemEGL. This is likely due to "
++                             "a build misconfiguration as DMA can only be used with EGL and "
++                             "specifically platforms that implement CWinSystemEGL");
++
++  m_egl = std::make_unique<CEGLImage>(winSystemEGL->GetEGLDisplay());
+ }
+ 
+ CRenderBufferDMA::~CRenderBufferDMA()
+diff --git a/xbmc/cores/RetroPlayer/rendering/VideoRenderers/CMakeLists.txt b/xbmc/cores/RetroPlayer/rendering/VideoRenderers/CMakeLists.txt
+index e87ad8ecd000..8094f3a105ca 100644
+--- a/xbmc/cores/RetroPlayer/rendering/VideoRenderers/CMakeLists.txt
++++ b/xbmc/cores/RetroPlayer/rendering/VideoRenderers/CMakeLists.txt
+@@ -18,7 +18,7 @@ if(OPENGL_FOUND)
+   list(APPEND HEADERS RPRendererOpenGL.h)
+ endif()
+ 
+-if(CORE_PLATFORM_NAME_LC STREQUAL gbm AND OPENGLES_FOUND)
++if(CORE_PLATFORM_NAME_LC STREQUAL gbm OR CORE_PLATFORM_NAME_LC STREQUAL wayland)
+   list(APPEND SOURCES RPRendererDMA.cpp)
+   list(APPEND HEADERS RPRendererDMA.h)
+ endif()
+diff --git a/xbmc/cores/RetroPlayer/rendering/VideoRenderers/RPRendererDMA.h b/xbmc/cores/RetroPlayer/rendering/VideoRenderers/RPRendererDMA.h
+index 67decd1e85f7..bcdd6995cffa 100644
+--- a/xbmc/cores/RetroPlayer/rendering/VideoRenderers/RPRendererDMA.h
++++ b/xbmc/cores/RetroPlayer/rendering/VideoRenderers/RPRendererDMA.h
+@@ -19,6 +19,8 @@ namespace RETRO
+ class CRendererFactoryDMA : public IRendererFactory
+ {
+ public:
++  ~CRendererFactoryDMA() override = default;
++
+   // implementation of IRendererFactory
+   std::string RenderSystemName() const override;
+   CRPBaseRenderer* CreateRenderer(const CRenderSettings& settings,
+diff --git a/xbmc/utils/CMakeLists.txt b/xbmc/utils/CMakeLists.txt
+index a03edfe2d513..648d15ffee9b 100644
+--- a/xbmc/utils/CMakeLists.txt
++++ b/xbmc/utils/CMakeLists.txt
+@@ -185,16 +185,18 @@ if(NOT CORE_SYSTEM_NAME STREQUAL windows AND NOT CORE_SYSTEM_NAME STREQUAL windo
+   list(APPEND HEADERS GLUtils.h)
+ endif()
+ 
+-if(CORE_PLATFORM_NAME_LC STREQUAL gbm)
+-  list(APPEND SOURCES EGLImage.cpp)
+-  list(APPEND HEADERS EGLImage.h)
+-
++if(CORE_PLATFORM_NAME_LC STREQUAL gbm OR CORE_PLATFORM_NAME_LC STREQUAL wayland)
+   list(APPEND SOURCES BufferObject.cpp
+                       BufferObjectFactory.cpp
+-                      DumbBufferObject.cpp)
++                      EGLImage.cpp)
+   list(APPEND HEADERS BufferObject.h
+                       BufferObjectFactory.h
+-                      DumbBufferObject.h)
++                      EGLImage.h)
++
++  if(CORE_PLATFORM_NAME_LC STREQUAL gbm)
++    list(APPEND SOURCES DumbBufferObject.cpp)
++    list(APPEND SOURCES DumbBufferObject.h)
++  endif()
+ 
+   if(HAVE_LINUX_MEMFD AND HAVE_LINUX_UDMABUF)
+     list(APPEND SOURCES UDMABufferObject.cpp)
+
+From 42a60894b17c1f97707931165a38065332db3c04 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Sun, 22 Mar 2020 08:05:56 -0700
+Subject: [PATCH 3/5] windowing/wayland: GLES: register using CUDMABufferObject
+
+---
+ xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.cpp | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.cpp b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.cpp
+index fdba55326d69..93ab2a35d308 100644
+--- a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.cpp
++++ b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.cpp
+@@ -14,6 +14,8 @@
+ #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h"
+ #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
+ #include "rendering/gles/ScreenshotSurfaceGLES.h"
++#include "utils/BufferObjectFactory.h"
++#include "utils/UDMABufferObject.h"
+ #include "utils/log.h"
+ 
+ #include <EGL/egl.h>
+@@ -46,6 +48,11 @@ bool CWinSystemWaylandEGLContextGLES::InitWindowSystem()
+     ::WAYLAND::VAAPIRegister(m_vaapiProxy.get(), deepColor);
+   }
+ 
++  CBufferObjectFactory::ClearBufferObjects();
++#if defined(HAVE_LINUX_MEMFD) && defined(HAVE_LINUX_UDMABUF)
++  CUDMABufferObject::Register();
++#endif
++
+   CScreenshotSurfaceGLES::Register();
+ 
+   return true;
+
+From 0442be49615c38bb8119a376d8622d89c68b4def Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Fri, 20 Mar 2020 14:27:15 -0700
+Subject: [PATCH 4/5] windowing/wayland: GLES: register using
+ CDMAHeapBufferObject
+
+---
+ xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.cpp | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.cpp b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.cpp
+index 93ab2a35d308..80977fc4ade8 100644
+--- a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.cpp
++++ b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.cpp
+@@ -15,6 +15,7 @@
+ #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
+ #include "rendering/gles/ScreenshotSurfaceGLES.h"
+ #include "utils/BufferObjectFactory.h"
++#include "utils/DMAHeapBufferObject.h"
+ #include "utils/UDMABufferObject.h"
+ #include "utils/log.h"
+ 
+@@ -52,6 +53,9 @@ bool CWinSystemWaylandEGLContextGLES::InitWindowSystem()
+ #if defined(HAVE_LINUX_MEMFD) && defined(HAVE_LINUX_UDMABUF)
+   CUDMABufferObject::Register();
+ #endif
++#if defined(HAVE_LINUX_DMA_HEAP)
++  CDMAHeapBufferObject::Register();
++#endif
+ 
+   CScreenshotSurfaceGLES::Register();
+ 
+
+From 699eef46d424c84ccd68b22c6edcbd45a4c548a1 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Mon, 9 Mar 2020 15:27:17 -0700
+Subject: [PATCH 5/5] windowing/wayland: GLES: register using CRPRendererDMA
+
+---
+ xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.cpp | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.cpp b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.cpp
+index 80977fc4ade8..6d051cc4ed7f 100644
+--- a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.cpp
++++ b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGLES.cpp
+@@ -10,6 +10,7 @@
+ 
+ #include "OptionalsReg.h"
+ #include "cores/RetroPlayer/process/RPProcessInfo.h"
++#include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererDMA.h"
+ #include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererOpenGLES.h"
+ #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h"
+ #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
+@@ -37,6 +38,8 @@ bool CWinSystemWaylandEGLContextGLES::InitWindowSystem()
+   }
+ 
+   CLinuxRendererGLES::Register();
++
++  RETRO::CRPProcessInfo::RegisterRendererFactory(new RETRO::CRendererFactoryDMA);
+   RETRO::CRPProcessInfo::RegisterRendererFactory(new RETRO::CRendererFactoryOpenGLES);
+ 
+   bool general, deepColor;
