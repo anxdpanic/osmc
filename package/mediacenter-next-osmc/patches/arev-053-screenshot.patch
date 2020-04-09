@@ -977,9 +977,9 @@ index 181583197f..dc7de3e8ab 100644
  #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h"
  #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
 -#include "rendering/gles/ScreenshotSurfaceGLES.h"
- #include "utils/log.h"
- 
- #include <EGL/egl.h> 
+ #include "utils/BufferObjectFactory.h"
+ #include "utils/DMAHeapBufferObject.h"
+ #include "utils/UDMABufferObject.h"
 @@ -46,8 +45,6 @@ bool CWinSystemWaylandEGLContextGLES::InitWindowSystem()
      ::WAYLAND::VAAPIRegister(m_vaapiProxy.get(), deepColor);
    }
