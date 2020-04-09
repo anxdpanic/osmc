@@ -1,0 +1,389 @@
+From 5b0e96e9e818d78593c2e45902df47efeb6823d4 Mon Sep 17 00:00:00 2001
+From: Rechi <Rechi@users.noreply.github.com>
+Date: Wed, 8 Apr 2020 05:30:35 +1000
+Subject: [PATCH 1/5] [depends] remove unused python3 patches
+
+---
+ tools/depends/target/python3/no-abort.patch | 22 ------
+ tools/depends/target/python3/setup.patch    | 74 ---------------------
+ 2 files changed, 96 deletions(-)
+ delete mode 100644 tools/depends/target/python3/no-abort.patch
+ delete mode 100644 tools/depends/target/python3/setup.patch
+
+diff --git a/tools/depends/target/python3/no-abort.patch b/tools/depends/target/python3/no-abort.patch
+deleted file mode 100644
+index e509c2d1e7bd..000000000000
+--- a/tools/depends/target/python3/no-abort.patch
++++ /dev/null
+@@ -1,22 +0,0 @@
+---- a/Modules/posixmodule.c
+-+++ b/Modules/posixmodule.c
+-@@ -10365,7 +10365,7 @@
+- os_abort_impl(PyObject *module)
+- /*[clinic end generated code: output=dcf52586dad2467c input=cf2c7d98bc504047]*/
+- {
+--    abort();
+-+    // abort();
+-     /*NOTREACHED*/
+-     Py_FatalError("abort() called from Python code didn't abort!");
+-     return NULL;
+---- a/Python/pythonrun.c
+-+++ b/Python/pythonrun.c
+-@@ -1697,7 +1697,7 @@
+-     DebugBreak();
+- #endif
+- #endif /* MS_WINDOWS */
+--    abort();
+-+	// abort();
+- }
+-
+- /* Clean up and exit */
+diff --git a/tools/depends/target/python3/setup.patch b/tools/depends/target/python3/setup.patch
+deleted file mode 100644
+index 64968d413eac..000000000000
+--- a/tools/depends/target/python3/setup.patch
++++ /dev/null
+@@ -1,74 +0,0 @@
+---- a/Modules/makesetup
+-+++ b/Modules/makesetup
+-@@ -212,6 +212,7 @@
+-            objs="$objs $obj"
+-            case $src in
+-            glmodule.c) ;;
+-+                       # _*io.c) src='$(srcdir)/'"$srcdir/_io/$(echo $src| tr -d "_")";;
+-            /*) ;;
+-            \$*) ;;
+-            *) src='$(srcdir)/'"$srcdir/$src";;
+---- a/setup.py
+-+++ b/setup.py
+-@@ -337,6 +337,9 @@
+-             self.announce('WARNING: skipping import check for Cygwin-based "%s"'
+-                 % ext.name)
+-             return
+-+        #if os.environ.get('CROSS_COMPILE_TARGET') == 'yes':
+-+        #    return
+-+	
+-         ext_filename = os.path.join(
+-             self.build_lib,
+-             self.get_ext_filename(self.get_ext_fullname(ext.name)))
+-@@ -351,27 +354,30 @@
+-         try:
+-             imp.load_dynamic(ext.name, ext_filename)
+-         except ImportError, why:
+--            self.failed.append(ext.name)
+--            self.announce('*** WARNING: renaming "%s" since importing it'
+--                          ' failed: %s' % (ext.name, why), level=3)
+--            assert not self.inplace
+--            basename, tail = os.path.splitext(ext_filename)
+--            newname = basename + "_failed" + tail
+--            if os.path.exists(newname):
+--                os.remove(newname)
+--            os.rename(ext_filename, newname)
+--
+--            # XXX -- This relies on a Vile HACK in
+--            # distutils.command.build_ext.build_extension().  The
+--            # _built_objects attribute is stored there strictly for
+--            # use here.
+--            # If there is a failure, _built_objects may not be there,
+--            # so catch the AttributeError and move on.
+--            try:
+--                for filename in self._built_objects:
+--                    os.remove(filename)
+--            except AttributeError:
+--                self.announce('unable to remove files (ignored)')
+-+            if os.environ.get('CROSS_COMPILE_TARGET') != "yes":
+-+                self.failed.append(ext.name)
+-+                self.announce('*** WARNING: renaming "%s" since importing it'
+-+                              ' failed: %s' % (ext.name, why), level=3)
+-+                assert not self.inplace
+-+                basename, tail = os.path.splitext(ext_filename)
+-+                newname = basename + "_failed" + tail
+-+                if os.path.exists(newname):
+-+                    os.remove(newname)
+-+                os.rename(ext_filename, newname)
+-+
+-+                # XXX -- This relies on a Vile HACK in
+-+                # distutils.command.build_ext.build_extension().  The
+-+                # _built_objects attribute is stored there strictly for
+-+                # use here.
+-+                # If there is a failure, _built_objects may not be there,
+-+                # so catch the AttributeError and move on.
+-+                try:
+-+                    for filename in self._built_objects:
+-+                        os.remove(filename)
+-+                except AttributeError:
+-+                    self.announce('unable to remove files (ignored)')
+-+            else:
+-+                self.announce('WARNING: "%s" failed importing, ignored because we are cross-compiling' % ext.name)
+-         except:
+-             exc_type, why, tb = sys.exc_info()
+-             self.announce('*** WARNING: importing extension "%s" '
+
+From 045148e4707d5ae1b53702c13daa0d9328a3e0d2 Mon Sep 17 00:00:00 2001
+From: Rechi <Rechi@users.noreply.github.com>
+Date: Wed, 8 Apr 2020 05:30:35 +1000
+Subject: [PATCH 2/5] [depends] refresh gnutls patches
+
+---
+ tools/depends/target/gnutls/add-dl-as-private-lib.patch | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/tools/depends/target/gnutls/add-dl-as-private-lib.patch b/tools/depends/target/gnutls/add-dl-as-private-lib.patch
+index d49392129b22..65d88657ad96 100644
+--- a/tools/depends/target/gnutls/add-dl-as-private-lib.patch
++++ b/tools/depends/target/gnutls/add-dl-as-private-lib.patch
+@@ -1,8 +1,6 @@
+-diff --git a/configure.ac b/configure.ac
+-index db1ce841f..264712b56 100644
+ --- a/configure.ac
+ +++ b/configure.ac
+-@@ -512,6 +512,9 @@ LT_INIT([disable-static,win32-dll,shared])
++@@ -512,6 +512,9 @@
+  
+  
+  AC_LIB_HAVE_LINKFLAGS(dl,, [#include <dlfcn.h>], [dladdr (0, 0);])
+@@ -12,11 +10,9 @@ index db1ce841f..264712b56 100644
+  
+  AC_ARG_ENABLE(fips140-mode,
+    AS_HELP_STRING([--enable-fips140-mode], [enable FIPS140-2 mode]),
+-diff --git a/lib/gnutls.pc.in b/lib/gnutls.pc.in
+-index ffad3e168..15b990764 100644
+ --- a/lib/gnutls.pc.in
+ +++ b/lib/gnutls.pc.in
+-@@ -19,6 +19,6 @@ Description: Transport Security Layer implementation for the GNU system
++@@ -19,6 +19,6 @@
+  URL: https://www.gnutls.org/
+  Version: @VERSION@
+  Libs: -L${libdir} -lgnutls
+
+From a69f9b74608d28bdf54b5f429e88b20deb30f642 Mon Sep 17 00:00:00 2001
+From: Rechi <Rechi@users.noreply.github.com>
+Date: Wed, 8 Apr 2020 05:30:35 +1000
+Subject: [PATCH 3/5] [depends] refresh libcdio-gplv3 patches
+
+---
+ .../libcdio-gplv3/01-fix-glob-on-android.patch    | 15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
+
+diff --git a/tools/depends/target/libcdio-gplv3/01-fix-glob-on-android.patch b/tools/depends/target/libcdio-gplv3/01-fix-glob-on-android.patch
+index 669871ff0536..672c48fe6523 100644
+--- a/tools/depends/target/libcdio-gplv3/01-fix-glob-on-android.patch
++++ b/tools/depends/target/libcdio-gplv3/01-fix-glob-on-android.patch
+@@ -1,6 +1,5 @@
+-diff -Naur a/lib/driver/image/bincue.c b/lib/driver/image/bincue.c
+---- a/lib/driver/image/bincue.c	2018-12-30 15:44:21.000000000 -0800
+-+++ b/lib/driver/image/bincue.c	2020-03-05 09:27:25.906767475 -0800
++--- a/lib/driver/image/bincue.c
+++++ b/lib/driver/image/bincue.c
+ @@ -1,3 +1,4 @@
+ +
+  /*
+@@ -15,9 +14,8 @@ diff -Naur a/lib/driver/image/bincue.c b/lib/driver/image/bincue.c
+    unsigned int i;
+    glob_t globbuf;
+    globbuf.gl_offs = 0;
+-diff -Naur a/lib/driver/image/cdrdao.c b/lib/driver/image/cdrdao.c
+---- a/lib/driver/image/cdrdao.c	2018-08-12 09:33:48.000000000 -0700
+-+++ b/lib/driver/image/cdrdao.c	2020-03-05 09:28:25.873265269 -0800
++--- a/lib/driver/image/cdrdao.c
+++++ b/lib/driver/image/cdrdao.c
+ @@ -1149,7 +1149,7 @@
+  {
+    char **drives = NULL;
+@@ -27,9 +25,8 @@ diff -Naur a/lib/driver/image/cdrdao.c b/lib/driver/image/cdrdao.c
+    unsigned int i;
+    glob_t globbuf;
+    globbuf.gl_offs = 0;
+-diff -Naur a/lib/driver/image/nrg.c b/lib/driver/image/nrg.c
+---- a/lib/driver/image/nrg.c	2018-08-12 09:33:48.000000000 -0700
+-+++ b/lib/driver/image/nrg.c	2020-03-05 09:27:59.899482793 -0800
++--- a/lib/driver/image/nrg.c
+++++ b/lib/driver/image/nrg.c
+ @@ -1167,7 +1167,7 @@
+  {
+    char **drives = NULL;
+
+From 5fd573377934481a2775bbaf085da242ca751ede Mon Sep 17 00:00:00 2001
+From: Rechi <Rechi@users.noreply.github.com>
+Date: Wed, 8 Apr 2020 05:30:35 +1000
+Subject: [PATCH 4/5] [depends] refresh libgpg-error patches
+
+---
+ .../libgpg-error-1.36-gawk5-support.patch     | 34 ++++++-------------
+ 1 file changed, 10 insertions(+), 24 deletions(-)
+
+diff --git a/tools/depends/target/libgpg-error/libgpg-error-1.36-gawk5-support.patch b/tools/depends/target/libgpg-error/libgpg-error-1.36-gawk5-support.patch
+index 85477b0be60d..f0fd6b86c1c6 100644
+--- a/tools/depends/target/libgpg-error/libgpg-error-1.36-gawk5-support.patch
++++ b/tools/depends/target/libgpg-error/libgpg-error-1.36-gawk5-support.patch
+@@ -26,11 +26,9 @@ Signed-off-by: NIIBE Yutaka <gniibe@fsij.org>
+  src/mkstrtable.awk     | 10 +++++-----
+  7 files changed, 11 insertions(+), 11 deletions(-)
+ 
+-diff --git a/lang/cl/mkerrcodes.awk b/lang/cl/mkerrcodes.awk
+-index ae29043..9a1fc18 100644
+ --- a/lang/cl/mkerrcodes.awk
+ +++ b/lang/cl/mkerrcodes.awk
+-@@ -122,7 +122,7 @@ header {
++@@ -122,7 +122,7 @@
+  }
+  
+  !header {
+@@ -39,11 +37,9 @@ index ae29043..9a1fc18 100644
+    sub (/[ 	]+$/, ""); # Strip trailing space and tab characters.
+  
+    if (/^$/)
+-diff --git a/src/Makefile.am b/src/Makefile.am
+-index ce1b882..f2590cb 100644
+ --- a/src/Makefile.am
+ +++ b/src/Makefile.am
+-@@ -293,7 +293,7 @@ code-from-errno.h: mkerrcodes$(EXEEXT_FOR_BUILD) Makefile
++@@ -293,7 +293,7 @@
+  
+  errnos-sym.h: Makefile mkstrtable.awk errnos.in
+  	$(AWK) -f $(srcdir)/mkstrtable.awk -v textidx=2 -v nogettext=1 \
+@@ -52,11 +48,9 @@ index ce1b882..f2590cb 100644
+  		$(srcdir)/errnos.in >$@
+  
+  
+-diff --git a/src/mkerrcodes.awk b/src/mkerrcodes.awk
+-index 46d436c..e9c857c 100644
+ --- a/src/mkerrcodes.awk
+ +++ b/src/mkerrcodes.awk
+-@@ -85,7 +85,7 @@ header {
++@@ -85,7 +85,7 @@
+  }
+  
+  !header {
+@@ -65,11 +59,9 @@ index 46d436c..e9c857c 100644
+    sub (/[ 	]+$/, ""); # Strip trailing space and tab characters.
+  
+    if (/^$/)
+-diff --git a/src/mkerrcodes1.awk b/src/mkerrcodes1.awk
+-index a771a73..4578e29 100644
+ --- a/src/mkerrcodes1.awk
+ +++ b/src/mkerrcodes1.awk
+-@@ -81,7 +81,7 @@ header {
++@@ -81,7 +81,7 @@
+  }
+  
+  !header {
+@@ -78,11 +70,9 @@ index a771a73..4578e29 100644
+    sub (/[ 	]+$/, ""); # Strip trailing space and tab characters.
+  
+    if (/^$/)
+-diff --git a/src/mkerrcodes2.awk b/src/mkerrcodes2.awk
+-index ea58503..188f7a4 100644
+ --- a/src/mkerrcodes2.awk
+ +++ b/src/mkerrcodes2.awk
+-@@ -91,7 +91,7 @@ header {
++@@ -91,7 +91,7 @@
+  }
+  
+  !header {
+@@ -91,11 +81,9 @@ index ea58503..188f7a4 100644
+    sub (/[ 	]+$/, ""); # Strip trailing space and tab characters.
+  
+    if (/^$/)
+-diff --git a/src/mkerrnos.awk b/src/mkerrnos.awk
+-index f79df66..15b1aad 100644
+ --- a/src/mkerrnos.awk
+ +++ b/src/mkerrnos.awk
+-@@ -83,7 +83,7 @@ header {
++@@ -83,7 +83,7 @@
+  }
+  
+  !header {
+@@ -104,8 +92,6 @@ index f79df66..15b1aad 100644
+    sub (/[ 	]+$/, ""); # Strip trailing space and tab characters.
+  
+    if (/^$/)
+-diff --git a/src/mkstrtable.awk b/src/mkstrtable.awk
+-index c9de9c1..285e45f 100644
+ --- a/src/mkstrtable.awk
+ +++ b/src/mkstrtable.awk
+ @@ -77,7 +77,7 @@
+@@ -117,7 +103,7 @@ index c9de9c1..285e45f 100644
+  # variable and macro name.
+  
+  BEGIN {
+-@@ -102,7 +102,7 @@ header {
++@@ -102,7 +102,7 @@
+        print "/* The purpose of this complex string table is to produce";
+        print "   optimal code with a minimum of relocations.  */";
+        print "";
+@@ -126,7 +112,7 @@ index c9de9c1..285e45f 100644
+        header = 0;
+      }
+    else
+-@@ -110,7 +110,7 @@ header {
++@@ -110,7 +110,7 @@
+  }
+  
+  !header {
+@@ -135,7 +121,7 @@ index c9de9c1..285e45f 100644
+    sub (/[ 	]+$/, ""); # Strip trailing space and tab characters.
+  
+    if (/^$/)
+-@@ -150,7 +150,7 @@ END {
++@@ -150,7 +150,7 @@
+    else
+      print "  gettext_noop (\"" last_msgstr "\");";
+    print "";
+@@ -144,7 +130,7 @@ index c9de9c1..285e45f 100644
+    print "  {";
+    for (i = 0; i < coded_msgs; i++)
+      print "    " pos[i] ",";
+-@@ -158,7 +158,7 @@ END {
++@@ -158,7 +158,7 @@
+    print "  };";
+    print "";
+    print "static GPG_ERR_INLINE int";
+
+From 571d5a1b67657b8ca6790cc1e37ed87fc66f1560 Mon Sep 17 00:00:00 2001
+From: Rechi <Rechi@users.noreply.github.com>
+Date: Wed, 8 Apr 2020 05:30:35 +1000
+Subject: [PATCH 5/5] [depends] refresh libshairplay patches
+
+---
+ .../libshairplay/0001-configure-fix-dns-sd-check.patch     | 7 +------
+ tools/depends/target/libshairplay/Makefile                 | 2 +-
+ 2 files changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/tools/depends/target/libshairplay/0001-configure-fix-dns-sd-check.patch b/tools/depends/target/libshairplay/0001-configure-fix-dns-sd-check.patch
+index 5aa5c5300a6b..d55af6dc9630 100644
+--- a/tools/depends/target/libshairplay/0001-configure-fix-dns-sd-check.patch
++++ b/tools/depends/target/libshairplay/0001-configure-fix-dns-sd-check.patch
+@@ -8,11 +8,9 @@ Subject: [PATCH] [configure] - only check for dns_sd.h in case libdl was not
+  configure.ac | 2 +-
+  1 file changed, 1 insertion(+), 1 deletion(-)
+ 
+-diff --git a/configure.ac b/configure.ac
+-index 5a4b8ad..682d74b 100644
+ --- a/configure.ac
+ +++ b/configure.ac
+-@@ -19,7 +19,7 @@ LT_LIB_DLLOAD
++@@ -19,7 +19,7 @@
+  
+  # Checks for header files.
+  AC_HEADER_STDC
+@@ -21,6 +19,3 @@ index 5a4b8ad..682d74b 100644
+  then
+    AC_CHECK_HEADERS([dns_sd.h], [],
+                     [AC_MSG_ERROR([Could not find dns_sd.h header, please install libavahi-compat-libdnssd-dev or equivalent.])])
+--- 
+-2.17.1
+-
+diff --git a/tools/depends/target/libshairplay/Makefile b/tools/depends/target/libshairplay/Makefile
+index 30d12164bfcb..8cf7a3ed107e 100644
+--- a/tools/depends/target/libshairplay/Makefile
++++ b/tools/depends/target/libshairplay/Makefile
+@@ -21,7 +21,7 @@ $(TARBALLS_LOCATION)/$(ARCHIVE):
+ $(PLATFORM): $(TARBALLS_LOCATION)/$(ARCHIVE) $(DEPS)
+ 	rm -rf $(PLATFORM); mkdir -p $(PLATFORM)
+ 	cd $(PLATFORM); $(ARCHIVE_TOOL) $(ARCHIVE_TOOL_FLAGS) $(TARBALLS_LOCATION)/$(ARCHIVE)
+-	cd $(PLATFORM); patch -p1 < ../0001-configure-fix-dns-sd-check.patch
++	cd $(PLATFORM); patch -p1 -i ../0001-configure-fix-dns-sd-check.patch
+ 	cd $(PLATFORM); $(AUTORECONF) -vif
+ 	cd $(PLATFORM); $(CONFIGURE)
+ 
