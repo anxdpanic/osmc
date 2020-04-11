@@ -360,23 +360,29 @@ then
 	then
 	    ADDONS_TO_BUILD="${ADDONS_AUDIO_DECODERS} ${ADDONS_AUDIO_ENCODERS} ${ADDONS_INPUTSTREAM} ${ADDONS_PERIPHERAL} ${ADDONS_PVR} ${ADDONS_SCREENSAVERS} ${ADDONS_VFS} ${ADDONS_VISUALIZATIONS} ${ADDONS_GAME}"
 	    PLATFORM="-DCMAKE_INCLUDE_PATH=/opt/vc/include:/opt/vc/include/interface:/opt/vc/include/interface/vcos/pthreads:/opt/vc/include/interface/vmcs_host/linux -DCMAKE_LIBRARY_PATH=/opt/vc/lib"
-	fi
+	    OPENGLES_INCL="-DOPENGLES_INCLUDE_DIR=/opt/vc/include"
+            OPENGLES_LIB="-DOPENGLES_gl_LIBRARY=/opt/vc/lib"
+        fi
 	if [ "$1" == "vero2" ]
 	then
 	   ADDONS_TO_BUILD="${ADDONS_AUDIO_DECODERS} ${ADDONS_AUDIO_ENCODERS} ${ADDONS_INPUTSTREAM} ${ADDONS_PERIPHERAL} ${ADDONS_PVR} ${ADDONS_SCREENSAVERS} ${ADDONS_VFS} ${ADDONS_VISUALIZATIONS} ${ADDONS_GAME}"
 	   PLATFORM="-DOPENGLES_LIBRARIES=/opt/vero2/include -DCMAKE_INCLUDE_PATH=/opt/vero2/include -DCMAKE_LIBRARY_PATH=/opt/vero2/lib"
+           OPENGLES_INCL="-DOPENGLES_INCLUDE_DIR=/opt/vero2/include"
+           OPENGLES_LIB="-DOPENGLES_gl_LIBRARY=/opt/vero2/lib"
 	fi
 	if [ "$1" == "vero3" ]
 	then
 	   ADDONS_TO_BUILD="${ADDONS_AUDIO_DECODERS} ${ADDONS_AUDIO_ENCODERS} ${ADDONS_INPUTSTREAM} ${ADDONS_PERIPHERAL} ${ADDONS_PVR} ${ADDONS_SCREENSAVERS} ${ADDONS_VFS} ${ADDONS_VISUALIZATIONS} ${ADDONS_GAME}"
 	   PLATFORM="-DCMAKE_INCLUDE_PATH=/opt/vero3/include -DCMAKE_LIBRARY_PATH=/opt/vero3/lib"
+           OPENGLES_INCL="-DOPENGLES_INCLUDE_DIR=/opt/vero3/include"
+           OPENGLES_LIB="-DOPENGLES_gl_LIBRARY=/opt/vero3/lib"
 	fi
 	if [ "$1" == "pc" ]
 	then
            ADDONS_TO_BUILD="${ADDONS_INPUTSTREAM} ${ADDONS_PERIPHERAL} ${ADDONS_PVR}"
            PLATFORM=""
 	fi
-        cmake -DAPP_RENDER_SYSTEM=1 -DOVERRIDE_PATHS=1 -DCMAKE_INSTALL_PREFIX=${out}/usr/ -DBUILD_DIR=$(pwd) -DBUILD_SHARED_LIBS=OFF -DADDONS_TO_BUILD="${ADDONS_TO_BUILD}" "$PLATFORM" ../
+        cmake "$OPENGLES_LIB" "$OPENGLES_LIB" -DAPP_RENDER_SYSTEM=1 -DOVERRIDE_PATHS=1 -DCMAKE_INSTALL_PREFIX=${out}/usr/ -DBUILD_DIR=$(pwd) -DBUILD_SHARED_LIBS=OFF -DADDONS_TO_BUILD="${ADDONS_TO_BUILD}" "$PLATFORM" ../
 	if [ $? != 0 ]; then echo "Configuring binary addons failed" && exit 1; fi
 	cd ../
 	$BUILD kodiplatform_DIR=$(pwd) CMAKE_PREFIX_PATH=/usr/osmc -C build/
