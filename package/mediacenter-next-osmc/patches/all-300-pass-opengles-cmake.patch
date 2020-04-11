@@ -1,0 +1,26 @@
+From 157527aefc2f9b4fb08f5c5dcb78060a87c09279 Mon Sep 17 00:00:00 2001
+From: Greg McCarthy <greg@gjmccarthy.co.uk>
+Date: Sat, 11 Apr 2020 11:23:57 +0100
+Subject: [PATCH] Pass opengles variables
+
+---
+ cmake/KodiConfig.cmake.in | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/cmake/KodiConfig.cmake.in b/cmake/KodiConfig.cmake.in
+index fde5add903..2b36492b53 100644
+--- a/cmake/KodiConfig.cmake.in
++++ b/cmake/KodiConfig.cmake.in
+@@ -17,6 +17,9 @@ if(NOT @APP_NAME_UC@_DATA_DIR)
+   set(@APP_NAME_UC@_DATA_DIR @APP_DATA_DIR@)
+ endif()
+ set(APP_RENDER_SYSTEM @APP_RENDER_SYSTEM@)
++set(OPENGLES_INCLUDE_DIR @OPENGLES_INCLUDE_DIR@)
++set(OPENGLES_gl_LIBRARY @OPENGLES_gl_LIBRARY@)
++
+ list(APPEND CMAKE_MODULE_PATH @APP_LIB_DIR@ @APP_DATA_DIR@/cmake)
+ 
+ string(REPLACE ";" " " ARCH_DEFINES "@ARCH_DEFINES@")
+-- 
+2.16.4
+
