@@ -952,13 +952,13 @@ index 82f1250db0..9d5f0e3d9e 100644
 --- a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp
 +++ b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp
 @@ -15,7 +15,6 @@
- #include "cores/RetroPlayer/process/RPProcessInfo.h"
+ #include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererDMA.h"
  #include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererOpenGL.h"
  #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGL.h"
 -#include "rendering/gl/ScreenshotSurfaceGL.h"
- #include "utils/log.h"
- 
- using namespace KODI::WINDOWING::WAYLAND;
+ #include "utils/BufferObjectFactory.h"
+ #include "utils/DMAHeapBufferObject.h"
+ #include "utils/UDMABufferObject.h"
 @@ -46,8 +45,6 @@ bool CWinSystemWaylandEGLContextGL::InitWindowSystem()
      ::WAYLAND::VAAPIRegister(m_vaapiProxy.get(), deepColor);
    }
