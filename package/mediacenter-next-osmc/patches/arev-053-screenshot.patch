@@ -892,18 +892,18 @@ index 791028d869..37e3593614 100644
  #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGL.h"
  #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
 -#include "rendering/gl/ScreenshotSurfaceGL.h"
- #include "utils/XTimeUtils.h"
- #include "utils/log.h"
-
+ #include "utils/BufferObjectFactory.h"
+ #include "utils/DMAHeapBufferObject.h"
+ #include "utils/DumbBufferObject.h"
 @@ -55,8 +54,6 @@ bool CWinSystemGbmGLContext::InitWindowSystem()
      VAAPIRegister(m_vaapiProxy.get(), deepColor);
    }
  
 -  CScreenshotSurfaceGL::Register();
 -
-   return true;
- }
- 
+   CBufferObjectFactory::ClearBufferObjects();
+   CDumbBufferObject::Register();
+ #if defined(HAS_GBM_BO_MAP)
 diff --git a/xbmc/windowing/gbm/WinSystemGbmGLESContext.cpp b/xbmc/windowing/gbm/WinSystemGbmGLESContext.cpp
 index ae93681651..619b75bd9f 100644
 --- a/xbmc/windowing/gbm/WinSystemGbmGLESContext.cpp
