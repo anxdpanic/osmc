@@ -1,0 +1,130 @@
+From ba728c62e361a395c8d443f6b194ff4f437166f7 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Sun, 5 Apr 2020 17:41:36 -0700
+Subject: [PATCH] windowing/gbm: remove 10bit plane support
+
+---
+ xbmc/windowing/gbm/DRMUtils.cpp               | 30 +------------------
+ xbmc/windowing/gbm/DRMUtils.h                 | 21 ++-----------
+ xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp | 12 +-------
+ 3 files changed, 5 insertions(+), 58 deletions(-)
+
+diff --git a/xbmc/windowing/gbm/DRMUtils.cpp b/xbmc/windowing/gbm/DRMUtils.cpp
+index e945dc2201ca..cb6599d97730 100644
+--- a/xbmc/windowing/gbm/DRMUtils.cpp
++++ b/xbmc/windowing/gbm/DRMUtils.cpp
+@@ -395,24 +395,6 @@ drmModePlanePtr CDRMUtils::FindPlane(drmModePlaneResPtr resources, int crtc_inde
+                 return plane;
+               }
+ 
+-              break;
+-            }
+-            case KODI_GUI_10_PLANE:
+-            {
+-              uint32_t plane_id = 0;
+-              if (m_video_plane->plane)
+-                plane_id = m_video_plane->plane->plane_id;
+-
+-              if (plane->plane_id != plane_id &&
+-                  (plane_id == 0 || SupportsFormat(plane, DRM_FORMAT_ARGB2101010)) &&
+-                  SupportsFormat(plane, DRM_FORMAT_XRGB2101010))
+-              {
+-                CLog::Log(LOGDEBUG, "CDRMUtils::%s - found gui 10 plane %u", __FUNCTION__, plane->plane_id);
+-                drmModeFreeProperty(p);
+-                drmModeFreeObjectProperties(props);
+-                return plane;
+-              }
+-
+               break;
+             }
+           }
+@@ -441,15 +423,7 @@ bool CDRMUtils::FindPlanes()
+   }
+ 
+   m_video_plane->plane = FindPlane(plane_resources, m_crtc_index, KODI_VIDEO_PLANE);
+-  m_gui_plane->plane = FindPlane(plane_resources, m_crtc_index, KODI_GUI_10_PLANE);
+-
+-  /* fallback to 8bit plane if 10bit plane doesn't exist */
+-  if (m_gui_plane->plane == nullptr)
+-  {
+-    drmModeFreePlane(m_gui_plane->plane);
+-    m_gui_plane->plane = FindPlane(plane_resources, m_crtc_index, KODI_GUI_PLANE);
+-    m_gui_plane->SetFormat(DRM_FORMAT_XRGB8888);
+-  }
++  m_gui_plane->plane = FindPlane(plane_resources, m_crtc_index, KODI_GUI_PLANE);
+ 
+   drmModeFreePlaneResources(plane_resources);
+ 
+@@ -480,8 +454,6 @@ bool CDRMUtils::FindPlanes()
+     CLog::Log(LOGDEBUG, "CDRMUtils::%s - no drm modifiers present for the gui plane", __FUNCTION__);
+     m_gui_plane->modifiers_map.emplace(DRM_FORMAT_ARGB8888, std::vector<uint64_t>{DRM_FORMAT_MOD_LINEAR});
+     m_gui_plane->modifiers_map.emplace(DRM_FORMAT_XRGB8888, std::vector<uint64_t>{DRM_FORMAT_MOD_LINEAR});
+-    m_gui_plane->modifiers_map.emplace(DRM_FORMAT_ARGB2101010, std::vector<uint64_t>{DRM_FORMAT_MOD_LINEAR});
+-    m_gui_plane->modifiers_map.emplace(DRM_FORMAT_XRGB2101010, std::vector<uint64_t>{DRM_FORMAT_MOD_LINEAR});
+   }
+ 
+   return true;
+diff --git a/xbmc/windowing/gbm/DRMUtils.h b/xbmc/windowing/gbm/DRMUtils.h
+index 9d3dbba80d35..67645b79a4c7 100644
+--- a/xbmc/windowing/gbm/DRMUtils.h
++++ b/xbmc/windowing/gbm/DRMUtils.h
+@@ -32,7 +32,6 @@ enum EPLANETYPE
+ {
+   KODI_VIDEO_PLANE,
+   KODI_GUI_PLANE,
+-  KODI_GUI_10_PLANE
+ };
+ 
+ struct drm_object
+@@ -49,25 +48,11 @@ struct plane : drm_object
+   bool useFallbackFormat{false};
+   std::map<uint32_t, std::vector<uint64_t>> modifiers_map;
+ 
+-  void SetFormat(uint32_t newFormat)
+-  {
+-    if (useFallbackFormat)
+-      fallbackFormat = newFormat;
+-    else
+-      format = newFormat;
+-  }
+-
+-  uint32_t GetFormat()
+-  {
+-    if (useFallbackFormat)
+-      return fallbackFormat;
+-
+-    return format;
+-  }
++  void SetFormat(uint32_t newFormat) { format = newFormat; }
++  uint32_t GetFormat() { return format; }
+ 
+ private:
+-  uint32_t format{DRM_FORMAT_XRGB2101010};
+-  uint32_t fallbackFormat{DRM_FORMAT_XRGB8888};
++  uint32_t format{DRM_FORMAT_XRGB8888};
+ };
+ 
+ struct connector : drm_object
+diff --git a/xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp b/xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp
+index 031487860df9..86f67cf678ff 100644
+--- a/xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp
++++ b/xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp
+@@ -38,17 +38,7 @@ bool CWinSystemGbmEGLContext::InitWindowSystemEGL(EGLint renderableType, EGLint
+   // prefer alpha visual id, fallback to non-alpha visual id
+   if (!m_eglContext.ChooseConfig(renderableType, CDRMUtils::FourCCWithAlpha(visualId)) &&
+       !m_eglContext.ChooseConfig(renderableType, CDRMUtils::FourCCWithoutAlpha(visualId)))
+-  {
+-    // fallback to 8bit format if no EGL config was found for 10bit
+-    m_DRM->GetGuiPlane()->useFallbackFormat = true;
+-    visualId = m_DRM->GetGuiPlane()->GetFormat();
+-
+-    if (!m_eglContext.ChooseConfig(renderableType, CDRMUtils::FourCCWithAlpha(visualId)) &&
+-        !m_eglContext.ChooseConfig(renderableType, CDRMUtils::FourCCWithoutAlpha(visualId)))
+-    {
+-      return false;
+-    }
+-  }
++    return false;
+ 
+   if (!CreateContext())
+   {

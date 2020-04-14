@@ -1,0 +1,141 @@
+From 226e43bfd2937b4e141460d75d4b6db0f43ca95e Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Wed, 25 Mar 2020 15:49:09 -0700
+Subject: [PATCH 1/2] IBufferObject: add sync methods
+
+---
+ cmake/scripts/linux/ArchSetup.cmake |  7 +++++++
+ xbmc/utils/BufferObject.cpp         | 30 +++++++++++++++++++++++++++++
+ xbmc/utils/BufferObject.h           |  3 +++
+ xbmc/utils/IBufferObject.h          | 12 ++++++++++++
+ 4 files changed, 52 insertions(+)
+
+diff --git a/cmake/scripts/linux/ArchSetup.cmake b/cmake/scripts/linux/ArchSetup.cmake
+index bfdb5d3edc3b..fe254cedcf5f 100644
+--- a/cmake/scripts/linux/ArchSetup.cmake
++++ b/cmake/scripts/linux/ArchSetup.cmake
+@@ -103,6 +103,13 @@ else()
+   message(WARNING, "dma-heap: include/linux/dma-heap.h not found")
+ endif()
+ 
++check_include_files("linux/dma-buf.h" HAVE_LINUX_DMA_BUF)
++if(HAVE_LINUX_DMA_BUF)
++  list(APPEND ARCH_DEFINES "-DHAVE_LINUX_DMA_BUF=1")
++else()
++  message(STATUS "include/linux/dma-buf.h not found")
++endif()
++
+ include(CheckSymbolExists)
+ set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
+ check_symbol_exists("mkostemp" "stdlib.h" HAVE_MKOSTEMP)
+diff --git a/xbmc/utils/BufferObject.cpp b/xbmc/utils/BufferObject.cpp
+index f9e2b12b6c13..837b6ba9474d 100644
+--- a/xbmc/utils/BufferObject.cpp
++++ b/xbmc/utils/BufferObject.cpp
+@@ -9,6 +9,12 @@
+ #include "BufferObject.h"
+ 
+ #include "BufferObjectFactory.h"
++#include "utils/log.h"
++
++#if defined(HAVE_LINUX_DMA_BUF)
++#include <linux/dma-buf.h>
++#include <sys/ioctl.h>
++#endif
+ 
+ std::unique_ptr<CBufferObject> CBufferObject::GetBufferObject()
+ {
+@@ -29,3 +35,27 @@ uint64_t CBufferObject::GetModifier()
+ {
+   return 0; // linear
+ }
++
++void CBufferObject::SyncStart()
++{
++#if defined(HAVE_LINUX_DMA_BUF)
++  struct dma_buf_sync sync;
++  sync.flags = DMA_BUF_SYNC_START | DMA_BUF_SYNC_RW;
++
++  int ret = ioctl(m_fd, DMA_BUF_IOCTL_SYNC, &sync);
++  if (ret < 0)
++    CLog::LogF(LOGERROR, "ioctl DMA_BUF_IOCTL_SYNC failed, ret={} errno={}", ret, strerror(errno));
++#endif
++}
++
++void CBufferObject::SyncEnd()
++{
++#if defined(HAVE_LINUX_DMA_BUF)
++  struct dma_buf_sync sync;
++  sync.flags = DMA_BUF_SYNC_END | DMA_BUF_SYNC_RW;
++
++  int ret = ioctl(m_fd, DMA_BUF_IOCTL_SYNC, &sync);
++  if (ret < 0)
++    CLog::LogF(LOGERROR, "ioctl DMA_BUF_IOCTL_SYNC failed, ret={} errno={}", ret, strerror(errno));
++#endif
++}
+diff --git a/xbmc/utils/BufferObject.h b/xbmc/utils/BufferObject.h
+index 92b108964434..9870014a1388 100644
+--- a/xbmc/utils/BufferObject.h
++++ b/xbmc/utils/BufferObject.h
+@@ -32,6 +32,9 @@ class CBufferObject : public IBufferObject
+   virtual uint32_t GetStride() override;
+   virtual uint64_t GetModifier() override;
+ 
++  void SyncStart() override;
++  void SyncEnd() override;
++
+ protected:
+   int m_fd{-1};
+   uint32_t m_stride{0};
+diff --git a/xbmc/utils/IBufferObject.h b/xbmc/utils/IBufferObject.h
+index 1c95b0a64a8f..1f3264838767 100644
+--- a/xbmc/utils/IBufferObject.h
++++ b/xbmc/utils/IBufferObject.h
+@@ -99,6 +99,18 @@ class IBufferObject
+    */
+   virtual uint64_t GetModifier() = 0;
+ 
++  /**
++   * @brief Must be called before reading/writing data to the BufferObject.
++   *
++   */
++  virtual void SyncStart() = 0;
++
++  /**
++   * @brief Must be called after reading/writing data to the BufferObject.
++   *
++   */
++  virtual void SyncEnd() = 0;
++
+   /**
+    * @brief Get the Name of the BufferObject type in use
+    *
+
+From 6d4febe3fe0288601f674efa6cd2a318143a0caf Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Wed, 25 Mar 2020 18:11:15 -0700
+Subject: [PATCH 2/2] [RetroPlayer] CRenderBufferDMA: add sync support
+
+---
+ xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp b/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp
+index 93e128978b82..81c977edfe97 100644
+--- a/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp
++++ b/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp
+@@ -60,12 +60,14 @@ size_t CRenderBufferDMA::GetFrameSize() const
+ 
+ uint8_t* CRenderBufferDMA::GetMemory()
+ {
++  m_bo->SyncStart();
+   return m_bo->GetMemory();
+ }
+ 
+ void CRenderBufferDMA::ReleaseMemory()
+ {
+   m_bo->ReleaseMemory();
++  m_bo->SyncEnd();
+ }
+ 
+ void CRenderBufferDMA::CreateTexture()

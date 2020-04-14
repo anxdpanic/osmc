@@ -1,0 +1,256 @@
+From 9278d2c61eee85f0385928015c7b15b77e6c0fab Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Wed, 25 Mar 2020 12:23:36 -0700
+Subject: [PATCH 1/8] windowing/gbm: GL: register using CDumbBufferObject
+
+---
+ xbmc/windowing/gbm/WinSystemGbmGLContext.cpp | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp b/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp
+index 3561dee430f9..846ae486922b 100644
+--- a/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp
++++ b/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp
+@@ -15,6 +15,8 @@
+ #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGL.h"
+ #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
+ #include "rendering/gl/ScreenshotSurfaceGL.h"
++#include "utils/BufferObjectFactory.h"
++#include "utils/DumbBufferObject.h"
+ #include "utils/XTimeUtils.h"
+ #include "utils/log.h"
+ 
+@@ -58,6 +60,9 @@ bool CWinSystemGbmGLContext::InitWindowSystem()
+ 
+   CScreenshotSurfaceGL::Register();
+ 
++  CBufferObjectFactory::ClearBufferObjects();
++  CDumbBufferObject::Register();
++
+   return true;
+ }
+ 
+
+From 8e97d41dc44dffe2ef5b53ec62494ac364f48135 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Wed, 25 Mar 2020 12:24:16 -0700
+Subject: [PATCH 2/8] windowing/gbm: GL: register using CGBMBufferObject
+
+---
+ xbmc/windowing/gbm/WinSystemGbmGLContext.cpp | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp b/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp
+index 846ae486922b..43e82a1c262a 100644
+--- a/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp
++++ b/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp
+@@ -17,6 +17,7 @@
+ #include "rendering/gl/ScreenshotSurfaceGL.h"
+ #include "utils/BufferObjectFactory.h"
+ #include "utils/DumbBufferObject.h"
++#include "utils/GBMBufferObject.h"
+ #include "utils/XTimeUtils.h"
+ #include "utils/log.h"
+ 
+@@ -62,6 +63,9 @@ bool CWinSystemGbmGLContext::InitWindowSystem()
+ 
+   CBufferObjectFactory::ClearBufferObjects();
+   CDumbBufferObject::Register();
++#if defined(HAS_GBM_BO_MAP)
++  CGBMBufferObject::Register();
++#endif
+ 
+   return true;
+ }
+
+From 19eb13d8f327c4f99d0e47fc39fe57829010dd7d Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Wed, 25 Mar 2020 12:24:54 -0700
+Subject: [PATCH 3/8] windowing/gbm: GL: register using CUDMABufferObject
+
+---
+ xbmc/windowing/gbm/WinSystemGbmGLContext.cpp | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp b/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp
+index 43e82a1c262a..eca450dd0c34 100644
+--- a/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp
++++ b/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp
+@@ -18,6 +18,7 @@
+ #include "utils/BufferObjectFactory.h"
+ #include "utils/DumbBufferObject.h"
+ #include "utils/GBMBufferObject.h"
++#include "utils/UDMABufferObject.h"
+ #include "utils/XTimeUtils.h"
+ #include "utils/log.h"
+ 
+@@ -66,6 +67,9 @@ bool CWinSystemGbmGLContext::InitWindowSystem()
+ #if defined(HAS_GBM_BO_MAP)
+   CGBMBufferObject::Register();
+ #endif
++#if defined(HAVE_LINUX_MEMFD) && defined(HAVE_LINUX_UDMABUF)
++  CUDMABufferObject::Register();
++#endif
+ 
+   return true;
+ }
+
+From 8c96a4b42825fcf51df845f032865d98ac91b9cb Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Wed, 25 Mar 2020 12:25:54 -0700
+Subject: [PATCH 4/8] windowing/gbm: GL: register using CDMAHeapBufferObject
+
+---
+ xbmc/windowing/gbm/WinSystemGbmGLContext.cpp | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp b/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp
+index eca450dd0c34..b3a3e08df0ad 100644
+--- a/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp
++++ b/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp
+@@ -16,6 +16,7 @@
+ #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
+ #include "rendering/gl/ScreenshotSurfaceGL.h"
+ #include "utils/BufferObjectFactory.h"
++#include "utils/DMAHeapBufferObject.h"
+ #include "utils/DumbBufferObject.h"
+ #include "utils/GBMBufferObject.h"
+ #include "utils/UDMABufferObject.h"
+@@ -70,6 +71,9 @@ bool CWinSystemGbmGLContext::InitWindowSystem()
+ #if defined(HAVE_LINUX_MEMFD) && defined(HAVE_LINUX_UDMABUF)
+   CUDMABufferObject::Register();
+ #endif
++#if defined(HAVE_LINUX_DMA_HEAP)
++  CDMAHeapBufferObject::Register();
++#endif
+ 
+   return true;
+ }
+
+From 15f708a868050022ce54105c297c039a30421119 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Wed, 25 Mar 2020 12:26:47 -0700
+Subject: [PATCH 5/8] windowing/gbm: GL: register using CRPRendererDMA
+
+---
+ xbmc/windowing/gbm/WinSystemGbmGLContext.cpp | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp b/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp
+index b3a3e08df0ad..b7c7bfa2ee0e 100644
+--- a/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp
++++ b/xbmc/windowing/gbm/WinSystemGbmGLContext.cpp
+@@ -10,6 +10,7 @@
+ 
+ #include "OptionalsReg.h"
+ #include "cores/RetroPlayer/process/gbm/RPProcessInfoGbm.h"
++#include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererDMA.h"
+ #include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererOpenGL.h"
+ #include "cores/VideoPlayer/DVDCodecs/DVDFactoryCodec.h"
+ #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGL.h"
+@@ -44,6 +45,7 @@ bool CWinSystemGbmGLContext::InitWindowSystem()
+   CDVDFactoryCodec::ClearHWAccels();
+   CLinuxRendererGL::Register();
+   RETRO::CRPProcessInfoGbm::Register();
++  RETRO::CRPProcessInfoGbm::RegisterRendererFactory(new RETRO::CRendererFactoryDMA);
+   RETRO::CRPProcessInfoGbm::RegisterRendererFactory(new RETRO::CRendererFactoryOpenGL);
+ 
+   if (!CWinSystemGbmEGLContext::InitWindowSystemEGL(EGL_OPENGL_BIT, EGL_OPENGL_API))
+
+From 71dbd4a47c94ec9b4938b96209817e917a1a7652 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Mon, 6 Apr 2020 13:02:08 -0700
+Subject: [PATCH 6/8] windowing/wayland: GL: register using CUDMABufferObject
+
+---
+ xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp
+index c5e8c3fa3989..4eddbcefc3e3 100644
+--- a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp
++++ b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp
+@@ -13,6 +13,8 @@
+ #include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererOpenGL.h"
+ #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGL.h"
+ #include "rendering/gl/ScreenshotSurfaceGL.h"
++#include "utils/BufferObjectFactory.h"
++#include "utils/UDMABufferObject.h"
+ #include "utils/log.h"
+ 
+ #include <EGL/egl.h>
+@@ -46,6 +48,11 @@ bool CWinSystemWaylandEGLContextGL::InitWindowSystem()
+     ::WAYLAND::VAAPIRegister(m_vaapiProxy.get(), deepColor);
+   }
+ 
++  CBufferObjectFactory::ClearBufferObjects();
++#if defined(HAVE_LINUX_MEMFD) && defined(HAVE_LINUX_UDMABUF)
++  CUDMABufferObject::Register();
++#endif
++
+   CScreenshotSurfaceGL::Register();
+ 
+   return true;
+
+From 370a76cd1f77c89d89ac621fd623107df95dce8f Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Mon, 6 Apr 2020 12:59:56 -0700
+Subject: [PATCH 7/8] windowing/wayland: GL: register using
+ CDMAHeapBufferObject
+
+---
+ xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp
+index 4eddbcefc3e3..0169ef70a7ab 100644
+--- a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp
++++ b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp
+@@ -14,6 +14,7 @@
+ #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGL.h"
+ #include "rendering/gl/ScreenshotSurfaceGL.h"
+ #include "utils/BufferObjectFactory.h"
++#include "utils/DMAHeapBufferObject.h"
+ #include "utils/UDMABufferObject.h"
+ #include "utils/log.h"
+ 
+@@ -52,6 +53,9 @@ bool CWinSystemWaylandEGLContextGL::InitWindowSystem()
+ #if defined(HAVE_LINUX_MEMFD) && defined(HAVE_LINUX_UDMABUF)
+   CUDMABufferObject::Register();
+ #endif
++#if defined(HAVE_LINUX_DMA_HEAP)
++  CDMAHeapBufferObject::Register();
++#endif
+ 
+   CScreenshotSurfaceGL::Register();
+ 
+
+From 1322782dc8d7cc34a283c06848a249b682639b82 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Mon, 6 Apr 2020 12:58:55 -0700
+Subject: [PATCH 8/8] windowing/wayland: GL: register using CRPRendererDMA
+
+---
+ xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp
+index 0169ef70a7ab..cfce34bda9da 100644
+--- a/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp
++++ b/xbmc/windowing/wayland/WinSystemWaylandEGLContextGL.cpp
+@@ -10,6 +10,7 @@
+ 
+ #include "OptionalsReg.h"
+ #include "cores/RetroPlayer/process/RPProcessInfo.h"
++#include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererDMA.h"
+ #include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererOpenGL.h"
+ #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGL.h"
+ #include "rendering/gl/ScreenshotSurfaceGL.h"
+@@ -37,6 +38,7 @@ bool CWinSystemWaylandEGLContextGL::InitWindowSystem()
+   }
+ 
+   CLinuxRendererGL::Register();
++  RETRO::CRPProcessInfo::RegisterRendererFactory(new RETRO::CRendererFactoryDMA);
+   RETRO::CRPProcessInfo::RegisterRendererFactory(new RETRO::CRendererFactoryOpenGL);
+ 
+   bool general, deepColor;

@@ -1,0 +1,59 @@
+From edbd058e86e5427661f816b81f449008c94f799f Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Wed, 8 Apr 2020 13:57:34 -0700
+Subject: [PATCH 1/2] CRPRendererDMA: use TEXTURE shader so DMA can be used
+ with OpenGL
+
+---
+ .../RetroPlayer/rendering/VideoRenderers/RPRendererDMA.cpp      | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/cores/RetroPlayer/rendering/VideoRenderers/RPRendererDMA.cpp b/xbmc/cores/RetroPlayer/rendering/VideoRenderers/RPRendererDMA.cpp
+index 9919b34119b5..dbeccfb6a9ae 100644
+--- a/xbmc/cores/RetroPlayer/rendering/VideoRenderers/RPRendererDMA.cpp
++++ b/xbmc/cores/RetroPlayer/rendering/VideoRenderers/RPRendererDMA.cpp
+@@ -72,7 +72,7 @@ void CRPRendererDMA::Render(uint8_t alpha)
+   glTexParameteri(m_textureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(m_textureTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+ 
+-  m_context.EnableGUIShader(GL_SHADER_METHOD::TEXTURE_NOALPHA);
++  m_context.EnableGUIShader(GL_SHADER_METHOD::TEXTURE);
+ 
+   GLubyte colour[4];
+   GLubyte idx[4] = {0, 1, 3, 2}; // Determines order of triangle strip
+
+From 5d577173f3c4c03acab89f0db845a0c63ae29406 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Wed, 8 Apr 2020 14:01:03 -0700
+Subject: [PATCH 2/2] [RetroPlayer] CRenderContext: remove unused
+ TEXTURE_RGBA_OES shader method
+
+---
+ xbmc/cores/RetroPlayer/rendering/RenderContext.cpp | 1 -
+ xbmc/cores/RetroPlayer/rendering/RenderContext.h   | 1 -
+ 2 files changed, 2 deletions(-)
+
+diff --git a/xbmc/cores/RetroPlayer/rendering/RenderContext.cpp b/xbmc/cores/RetroPlayer/rendering/RenderContext.cpp
+index 9ed7c281691e..36078c8ba306 100644
+--- a/xbmc/cores/RetroPlayer/rendering/RenderContext.cpp
++++ b/xbmc/cores/RetroPlayer/rendering/RenderContext.cpp
+@@ -73,7 +73,6 @@ static ESHADERMETHOD TranslateShaderMethod(GL_SHADER_METHOD method)
+   case GL_SHADER_METHOD::DEFAULT: return SM_DEFAULT;
+   case GL_SHADER_METHOD::TEXTURE: return SM_TEXTURE;
+ #if defined(HAS_GLES)
+-  case GL_SHADER_METHOD::TEXTURE_RGBA_OES: return SM_TEXTURE_RGBA_OES;
+   case GL_SHADER_METHOD::TEXTURE_NOALPHA:
+     return SM_TEXTURE_NOALPHA;
+ #endif
+diff --git a/xbmc/cores/RetroPlayer/rendering/RenderContext.h b/xbmc/cores/RetroPlayer/rendering/RenderContext.h
+index 91fbb49617f4..4deac3fd296a 100644
+--- a/xbmc/cores/RetroPlayer/rendering/RenderContext.h
++++ b/xbmc/cores/RetroPlayer/rendering/RenderContext.h
+@@ -26,7 +26,6 @@ enum class GL_SHADER_METHOD
+ {
+   DEFAULT,
+   TEXTURE,
+-  TEXTURE_RGBA_OES,
+   TEXTURE_NOALPHA,
+ };
+ 
