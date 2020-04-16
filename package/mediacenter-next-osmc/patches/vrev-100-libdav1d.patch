@@ -50,9 +50,9 @@ index f9022119f9..9e63d67706 100644
    option(ENABLE_INTERNAL_FSTRCMP "Enable internal fstrcmp?" OFF)
    option(ENABLE_INTERNAL_FLATBUFFERS "Enable internal flatbuffers?" OFF)
 -  option(ENABLE_INTERNAL_DAV1D "Enable internal dav1d?" OFF)
+   option(ENABLE_INTERNAL_GTEST "Enable internal gtest?" OFF)
  endif()
  # System options
- if(NOT WIN32)
 diff --git a/cmake/cpack/deb/copyright b/cmake/cpack/deb/copyright
 index 3a3916cd94..3033afd865 100644
 --- a/cmake/cpack/deb/copyright
