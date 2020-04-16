@@ -1,0 +1,438 @@
+From 12da9d143ce9871a5e790befca919e4cc4fca625 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Fri, 27 Mar 2020 23:53:20 +0100
+Subject: [PATCH 1/3] [addons][filesystem] "C" ABI cleanups
+
+This add a 'extern "C"' and the #ifdef to separate between C and C++.
+In API change this nothing, only done to confirm correct "C" and allow
+"C" only in future.
+---
+ .../kodi-addon-dev-kit/include/kodi/Network.h | 44 ++++++++++++-------
+ 1 file changed, 27 insertions(+), 17 deletions(-)
+
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/Network.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/Network.h
+index 73390c4915b3..af5e9c475589 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/Network.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/Network.h
+@@ -10,24 +10,32 @@
+ 
+ #include "AddonBase.h"
+ 
+-/*
+- * For interface between add-on and kodi.
+- *
+- * This structure defines the addresses of functions stored inside Kodi which
+- * are then available for the add-on to call
+- *
+- * All function pointers there are used by the C++ interface functions below.
+- * You find the set of them on xbmc/addons/interfaces/General.cpp
+- *
+- * Note: For add-on development itself this is not needed
+- */
+-typedef struct AddonToKodiFuncTable_kodi_network
++#ifdef __cplusplus
++extern "C"
+ {
+-  bool (*wake_on_lan)(void* kodiBase, const char *mac);
+-  char* (*get_ip_address)(void* kodiBase);
+-  char* (*dns_lookup)(void* kodiBase, const char* url, bool* ret);
+-  char* (*url_encode)(void* kodiBase, const char* url);
+-} AddonToKodiFuncTable_kodi_network;
++#endif /* __cplusplus */
++
++  /*
++   * For interface between add-on and kodi.
++   *
++   * This structure defines the addresses of functions stored inside Kodi which
++   * are then available for the add-on to call
++   *
++   * All function pointers there are used by the C++ interface functions below.
++   * You find the set of them on xbmc/addons/interfaces/General.cpp
++   *
++   * Note: For add-on development itself this is not needed
++   */
++  typedef struct AddonToKodiFuncTable_kodi_network
++  {
++    bool (*wake_on_lan)(KODI_HANDLE kodiBase, const char *mac);
++    char* (*get_ip_address)(KODI_HANDLE kodiBase);
++    char* (*dns_lookup)(KODI_HANDLE kodiBase, const char* url, bool* ret);
++    char* (*url_encode)(KODI_HANDLE kodiBase, const char* url);
++  } AddonToKodiFuncTable_kodi_network;
++
++#ifdef __cplusplus
++} /* extern "C" */
+ 
+ //==============================================================================
+ ///
+@@ -174,3 +182,5 @@ namespace network
+ 
+ } /* namespace network */
+ } /* namespace kodi */
++
++#endif /* __cplusplus */
+
+From 0591e4bcfb337e185315b425b1ed5f9d065a7854 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Fri, 27 Mar 2020 23:57:36 +0100
+Subject: [PATCH 2/3] [addons][network] clang cleanups
+
+This cleanup his code to match the clang, nothing changed in API.
+---
+ .../kodi-addon-dev-kit/include/kodi/Network.h | 239 +++++++++---------
+ 1 file changed, 123 insertions(+), 116 deletions(-)
+
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/Network.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/Network.h
+index af5e9c475589..5b3f6b3f8608 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/Network.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/Network.h
+@@ -28,7 +28,7 @@ extern "C"
+    */
+   typedef struct AddonToKodiFuncTable_kodi_network
+   {
+-    bool (*wake_on_lan)(KODI_HANDLE kodiBase, const char *mac);
++    bool (*wake_on_lan)(KODI_HANDLE kodiBase, const char* mac);
+     char* (*get_ip_address)(KODI_HANDLE kodiBase);
+     char* (*dns_lookup)(KODI_HANDLE kodiBase, const char* url, bool* ret);
+     char* (*url_encode)(KODI_HANDLE kodiBase, const char* url);
+@@ -55,130 +55,137 @@ namespace kodi
+ namespace network
+ {
+ 
+-  //============================================================================
+-  ///
+-  /// \ingroup cpp_kodi_network
+-  /// @brief Send WakeOnLan magic packet.
+-  ///
+-  /// @param[in] mac Network address of the host to wake.
+-  /// @return True if the magic packet was successfully sent, false otherwise.
+-  ///
+-  inline bool WakeOnLan(const std::string& mac)
+-  {
+-    return ::kodi::addon::CAddonBase::m_interface->toKodi->kodi_network->wake_on_lan(::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase, mac.c_str());
+-  }
+-  //----------------------------------------------------------------------------
++//============================================================================
++///
++/// \ingroup cpp_kodi_network
++/// @brief Send WakeOnLan magic packet.
++///
++/// @param[in] mac Network address of the host to wake.
++/// @return True if the magic packet was successfully sent, false otherwise.
++///
++inline bool WakeOnLan(const std::string& mac)
++{
++  return ::kodi::addon::CAddonBase::m_interface->toKodi->kodi_network->wake_on_lan(
++      ::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase, mac.c_str());
++}
++//----------------------------------------------------------------------------
+ 
+-  //============================================================================
+-  ///
+-  /// \ingroup cpp_kodi_network
+-  /// @brief To the current own ip address as a string.
+-  ///
+-  /// @return Own system ip.
+-  ///
+-  ///
+-  /// ------------------------------------------------------------------------
+-  ///
+-  /// **Example:**
+-  /// ~~~~~~~~~~~~~{.cpp}
+-  /// #include <kodi/Network.h>
+-  /// ...
+-  /// std::string ipAddress = kodi::network::GetIPAddress();
+-  /// fprintf(stderr, "My IP is '%s'\n", ipAddress.c_str());
+-  /// ...
+-  /// ~~~~~~~~~~~~~
+-  ///
+-  inline std::string GetIPAddress()
++//============================================================================
++///
++/// \ingroup cpp_kodi_network
++/// @brief To the current own ip address as a string.
++///
++/// @return Own system ip.
++///
++///
++/// ------------------------------------------------------------------------
++///
++/// **Example:**
++/// ~~~~~~~~~~~~~{.cpp}
++/// #include <kodi/Network.h>
++/// ...
++/// std::string ipAddress = kodi::network::GetIPAddress();
++/// fprintf(stderr, "My IP is '%s'\n", ipAddress.c_str());
++/// ...
++/// ~~~~~~~~~~~~~
++///
++inline std::string GetIPAddress()
++{
++  std::string ip;
++  char* string = ::kodi::addon::CAddonBase::m_interface->toKodi->kodi_network->get_ip_address(
++      ::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase);
++  if (string != nullptr)
+   {
+-    std::string ip;
+-    char* string = ::kodi::addon::CAddonBase::m_interface->toKodi->kodi_network->get_ip_address(::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase);
+-    if (string != nullptr)
+-    {
+-      ip = string;
+-      ::kodi::addon::CAddonBase::m_interface->toKodi->free_string(::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase, string);
+-    }
+-    return ip;
++    ip = string;
++    ::kodi::addon::CAddonBase::m_interface->toKodi->free_string(
++        ::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase, string);
+   }
+-  //----------------------------------------------------------------------------
++  return ip;
++}
++//----------------------------------------------------------------------------
+ 
+-  //============================================================================
+-  ///
+-  /// \ingroup cpp_kodi_network
+-  /// @brief URL encodes the given string
+-  ///
+-  /// This function converts the given input string to a URL encoded string and
+-  /// returns that as a new allocated string. All input characters that are
+-  /// not a-z, A-Z, 0-9, '-', '.', '_' or '~' are converted to their "URL escaped"
+-  /// version (%NN where NN is a two-digit hexadecimal number).
+-  ///
+-  /// @param[in] url The code of the message to get.
+-  /// @return Encoded URL string
+-  ///
+-  ///
+-  /// ------------------------------------------------------------------------
+-  ///
+-  /// **Example:**
+-  /// ~~~~~~~~~~~~~{.cpp}
+-  /// #include <kodi/Network.h>
+-  /// ...
+-  /// std::string encodedUrl = kodi::network::URLEncode("François");
+-  /// fprintf(stderr, "Encoded URL is '%s'\n", encodedUrl.c_str());
+-  /// ...
+-  /// ~~~~~~~~~~~~~
+-  /// For example, the string: François ,would be encoded as: Fran%C3%A7ois
+-  ///
+-  inline std::string URLEncode(const std::string& url)
++//============================================================================
++///
++/// \ingroup cpp_kodi_network
++/// @brief URL encodes the given string
++///
++/// This function converts the given input string to a URL encoded string and
++/// returns that as a new allocated string. All input characters that are
++/// not a-z, A-Z, 0-9, '-', '.', '_' or '~' are converted to their "URL escaped"
++/// version (%NN where NN is a two-digit hexadecimal number).
++///
++/// @param[in] url The code of the message to get.
++/// @return Encoded URL string
++///
++///
++/// ------------------------------------------------------------------------
++///
++/// **Example:**
++/// ~~~~~~~~~~~~~{.cpp}
++/// #include <kodi/Network.h>
++/// ...
++/// std::string encodedUrl = kodi::network::URLEncode("François");
++/// fprintf(stderr, "Encoded URL is '%s'\n", encodedUrl.c_str());
++/// ...
++/// ~~~~~~~~~~~~~
++/// For example, the string: François ,would be encoded as: Fran%C3%A7ois
++///
++inline std::string URLEncode(const std::string& url)
++{
++  std::string retString;
++  char* string = ::kodi::addon::CAddonBase::m_interface->toKodi->kodi_network->url_encode(
++      ::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase, url.c_str());
++  if (string != nullptr)
+   {
+-    std::string retString;
+-    char* string = ::kodi::addon::CAddonBase::m_interface->toKodi->kodi_network->url_encode(::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase, url.c_str());
+-    if (string != nullptr)
+-    {
+-      retString = string;
+-      ::kodi::addon::CAddonBase::m_interface->toKodi->free_string(::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase, string);
+-    }
+-    return retString;
++    retString = string;
++    ::kodi::addon::CAddonBase::m_interface->toKodi->free_string(
++        ::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase, string);
+   }
+-  //----------------------------------------------------------------------------
++  return retString;
++}
++//----------------------------------------------------------------------------
+ 
+-  //============================================================================
+-  ///
+-  /// \ingroup cpp_kodi_network
+-  /// @brief Lookup URL in DNS cache
+-  ///
+-  /// This test will get DNS record for a domain. The DNS lookup is done directly
+-  /// against the domain's authoritative name server, so changes to DNS Records
+-  /// should show up instantly. By default, the DNS lookup tool will return an
+-  /// IP address if you give it a name (e.g. www.example.com)
+-  ///
+-  /// @param[in] hostName   The code of the message to get.
+-  /// @param[out] ipAddress Returned address
+-  /// @return true if successfull
+-  ///
+-  ///
+-  /// ------------------------------------------------------------------------
+-  ///
+-  /// **Example:**
+-  /// ~~~~~~~~~~~~~{.cpp}
+-  /// #include <kodi/Network.h>
+-  /// ...
+-  /// std::string ipAddress;
+-  /// bool ret = kodi::network::DNSLookup("www.google.com", ipAddress);
+-  /// fprintf(stderr, "DNSLookup returned for www.google.com the IP '%s', call was %s\n", ipAddress.c_str(), ret ? "ok" : "failed");
+-  /// ...
+-  /// ~~~~~~~~~~~~~
+-  ///
+-  inline bool DNSLookup(const std::string& hostName, std::string& ipAddress)
++//============================================================================
++///
++/// \ingroup cpp_kodi_network
++/// @brief Lookup URL in DNS cache
++///
++/// This test will get DNS record for a domain. The DNS lookup is done directly
++/// against the domain's authoritative name server, so changes to DNS Records
++/// should show up instantly. By default, the DNS lookup tool will return an
++/// IP address if you give it a name (e.g. www.example.com)
++///
++/// @param[in] hostName   The code of the message to get.
++/// @param[out] ipAddress Returned address
++/// @return true if successfull
++///
++///
++/// ------------------------------------------------------------------------
++///
++/// **Example:**
++/// ~~~~~~~~~~~~~{.cpp}
++/// #include <kodi/Network.h>
++/// ...
++/// std::string ipAddress;
++/// bool ret = kodi::network::DNSLookup("www.google.com", ipAddress);
++/// fprintf(stderr, "DNSLookup returned for www.google.com the IP '%s', call was %s\n", ipAddress.c_str(), ret ? "ok" : "failed");
++/// ...
++/// ~~~~~~~~~~~~~
++///
++inline bool DNSLookup(const std::string& hostName, std::string& ipAddress)
++{
++  bool ret = false;
++  char* string = ::kodi::addon::CAddonBase::m_interface->toKodi->kodi_network->dns_lookup(
++      ::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase, hostName.c_str(), &ret);
++  if (string != nullptr)
+   {
+-    bool ret = false;
+-    char* string = ::kodi::addon::CAddonBase::m_interface->toKodi->kodi_network->dns_lookup(::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase, hostName.c_str(), &ret);
+-    if (string != nullptr)
+-    {
+-      ipAddress = string;
+-      ::kodi::addon::CAddonBase::m_interface->toKodi->free_string(::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase, string);
+-    }
+-    return ret;
++    ipAddress = string;
++    ::kodi::addon::CAddonBase::m_interface->toKodi->free_string(
++        ::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase, string);
+   }
+-  //----------------------------------------------------------------------------
++  return ret;
++}
++//----------------------------------------------------------------------------
+ 
+ } /* namespace network */
+ } /* namespace kodi */
+
+From 58a57b74e7df1346c4a000440a432dde45a8338a Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Sat, 28 Mar 2020 00:15:16 +0100
+Subject: [PATCH 3/3] [addons][network] add "using namespace ::kodi::addon;" to
+ reduce size
+
+This to reduce line size and have code more clean.
+---
+ .../kodi-addon-dev-kit/include/kodi/Network.h | 33 +++++++++++--------
+ 1 file changed, 19 insertions(+), 14 deletions(-)
+
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/Network.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/Network.h
+index 5b3f6b3f8608..71303071a013 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/Network.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/Network.h
+@@ -65,8 +65,10 @@ namespace network
+ ///
+ inline bool WakeOnLan(const std::string& mac)
+ {
+-  return ::kodi::addon::CAddonBase::m_interface->toKodi->kodi_network->wake_on_lan(
+-      ::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase, mac.c_str());
++  using namespace ::kodi::addon;
++
++  return CAddonBase::m_interface->toKodi->kodi_network->wake_on_lan(
++      CAddonBase::m_interface->toKodi->kodiBase, mac.c_str());
+ }
+ //----------------------------------------------------------------------------
+ 
+@@ -91,14 +93,15 @@ inline bool WakeOnLan(const std::string& mac)
+ ///
+ inline std::string GetIPAddress()
+ {
++  using namespace ::kodi::addon;
++
+   std::string ip;
+-  char* string = ::kodi::addon::CAddonBase::m_interface->toKodi->kodi_network->get_ip_address(
+-      ::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase);
++  char* string = CAddonBase::m_interface->toKodi->kodi_network->get_ip_address(
++      CAddonBase::m_interface->toKodi->kodiBase);
+   if (string != nullptr)
+   {
+     ip = string;
+-    ::kodi::addon::CAddonBase::m_interface->toKodi->free_string(
+-        ::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase, string);
++    CAddonBase::m_interface->toKodi->free_string(CAddonBase::m_interface->toKodi->kodiBase, string);
+   }
+   return ip;
+ }
+@@ -132,14 +135,15 @@ inline std::string GetIPAddress()
+ ///
+ inline std::string URLEncode(const std::string& url)
+ {
++  using namespace ::kodi::addon;
++
+   std::string retString;
+-  char* string = ::kodi::addon::CAddonBase::m_interface->toKodi->kodi_network->url_encode(
+-      ::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase, url.c_str());
++  char* string = CAddonBase::m_interface->toKodi->kodi_network->url_encode(
++      CAddonBase::m_interface->toKodi->kodiBase, url.c_str());
+   if (string != nullptr)
+   {
+     retString = string;
+-    ::kodi::addon::CAddonBase::m_interface->toKodi->free_string(
+-        ::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase, string);
++    CAddonBase::m_interface->toKodi->free_string(CAddonBase::m_interface->toKodi->kodiBase, string);
+   }
+   return retString;
+ }
+@@ -174,14 +178,15 @@ inline std::string URLEncode(const std::string& url)
+ ///
+ inline bool DNSLookup(const std::string& hostName, std::string& ipAddress)
+ {
++  using namespace ::kodi::addon;
++
+   bool ret = false;
+-  char* string = ::kodi::addon::CAddonBase::m_interface->toKodi->kodi_network->dns_lookup(
+-      ::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase, hostName.c_str(), &ret);
++  char* string = CAddonBase::m_interface->toKodi->kodi_network->dns_lookup(
++      CAddonBase::m_interface->toKodi->kodiBase, hostName.c_str(), &ret);
+   if (string != nullptr)
+   {
+     ipAddress = string;
+-    ::kodi::addon::CAddonBase::m_interface->toKodi->free_string(
+-        ::kodi::addon::CAddonBase::m_interface->toKodi->kodiBase, string);
++    CAddonBase::m_interface->toKodi->free_string(CAddonBase::m_interface->toKodi->kodiBase, string);
+   }
+   return ret;
+ }

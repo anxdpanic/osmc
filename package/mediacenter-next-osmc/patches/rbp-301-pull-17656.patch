@@ -1,0 +1,50 @@
+From 281ea3dcb34e74ffa8cea35edb56d818a8207d05 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Sat, 11 Apr 2020 08:25:54 -0700
+Subject: [PATCH] [linux] drop drm folder from drm includes
+
+---
+ xbmc/utils/DMAHeapBufferObject.cpp | 2 +-
+ xbmc/utils/DumbBufferObject.cpp    | 2 +-
+ xbmc/utils/UDMABufferObject.cpp    | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/xbmc/utils/DMAHeapBufferObject.cpp b/xbmc/utils/DMAHeapBufferObject.cpp
+index 64bcae06f7e4..6d2189c0383b 100644
+--- a/xbmc/utils/DMAHeapBufferObject.cpp
++++ b/xbmc/utils/DMAHeapBufferObject.cpp
+@@ -14,7 +14,7 @@
+ 
+ #include <array>
+ 
+-#include <drm/drm_fourcc.h>
++#include <drm_fourcc.h>
+ #include <linux/dma-heap.h>
+ #include <sys/ioctl.h>
+ #include <sys/mman.h>
+diff --git a/xbmc/utils/DumbBufferObject.cpp b/xbmc/utils/DumbBufferObject.cpp
+index e6359f5b8e42..47a2a4642125 100644
+--- a/xbmc/utils/DumbBufferObject.cpp
++++ b/xbmc/utils/DumbBufferObject.cpp
+@@ -14,7 +14,7 @@
+ #include "windowing/gbm/WinSystemGbm.h"
+ #include "windowing/gbm/WinSystemGbmEGLContext.h"
+ 
+-#include <drm/drm_fourcc.h>
++#include <drm_fourcc.h>
+ #include <sys/mman.h>
+ 
+ using namespace KODI::WINDOWING::GBM;
+diff --git a/xbmc/utils/UDMABufferObject.cpp b/xbmc/utils/UDMABufferObject.cpp
+index 540aacbff7d9..c4e1f5d777eb 100644
+--- a/xbmc/utils/UDMABufferObject.cpp
++++ b/xbmc/utils/UDMABufferObject.cpp
+@@ -11,7 +11,7 @@
+ #include "utils/BufferObjectFactory.h"
+ #include "utils/log.h"
+ 
+-#include <drm/drm_fourcc.h>
++#include <drm_fourcc.h>
+ #include <linux/udmabuf.h>
+ #include <sys/ioctl.h>
+ #include <sys/mman.h>

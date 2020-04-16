@@ -1,0 +1,22 @@
+From f5e82a137c000059be48609dd714333a65fef01b Mon Sep 17 00:00:00 2001
+From: snaunton <snaunton@gmail.com>
+Date: Fri, 13 Mar 2020 11:39:16 +1100
+Subject: [PATCH] http sources look for subtitles
+
+---
+ xbmc/Util.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/Util.cpp b/xbmc/Util.cpp
+index 8f7252708aec..c3f544d0d7ef 100644
+--- a/xbmc/Util.cpp
++++ b/xbmc/Util.cpp
+@@ -1974,7 +1974,7 @@ void CUtil::ScanForExternalSubtitles(const std::string& strMovie, std::vector<st
+   unsigned int startTimer = XbmcThreads::SystemClockMillis();
+ 
+   CFileItem item(strMovie, false);
+-  if (item.IsInternetStream()
++  if ((item.IsInternetStream() && !URIUtils::IsOnLAN(item.GetDynPath()))
+     || item.IsPlayList()
+     || item.IsLiveTV()
+     || !item.IsVideo())

@@ -1,0 +1,107 @@
+From edd39b5703ad09630ae840a1002aede9030222c1 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Wed, 8 Apr 2020 10:19:58 -0700
+Subject: [PATCH] CRenderBufferDMA: log the buffer type in use
+
+---
+ xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp | 3 +++
+ xbmc/utils/DMAHeapBufferObject.h                   | 1 +
+ xbmc/utils/DumbBufferObject.h                      | 1 +
+ xbmc/utils/GBMBufferObject.h                       | 1 +
+ xbmc/utils/IBufferObject.h                         | 8 ++++++++
+ xbmc/utils/UDMABufferObject.h                      | 1 +
+ 6 files changed, 15 insertions(+)
+
+diff --git a/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp b/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp
+index aab9e39b5b88..93e128978b82 100644
+--- a/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp
++++ b/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp
+@@ -11,6 +11,7 @@
+ #include "ServiceBroker.h"
+ #include "utils/BufferObject.h"
+ #include "utils/EGLImage.h"
++#include "utils/log.h"
+ #include "windowing/WinSystem.h"
+ #include "windowing/linux/WinSystemEGL.h"
+ 
+@@ -31,6 +32,8 @@ CRenderBufferDMA::CRenderBufferDMA(CRenderContext& context, int fourcc)
+                              "specifically platforms that implement CWinSystemEGL");
+ 
+   m_egl = std::make_unique<CEGLImage>(winSystemEGL->GetEGLDisplay());
++
++  CLog::Log(LOGDEBUG, "CRenderBufferDMA: using BufferObject type: {}", m_bo->GetName());
+ }
+ 
+ CRenderBufferDMA::~CRenderBufferDMA()
+diff --git a/xbmc/utils/DMAHeapBufferObject.h b/xbmc/utils/DMAHeapBufferObject.h
+index 13a400721dd5..88aa9979560d 100644
+--- a/xbmc/utils/DMAHeapBufferObject.h
++++ b/xbmc/utils/DMAHeapBufferObject.h
+@@ -28,6 +28,7 @@ class CDMAHeapBufferObject : public CBufferObject
+   void DestroyBufferObject() override;
+   uint8_t* GetMemory() override;
+   void ReleaseMemory() override;
++  std::string GetName() const override { return "CDMAHeapBufferObject"; }
+ 
+ private:
+   int m_dmaheapfd{-1};
+diff --git a/xbmc/utils/DumbBufferObject.h b/xbmc/utils/DumbBufferObject.h
+index 614d92da6a0a..2dec611f896b 100644
+--- a/xbmc/utils/DumbBufferObject.h
++++ b/xbmc/utils/DumbBufferObject.h
+@@ -28,6 +28,7 @@ class CDumbBufferObject : public CBufferObject
+   void DestroyBufferObject() override;
+   uint8_t* GetMemory() override;
+   void ReleaseMemory() override;
++  std::string GetName() const override { return "CDumbBufferObject"; }
+ 
+ private:
+   int m_device{-1};
+diff --git a/xbmc/utils/GBMBufferObject.h b/xbmc/utils/GBMBufferObject.h
+index 8812291a5950..ae8de581c0d6 100644
+--- a/xbmc/utils/GBMBufferObject.h
++++ b/xbmc/utils/GBMBufferObject.h
+@@ -31,6 +31,7 @@ class CGBMBufferObject : public CBufferObject
+   void DestroyBufferObject() override;
+   uint8_t* GetMemory() override;
+   void ReleaseMemory() override;
++  std::string GetName() const override { return "CGBMBufferObject"; }
+ 
+   // CBufferObject overrides
+   uint64_t GetModifier() override;
+diff --git a/xbmc/utils/IBufferObject.h b/xbmc/utils/IBufferObject.h
+index 23703945ce90..1c95b0a64a8f 100644
+--- a/xbmc/utils/IBufferObject.h
++++ b/xbmc/utils/IBufferObject.h
+@@ -9,6 +9,7 @@
+ #pragma once
+ 
+ #include <stdint.h>
++#include <string>
+ 
+ /**
+  * @brief Interface to describe CBufferObjects.
+@@ -97,4 +98,11 @@ class IBufferObject
+    * @return uint64_t modifier of the BufferObject. 0 means the layout is linear (default).
+    */
+   virtual uint64_t GetModifier() = 0;
++
++  /**
++   * @brief Get the Name of the BufferObject type in use
++   *
++   * @return std::string name of the BufferObject type in use
++   */
++  virtual std::string GetName() const = 0;
+ };
+diff --git a/xbmc/utils/UDMABufferObject.h b/xbmc/utils/UDMABufferObject.h
+index 51c1119ccc71..aaec123f074f 100644
+--- a/xbmc/utils/UDMABufferObject.h
++++ b/xbmc/utils/UDMABufferObject.h
+@@ -28,6 +28,7 @@ class CUDMABufferObject : public CBufferObject
+   void DestroyBufferObject() override;
+   uint8_t* GetMemory() override;
+   void ReleaseMemory() override;
++  std::string GetName() const override { return "CUDMABufferObject"; }
+ 
+ private:
+   int m_memfd{-1};
