@@ -72,6 +72,7 @@ then
 	handle_dep "libssh-dev"
 	handle_dep "libavahi-client-dev"
 	handle_dep "libssl-dev"
+	handle_dep "libspdlog-dev"
 	handle_dep "libtinyxml-dev"
 	handle_dep "libtool"
 	handle_dep "libudev-dev"
