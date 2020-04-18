@@ -19,7 +19,7 @@ index 7dc6713..d216439 100644
  #include "cores/AudioEngine/Utils/AEUtil.h"
  #include "threads/SingleLock.h"
 +#include "settings/Settings.h"
-+
++#include "settings/SettingsComponent.h"
  #if defined(HAS_LIBAMCODEC)
  #include "utils/AMLUtils.h"
  "include "untils/SysfsUtils.h"
