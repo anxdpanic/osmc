@@ -1,0 +1,244 @@
+From 607274b68aeddb3dc8cf8926ac0a535363b45799 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Wed, 25 Mar 2020 13:27:49 -0700
+Subject: [PATCH] IBufferObject: allow creating by size
+
+---
+ .../RetroPlayer/buffers/RenderBufferDMA.cpp     |  2 +-
+ .../cores/RetroPlayer/buffers/RenderBufferDMA.h |  4 ++--
+ .../rendering/VideoRenderers/RPRendererDMA.cpp  |  2 +-
+ xbmc/utils/BufferObject.cpp                     |  4 ++--
+ xbmc/utils/BufferObject.h                       |  4 +++-
+ xbmc/utils/BufferObjectFactory.cpp              | 14 ++++++++++++--
+ xbmc/utils/BufferObjectFactory.h                |  2 +-
+ xbmc/utils/DMAHeapBufferObject.cpp              |  8 +++++++-
+ xbmc/utils/DMAHeapBufferObject.h                |  1 +
+ xbmc/utils/IBufferObject.h                      | 17 ++++++++++++++---
+ xbmc/utils/UDMABufferObject.cpp                 | 10 ++++++++--
+ xbmc/utils/UDMABufferObject.h                   |  1 +
+ 12 files changed, 53 insertions(+), 16 deletions(-)
+
+diff --git a/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp b/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp
+index aab9e39b5b88..508156216a9f 100644
+--- a/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp
++++ b/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.cpp
+@@ -20,7 +20,7 @@ using namespace RETRO;
+ CRenderBufferDMA::CRenderBufferDMA(CRenderContext& context, int fourcc)
+   : m_context(context),
+     m_fourcc(fourcc),
+-    m_bo(CBufferObject::GetBufferObject())
++    m_bo(CBufferObject::GetBufferObject(false))
+ {
+   auto winSystemEGL =
+       dynamic_cast<KODI::WINDOWING::LINUX::CWinSystemEGL*>(CServiceBroker::GetWinSystem());
+diff --git a/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.h b/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.h
+index a45ba43b4d1c..fa1684475502 100644
+--- a/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.h
++++ b/xbmc/cores/RetroPlayer/buffers/RenderBufferDMA.h
+@@ -15,7 +15,7 @@
+ #include "system_gl.h"
+ 
+ class CEGLImage;
+-class CBufferObject;
++class IBufferObject;
+ 
+ namespace KODI
+ {
+@@ -60,7 +60,7 @@ namespace RETRO
+     void DeleteTexture();
+ 
+     std::unique_ptr<CEGLImage> m_egl;
+-    std::unique_ptr<CBufferObject> m_bo;
++    std::unique_ptr<IBufferObject> m_bo;
+   };
+ }
+ }
+diff --git a/xbmc/cores/RetroPlayer/rendering/VideoRenderers/RPRendererDMA.cpp b/xbmc/cores/RetroPlayer/rendering/VideoRenderers/RPRendererDMA.cpp
+index 9919b34119b5..fb4244e4eaf1 100644
+--- a/xbmc/cores/RetroPlayer/rendering/VideoRenderers/RPRendererDMA.cpp
++++ b/xbmc/cores/RetroPlayer/rendering/VideoRenderers/RPRendererDMA.cpp
+@@ -35,7 +35,7 @@ CRPBaseRenderer* CRendererFactoryDMA::CreateRenderer(const CRenderSettings& sett
+ 
+ RenderBufferPoolVector CRendererFactoryDMA::CreateBufferPools(CRenderContext& context)
+ {
+-  if (!CBufferObjectFactory::CreateBufferObject())
++  if (!CBufferObjectFactory::CreateBufferObject(false))
+     return {};
+ 
+   return {std::make_shared<CRenderBufferPoolDMA>(context)};
+diff --git a/xbmc/utils/BufferObject.cpp b/xbmc/utils/BufferObject.cpp
+index f9e2b12b6c13..cce2f4bd7ef2 100644
+--- a/xbmc/utils/BufferObject.cpp
++++ b/xbmc/utils/BufferObject.cpp
+@@ -10,9 +10,9 @@
+ 
+ #include "BufferObjectFactory.h"
+ 
+-std::unique_ptr<CBufferObject> CBufferObject::GetBufferObject()
++std::unique_ptr<CBufferObject> CBufferObject::GetBufferObject(bool needsCreateBySize)
+ {
+-  return CBufferObjectFactory::CreateBufferObject();
++  return CBufferObjectFactory::CreateBufferObject(needsCreateBySize);
+ }
+ 
+ int CBufferObject::GetFd()
+diff --git a/xbmc/utils/BufferObject.h b/xbmc/utils/BufferObject.h
+index 92b108964434..02c40daa0427 100644
+--- a/xbmc/utils/BufferObject.h
++++ b/xbmc/utils/BufferObject.h
+@@ -26,7 +26,9 @@ class CBufferObject : public IBufferObject
+    *
+    * @return std::unique_ptr<CBufferObject>
+    */
+-  static std::unique_ptr<CBufferObject> GetBufferObject();
++  static std::unique_ptr<CBufferObject> GetBufferObject(bool needsCreateBySize);
++
++  virtual bool CreateBufferObject(uint64_t size) override { return false; }
+ 
+   virtual int GetFd() override;
+   virtual uint32_t GetStride() override;
+diff --git a/xbmc/utils/BufferObjectFactory.cpp b/xbmc/utils/BufferObjectFactory.cpp
+index 356771cf2ff5..eb1ec7e07ce0 100644
+--- a/xbmc/utils/BufferObjectFactory.cpp
++++ b/xbmc/utils/BufferObjectFactory.cpp
+@@ -10,11 +10,21 @@
+ 
+ std::list<std::function<std::unique_ptr<CBufferObject>()>> CBufferObjectFactory::m_bufferObjects;
+ 
+-std::unique_ptr<CBufferObject> CBufferObjectFactory::CreateBufferObject()
++std::unique_ptr<CBufferObject> CBufferObjectFactory::CreateBufferObject(bool needsCreateBySize)
+ {
+   for (const auto bufferObject : m_bufferObjects)
+   {
+-    return bufferObject();
++    auto bo = bufferObject();
++
++    if (needsCreateBySize)
++    {
++      if (!bo->CreateBufferObject(1))
++        continue;
++
++      bo->DestroyBufferObject();
++    }
++
++    return bo;
+   }
+ 
+   return nullptr;
+diff --git a/xbmc/utils/BufferObjectFactory.h b/xbmc/utils/BufferObjectFactory.h
+index eb4185f084ed..a466e840cdd0 100644
+--- a/xbmc/utils/BufferObjectFactory.h
++++ b/xbmc/utils/BufferObjectFactory.h
+@@ -29,7 +29,7 @@ class CBufferObjectFactory
+    *
+    * @return std::unique_ptr<CBufferObject>
+    */
+-  static std::unique_ptr<CBufferObject> CreateBufferObject();
++  static std::unique_ptr<CBufferObject> CreateBufferObject(bool needsCreateBySize);
+ 
+   /**
+    * @brief Registers a CBufferObject class to class to the factory.
+diff --git a/xbmc/utils/DMAHeapBufferObject.cpp b/xbmc/utils/DMAHeapBufferObject.cpp
+index 64bcae06f7e4..7dc0f6fe567e 100644
+--- a/xbmc/utils/DMAHeapBufferObject.cpp
++++ b/xbmc/utils/DMAHeapBufferObject.cpp
+@@ -90,9 +90,15 @@ bool CDMAHeapBufferObject::CreateBufferObject(uint32_t format, uint32_t width, u
+       throw std::system_error(errno, std::generic_category(), "pixel format not implemented");
+   }
+ 
+-  m_size = width * height * bpp;
+   m_stride = width * bpp;
+ 
++  return CreateBufferObject(width * height * bpp);
++}
++
++bool CDMAHeapBufferObject::CreateBufferObject(uint64_t size)
++{
++  m_size = size;
++
+   if (m_dmaheapfd < 0)
+   {
+     m_dmaheapfd = open(DMA_HEAP_PATH, O_RDWR);
+diff --git a/xbmc/utils/DMAHeapBufferObject.h b/xbmc/utils/DMAHeapBufferObject.h
+index 13a400721dd5..d3aa641c4a95 100644
+--- a/xbmc/utils/DMAHeapBufferObject.h
++++ b/xbmc/utils/DMAHeapBufferObject.h
+@@ -25,6 +25,7 @@ class CDMAHeapBufferObject : public CBufferObject
+ 
+   // IBufferObject overrides via CBufferObject
+   bool CreateBufferObject(uint32_t format, uint32_t width, uint32_t height) override;
++  bool CreateBufferObject(uint64_t size) override;
+   void DestroyBufferObject() override;
+   uint8_t* GetMemory() override;
+   void ReleaseMemory() override;
+diff --git a/xbmc/utils/IBufferObject.h b/xbmc/utils/IBufferObject.h
+index 23703945ce90..f4ba17dd22d2 100644
+--- a/xbmc/utils/IBufferObject.h
++++ b/xbmc/utils/IBufferObject.h
+@@ -41,17 +41,28 @@ class IBufferObject
+   virtual ~IBufferObject() = default;
+ 
+   /**
+-   * @brief Create a BufferObject.
++   * @brief Create a BufferObject based on the format, width, and height of the desired buffer
+    *
+    * @param format framebuffer pixel formats are described using the fourcc codes defined in
+    *               https://github.com/torvalds/linux/blob/master/include/uapi/drm/drm_fourcc.h
+-   * @param width width of the requested buffer object.
+-   * @param height height of the requested buffer object.
++   * @param width width of the requested buffer.
++   * @param height height of the requested buffer.
+    * @return true BufferObject creation was successful.
+    * @return false BufferObject creation was unsuccessful.
+    */
+   virtual bool CreateBufferObject(uint32_t format, uint32_t width, uint32_t height) = 0;
+ 
++  /**
++   * @brief Create a BufferObject based only on the size of the desired buffer. Not all
++   *        CBufferObject implementations may support this. This method is required for
++   *        use with the CAddonVideoCodec as it only knows the decoded buffer size.
++   *
++   * @param size of the requested buffer.
++   * @return true BufferObject creation was successful.
++   * @return false BufferObject creation was unsuccessful.
++   */
++  virtual bool CreateBufferObject(uint64_t size) = 0;
++
+   /**
+    * @brief Destroy a BufferObject.
+    *
+diff --git a/xbmc/utils/UDMABufferObject.cpp b/xbmc/utils/UDMABufferObject.cpp
+index 540aacbff7d9..3feb3ac4a121 100644
+--- a/xbmc/utils/UDMABufferObject.cpp
++++ b/xbmc/utils/UDMABufferObject.cpp
+@@ -79,10 +79,16 @@ bool CUDMABufferObject::CreateBufferObject(uint32_t format, uint32_t width, uint
+       throw std::system_error(errno, std::generic_category(), "pixel format not implemented");
+   }
+ 
+-  // Must be rounded to the system page size
+-  m_size = RoundUp(width * height * bpp, PAGESIZE);
+   m_stride = width * bpp;
+ 
++  return CreateBufferObject(width * height * bpp);
++}
++
++bool CUDMABufferObject::CreateBufferObject(uint64_t size)
++{
++  // Must be rounded to the system page size
++  m_size = RoundUp(size, PAGESIZE);
++
+   m_memfd = memfd_create("kodi", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+   if (m_memfd < 0)
+   {
+diff --git a/xbmc/utils/UDMABufferObject.h b/xbmc/utils/UDMABufferObject.h
+index 51c1119ccc71..9eec5cbfd61d 100644
+--- a/xbmc/utils/UDMABufferObject.h
++++ b/xbmc/utils/UDMABufferObject.h
+@@ -25,6 +25,7 @@ class CUDMABufferObject : public CBufferObject
+ 
+   // IBufferObject overrides via CBufferObject
+   bool CreateBufferObject(uint32_t format, uint32_t width, uint32_t height) override;
++  bool CreateBufferObject(uint64_t size) override;
+   void DestroyBufferObject() override;
+   uint8_t* GetMemory() override;
+   void ReleaseMemory() override;

@@ -1,0 +1,425 @@
+From 9edb19a6fc523685b900505c04e6e41afc7f22a1 Mon Sep 17 00:00:00 2001
+From: ronie <ronie@kodi.tv>
+Date: Sun, 12 Apr 2020 18:20:44 +0200
+Subject: [PATCH 1/7] add documentation for missing infobools
+
+---
+ xbmc/GUIInfoManager.cpp | 26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/GUIInfoManager.cpp b/xbmc/GUIInfoManager.cpp
+index 4220d09b4fb1..e6596fbb8335 100644
+--- a/xbmc/GUIInfoManager.cpp
++++ b/xbmc/GUIInfoManager.cpp
+@@ -3800,8 +3800,14 @@ const infomap retroplayer[] =
+ ///   }
+ ///   \table_row3{   <b>`Container.SortMethod`</b>,
+ ///                  \anchor Container_SortMethod
++///                  _string_,
++///     @return The current sort method (name\, year\, rating\, etc).
++///     <p>
++///   }
++///   \table_row3{   <b>`Container.SortMethod(parameter)`</b>,
++///                  \anchor Container_SortMethod_parameter
+ ///                  _boolean_,
+-///     @return **True** the current sort method (name\, year\, rating\, etc).
++///     @return **True** if the current sort method matches the specified parameter (name\, year\, rating\, etc).
+ ///     <p>
+ ///   }
+ ///   \table_row3{   <b>`Container.SortOrder`</b>,
+@@ -4000,6 +4006,12 @@ const infomap container_bools[] ={{ "onnext",           CONTAINER_MOVE_NEXT },
+ ///     @skinning_v16 **[New Infolabel]** \link Container_Row `Container(id).Row`\endlink
+ ///     <p>
+ ///   }
++///   \table_row3{   <b>`Container(id).Row(parameter)`</b>,
++///                  \anchor Container_Row_parameter
++///                  _boolean_,
++///     @return **True** if the row number of the focused position matches the specified parameter.
++///     <p>
++///   }
+ ///   \table_row3{   <b>`Container(id).Column`</b>,
+ ///                  \anchor Container_Column
+ ///                  _integer_,
+@@ -4008,6 +4020,12 @@ const infomap container_bools[] ={{ "onnext",           CONTAINER_MOVE_NEXT },
+ ///     @skinning_v16 **[New Infolabel]** \link Container_Column `Container(id).Column`\endlink
+ ///     <p>
+ ///   }
++///   \table_row3{   <b>`Container(id).Column(parameter)`</b>,
++///                  \anchor Container_Column_parameter
++///                  _boolean_,
++///     @return **True** if the column number of the focused position matches the specified parameter.
++///     <p>
++///   }
+ ///   \table_row3{   <b>`Container(id).Position`</b>,
+ ///                  \anchor Container_Position
+ ///                  _integer_,
+@@ -4018,6 +4036,12 @@ const infomap container_bools[] ={{ "onnext",           CONTAINER_MOVE_NEXT },
+ ///     now also returns the position for items inside a grouplist.
+ ///     <p>
+ ///   }
++///   \table_row3{   <b>`Container(id).Position(parameter)`</b>,
++///                  \anchor Container_Position_parameter
++///                  _boolean_,
++///     @return **True** if the container with id (or current container if id is omitted) is focused on the specified position.
++///     <p>
++///   }
+ ///   \table_row3{   <b>`Container(id).CurrentItem`</b>,
+ ///                  \anchor Container_CurrentItem
+ ///                  _integer_,
+
+From d271b612da799442e7d803a5c286ff2cd7f48001 Mon Sep 17 00:00:00 2001
+From: ronie <ronie@kodi.tv>
+Date: Sun, 12 Apr 2020 18:42:42 +0200
+Subject: [PATCH 2/7] move infolabels that don't support (id) to the correct
+ map
+
+---
+ xbmc/GUIInfoManager.cpp | 42 ++++++++++++++++++++---------------------
+ 1 file changed, 21 insertions(+), 21 deletions(-)
+
+diff --git a/xbmc/GUIInfoManager.cpp b/xbmc/GUIInfoManager.cpp
+index e6596fbb8335..008bcae054b1 100644
+--- a/xbmc/GUIInfoManager.cpp
++++ b/xbmc/GUIInfoManager.cpp
+@@ -3818,6 +3818,24 @@ const infomap retroplayer[] =
+ ///     @skinning_v16 **[New Infolabel]** \link Container_SortOrder `Container.SortOrder`\endlink
+ ///     <p>
+ ///   }
++///   \table_row3{   <b>`Container.CanFilter`</b>,
++///                  \anchor Container_CanFilter
++///                  _boolean_,
++///     @return **True** when the current container can be filtered.
++///     <p>
++///   }
++///   \table_row3{   <b>`Container.CanFilterAdvanced`</b>,
++///                  \anchor Container_CanFilterAdvanced
++///                  _boolean_,
++///     @return **True** when advanced filtering can be applied to the current container.
++///     <p>
++///   }
++///   \table_row3{   <b>`Container.Filtered`</b>,
++///                  \anchor Container_Filtered
++///                  _boolean_,
++///     @return **True** when a mediafilter is applied to the current container.
++///     <p>
++///   }
+ ///   \table_row3{   <b>`Container.ShowPlot`</b>,
+ ///                  \anchor Container_ShowPlot
+ ///                  _string_,
+@@ -3849,6 +3867,9 @@ const infomap mediacontainer[] = {{ "hasfiles",         CONTAINER_HASFILES },
+                                   { "hasthumb",         CONTAINER_HAS_THUMB },
+                                   { "sortmethod",       CONTAINER_SORT_METHOD },
+                                   { "sortorder",        CONTAINER_SORT_ORDER },
++                                  { "canfilter",        CONTAINER_CAN_FILTER },
++                                  { "canfilteradvanced",CONTAINER_CAN_FILTERADVANCED },
++                                  { "filtered",         CONTAINER_FILTERED },
+                                   { "showplot",         CONTAINER_SHOWPLOT },
+                                   { "showtitle",        CONTAINER_SHOWTITLE }};
+ 
+@@ -3956,24 +3977,6 @@ const infomap mediacontainer[] = {{ "hasfiles",         CONTAINER_HASFILES },
+ ///     @return **True** if the container or textbox with id (id) has a previous page.
+ ///     <p>
+ ///   }
+-///   \table_row3{   <b>`Container.CanFilter`</b>,
+-///                  \anchor Container_CanFilter
+-///                  _boolean_,
+-///     @return **True** when the current container can be filtered.
+-///     <p>
+-///   }
+-///   \table_row3{   <b>`Container.CanFilterAdvanced`</b>,
+-///                  \anchor Container_CanFilterAdvanced
+-///                  _boolean_,
+-///     @return **True** when advanced filtering can be applied to the current container.
+-///     <p>
+-///   }
+-///   \table_row3{   <b>`Container.Filtered`</b>,
+-///                  \anchor Container_Filtered
+-///                  _boolean_,
+-///     @return **True** when a mediafilter is applied to the current container.
+-///     <p>
+-///   }
+ ///   \table_row3{   <b>`Container(id).IsUpdating`</b>,
+ ///                  \anchor Container_IsUpdating
+ ///                  _boolean_,
+@@ -3992,9 +3995,6 @@ const infomap container_bools[] ={{ "onnext",           CONTAINER_MOVE_NEXT },
+                                   { "hasnext",          CONTAINER_HAS_NEXT },
+                                   { "hasparent",        CONTAINER_HAS_PARENT_ITEM },
+                                   { "hasprevious",      CONTAINER_HAS_PREVIOUS },
+-                                  { "canfilter",        CONTAINER_CAN_FILTER },
+-                                  { "canfilteradvanced",CONTAINER_CAN_FILTERADVANCED },
+-                                  { "filtered",         CONTAINER_FILTERED },
+                                   { "isupdating",       CONTAINER_ISUPDATING }};
+ 
+ /// \page modules__infolabels_boolean_conditions
+
+From 34d6177b8e6e9169c1d79248cc1f998a1fc9c256 Mon Sep 17 00:00:00 2001
+From: ronie <ronie@kodi.tv>
+Date: Sun, 12 Apr 2020 18:43:45 +0200
+Subject: [PATCH 3/7] fix documentation for infolabels that don't support (id)
+
+---
+ xbmc/GUIInfoManager.cpp | 21 +++++++++------------
+ 1 file changed, 9 insertions(+), 12 deletions(-)
+
+diff --git a/xbmc/GUIInfoManager.cpp b/xbmc/GUIInfoManager.cpp
+index 008bcae054b1..9298aba4fc20 100644
+--- a/xbmc/GUIInfoManager.cpp
++++ b/xbmc/GUIInfoManager.cpp
+@@ -3706,25 +3706,22 @@ const infomap retroplayer[] =
+ /// \subsection modules__infolabels_boolean_conditions_Container Container
+ /// \table_start
+ ///   \table_h3{ Labels, Type, Description }
+-///   \table_row3{   <b>`Container(id).HasFiles`</b>,
++///   \table_row3{   <b>`Container.HasFiles`</b>,
+ ///                  \anchor Container_HasFiles
+ ///                  _boolean_,
+-///     @return **True** if the container contains files (or current container if
+-///     id is omitted).
++///     @return **True** if the container contains files.
+ ///     <p>
+ ///   }
+-///   \table_row3{   <b>`Container(id).HasFolders`</b>,
++///   \table_row3{   <b>`Container.HasFolders`</b>,
+ ///                  \anchor Container_HasFolders
+ ///                  _boolean_,
+-///     @return **True** if the container contains folders (or current container if
+-///     id is omitted).
++///     @return **True** if the container contains folders.
+ ///     <p>
+ ///   }
+-///   \table_row3{   <b>`Container(id).IsStacked`</b>,
++///   \table_row3{   <b>`Container.IsStacked`</b>,
+ ///                  \anchor Container_IsStacked
+ ///                  _boolean_,
+-///     @return **True** if the container is currently in stacked mode (or current
+-///     container if id is omitted).
++///     @return **True** if the container is currently in stacked mode.
+ ///     <p>
+ ///   }
+ ///   \table_row3{   <b>`Container.FolderPath`</b>,
+@@ -3767,13 +3764,13 @@ const infomap retroplayer[] =
+ ///     @skinning_v17 **[New Infolabel]** \link Container_ViewCount `Container.ViewCount`\endlink
+ ///     <p>
+ ///   }
+-///   \table_row3{   <b>`Container(id).Totaltime`</b>,
++///   \table_row3{   <b>`Container.Totaltime`</b>,
+ ///                  \anchor Container_Totaltime
+ ///                  _string_,
+ ///     @return The total time of all items in the current container.
+ ///     <p>
+ ///   }
+-///   \table_row3{   <b>`Container(id).TotalWatched`</b>,
++///   \table_row3{   <b>`Container.TotalWatched`</b>,
+ ///                  \anchor Container_TotalWatched
+ ///                  _string_,
+ ///     @return The number of watched items in the container.
+@@ -3782,7 +3779,7 @@ const infomap retroplayer[] =
+ ///     @skinning_v16 **[New Infolabel]** \link Container_TotalWatched `Container(id).TotalWatched`\endlink
+ ///     <p>
+ ///   }
+-///   \table_row3{   <b>`Container(id).TotalUnWatched`</b>,
++///   \table_row3{   <b>`Container.TotalUnWatched`</b>,
+ ///                  \anchor Container_TotalUnWatched
+ ///                  _string_,
+ ///     @return The number of unwatched items in the container.
+
+From 01a0c83868c2cac62271358cf6b55d156e97999f Mon Sep 17 00:00:00 2001
+From: ronie <ronie@kodi.tv>
+Date: Sun, 12 Apr 2020 18:46:01 +0200
+Subject: [PATCH 4/7] fix documentation for infolabels that do support (id)
+
+---
+ xbmc/GUIInfoManager.cpp | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/GUIInfoManager.cpp b/xbmc/GUIInfoManager.cpp
+index 9298aba4fc20..a81f6e81d1db 100644
+--- a/xbmc/GUIInfoManager.cpp
++++ b/xbmc/GUIInfoManager.cpp
+@@ -3960,10 +3960,11 @@ const infomap mediacontainer[] = {{ "hasfiles",         CONTAINER_HASFILES },
+ ///     @return **True** if the container or textbox with id (id) has a next page.
+ ///     <p>
+ ///   }
+-///   \table_row3{   <b>`Container.HasParent`</b>,
++///   \table_row3{   <b>`Container(id).HasParent`</b>,
+ ///                  \anchor Container_HasParent
+ ///                  _boolean_,
+-///     @return **True** when the container contains a parent ('..') item.
++///     @return **True** when the container with given id contains a parent ('..') item.
++///     @note If no id is specified it grabs the current container.
+ ///     <p><hr>
+ ///     @skinning_v16 **[New Boolean Condition]** \link Container_HasParent `Container.HasParent`\endlink
+ ///     <p>
+
+From 2782ec8f7b16fdae5b58f7ce78cbfde38549d2b5 Mon Sep 17 00:00:00 2001
+From: ronie <ronie@kodi.tv>
+Date: Tue, 14 Apr 2020 12:42:58 +0200
+Subject: [PATCH 5/7] fix Container.SortMethod() infobool
+
+---
+ xbmc/GUIInfoManager.cpp                    | 29 +++++++++++-----------
+ xbmc/guilib/guiinfo/GUIControlsGUIInfo.cpp |  2 +-
+ 2 files changed, 16 insertions(+), 15 deletions(-)
+
+diff --git a/xbmc/GUIInfoManager.cpp b/xbmc/GUIInfoManager.cpp
+index a81f6e81d1db..56aaccf06f1b 100644
+--- a/xbmc/GUIInfoManager.cpp
++++ b/xbmc/GUIInfoManager.cpp
+@@ -3795,18 +3795,6 @@ const infomap retroplayer[] =
+ ///     to it.
+ ///     <p>
+ ///   }
+-///   \table_row3{   <b>`Container.SortMethod`</b>,
+-///                  \anchor Container_SortMethod
+-///                  _string_,
+-///     @return The current sort method (name\, year\, rating\, etc).
+-///     <p>
+-///   }
+-///   \table_row3{   <b>`Container.SortMethod(parameter)`</b>,
+-///                  \anchor Container_SortMethod_parameter
+-///                  _boolean_,
+-///     @return **True** if the current sort method matches the specified parameter (name\, year\, rating\, etc).
+-///     <p>
+-///   }
+ ///   \table_row3{   <b>`Container.SortOrder`</b>,
+ ///                  \anchor Container_SortOrder
+ ///                  _string_,
+@@ -3862,7 +3850,6 @@ const infomap mediacontainer[] = {{ "hasfiles",         CONTAINER_HASFILES },
+                                   { "totalwatched",     CONTAINER_TOTALWATCHED },
+                                   { "totalunwatched",   CONTAINER_TOTALUNWATCHED },
+                                   { "hasthumb",         CONTAINER_HAS_THUMB },
+-                                  { "sortmethod",       CONTAINER_SORT_METHOD },
+                                   { "sortorder",        CONTAINER_SORT_ORDER },
+                                   { "canfilter",        CONTAINER_CAN_FILTER },
+                                   { "canfilteradvanced",CONTAINER_CAN_FILTERADVANCED },
+@@ -4064,12 +4051,26 @@ const infomap container_bools[] ={{ "onnext",           CONTAINER_MOVE_NEXT },
+ ///     item_number.
+ ///     <p>
+ ///   }
++///   \table_row3{   <b>`Container.SortMethod`</b>,
++///                  \anchor Container_SortMethod
++///                  _string_,
++///     @return The current sort method (returns a localized value).
++///     <p>
++///   }
++///   \table_row3{   <b>`Container.SortMethod(sortid)`</b>,
++///                  \anchor Container_SortMethod_sortid
++///                  _boolean_,
++///     @return **True** if the current sort method matches the specified SortID (see \ref List_of_sort_methods "SortUtils").
++///     <p>
++///   }
+ const infomap container_ints[] = {{ "row",              CONTAINER_ROW },
+                                   { "column",           CONTAINER_COLUMN },
+                                   { "position",         CONTAINER_POSITION },
+                                   { "currentitem",      CONTAINER_CURRENT_ITEM },
+                                   { "subitem",          CONTAINER_SUBITEM },
+-                                  { "hasfocus",         CONTAINER_HAS_FOCUS }};
++                                  { "hasfocus",         CONTAINER_HAS_FOCUS },
++                                  { "sortmethod",       CONTAINER_SORT_METHOD },
++};
+ 
+ /// \page modules__infolabels_boolean_conditions
+ ///   \table_row3{   <b>`Container.Property(addoncategory)`</b>,
+diff --git a/xbmc/guilib/guiinfo/GUIControlsGUIInfo.cpp b/xbmc/guilib/guiinfo/GUIControlsGUIInfo.cpp
+index 5db26fe9da63..7d436dd1af6f 100644
+--- a/xbmc/guilib/guiinfo/GUIControlsGUIInfo.cpp
++++ b/xbmc/guilib/guiinfo/GUIControlsGUIInfo.cpp
+@@ -495,7 +495,7 @@ bool CGUIControlsGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int co
+         const CGUIViewState *viewState = window->GetViewState();
+         if (viewState)
+         {
+-          value = (static_cast<unsigned int>(viewState->GetSortMethod().sortBy) == info.GetData1());
++          value = (static_cast<unsigned int>(viewState->GetSortMethod().sortBy) == info.GetData2());
+           return true;
+         }
+       }
+
+From 3598a715a4cac12cb28e37b3eecd35e2679ec623 Mon Sep 17 00:00:00 2001
+From: ronie <ronie@kodi.tv>
+Date: Tue, 14 Apr 2020 22:45:51 +0200
+Subject: [PATCH 6/7] fix documentation for Container.SubItem()
+
+---
+ xbmc/GUIInfoManager.cpp | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/xbmc/GUIInfoManager.cpp b/xbmc/GUIInfoManager.cpp
+index 56aaccf06f1b..5276b22c7e13 100644
+--- a/xbmc/GUIInfoManager.cpp
++++ b/xbmc/GUIInfoManager.cpp
+@@ -4036,10 +4036,10 @@ const infomap container_bools[] ={{ "onnext",           CONTAINER_MOVE_NEXT },
+ ///     @skinning_v15 **[New Infolabel]** \link Container_CurrentItem `Container(id).CurrentItem`\endlink
+ ///     <p>
+ ///   }
+-///   \table_row3{   <b>`Container(id).SubItem`</b>,
++///   \table_row3{   <b>`Container(id).SubItem(item_number)`</b>,
+ ///                  \anchor Container_SubItem
+-///                  _integer_,
+-///     @return Sub-item in the container or grouplist with given id.
++///                  _boolean_,
++///     @return **True** if the container with id (or current container if id is omitted) is focused on the specified subitem.
+ ///     @note If no id is specified it grabs the current container.
+ ///     <p>
+ ///   }
+
+From 442eb6edf7a38e05725cd36830f0d0a6cb418ceb Mon Sep 17 00:00:00 2001
+From: ronie <ronie@kodi.tv>
+Date: Tue, 14 Apr 2020 23:27:28 +0200
+Subject: [PATCH 7/7] move Container.CurrentItem to the correct map
+
+---
+ xbmc/GUIInfoManager.cpp | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/xbmc/GUIInfoManager.cpp b/xbmc/GUIInfoManager.cpp
+index 5276b22c7e13..6e4a150df012 100644
+--- a/xbmc/GUIInfoManager.cpp
++++ b/xbmc/GUIInfoManager.cpp
+@@ -3930,6 +3930,15 @@ const infomap mediacontainer[] = {{ "hasfiles",         CONTAINER_HASFILES },
+ ///     @note If no id is specified it grabs the current container.
+ ///     <p>
+ ///   }
++///   \table_row3{   <b>`Container(id).CurrentItem`</b>,
++///                  \anchor Container_CurrentItem
++///                  _integer_,
++///     @return The current item in the container or grouplist with given id.
++///     @note If no id is specified it grabs the current container.
++///     <p><hr>
++///     @skinning_v15 **[New Infolabel]** \link Container_CurrentItem `Container(id).CurrentItem`\endlink
++///     <p>
++///   }
+ ///   \table_row3{   <b>`Container(id).Scrolling`</b>,
+ ///                  \anchor Container_Scrolling
+ ///                  _boolean_,
+@@ -3976,6 +3985,7 @@ const infomap container_bools[] ={{ "onnext",           CONTAINER_MOVE_NEXT },
+                                   { "numnonfolderitems", CONTAINER_NUM_NONFOLDER_ITEMS },
+                                   { "numallitems",      CONTAINER_NUM_ALL_ITEMS },
+                                   { "currentpage",      CONTAINER_CURRENT_PAGE },
++                                  { "currentitem",      CONTAINER_CURRENT_ITEM },
+                                   { "scrolling",        CONTAINER_SCROLLING },
+                                   { "hasnext",          CONTAINER_HAS_NEXT },
+                                   { "hasparent",        CONTAINER_HAS_PARENT_ITEM },
+@@ -4027,15 +4037,6 @@ const infomap container_bools[] ={{ "onnext",           CONTAINER_MOVE_NEXT },
+ ///     @return **True** if the container with id (or current container if id is omitted) is focused on the specified position.
+ ///     <p>
+ ///   }
+-///   \table_row3{   <b>`Container(id).CurrentItem`</b>,
+-///                  \anchor Container_CurrentItem
+-///                  _integer_,
+-///     @return The current item in the container or grouplist with given id. 
+-///     @note If no id is specified it grabs the current container.
+-///     <p><hr>
+-///     @skinning_v15 **[New Infolabel]** \link Container_CurrentItem `Container(id).CurrentItem`\endlink
+-///     <p>
+-///   }
+ ///   \table_row3{   <b>`Container(id).SubItem(item_number)`</b>,
+ ///                  \anchor Container_SubItem
+ ///                  _boolean_,
+@@ -4066,7 +4067,6 @@ const infomap container_bools[] ={{ "onnext",           CONTAINER_MOVE_NEXT },
+ const infomap container_ints[] = {{ "row",              CONTAINER_ROW },
+                                   { "column",           CONTAINER_COLUMN },
+                                   { "position",         CONTAINER_POSITION },
+-                                  { "currentitem",      CONTAINER_CURRENT_ITEM },
+                                   { "subitem",          CONTAINER_SUBITEM },
+                                   { "hasfocus",         CONTAINER_HAS_FOCUS },
+                                   { "sortmethod",       CONTAINER_SORT_METHOD },

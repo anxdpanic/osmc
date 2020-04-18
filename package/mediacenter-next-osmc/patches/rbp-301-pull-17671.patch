@@ -1,0 +1,101 @@
+From 5d62d8921c72e84c6e70b2464ce654c386512a45 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?P=C3=A4r=20Bj=C3=B6rklund?= <per.bjorklund@gmail.com>
+Date: Mon, 13 Apr 2020 09:12:27 +0200
+Subject: [PATCH 1/2] Improve build performance on windows
+
+Using C++ Build Insights in VS2019 I recorded a build
+and looked at time spent parsing header files. This PR
+adds some of the slow headers to pch.
+
+Rough numbers on before after on my machine
+Debug:
+  - Before: 00:11:35
+  - After: 00:07:58
+
+ RelWithDebInfo
+   - Before: 00:21:48
+   - After: 00:17:15
+
+ measured using
+ msbuild kodi.sln -t:Clean -P:Configuration=RelWithDebInfo
+ msbuild kodi.sln -t:Build -P:Configuration=RelWithDebInfo
+---
+ xbmc/platform/win32/pch.h | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/xbmc/platform/win32/pch.h b/xbmc/platform/win32/pch.h
+index 6ba6b3f233cf..d86728815df4 100644
+--- a/xbmc/platform/win32/pch.h
++++ b/xbmc/platform/win32/pch.h
+@@ -8,12 +8,21 @@
+ 
+ #pragma once
+ 
++// The times in comments are how much time was spent parsing
++// the header file according to C++ Build Insights in VS2019
+ #define _CRT_RAND_S
+ #include <vector>
+ #include <map>
+ #include <string>
+ #include <iostream>
+ #include <fstream>
++#include <chrono> // 72 seconds
++#include <mutex> // 19 seconds
++#include <algorithm> // 32 seconds
++#include <ppltasks.h> // 87seconds, not included by us
++#include <intrin.h>  // 97 seconds
++#include <fmt/format.h> // 53 seconds
++#include <fmt/core.h>
+ #if !(defined(_WINSOCKAPI_) || defined(_WINSOCK_H))
+ #include <winsock2.h>
+ #endif
+@@ -40,3 +49,6 @@ WINRT_WARNING_PUSH
+ // anything below here should be headers that very rarely (hopefully never)
+ // change yet are included almost everywhere.
+ /* empty */
++
++#include "FileItem.h" //63 seconds
++#include "addons/addoninfo/AddonInfo.h" // 62 seconds
+
+From 0248773a26b7a3eb72387a5d99d491100a2caf7d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?P=C3=A4r=20Bj=C3=B6rklund?= <per.bjorklund@gmail.com>
+Date: Tue, 14 Apr 2020 14:50:14 +0200
+Subject: [PATCH 2/2] clang-format
+
+---
+ xbmc/platform/win32/pch.h | 19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
+
+diff --git a/xbmc/platform/win32/pch.h b/xbmc/platform/win32/pch.h
+index d86728815df4..dce2b191f403 100644
+--- a/xbmc/platform/win32/pch.h
++++ b/xbmc/platform/win32/pch.h
+@@ -11,18 +11,19 @@
+ // The times in comments are how much time was spent parsing
+ // the header file according to C++ Build Insights in VS2019
+ #define _CRT_RAND_S
+-#include <vector>
+-#include <map>
+-#include <string>
+-#include <iostream>
+-#include <fstream>
++#include <algorithm> // 32 seconds
+ #include <chrono> // 72 seconds
++#include <fstream>
++#include <iostream>
++#include <map>
+ #include <mutex> // 19 seconds
+-#include <algorithm> // 32 seconds
+-#include <ppltasks.h> // 87seconds, not included by us
+-#include <intrin.h>  // 97 seconds
+-#include <fmt/format.h> // 53 seconds
++#include <string>
++#include <vector>
++
+ #include <fmt/core.h>
++#include <fmt/format.h> // 53 seconds
++#include <intrin.h> // 97 seconds
++#include <ppltasks.h> // 87seconds, not included by us
+ #if !(defined(_WINSOCKAPI_) || defined(_WINSOCK_H))
+ #include <winsock2.h>
+ #endif

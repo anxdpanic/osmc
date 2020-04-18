@@ -1,0 +1,183 @@
+From a1158211fc2d4fb3d85babe2fbbe55938dd5b502 Mon Sep 17 00:00:00 2001
+From: phunkyfish <phunkyfish@gmail.com>
+Date: Thu, 16 Apr 2020 17:23:51 +0100
+Subject: [PATCH 1/3] [pvr] tidy value stored but not used
+
+---
+ xbmc/pvr/PVRDatabase.cpp                   | 2 +-
+ xbmc/pvr/dialogs/GUIDialogPVRGuideInfo.cpp | 2 --
+ 2 files changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/xbmc/pvr/PVRDatabase.cpp b/xbmc/pvr/PVRDatabase.cpp
+index c1f3626b2535..55b3bc5ec071 100644
+--- a/xbmc/pvr/PVRDatabase.cpp
++++ b/xbmc/pvr/PVRDatabase.cpp
+@@ -780,7 +780,7 @@ bool CPVRDatabase::Persist(CPVRChannelGroup& group)
+   }
+ 
+   std::string strQuery;
+-  bReturn = true;
++
+   CSingleLock lock(m_critSection);
+   {
+     /* insert a new entry when this is a new group, or replace the existing one otherwise */
+diff --git a/xbmc/pvr/dialogs/GUIDialogPVRGuideInfo.cpp b/xbmc/pvr/dialogs/GUIDialogPVRGuideInfo.cpp
+index b3c783497dca..27e686290781 100644
+--- a/xbmc/pvr/dialogs/GUIDialogPVRGuideInfo.cpp
++++ b/xbmc/pvr/dialogs/GUIDialogPVRGuideInfo.cpp
+@@ -58,8 +58,6 @@ bool CGUIDialogPVRGuideInfo::OnClickButtonRecord(CGUIMessage& message)
+ 
+   if (message.GetSenderId() == CONTROL_BTN_RECORD)
+   {
+-    bReturn = true;
+-
+     const std::shared_ptr<CPVRTimerInfoTag> timerTag = CServiceBroker::GetPVRManager().Timers()->GetTimerForEpgTag(m_progItem);
+     if (timerTag)
+     {
+
+From 64ac76b7d8452e20bae925982fe0b6041818751b Mon Sep 17 00:00:00 2001
+From: phunkyfish <phunkyfish@gmail.com>
+Date: Thu, 16 Apr 2020 17:43:08 +0100
+Subject: [PATCH 2/3] [pvr] tidy range based loops should use reference
+
+---
+ xbmc/pvr/dialogs/GUIDialogPVRChannelManager.cpp | 2 +-
+ xbmc/pvr/dialogs/GUIDialogPVRChannelsOSD.cpp    | 2 +-
+ xbmc/pvr/guilib/PVRGUIActions.cpp               | 2 +-
+ xbmc/pvr/recordings/PVRRecordings.cpp           | 6 +++---
+ xbmc/pvr/timers/PVRTimers.cpp                   | 4 ++--
+ xbmc/pvr/windows/GUIWindowPVRChannels.cpp       | 2 +-
+ 6 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/xbmc/pvr/dialogs/GUIDialogPVRChannelManager.cpp b/xbmc/pvr/dialogs/GUIDialogPVRChannelManager.cpp
+index a6ac48b2b183..813676da44eb 100644
+--- a/xbmc/pvr/dialogs/GUIDialogPVRChannelManager.cpp
++++ b/xbmc/pvr/dialogs/GUIDialogPVRChannelManager.cpp
+@@ -476,7 +476,7 @@ bool CGUIDialogPVRChannelManager::OnClickButtonNewChannel()
+ 
+     pDlgSelect->SetHeading(CVariant{19213}); // Select Client
+ 
+-    for (const auto client : m_clientsWithSettingsList)
++    for (const auto& client : m_clientsWithSettingsList)
+       pDlgSelect->Add(client->Name());
+     pDlgSelect->Open();
+ 
+diff --git a/xbmc/pvr/dialogs/GUIDialogPVRChannelsOSD.cpp b/xbmc/pvr/dialogs/GUIDialogPVRChannelsOSD.cpp
+index fbc99bc43d8c..b9cfd4c313d1 100644
+--- a/xbmc/pvr/dialogs/GUIDialogPVRChannelsOSD.cpp
++++ b/xbmc/pvr/dialogs/GUIDialogPVRChannelsOSD.cpp
+@@ -271,7 +271,7 @@ void CGUIDialogPVRChannelsOSD::OnInputDone()
+   if (channelNumber.IsValid())
+   {
+     int itemIndex = 0;
+-    for (const CFileItemPtr channel : *m_vecItems)
++    for (const CFileItemPtr& channel : *m_vecItems)
+     {
+       if (channel->GetPVRChannelInfoTag()->ChannelNumber() == channelNumber)
+       {
+diff --git a/xbmc/pvr/guilib/PVRGUIActions.cpp b/xbmc/pvr/guilib/PVRGUIActions.cpp
+index 6e2a07358928..c4499936b7e0 100644
+--- a/xbmc/pvr/guilib/PVRGUIActions.cpp
++++ b/xbmc/pvr/guilib/PVRGUIActions.cpp
+@@ -1589,7 +1589,7 @@ namespace PVR
+       pDialog->Reset();
+       pDialog->SetHeading(CVariant{19119}); // "On which backend do you want to search?"
+ 
+-      for (const auto client : possibleScanClients)
++      for (const auto& client : possibleScanClients)
+         pDialog->Add(client->GetFriendlyName());
+ 
+       pDialog->Open();
+diff --git a/xbmc/pvr/recordings/PVRRecordings.cpp b/xbmc/pvr/recordings/PVRRecordings.cpp
+index 4626283e63ad..0e1e5d5efa17 100644
+--- a/xbmc/pvr/recordings/PVRRecordings.cpp
++++ b/xbmc/pvr/recordings/PVRRecordings.cpp
+@@ -140,7 +140,7 @@ std::vector<std::shared_ptr<CPVRRecording>> CPVRRecordings::GetAll() const
+ std::shared_ptr<CPVRRecording> CPVRRecordings::GetById(unsigned int iId) const
+ {
+   CSingleLock lock(m_critSection);
+-  for (const auto recording : m_recordings)
++  for (const auto& recording : m_recordings)
+   {
+     if (iId == recording.second->m_iRecordingId)
+       return recording.second;
+@@ -159,7 +159,7 @@ std::shared_ptr<CPVRRecording> CPVRRecordings::GetByPath(const std::string& path
+     bool bDeleted = recPath.IsDeleted();
+     bool bRadio = recPath.IsRadio();
+ 
+-    for (const auto recording : m_recordings)
++    for (const auto& recording : m_recordings)
+     {
+       std::shared_ptr<CPVRRecording> current = recording.second;
+       // Omit recordings not matching criteria
+@@ -221,7 +221,7 @@ std::shared_ptr<CPVRRecording> CPVRRecordings::GetRecordingForEpgTag(const std::
+ 
+   CSingleLock lock(m_critSection);
+ 
+-  for (const auto recording : m_recordings)
++  for (const auto& recording : m_recordings)
+   {
+     if (recording.second->IsDeleted())
+       continue;
+diff --git a/xbmc/pvr/timers/PVRTimers.cpp b/xbmc/pvr/timers/PVRTimers.cpp
+index 95739c61acba..cdf5aea231a7 100644
+--- a/xbmc/pvr/timers/PVRTimers.cpp
++++ b/xbmc/pvr/timers/PVRTimers.cpp
+@@ -53,9 +53,9 @@ bool CPVRTimersContainer::UpdateFromClient(const std::shared_ptr<CPVRTimerInfoTa
+ std::shared_ptr<CPVRTimerInfoTag> CPVRTimersContainer::GetByClient(int iClientId, int iClientIndex) const
+ {
+   CSingleLock lock(m_critSection);
+-  for (const auto startDates : m_tags)
++  for (const auto& startDates : m_tags)
+   {
+-    for (const auto timer : startDates.second)
++    for (const auto& timer : startDates.second)
+     {
+       if (timer->m_iClientId == iClientId && timer->m_iClientIndex == iClientIndex)
+       {
+diff --git a/xbmc/pvr/windows/GUIWindowPVRChannels.cpp b/xbmc/pvr/windows/GUIWindowPVRChannels.cpp
+index 7b9079950ec7..8e68d1b5a221 100644
+--- a/xbmc/pvr/windows/GUIWindowPVRChannels.cpp
++++ b/xbmc/pvr/windows/GUIWindowPVRChannels.cpp
+@@ -328,7 +328,7 @@ void CGUIWindowPVRChannelsBase::OnInputDone()
+   if (channelNumber.IsValid())
+   {
+     int itemIndex = 0;
+-    for (const CFileItemPtr channel : *m_vecItems)
++    for (const CFileItemPtr& channel : *m_vecItems)
+     {
+       if (channel->GetPVRChannelInfoTag()->ChannelNumber() == channelNumber)
+       {
+
+From adc468f07c31bf208f4adfb829e74ae38b4fa14b Mon Sep 17 00:00:00 2001
+From: phunkyfish <phunkyfish@gmail.com>
+Date: Thu, 16 Apr 2020 17:50:46 +0100
+Subject: [PATCH 3/3] [pvr] tidy do not call virtual functions from
+ constructors or destructors
+
+---
+ xbmc/pvr/channels/PVRChannelGroup.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/pvr/channels/PVRChannelGroup.h b/xbmc/pvr/channels/PVRChannelGroup.h
+index b0c3b7a07b6f..85cb17c0dadc 100644
+--- a/xbmc/pvr/channels/PVRChannelGroup.h
++++ b/xbmc/pvr/channels/PVRChannelGroup.h
+@@ -489,7 +489,7 @@ namespace PVR
+     /*!
+      * @brief Init class
+      */
+-    virtual void OnInit();
++    void OnInit();
+ 
+     /*!
+      * @brief Load the channels stored in the database.
+@@ -528,7 +528,7 @@ namespace PVR
+     /*!
+      * @brief Clear this channel list.
+      */
+-    virtual void Unload();
++    void Unload();
+ 
+     /*!
+      * @brief Load the channels from the clients.
