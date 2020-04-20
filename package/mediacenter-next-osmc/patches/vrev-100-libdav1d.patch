@@ -309,7 +309,7 @@ index 59c6600d95..26ee23944d 100644
    set(FFMPEG_OPTIONS -DENABLE_CCACHE=${ENABLE_CCACHE}
                       -DCCACHE_PROGRAM=${CCACHE_PROGRAM}
                       -DENABLE_VAAPI=${ENABLE_VAAPI}
-@@ -276,10 +272,6 @@ if(NOT FFMPEG_FOUND)
+@@ -274,10 +274,6 @@ if(NOT FFMPEG_FOUND)
                                      ${CMAKE_SOURCE_DIR}/tools/depends/target/ffmpeg/FindGnuTls.cmake
                                      <SOURCE_DIR>)
  
