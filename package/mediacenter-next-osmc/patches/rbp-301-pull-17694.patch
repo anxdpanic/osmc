@@ -1,0 +1,131 @@
+From 6e8984ea3ae35f2154d70defd3483432e783775d Mon Sep 17 00:00:00 2001
+From: DaveTBlake <oak99sky@yahoo.co.uk>
+Date: Sat, 18 Apr 2020 16:48:26 +0100
+Subject: [PATCH] Clean up some compiler warnings and Coverity issues
+
+---
+ xbmc/music/MusicDatabase.cpp | 27 ++++++++++-----------------
+ xbmc/utils/SortUtils.cpp     |  2 --
+ 2 files changed, 10 insertions(+), 19 deletions(-)
+
+diff --git a/xbmc/music/MusicDatabase.cpp b/xbmc/music/MusicDatabase.cpp
+index 797cb20ba69a..974d162a5621 100644
+--- a/xbmc/music/MusicDatabase.cpp
++++ b/xbmc/music/MusicDatabase.cpp
+@@ -4559,7 +4559,8 @@ bool CMusicDatabase::GetArtistsByWhere(const std::string& strBaseDir, const Filt
+       // Set Orderby and add any extra fields needed for sort e.g. "artistname" scalar query
+       GetOrderFilter(MediaTypeArtist, sorting, extFilter);
+       strSQLExtra.clear();
+-      BuildSQL(strSQLExtra, extFilter, strSQLExtra);
++      if (!BuildSQL(strSQLExtra, extFilter, strSQLExtra))
++        return false;
+     }
+ 
+     std::string strSQL;
+@@ -4765,7 +4766,8 @@ bool CMusicDatabase::GetAlbumsByWhere(const std::string &baseDir, const Filter &
+       // Set Orderby and add any extra fields needed for sort e.g. "artistname" scalar query
+       GetOrderFilter(MediaTypeAlbum, sorting, extFilter);
+       strSQLExtra.clear();
+-      BuildSQL(strSQLExtra, extFilter, strSQLExtra);
++      if(!BuildSQL(strSQLExtra, extFilter, strSQLExtra))
++        return false;
+     }
+ 
+     std::string strSQL;
+@@ -5562,7 +5564,7 @@ bool CMusicDatabase::GetArtistsByWhereJSON(const std::set<std::string>& fields,
+     // Append calculated artistsort field that may have been added to filter
+     // Field used only for ORDER BY, not output to JSON
+     extFilter.AppendField(artistsortSQL);
+-    for (unsigned int i = 0; i < iAddedFields; i++)
++    for (int i = 0; i < iAddedFields; i++)
+       dbfieldindex.emplace_back(-2); // columns in dataset
+ 
+     // Build JOIN, WHERE, ORDER BY and LIMIT for inline view
+@@ -5778,7 +5780,7 @@ bool CMusicDatabase::GetArtistsByWhereJSON(const std::set<std::string>& fields,
+     if (!m_pDS->query(strSQL))
+       return false;
+     CLog::Log(LOGDEBUG, "%s - query took %i ms",
+-      __FUNCTION__, XbmcThreads::SystemClockMillis() - time); time = XbmcThreads::SystemClockMillis();
++      __FUNCTION__, XbmcThreads::SystemClockMillis() - time);
+ 
+     int iRowsFound = m_pDS->num_rows();
+     if (iRowsFound <= 0)
+@@ -5787,9 +5789,6 @@ bool CMusicDatabase::GetArtistsByWhereJSON(const std::set<std::string>& fields,
+       return true;
+     }
+ 
+-    DatabaseResults dbResults;
+-    dbResults.reserve(iRowsFound);
+-
+     // Get artists from returned rows. Joins means there can be many rows per artist
+     int artistId = -1;
+     int sourceId = -1;
+@@ -6207,7 +6206,7 @@ bool CMusicDatabase::GetAlbumsByWhereJSON(const std::set<std::string>& fields, c
+     // Append calculated artist/title sort fields that may have been added to filter
+     // Field used only for ORDER BY, not output to JSON
+     extFilter.AppendField(calcsortfieldsSQL);
+-    for (unsigned int i = 0; i < iAddedFields; i++)
++    for (int i = 0; i < iAddedFields; i++)
+       dbfieldindex.emplace_back(-1); // columns in dataset
+ 
+     // JOIN art tables if needed (fields output and/or in sort)
+@@ -6308,7 +6307,7 @@ bool CMusicDatabase::GetAlbumsByWhereJSON(const std::set<std::string>& fields, c
+     if (!m_pDS->query(strSQL))
+       return false;
+     CLog::Log(LOGDEBUG, "%s - query took %i ms",
+-      __FUNCTION__, XbmcThreads::SystemClockMillis() - time); time = XbmcThreads::SystemClockMillis();
++      __FUNCTION__, XbmcThreads::SystemClockMillis() - time);
+ 
+     int iRowsFound = m_pDS->num_rows();
+     if (iRowsFound <= 0)
+@@ -6317,9 +6316,6 @@ bool CMusicDatabase::GetAlbumsByWhereJSON(const std::set<std::string>& fields, c
+       return true;
+     }
+ 
+-    DatabaseResults dbResults;
+-    dbResults.reserve(iRowsFound);
+-
+     // Get albums from returned rows. Joins means there can be many rows per album
+     int albumId = -1;
+     int artistId = -1;
+@@ -6653,7 +6649,7 @@ bool CMusicDatabase::GetSongsByWhereJSON(const std::set<std::string>& fields, co
+     // Append calculated artist/title sort fields that may have been added to filter
+     // Field used only for ORDER BY, not output to JSON
+     extFilter.AppendField(calcsortfieldsSQL);
+-    for (unsigned int i = 0; i < iAddedFields; i++)
++    for (int i = 0; i < iAddedFields; i++)
+       dbfieldindex.emplace_back(-1); // columns in dataset
+ 
+     // Build matching list of role id for "displaycomposer", "displayconductor", 
+@@ -6857,7 +6853,7 @@ bool CMusicDatabase::GetSongsByWhereJSON(const std::set<std::string>& fields, co
+     if (!m_pDS->query(strSQL))
+       return false;
+     CLog::Log(LOGDEBUG, "%s - query took %i ms",
+-      __FUNCTION__, XbmcThreads::SystemClockMillis() - time); time = XbmcThreads::SystemClockMillis();
++      __FUNCTION__, XbmcThreads::SystemClockMillis() - time);
+ 
+     int iRowsFound = m_pDS->num_rows();
+     if (iRowsFound <= 0)
+@@ -6866,9 +6862,6 @@ bool CMusicDatabase::GetSongsByWhereJSON(const std::set<std::string>& fields, co
+       return true;
+     }
+ 
+-    DatabaseResults dbResults;
+-    dbResults.reserve(iRowsFound);
+-
+     // Get song from returned rows. Joins mean there can be many rows per song
+     int songId = -1;
+     int albumartistId = -1;
+diff --git a/xbmc/utils/SortUtils.cpp b/xbmc/utils/SortUtils.cpp
+index 86353482299e..23a4caf4f54a 100644
+--- a/xbmc/utils/SortUtils.cpp
++++ b/xbmc/utils/SortUtils.cpp
+@@ -832,8 +832,6 @@ void SortUtils::GetFieldsForSQLSort(const MediaType& mediaType,
+   {
+     if (sortMethod == SortByLabel || sortMethod == SortByTrackNumber)
+       fields.emplace_back(FieldTrackNumber);
+-    else if (sortMethod == SortByTrackNumber)
+-      fields.emplace_back(FieldTrackNumber);
+     else if (sortMethod == SortByTitle)
+       fields.emplace_back(FieldTitle);
+     else if (sortMethod == SortByAlbum)

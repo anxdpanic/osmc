@@ -1,0 +1,351 @@
+From 5be96d99b0a9954a7e0ff023a26e1a0317fbba79 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Tue, 14 Apr 2020 14:46:34 -0700
+Subject: [PATCH 1/2] [gbm] rework plane selection based on crtcs
+
+---
+ xbmc/windowing/gbm/DRMUtils.cpp | 110 +++++++++++++++++++++++---------
+ xbmc/windowing/gbm/DRMUtils.h   |   5 +-
+ 2 files changed, 84 insertions(+), 31 deletions(-)
+
+diff --git a/xbmc/windowing/gbm/DRMUtils.cpp b/xbmc/windowing/gbm/DRMUtils.cpp
+index a805fa308ecf..7811e92fc387 100644
+--- a/xbmc/windowing/gbm/DRMUtils.cpp
++++ b/xbmc/windowing/gbm/DRMUtils.cpp
+@@ -36,7 +36,6 @@ const std::string SETTING_VIDEOSCREEN_LIMITGUISIZE = "videoscreen.limitguisize";
+ CDRMUtils::CDRMUtils()
+   : m_connector(new connector)
+   , m_encoder(new encoder)
+-  , m_crtc(new crtc)
+   , m_video_plane(new plane)
+   , m_gui_plane(new plane)
+ {
+@@ -280,31 +279,34 @@ bool CDRMUtils::FindEncoder()
+   return true;
+ }
+ 
+-bool CDRMUtils::FindCrtc()
++bool CDRMUtils::FindCrtcs()
+ {
+-  for(auto i = 0; i < m_drm_resources->count_crtcs; i++)
++  for (auto i = 0; i < m_drm_resources->count_crtcs; i++)
+   {
+-    m_crtc->crtc = drmModeGetCrtc(m_fd, m_drm_resources->crtcs[i]);
+-    if(m_crtc->crtc->crtc_id == m_encoder->encoder->crtc_id)
++    if (m_encoder->encoder->possible_crtcs & (1 << i))
+     {
+-      CLog::Log(LOGDEBUG, "CDRMUtils::%s - found crtc: %d", __FUNCTION__,
+-                                                            m_crtc->crtc->crtc_id);
+-      m_crtc_index = i;
+-      break;
+-    }
+-    drmModeFreeCrtc(m_crtc->crtc);
+-    m_crtc->crtc = nullptr;
+-  }
++      struct crtc* object = new struct crtc;
++      object->crtc = drmModeGetCrtc(m_fd, m_drm_resources->crtcs[i]);
+ 
+-  if(!m_crtc->crtc)
+-  {
+-    CLog::Log(LOGERROR, "CDRMUtils::%s - could not get crtc: %s", __FUNCTION__, strerror(errno));
+-    return false;
++      CLog::Log(LOGDEBUG, "CDRMUtils::{} - found possible crtc: {}", __FUNCTION__,
++                object->crtc->crtc_id);
++
++      if (!GetProperties(m_fd, object->crtc->crtc_id, DRM_MODE_OBJECT_CRTC, object))
++      {
++        CLog::Log(LOGERROR, "CDRMUtils::{} - could not get crtc {} properties: {}", __FUNCTION__,
++                  object->crtc->crtc_id, strerror(errno));
++        drmModeFreeCrtc(object->crtc);
++        delete object;
++        continue;
++      }
++
++      m_crtcs.emplace_back(object);
++    }
+   }
+ 
+-  if (!GetProperties(m_fd, m_crtc->crtc->crtc_id, DRM_MODE_OBJECT_CRTC, m_crtc))
++  if (m_crtcs.empty())
+   {
+-    CLog::Log(LOGERROR, "CDRMUtils::%s - could not get crtc %u properties: %s", __FUNCTION__, m_crtc->crtc->crtc_id, strerror(errno));
++    CLog::Log(LOGERROR, "CDRMUtils::{} - could not get crtc: {}", __FUNCTION__, strerror(errno));
+     return false;
+   }
+ 
+@@ -416,7 +418,8 @@ drmModePlanePtr CDRMUtils::FindPlane(drmModePlaneResPtr resources, int crtc_inde
+     drmModeFreePlane(plane);
+   }
+ 
+-  CLog::Log(LOGWARNING, "CDRMUtils::%s - could not find plane", __FUNCTION__);
++  CLog::Log(LOGWARNING, "CDRMUtils::{} - could not find {} plane for crtc index {}", __FUNCTION__,
++            (type == KODI_VIDEO_PLANE) ? "video" : "gui", crtc_index);
+   return nullptr;
+ }
+ 
+@@ -425,18 +428,58 @@ bool CDRMUtils::FindPlanes()
+   drmModePlaneResPtr plane_resources = drmModeGetPlaneResources(m_fd);
+   if (!plane_resources)
+   {
+-    CLog::Log(LOGERROR, "CDRMUtils::%s - drmModeGetPlaneResources failed: %s", __FUNCTION__, strerror(errno));
++    CLog::Log(LOGERROR, "CDRMUtils::%s - drmModeGetPlaneResources failed: %s", __FUNCTION__,
++              strerror(errno));
+     return false;
+   }
+ 
+-  m_video_plane->plane = FindPlane(plane_resources, m_crtc_index, KODI_VIDEO_PLANE);
+-  m_gui_plane->plane = FindPlane(plane_resources, m_crtc_index, KODI_GUI_PLANE);
++  drmModePlanePtr fallback;
++
++  for (size_t i = 0; i < m_crtcs.size(); i++)
++  {
++    const auto crtc = m_crtcs[i];
++
++    m_video_plane->plane = FindPlane(plane_resources, i, KODI_VIDEO_PLANE);
++    m_gui_plane->plane = FindPlane(plane_resources, i, KODI_GUI_PLANE);
++
++    if (m_video_plane->plane && m_gui_plane->plane)
++    {
++      m_crtc = crtc;
++      break;
++    }
++
++    if (m_gui_plane->plane)
++    {
++      if (!m_crtc && m_encoder->encoder->crtc_id == crtc->crtc->crtc_id)
++      {
++        m_crtc = crtc;
++        fallback = m_gui_plane->plane;
++      }
++      else
++      {
++        drmModeFreePlane(m_gui_plane->plane);
++        m_gui_plane->plane = nullptr;
++      }
++    }
++
++    if (m_video_plane->plane)
++    {
++      drmModeFreePlane(m_video_plane->plane);
++      m_video_plane->plane = nullptr;
++    }
++  }
++
++  if (!m_gui_plane->plane)
++    m_gui_plane->plane = fallback;
+ 
+   drmModeFreePlaneResources(plane_resources);
+ 
+   // video plane may not be available
+   if (m_video_plane->plane)
+   {
++    CLog::Log(LOGDEBUG, "CDRMUtils::{} - using video plane {}", __FUNCTION__,
++              m_video_plane->plane->plane_id);
++
+     if (!GetProperties(m_fd, m_video_plane->plane->plane_id, DRM_MODE_OBJECT_PLANE, m_video_plane))
+     {
+       CLog::Log(LOGERROR, "CDRMUtils::%s - could not get video plane %u properties: %s", __FUNCTION__, m_video_plane->plane->plane_id, strerror(errno));
+@@ -445,10 +488,14 @@ bool CDRMUtils::FindPlanes()
+ 
+     if (!FindModifiersForPlane(m_video_plane))
+     {
+-      CLog::Log(LOGDEBUG, "CDRMUtils::%s - no drm modifiers present for the video plane", __FUNCTION__);
++      CLog::Log(LOGDEBUG, "CDRMUtils::%s - no drm modifiers present for the video plane",
++                __FUNCTION__);
+     }
+   }
+ 
++  CLog::Log(LOGDEBUG, "CDRMUtils::{} - using gui plane {}", __FUNCTION__,
++            m_gui_plane->plane->plane_id);
++
+   // gui plane should always be available
+   if (!GetProperties(m_fd, m_gui_plane->plane->plane_id, DRM_MODE_OBJECT_PLANE, m_gui_plane))
+   {
+@@ -604,12 +651,12 @@ bool CDRMUtils::InitDrm()
+       return false;
+     }
+ 
+-    if(!FindEncoder())
++    if (!FindEncoder())
+     {
+       return false;
+     }
+ 
+-    if(!FindCrtc())
++    if (!FindCrtcs())
+     {
+       return false;
+     }
+@@ -717,9 +764,14 @@ void CDRMUtils::DestroyDrm()
+   delete m_encoder;
+   m_encoder = nullptr;
+ 
+-  drmModeFreeCrtc(m_crtc->crtc);
+-  FreeProperties(m_crtc);
+-  delete m_crtc;
++  for (auto crtc : m_crtcs)
++  {
++    drmModeFreeCrtc(crtc->crtc);
++    FreeProperties(crtc);
++    delete crtc;
++    crtc = nullptr;
++  }
++
+   m_crtc = nullptr;
+ 
+   drmModeFreePlane(m_video_plane->plane);
+diff --git a/xbmc/windowing/gbm/DRMUtils.h b/xbmc/windowing/gbm/DRMUtils.h
+index 67645b79a4c7..69d23354f33c 100644
+--- a/xbmc/windowing/gbm/DRMUtils.h
++++ b/xbmc/windowing/gbm/DRMUtils.h
+@@ -134,7 +134,7 @@ class CDRMUtils
+   bool GetResources();
+   bool FindConnector();
+   bool FindEncoder();
+-  bool FindCrtc();
++  bool FindCrtcs();
+   bool FindPlanes();
+   bool FindModifiersForPlane(struct plane *object);
+   bool FindPreferredMode();
+@@ -144,11 +144,12 @@ class CDRMUtils
+   bool CheckConnector(int connectorId);
+ 
+   KODI::UTILS::POSIX::CFileHandle m_renderFd;
+-  int m_crtc_index;
+   std::string m_module;
+ 
+   drmModeResPtr m_drm_resources = nullptr;
+   drmModeCrtcPtr m_orig_crtc = nullptr;
++
++  std::vector<crtc*> m_crtcs;
+ };
+ 
+ }
+
+From 52dc3e01b2463e386ec0575ae6f65953f9520c22 Mon Sep 17 00:00:00 2001
+From: Hugh Cole-Baker <sigmaris@gmail.com>
+Date: Sat, 18 Apr 2020 12:16:20 +0100
+Subject: [PATCH 2/2] [windowing/gbm] Set original CRTC as inactive if not used
+
+In the case of choosing a non-default CRTC, we need to explicitly disable the
+formerly used CRTC for the connector when using the DRM Atomic API to modeset
+using the new CRTC, otherwise the test commit will fail with EINVAL. This is not
+necessary for the DRM Legacy API as it will disable the former CRTC implicitly.
+---
+ xbmc/windowing/gbm/DRMAtomic.cpp | 13 +++++++++++++
+ xbmc/windowing/gbm/DRMUtils.cpp  | 22 ++++++++--------------
+ xbmc/windowing/gbm/DRMUtils.h    |  2 +-
+ 3 files changed, 22 insertions(+), 15 deletions(-)
+
+diff --git a/xbmc/windowing/gbm/DRMAtomic.cpp b/xbmc/windowing/gbm/DRMAtomic.cpp
+index be39fa00a0f0..092ad3fc189b 100644
+--- a/xbmc/windowing/gbm/DRMAtomic.cpp
++++ b/xbmc/windowing/gbm/DRMAtomic.cpp
+@@ -39,6 +39,19 @@ void CDRMAtomic::DrmAtomicCommit(int fb_id, int flags, bool rendered, bool video
+       return;
+     }
+ 
++    if (m_active && m_orig_crtc && m_orig_crtc->crtc->crtc_id != m_crtc->crtc->crtc_id)
++    {
++      // if using a different CRTC than the original, disable original to avoid EINVAL
++      if (!AddProperty(m_orig_crtc, "MODE_ID", 0))
++      {
++        return;
++      }
++      if (!AddProperty(m_orig_crtc, "ACTIVE", 0))
++      {
++        return;
++      }
++    }
++
+     if (!AddProperty(m_crtc, "MODE_ID", blob_id))
+     {
+       return;
+diff --git a/xbmc/windowing/gbm/DRMUtils.cpp b/xbmc/windowing/gbm/DRMUtils.cpp
+index 7811e92fc387..4e69047dfd4e 100644
+--- a/xbmc/windowing/gbm/DRMUtils.cpp
++++ b/xbmc/windowing/gbm/DRMUtils.cpp
+@@ -301,6 +301,9 @@ bool CDRMUtils::FindCrtcs()
+       }
+ 
+       m_crtcs.emplace_back(object);
++
++      if (object->crtc->crtc_id == m_encoder->encoder->crtc_id)
++        m_orig_crtc = object;
+     }
+   }
+ 
+@@ -433,7 +436,7 @@ bool CDRMUtils::FindPlanes()
+     return false;
+   }
+ 
+-  drmModePlanePtr fallback;
++  drmModePlanePtr fallback = nullptr;
+ 
+   for (size_t i = 0; i < m_crtcs.size(); i++)
+   {
+@@ -704,8 +707,6 @@ bool CDRMUtils::InitDrm()
+     CLog::Log(LOGNOTICE, "CDRMUtils::%s - successfully authorized drm magic", __FUNCTION__);
+   }
+ 
+-  m_orig_crtc = drmModeGetCrtc(m_fd, m_crtc->crtc->crtc_id);
+-
+   return true;
+ }
+ 
+@@ -716,14 +717,9 @@ bool CDRMUtils::RestoreOriginalMode()
+     return false;
+   }
+ 
+-  auto ret = drmModeSetCrtc(m_fd,
+-                            m_orig_crtc->crtc_id,
+-                            m_orig_crtc->buffer_id,
+-                            m_orig_crtc->x,
+-                            m_orig_crtc->y,
+-                            &m_connector->connector->connector_id,
+-                            1,
+-                            &m_orig_crtc->mode);
++  auto ret = drmModeSetCrtc(m_fd, m_orig_crtc->crtc->crtc_id, m_orig_crtc->crtc->buffer_id,
++                            m_orig_crtc->crtc->x, m_orig_crtc->crtc->y,
++                            &m_connector->connector->connector_id, 1, &m_orig_crtc->crtc->mode);
+ 
+   if(ret)
+   {
+@@ -733,9 +729,6 @@ bool CDRMUtils::RestoreOriginalMode()
+ 
+   CLog::Log(LOGDEBUG, "CDRMUtils::%s - set original crtc mode", __FUNCTION__);
+ 
+-  drmModeFreeCrtc(m_orig_crtc);
+-  m_orig_crtc = nullptr;
+-
+   return true;
+ }
+ 
+@@ -773,6 +766,7 @@ void CDRMUtils::DestroyDrm()
+   }
+ 
+   m_crtc = nullptr;
++  m_orig_crtc = nullptr;
+ 
+   drmModeFreePlane(m_video_plane->plane);
+   FreeProperties(m_video_plane);
+diff --git a/xbmc/windowing/gbm/DRMUtils.h b/xbmc/windowing/gbm/DRMUtils.h
+index 69d23354f33c..d12b7fda277e 100644
+--- a/xbmc/windowing/gbm/DRMUtils.h
++++ b/xbmc/windowing/gbm/DRMUtils.h
+@@ -120,6 +120,7 @@ class CDRMUtils
+   struct connector *m_connector = nullptr;
+   struct encoder *m_encoder = nullptr;
+   struct crtc *m_crtc = nullptr;
++  struct crtc* m_orig_crtc = nullptr;
+   struct plane *m_video_plane = nullptr;
+   struct plane *m_gui_plane = nullptr;
+   drmModeModeInfo *m_mode = nullptr;
+@@ -147,7 +148,6 @@ class CDRMUtils
+   std::string m_module;
+ 
+   drmModeResPtr m_drm_resources = nullptr;
+-  drmModeCrtcPtr m_orig_crtc = nullptr;
+ 
+   std::vector<crtc*> m_crtcs;
+ };
