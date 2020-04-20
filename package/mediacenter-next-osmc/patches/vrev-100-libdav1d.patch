@@ -211,7 +211,7 @@ deleted file mode 100644
 index 4776610f09..0000000000
 --- a/cmake/modules/FindDav1d.cmake
 +++ /dev/null
-@@ -1,87 +0,0 @@
+@@ -1,82 +0,0 @@
 -#.rst:
 -# FindDav1d
 -# --------
