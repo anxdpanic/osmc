@@ -235,11 +235,6 @@ index 4776610f09..0000000000
 -
 -set(DAV1D_VERSION ${PC_DAV1D_VERSION})
 -
--if (NOT DAV1D_LIBRARY AND NOT DAV1D_INCLUDE_DIR AND NOT DAV1D_VERSION)
--  set(ENABLE_INTERNAL_DAV1D ON)
--  message(STATUS "libdav1d not found, falling back to internal build")
--endif()
--
 -if(ENABLE_INTERNAL_DAV1D)
 -  include(ExternalProject)
 -
@@ -303,21 +298,17 @@ diff --git a/cmake/modules/FindFFMPEG.cmake b/cmake/modules/FindFFMPEG.cmake
 index 59c6600d95..26ee23944d 100644
 --- a/cmake/modules/FindFFMPEG.cmake
 +++ b/cmake/modules/FindFFMPEG.cmake
-@@ -229,13 +229,10 @@ if(NOT FFMPEG_FOUND)
+@@ -229,10 +229,6 @@ if(NOT FFMPEG_FOUND)
      message(STATUS "FFMPEG_URL: ${FFMPEG_URL}")
    endif()
- 
--  find_package(Dav1d)
+
+-  if (NOT DAV1D_FOUND)
+-    message(STATUS "dav1d not found, internal ffmpeg build will be missing AV1 support!")
+-  endif()
 -
    set(FFMPEG_OPTIONS -DENABLE_CCACHE=${ENABLE_CCACHE}
                       -DCCACHE_PROGRAM=${CCACHE_PROGRAM}
                       -DENABLE_VAAPI=${ENABLE_VAAPI}
--                     -DENABLE_VDPAU=${ENABLE_VDPAU}
--                     -DENABLE_DAV1D=${DAV1D_FOUND})
-+                     -DENABLE_VDPAU=${ENABLE_VDPAU})
- 
-   if(KODI_DEPENDSBUILD)
-     set(CROSS_ARGS -DDEPENDS_PATH=${DEPENDS_PATH}
 @@ -268,7 +265,6 @@ if(NOT FFMPEG_FOUND)
                                   -DCMAKE_EXE_LINKER_FLAGS=${LINKER_FLAGS}
                                   ${CROSS_ARGS}
