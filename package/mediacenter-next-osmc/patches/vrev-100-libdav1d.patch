@@ -295,10 +295,10 @@ index 4776610f09..0000000000
 -
 -mark_as_advanced(DAV1D_INCLUDE_DIR DAV1D_LIBRARY)
 diff --git a/cmake/modules/FindFFMPEG.cmake b/cmake/modules/FindFFMPEG.cmake
-index 59c6600d95..26ee23944d 100644
+index 387b3f926f..ac36b51b16 100644
 --- a/cmake/modules/FindFFMPEG.cmake
 +++ b/cmake/modules/FindFFMPEG.cmake
-@@ -229,10 +229,6 @@ if(NOT FFMPEG_FOUND)
+@@ -229,15 +229,10 @@ if(NOT FFMPEG_FOUND)
      message(STATUS "FFMPEG_URL: ${FFMPEG_URL}")
    endif()
 
@@ -309,10 +309,23 @@ index 59c6600d95..26ee23944d 100644
    set(FFMPEG_OPTIONS -DENABLE_CCACHE=${ENABLE_CCACHE}
                       -DCCACHE_PROGRAM=${CCACHE_PROGRAM}
                       -DENABLE_VAAPI=${ENABLE_VAAPI}
-@@ -274,10 +274,6 @@ if(NOT FFMPEG_FOUND)
+                      -DENABLE_VDPAU=${ENABLE_VDPAU}
+-                     -DENABLE_DAV1D=${DAV1D_FOUND})
+
+   if(KODI_DEPENDSBUILD)
+     set(CROSS_ARGS -DDEPENDS_PATH=${DEPENDS_PATH}
+@@ -270,7 +265,6 @@ if(NOT FFMPEG_FOUND)
+                                  -DCMAKE_EXE_LINKER_FLAGS=${LINKER_FLAGS}
+                                  ${CROSS_ARGS}
+                                  ${FFMPEG_OPTIONS}
+-                                 -DPKG_CONFIG_PATH=${CMAKE_BINARY_DIR}/${CORE_BUILD_DIR}/lib/pkgconfig
+                       PATCH_COMMAND ${CMAKE_COMMAND} -E copy
+                                     ${CMAKE_SOURCE_DIR}/tools/depends/target/ffmpeg/CMakeLists.txt
+                                     <SOURCE_DIR> &&
+@@ -278,10 +272,6 @@ if(NOT FFMPEG_FOUND)
                                      ${CMAKE_SOURCE_DIR}/tools/depends/target/ffmpeg/FindGnuTls.cmake
                                      <SOURCE_DIR>)
- 
+
 -  if (ENABLE_INTERNAL_DAV1D)
 -    add_dependencies(ffmpeg dav1d)
 -  endif()
