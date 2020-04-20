@@ -283,6 +283,7 @@ then
             -DCMAKE_PREFIX_PATH=/opt/vero2 \
             -DCMAKE_INCLUDE_PATH=/opt/vero2/include \
             -DCMAKE_LIBRARY_PATH=/usr/osmc/lib \
+            -DGTEST_LIBRARY=/opt/vero2/lib \
             -DOPENGLES_gl_LIBRARY=/opt/vero2/lib \
             -DENABLE_AML=ON \
             -DASS_INCLUDE_DIR=/usr/osmc/lib \
