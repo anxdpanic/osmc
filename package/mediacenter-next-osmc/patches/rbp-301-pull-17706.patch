@@ -1,0 +1,95 @@
+From 3e5c2d41b7ed63152854ee1977ebd0162a669d38 Mon Sep 17 00:00:00 2001
+From: Rechi <Rechi@users.noreply.github.com>
+Date: Tue, 21 Apr 2020 07:54:09 +0100
+Subject: [PATCH 1/2] [depends] build libzip only for android
+
+---
+ tools/depends/target/Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tools/depends/target/Makefile b/tools/depends/target/Makefile
+index d5db096fb97c..1287fb0708ea 100644
+--- a/tools/depends/target/Makefile
++++ b/tools/depends/target/Makefile
+@@ -6,7 +6,7 @@ endif
+ 
+ DEPENDS = \
+ 	pcre expat gettext sqlite3 libgpg-error \
+-	libgcrypt bzip2 libfstrcmp liblzo2 libzip freetype2 fontconfig \
++	libgcrypt bzip2 libfstrcmp liblzo2 freetype2 fontconfig \
+ 	openssl gmp nettle gnutls googletest curl nghttp2 \
+ 	libjpeg-turbo libpng fribidi libass \
+ 	libxml2 rapidjson libmicrohttpd mariadb libffi \
+@@ -39,7 +39,7 @@ endif
+ 
+ ifeq ($(OS),android)
+   EXCLUDED_DEPENDS = libcec libusb
+-  DEPENDS += dummy-libxbmc libuuid libandroidjni
++  DEPENDS += dummy-libxbmc libuuid libandroidjni libzip
+   PYMODULE_DEPS = dummy-libxbmc
+   LIBUUID = libuuid
+ endif
+
+From 0033518ec295973f7f9a1bc961b6875be4ee2ebb Mon Sep 17 00:00:00 2001
+From: Rechi <Rechi@users.noreply.github.com>
+Date: Tue, 21 Apr 2020 07:54:09 +0100
+Subject: [PATCH 2/2] [depends] bump libzip to 1.6.1
+
+---
+ tools/depends/target/Makefile        |  2 +-
+ tools/depends/target/libzip/Makefile | 15 +++++----------
+ 2 files changed, 6 insertions(+), 11 deletions(-)
+
+diff --git a/tools/depends/target/Makefile b/tools/depends/target/Makefile
+index 1287fb0708ea..3827ffdee919 100644
+--- a/tools/depends/target/Makefile
++++ b/tools/depends/target/Makefile
+@@ -95,7 +95,7 @@ libcdio-gplv3: $(ICONV)
+ libplist: $(ZLIB)
+ libbluray: fontconfig freetype2 $(ICONV) libxml2
+ mariadb: openssl $(ICONV) $(ZLIB)
+-libzip: $(ZLIB)
++libzip: bzip2 gnutls $(ZLIB)
+ libpng: $(ZLIB)
+ openssl: $(ZLIB)
+ gnutls: nettle $(ZLIB)
+diff --git a/tools/depends/target/libzip/Makefile b/tools/depends/target/libzip/Makefile
+index 2961d6d8cd20..98297fb82f3b 100644
+--- a/tools/depends/target/libzip/Makefile
++++ b/tools/depends/target/libzip/Makefile
+@@ -3,15 +3,11 @@ DEPS= ../../Makefile.include Makefile
+ 
+ # lib name, version
+ LIBNAME=libzip
+-VERSION=1.1.2
++VERSION=1.6.1
+ SOURCE=$(LIBNAME)-$(VERSION)
+ ARCHIVE=$(SOURCE).tar.gz
+ 
+-# configuration settings
+-CONFIGURE=cp -f $(CONFIG_SUB) $(CONFIG_GUESS) .; \
+-        ./configure --prefix=$(PREFIX) --disable-shared
+-
+-LIBDYLIB=$(PLATFORM)/lib/.libs/$(LIBNAME).a
++LIBDYLIB=$(PLATFORM)/build/lib/libzip.a
+ 
+ all: .installed-$(PLATFORM)
+ 
+@@ -21,14 +17,13 @@ $(TARBALLS_LOCATION)/$(ARCHIVE):
+ $(PLATFORM): $(TARBALLS_LOCATION)/$(ARCHIVE) $(DEPS)
+ 	rm -rf $(PLATFORM)/*; mkdir -p $(PLATFORM)
+ 	cd $(PLATFORM); $(ARCHIVE_TOOL) $(ARCHIVE_TOOL_FLAGS) $(TARBALLS_LOCATION)/$(ARCHIVE)
+-	cd $(PLATFORM); $(CONFIGURE)
++	cd $(PLATFORM); $(CMAKE) -B build -DBUILD_DOC:BOOL=OFF -DBUILD_EXAMPLES:BOOL=OFF -DBUILD_REGRESS:BOOL=OFF -DBUILD_SHARED_LIBS:BOOL=OFF -DBUILD_TOOLS:BOOL=OFF
+ 
+ $(LIBDYLIB): $(PLATFORM)
+-	$(MAKE) -C $(PLATFORM)
++	$(MAKE) -C $(PLATFORM)/build
+ 
+ .installed-$(PLATFORM): $(LIBDYLIB)
+-	$(MAKE) -C $(PLATFORM) install
+-	rm -f $(PREFIX)/lib/libzip.la $(PREFIX)/lib/libzip*.so*
++	$(MAKE) -C $(PLATFORM)/build install
+ 	touch $@
+ 
+ clean:
