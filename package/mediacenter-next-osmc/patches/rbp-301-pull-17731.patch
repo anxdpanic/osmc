@@ -1,0 +1,65 @@
+From 0fe07ad0195aa377ad9723514bc6b9b537f37462 Mon Sep 17 00:00:00 2001
+From: Wolfgang Haupt <haupt.wolfgang@gmail.com>
+Date: Wed, 22 Apr 2020 13:47:03 +0200
+Subject: [PATCH 1/2] Network: Fix overflow in our network code
+
+---
+ xbmc/network/Socket.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/network/Socket.cpp b/xbmc/network/Socket.cpp
+index ef0894ca934e..a21de2acc707 100644
+--- a/xbmc/network/Socket.cpp
++++ b/xbmc/network/Socket.cpp
+@@ -42,7 +42,7 @@ bool CPosixUDPSocket::Bind(bool localOnly, int port, int range)
+ #else
+       int zero = 0;
+ #endif
+-      if (setsockopt(m_iSock, IPPROTO_IPV6, IPV6_V6ONLY, &zero, sizeof(&zero)) == -1)
++      if (setsockopt(m_iSock, IPPROTO_IPV6, IPV6_V6ONLY, &zero, sizeof(zero)) == -1)
+       {
+         close(m_iSock);
+         m_iSock = INVALID_SOCKET;
+@@ -54,7 +54,7 @@ bool CPosixUDPSocket::Bind(bool localOnly, int port, int range)
+         SOCKET testSocket = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+         if (testSocket != INVALID_SOCKET)
+         {
+-          setsockopt(testSocket, IPPROTO_IPV6, IPV6_V6ONLY, &zero, sizeof(&zero));
++          setsockopt(testSocket, IPPROTO_IPV6, IPV6_V6ONLY, &zero, sizeof(zero));
+           // Try to bind a socket to validate ipv6 status
+           for (m_iPort = port; m_iPort <= port + range; ++m_iPort)
+           {
+
+From cc699a45fb1c3e3a49b5fd597ff46ee9069a7ad8 Mon Sep 17 00:00:00 2001
+From: Wolfgang Haupt <haupt.wolfgang@gmail.com>
+Date: Wed, 22 Apr 2020 13:47:52 +0200
+Subject: [PATCH 2/2] Network: Fix double close of socket
+
+This caused a weird crash somehwere in udev code:
+Assertion 'close_nointr(fd) != -EBADF' failed at ../src/basic/fd-util.c:81, function safe_close(). Aborting.
+---
+ xbmc/network/Socket.cpp | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/network/Socket.cpp b/xbmc/network/Socket.cpp
+index a21de2acc707..37fa644c83a2 100644
+--- a/xbmc/network/Socket.cpp
++++ b/xbmc/network/Socket.cpp
+@@ -73,6 +73,7 @@ bool CPosixUDPSocket::Bind(bool localOnly, int port, int range)
+           }
+ 
+           closesocket(testSocket);
++          testSocket = INVALID_SOCKET;
+         }
+         else
+         {
+@@ -81,7 +82,8 @@ bool CPosixUDPSocket::Bind(bool localOnly, int port, int range)
+           m_iSock = INVALID_SOCKET;
+         }
+ 
+-        closesocket(testSocket);
++        if (testSocket != INVALID_SOCKET)
++          closesocket(testSocket);
+       }
+     }
+   }

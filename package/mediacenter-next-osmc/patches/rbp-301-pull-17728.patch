@@ -1,0 +1,36 @@
+From ec9505b1fe0606fddae99e0dab515f4f89147ffa Mon Sep 17 00:00:00 2001
+From: phunkyfish <phunkyfish@gmail.com>
+Date: Wed, 22 Apr 2020 09:46:01 +0100
+Subject: [PATCH] [docs] tvOS updates
+
+---
+ README.md       | 2 +-
+ cmake/README.md | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/README.md b/README.md
+index 434f57fb31df..9e0d9d2d5fb2 100644
+--- a/README.md
++++ b/README.md
+@@ -30,7 +30,7 @@
+   Welcome to Kodi Home Theater Software!
+ </h1>
+ 
+-Kodi is an award-winning **free and open source** software media player and entertainment hub for digital media. Available as a native application for **Android, Linux, BSD, macOS, iOS, and Windows operating systems**, Kodi runs on most common processor architectures.
++Kodi is an award-winning **free and open source** software media player and entertainment hub for digital media. Available as a native application for **Android, Linux, BSD, macOS, iOS, tvOS and Windows operating systems**, Kodi runs on most common processor architectures.
+ 
+ Created in 2003 by a group of like minded programmers, Kodi is a non-profit project run by the XBMC Foundation and developed by volunteers located around the world. More than 500 software developers have contributed to Kodi to date, and 100-plus translators have worked to expand its reach, making it available in more than 70 languages.
+ 
+diff --git a/cmake/README.md b/cmake/README.md
+index 2febe483dd99..9fd5d1b2b74d 100644
+--- a/cmake/README.md
++++ b/cmake/README.md
+@@ -5,7 +5,7 @@ Welcome to Kodi's CMake Based Build System. CMake is a cross-platform tool for g
+ 
+ * Linux (several distros)
+ * Windows
+-* macOS and iOS
++* macOS, iOS and tvOS
+ * Android
+ * FreeBSD
+ 

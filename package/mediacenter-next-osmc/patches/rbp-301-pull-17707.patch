@@ -1,0 +1,27 @@
+From e8cb7ad5cdec2c61017a98b954ceb538bdbebdf1 Mon Sep 17 00:00:00 2001
+From: Sylvain CECCHETTO <cecchetto.sylvain@me.com>
+Date: Mon, 20 Apr 2020 12:48:46 +0200
+Subject: [PATCH] [packaging iOS/tvOS] fix wrong architecture field in deb
+ control file
+
+---
+ .../packaging/darwin_embedded/mkdeb-darwin_embedded.sh.in   | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/tools/darwin/packaging/darwin_embedded/mkdeb-darwin_embedded.sh.in b/tools/darwin/packaging/darwin_embedded/mkdeb-darwin_embedded.sh.in
+index b5d9e10dcaa2..d51d33198fda 100644
+--- a/tools/darwin/packaging/darwin_embedded/mkdeb-darwin_embedded.sh.in
++++ b/tools/darwin/packaging/darwin_embedded/mkdeb-darwin_embedded.sh.in
+@@ -75,7 +75,11 @@ echo "Conflicts: $PACKAGE"                      >> $DIRNAME/$PACKAGE/DEBIAN/cont
+ echo "Replaces: $PACKAGE"                       >> $DIRNAME/$PACKAGE/DEBIAN/control
+ echo "Priority: Extra"                            >> $DIRNAME/$PACKAGE/DEBIAN/control
+ echo "Version: $VERSION-$REVISION"                >> $DIRNAME/$PACKAGE/DEBIAN/control
+-echo "Architecture: @CMAKE_SYSTEM_NAME@-@CPU@"                 >> $DIRNAME/$PACKAGE/DEBIAN/control
++if [ "@PLATFORM@" == "iphoneos" ]; then
++  echo "Architecture: iphoneos-arm"                 >> $DIRNAME/$PACKAGE/DEBIAN/control
++else
++  echo "Architecture: appletvos-arm64"                 >> $DIRNAME/$PACKAGE/DEBIAN/control
++fi
+ echo "Installed-Size: $SIZE"                      >> $DIRNAME/$PACKAGE/DEBIAN/control
+ echo "Description: @APP_NAME@ Entertainment Center for iOS" >> $DIRNAME/$PACKAGE/DEBIAN/control
+ echo "Homepage: @APP_WEBSITE@"                    >> $DIRNAME/$PACKAGE/DEBIAN/control
