@@ -19,8 +19,8 @@ index 7b15b42..cb40171 100644
 -        if (m_syncTimer.IsTimePast())
 +        if (m_syncTimer.IsTimePast() && m_audioClock < m_pClock->GetClock())
          {
--          CLog::Log(LOGNOTICE, "CVideoPlayerAudio::Process - stream stalled");
-+          CLog::Log(LOGNOTICE, "CVideoPlayerAudio::Process - stream stalled pts:%0.3f clock:%0.3f ", m_audioClock / DVD_TIME_BASE, m_pClock->GetClock() / DVD_TIME_BASE);
+-          CLog::Log(LOGINGO, "CVideoPlayerAudio::Process - stream stalled");
++          CLog::Log(LOGINFO, "CVideoPlayerAudio::Process - stream stalled pts:%0.3f clock:%0.3f ", m_audioClock / DVD_TIME_BASE, m_pClock->GetClock() / DVD_TIME_BASE);
            m_stalled = true;
          }
        }
