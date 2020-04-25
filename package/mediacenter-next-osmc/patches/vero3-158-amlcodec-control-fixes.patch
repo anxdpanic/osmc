@@ -223,8 +223,8 @@ index 2721d7ee83c1..a0a737488f46 100644
        return false;
    }
  
--  CLog::Log(LOGNOTICE, "Creating video codec with codec id: %i", hint.codec);
-+  CLog::Log(LOGNOTICE, "CVideoPlayerVideo::%s - Creating codec: %i",__FUNCTION__,  hint.codec);
+-  CLog::Log(LOGINFO, "Creating video codec with codec id: %i", hint.codec);
++  CLog::Log(LOGINFO, "CVideoPlayerVideo::%s - Creating codec: %i",__FUNCTION__,  hint.codec);
 +  hint.pClock = m_pClock;
  
    if (m_messageQueue.IsInited())
@@ -233,8 +233,8 @@ index 2721d7ee83c1..a0a737488f46 100644
    }
    if (!codec)
    {
--    CLog::Log(LOGNOTICE, "Creating video codec with codec id: %i", hint.codec);
-+    CLog::Log(LOGNOTICE, "CVideoPlayerVideo::%s - Creating Codec: %i",__FUNCTION__,  hint.codec);
+-    CLog::Log(LOGINFO, "Creating video codec with codec id: %i", hint.codec);
++    CLog::Log(LOGINFO, "CVideoPlayerVideo::%s - Creating Codec: %i",__FUNCTION__,  hint.codec);
 +    hint.pClock = m_pClock;
      hint.codecOptions |= CODEC_ALLOW_FALLBACK;
      codec = CDVDFactoryCodec::CreateVideoCodec(hint, m_processInfo);
