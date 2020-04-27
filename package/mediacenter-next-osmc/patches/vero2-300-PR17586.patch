@@ -1,0 +1,2442 @@
+From 6b086fe68be0b9c04714facb41c78e23ca86b5b3 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Wed, 1 Apr 2020 05:05:03 +0200
+Subject: [PATCH 01/11] [pvr] remove deprecated "inputstreamaddon" property
+
+This done by another named "inputstreamclass".
+---
+ xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
+index f4d7383fa4e3..d18141cda68d 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
+@@ -67,7 +67,6 @@ struct DemuxPacket;
+ /* defines for GetChannelStreamProperties, GetRecordingStreamProperties and GetEPGTagStreamProperties */
+ #define PVR_STREAM_MAX_PROPERTIES     20
+ #define PVR_STREAM_PROPERTY_STREAMURL "streamurl" /*!< @brief the URL of the stream that should be played. */
+-#define PVR_STREAM_PROPERTY_INPUTSTREAMADDON  "inputstreamaddon" /*!< @brief the name of the inputstream add-on that should be used by Kodi to play the stream denoted by PVR_STREAM_PROPERTY_STREAMURL. Leave blank to use Kodi's built-in playing capabilities. */
+ #define PVR_STREAM_PROPERTY_INPUTSTREAMCLASS  "inputstreamclass" /*!< @brief the name of the inputstream add-on that should be used by Kodi to play the stream denoted by PVR_STREAM_PROPERTY_STREAMURL. Leave blank to use Kodi's built-in playing capabilities or to allow ffmpeg to handle directly set to `inputstream.ffmpeg`. */
+ #define PVR_STREAM_PROPERTY_MIMETYPE "mimetype" /*!< @brief the MIME type of the stream that should be played. */
+ #define PVR_STREAM_PROPERTY_ISREALTIMESTREAM "isrealtimestream" /*!< @brief "true" to denote that the stream that should be played is a realtime stream. Any other value indicates that this is no realtime stream.*/
+
+From ec6a3a70f86cbbdf19551372c1f96b65dc3d1d59 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Wed, 1 Apr 2020 12:19:53 +0200
+Subject: [PATCH 02/11] [pvr] make props and functions to/from Kodi in own
+ parts
+
+This is to prevent problems by add of something where has needed before
+a complete API increase (if was something on props or callbacks).
+
+Now have every part a own created memory where can be changed without
+attack of followed parts.
+---
+ .../include/kodi/libXBMC_pvr.h                |  44 ++--
+ .../include/kodi/xbmc_pvr_dll.h               | 176 ++++++-------
+ .../include/kodi/xbmc_pvr_types.h             |   6 +-
+ xbmc/pvr/addons/PVRClient.cpp                 | 232 ++++++++++--------
+ xbmc/pvr/addons/PVRClient.h                   |   2 +-
+ 5 files changed, 243 insertions(+), 217 deletions(-)
+
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_pvr.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_pvr.h
+index 2a94f758ddd5..1aef14084d7c 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_pvr.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_pvr.h
+@@ -61,7 +61,7 @@ class CHelper_libXBMC_pvr
+    */
+   void TransferEpgEntry(const ADDON_HANDLE handle, const EPG_TAG* entry)
+   {
+-    return m_Callbacks->toKodi.TransferEpgEntry(m_Callbacks->toKodi.kodiInstance, handle, entry);
++    return m_Callbacks->toKodi->TransferEpgEntry(m_Callbacks->toKodi->kodiInstance, handle, entry);
+   }
+ 
+   /*!
+@@ -71,7 +71,8 @@ class CHelper_libXBMC_pvr
+    */
+   void TransferChannelEntry(const ADDON_HANDLE handle, const PVR_CHANNEL* entry)
+   {
+-    return m_Callbacks->toKodi.TransferChannelEntry(m_Callbacks->toKodi.kodiInstance, handle, entry);
++    return m_Callbacks->toKodi->TransferChannelEntry(m_Callbacks->toKodi->kodiInstance, handle,
++                                                     entry);
+   }
+ 
+   /*!
+@@ -81,7 +82,8 @@ class CHelper_libXBMC_pvr
+    */
+   void TransferTimerEntry(const ADDON_HANDLE handle, const PVR_TIMER* entry)
+   {
+-    return m_Callbacks->toKodi.TransferTimerEntry(m_Callbacks->toKodi.kodiInstance, handle, entry);
++    return m_Callbacks->toKodi->TransferTimerEntry(m_Callbacks->toKodi->kodiInstance, handle,
++                                                   entry);
+   }
+ 
+   /*!
+@@ -91,7 +93,8 @@ class CHelper_libXBMC_pvr
+    */
+   void TransferRecordingEntry(const ADDON_HANDLE handle, const PVR_RECORDING* entry)
+   {
+-    return m_Callbacks->toKodi.TransferRecordingEntry(m_Callbacks->toKodi.kodiInstance, handle, entry);
++    return m_Callbacks->toKodi->TransferRecordingEntry(m_Callbacks->toKodi->kodiInstance, handle,
++                                                       entry);
+   }
+ 
+   /*!
+@@ -101,7 +104,8 @@ class CHelper_libXBMC_pvr
+    */
+   void TransferChannelGroup(const ADDON_HANDLE handle, const PVR_CHANNEL_GROUP* entry)
+   {
+-    return m_Callbacks->toKodi.TransferChannelGroup(m_Callbacks->toKodi.kodiInstance, handle, entry);
++    return m_Callbacks->toKodi->TransferChannelGroup(m_Callbacks->toKodi->kodiInstance, handle,
++                                                     entry);
+   }
+ 
+   /*!
+@@ -111,7 +115,8 @@ class CHelper_libXBMC_pvr
+    */
+   void TransferChannelGroupMember(const ADDON_HANDLE handle, const PVR_CHANNEL_GROUP_MEMBER* entry)
+   {
+-    return m_Callbacks->toKodi.TransferChannelGroupMember(m_Callbacks->toKodi.kodiInstance, handle, entry);
++    return m_Callbacks->toKodi->TransferChannelGroupMember(m_Callbacks->toKodi->kodiInstance,
++                                                           handle, entry);
+   }
+ 
+   /*!
+@@ -120,7 +125,7 @@ class CHelper_libXBMC_pvr
+    */
+   void AddMenuHook(PVR_MENUHOOK* hook)
+   {
+-    return m_Callbacks->toKodi.AddMenuHook(m_Callbacks->toKodi.kodiInstance, hook);
++    return m_Callbacks->toKodi->AddMenuHook(m_Callbacks->toKodi->kodiInstance, hook);
+   }
+ 
+   /*!
+@@ -131,7 +136,8 @@ class CHelper_libXBMC_pvr
+    */
+   void Recording(const char* strRecordingName, const char* strFileName, bool bOn)
+   {
+-    return m_Callbacks->toKodi.Recording(m_Callbacks->toKodi.kodiInstance, strRecordingName, strFileName, bOn);
++    return m_Callbacks->toKodi->Recording(m_Callbacks->toKodi->kodiInstance, strRecordingName,
++                                          strFileName, bOn);
+   }
+ 
+   /*!
+@@ -139,7 +145,7 @@ class CHelper_libXBMC_pvr
+    */
+   void TriggerTimerUpdate(void)
+   {
+-    return m_Callbacks->toKodi.TriggerTimerUpdate(m_Callbacks->toKodi.kodiInstance);
++    return m_Callbacks->toKodi->TriggerTimerUpdate(m_Callbacks->toKodi->kodiInstance);
+   }
+ 
+   /*!
+@@ -147,7 +153,7 @@ class CHelper_libXBMC_pvr
+    */
+   void TriggerRecordingUpdate(void)
+   {
+-    return m_Callbacks->toKodi.TriggerRecordingUpdate(m_Callbacks->toKodi.kodiInstance);
++    return m_Callbacks->toKodi->TriggerRecordingUpdate(m_Callbacks->toKodi->kodiInstance);
+   }
+ 
+   /*!
+@@ -155,7 +161,7 @@ class CHelper_libXBMC_pvr
+    */
+   void TriggerChannelUpdate(void)
+   {
+-    return m_Callbacks->toKodi.TriggerChannelUpdate(m_Callbacks->toKodi.kodiInstance);
++    return m_Callbacks->toKodi->TriggerChannelUpdate(m_Callbacks->toKodi->kodiInstance);
+   }
+ 
+   /*!
+@@ -164,7 +170,7 @@ class CHelper_libXBMC_pvr
+    */
+   void TriggerEpgUpdate(unsigned int iChannelUid)
+   {
+-    return m_Callbacks->toKodi.TriggerEpgUpdate(m_Callbacks->toKodi.kodiInstance, iChannelUid);
++    return m_Callbacks->toKodi->TriggerEpgUpdate(m_Callbacks->toKodi->kodiInstance, iChannelUid);
+   }
+ 
+   /*!
+@@ -172,7 +178,7 @@ class CHelper_libXBMC_pvr
+    */
+   void TriggerChannelGroupsUpdate(void)
+   {
+-    return m_Callbacks->toKodi.TriggerChannelGroupsUpdate(m_Callbacks->toKodi.kodiInstance);
++    return m_Callbacks->toKodi->TriggerChannelGroupsUpdate(m_Callbacks->toKodi->kodiInstance);
+   }
+ 
+ #ifdef USE_DEMUX
+@@ -182,7 +188,7 @@ class CHelper_libXBMC_pvr
+    */
+   void FreeDemuxPacket(DemuxPacket* pPacket)
+   {
+-    return m_Callbacks->toKodi.FreeDemuxPacket(m_Callbacks->toKodi.kodiInstance, pPacket);
++    return m_Callbacks->toKodi->FreeDemuxPacket(m_Callbacks->toKodi->kodiInstance, pPacket);
+   }
+ 
+   /*!
+@@ -192,7 +198,7 @@ class CHelper_libXBMC_pvr
+    */
+   DemuxPacket* AllocateDemuxPacket(int iDataSize)
+   {
+-    return m_Callbacks->toKodi.AllocateDemuxPacket(m_Callbacks->toKodi.kodiInstance, iDataSize);
++    return m_Callbacks->toKodi->AllocateDemuxPacket(m_Callbacks->toKodi->kodiInstance, iDataSize);
+   }
+ #endif
+ 
+@@ -205,7 +211,8 @@ class CHelper_libXBMC_pvr
+    */
+   void ConnectionStateChange(const char *strConnectionString, PVR_CONNECTION_STATE newState, const char *strMessage)
+   {
+-    return m_Callbacks->toKodi.ConnectionStateChange(m_Callbacks->toKodi.kodiInstance, strConnectionString, newState, strMessage);
++    return m_Callbacks->toKodi->ConnectionStateChange(m_Callbacks->toKodi->kodiInstance,
++                                                      strConnectionString, newState, strMessage);
+   }
+ 
+   /*!
+@@ -216,7 +223,8 @@ class CHelper_libXBMC_pvr
+    */
+   void EpgEventStateChange(EPG_TAG *tag, EPG_EVENT_STATE newState)
+   {
+-    return m_Callbacks->toKodi.EpgEventStateChange(m_Callbacks->toKodi.kodiInstance, tag, newState);
++    return m_Callbacks->toKodi->EpgEventStateChange(m_Callbacks->toKodi->kodiInstance, tag,
++                                                    newState);
+   }
+ 
+   /*!
+@@ -226,7 +234,7 @@ class CHelper_libXBMC_pvr
+    */
+   xbmc_codec_t GetCodecByName(const char* strCodecName)
+   {
+-    return m_Callbacks->toKodi.GetCodecByName(m_Callbacks->toKodi.kodiInstance, strCodecName);
++    return m_Callbacks->toKodi->GetCodecByName(m_Callbacks->toKodi->kodiInstance, strCodecName);
+   }
+ 
+ private:
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_dll.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_dll.h
+index d48d6da2043b..5812c10c4cf9 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_dll.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_dll.h
+@@ -703,93 +703,93 @@ extern "C"
+   {
+     AddonInstance_PVR* pClient = static_cast<AddonInstance_PVR*>(ptr);
+ 
+-    pClient->toAddon.addonInstance = nullptr; // used in future
+-
+-    pClient->toAddon.GetAddonCapabilities           = GetAddonCapabilities;
+-    pClient->toAddon.GetStreamProperties            = GetStreamProperties;
+-    pClient->toAddon.GetConnectionString            = GetConnectionString;
+-    pClient->toAddon.GetBackendName                 = GetBackendName;
+-    pClient->toAddon.GetBackendVersion              = GetBackendVersion;
+-    pClient->toAddon.GetDriveSpace                  = GetDriveSpace;
+-    pClient->toAddon.OpenDialogChannelScan          = OpenDialogChannelScan;
+-    pClient->toAddon.MenuHook                       = CallMenuHook;
+-
+-    pClient->toAddon.GetEPGForChannel               = GetEPGForChannel;
+-    pClient->toAddon.IsEPGTagRecordable             = IsEPGTagRecordable;
+-    pClient->toAddon.IsEPGTagPlayable               = IsEPGTagPlayable;
+-    pClient->toAddon.GetEPGTagEdl                   = GetEPGTagEdl;
+-    pClient->toAddon.GetEPGTagStreamProperties      = GetEPGTagStreamProperties;
+-
+-    pClient->toAddon.GetChannelGroupsAmount         = GetChannelGroupsAmount;
+-    pClient->toAddon.GetChannelGroups               = GetChannelGroups;
+-    pClient->toAddon.GetChannelGroupMembers         = GetChannelGroupMembers;
+-
+-    pClient->toAddon.GetChannelsAmount              = GetChannelsAmount;
+-    pClient->toAddon.GetChannels                    = GetChannels;
+-    pClient->toAddon.DeleteChannel                  = DeleteChannel;
+-    pClient->toAddon.RenameChannel                  = RenameChannel;
+-    pClient->toAddon.OpenDialogChannelSettings      = OpenDialogChannelSettings;
+-    pClient->toAddon.OpenDialogChannelAdd           = OpenDialogChannelAdd;
+-
+-    pClient->toAddon.GetRecordingsAmount            = GetRecordingsAmount;
+-    pClient->toAddon.GetRecordings                  = GetRecordings;
+-    pClient->toAddon.DeleteRecording                = DeleteRecording;
+-    pClient->toAddon.UndeleteRecording              = UndeleteRecording;
+-    pClient->toAddon.DeleteAllRecordingsFromTrash   = DeleteAllRecordingsFromTrash;
+-    pClient->toAddon.RenameRecording                = RenameRecording;
+-    pClient->toAddon.SetRecordingLifetime           = SetRecordingLifetime;
+-    pClient->toAddon.SetRecordingPlayCount          = SetRecordingPlayCount;
+-    pClient->toAddon.SetRecordingLastPlayedPosition = SetRecordingLastPlayedPosition;
+-    pClient->toAddon.GetRecordingLastPlayedPosition = GetRecordingLastPlayedPosition;
+-    pClient->toAddon.GetRecordingEdl                = GetRecordingEdl;
+-    pClient->toAddon.GetRecordingSize               = GetRecordingSize;
+-
+-    pClient->toAddon.GetTimerTypes                  = GetTimerTypes;
+-    pClient->toAddon.GetTimersAmount                = GetTimersAmount;
+-    pClient->toAddon.GetTimers                      = GetTimers;
+-    pClient->toAddon.AddTimer                       = AddTimer;
+-    pClient->toAddon.DeleteTimer                    = DeleteTimer;
+-    pClient->toAddon.UpdateTimer                    = UpdateTimer;
+-
+-    pClient->toAddon.OpenLiveStream                 = OpenLiveStream;
+-    pClient->toAddon.CloseLiveStream                = CloseLiveStream;
+-    pClient->toAddon.ReadLiveStream                 = ReadLiveStream;
+-    pClient->toAddon.SeekLiveStream                 = SeekLiveStream;
+-    pClient->toAddon.LengthLiveStream               = LengthLiveStream;
+-    pClient->toAddon.SignalStatus                   = SignalStatus;
+-    pClient->toAddon.GetDescrambleInfo              = GetDescrambleInfo;
+-    pClient->toAddon.GetChannelStreamProperties     = GetChannelStreamProperties;
+-    pClient->toAddon.GetRecordingStreamProperties   = GetRecordingStreamProperties;
+-    pClient->toAddon.CanPauseStream                 = CanPauseStream;
+-    pClient->toAddon.PauseStream                    = PauseStream;
+-    pClient->toAddon.CanSeekStream                  = CanSeekStream;
+-    pClient->toAddon.SeekTime                       = SeekTime;
+-    pClient->toAddon.SetSpeed                       = SetSpeed;
+-    pClient->toAddon.FillBuffer                     = FillBuffer;
+-
+-    pClient->toAddon.OpenRecordedStream             = OpenRecordedStream;
+-    pClient->toAddon.CloseRecordedStream            = CloseRecordedStream;
+-    pClient->toAddon.ReadRecordedStream             = ReadRecordedStream;
+-    pClient->toAddon.SeekRecordedStream             = SeekRecordedStream;
+-    pClient->toAddon.LengthRecordedStream           = LengthRecordedStream;
+-
+-    pClient->toAddon.DemuxReset                     = DemuxReset;
+-    pClient->toAddon.DemuxAbort                     = DemuxAbort;
+-    pClient->toAddon.DemuxFlush                     = DemuxFlush;
+-    pClient->toAddon.DemuxRead                      = DemuxRead;
+-
+-    pClient->toAddon.GetBackendHostname             = GetBackendHostname;
+-
+-    pClient->toAddon.IsRealTimeStream               = IsRealTimeStream;
+-
+-    pClient->toAddon.SetEPGTimeFrame                = SetEPGTimeFrame;
+-
+-    pClient->toAddon.OnSystemSleep                  = OnSystemSleep;
+-    pClient->toAddon.OnSystemWake                   = OnSystemWake;
+-    pClient->toAddon.OnPowerSavingActivated         = OnPowerSavingActivated;
+-    pClient->toAddon.OnPowerSavingDeactivated       = OnPowerSavingDeactivated;
+-    pClient->toAddon.GetStreamTimes                 = GetStreamTimes;
+-
+-    pClient->toAddon.GetStreamReadChunkSize         = GetStreamReadChunkSize;
++    pClient->toAddon->addonInstance = nullptr; // used in future
++
++    pClient->toAddon->GetAddonCapabilities = GetAddonCapabilities;
++    pClient->toAddon->GetStreamProperties = GetStreamProperties;
++    pClient->toAddon->GetConnectionString = GetConnectionString;
++    pClient->toAddon->GetBackendName = GetBackendName;
++    pClient->toAddon->GetBackendVersion = GetBackendVersion;
++    pClient->toAddon->GetDriveSpace = GetDriveSpace;
++    pClient->toAddon->OpenDialogChannelScan = OpenDialogChannelScan;
++    pClient->toAddon->MenuHook = CallMenuHook;
++
++    pClient->toAddon->GetEPGForChannel = GetEPGForChannel;
++    pClient->toAddon->IsEPGTagRecordable = IsEPGTagRecordable;
++    pClient->toAddon->IsEPGTagPlayable = IsEPGTagPlayable;
++    pClient->toAddon->GetEPGTagEdl = GetEPGTagEdl;
++    pClient->toAddon->GetEPGTagStreamProperties = GetEPGTagStreamProperties;
++
++    pClient->toAddon->GetChannelGroupsAmount = GetChannelGroupsAmount;
++    pClient->toAddon->GetChannelGroups = GetChannelGroups;
++    pClient->toAddon->GetChannelGroupMembers = GetChannelGroupMembers;
++
++    pClient->toAddon->GetChannelsAmount = GetChannelsAmount;
++    pClient->toAddon->GetChannels = GetChannels;
++    pClient->toAddon->DeleteChannel = DeleteChannel;
++    pClient->toAddon->RenameChannel = RenameChannel;
++    pClient->toAddon->OpenDialogChannelSettings = OpenDialogChannelSettings;
++    pClient->toAddon->OpenDialogChannelAdd = OpenDialogChannelAdd;
++
++    pClient->toAddon->GetRecordingsAmount = GetRecordingsAmount;
++    pClient->toAddon->GetRecordings = GetRecordings;
++    pClient->toAddon->DeleteRecording = DeleteRecording;
++    pClient->toAddon->UndeleteRecording = UndeleteRecording;
++    pClient->toAddon->DeleteAllRecordingsFromTrash = DeleteAllRecordingsFromTrash;
++    pClient->toAddon->RenameRecording = RenameRecording;
++    pClient->toAddon->SetRecordingLifetime = SetRecordingLifetime;
++    pClient->toAddon->SetRecordingPlayCount = SetRecordingPlayCount;
++    pClient->toAddon->SetRecordingLastPlayedPosition = SetRecordingLastPlayedPosition;
++    pClient->toAddon->GetRecordingLastPlayedPosition = GetRecordingLastPlayedPosition;
++    pClient->toAddon->GetRecordingEdl = GetRecordingEdl;
++    pClient->toAddon->GetRecordingSize = GetRecordingSize;
++
++    pClient->toAddon->GetTimerTypes = GetTimerTypes;
++    pClient->toAddon->GetTimersAmount = GetTimersAmount;
++    pClient->toAddon->GetTimers = GetTimers;
++    pClient->toAddon->AddTimer = AddTimer;
++    pClient->toAddon->DeleteTimer = DeleteTimer;
++    pClient->toAddon->UpdateTimer = UpdateTimer;
++
++    pClient->toAddon->OpenLiveStream = OpenLiveStream;
++    pClient->toAddon->CloseLiveStream = CloseLiveStream;
++    pClient->toAddon->ReadLiveStream = ReadLiveStream;
++    pClient->toAddon->SeekLiveStream = SeekLiveStream;
++    pClient->toAddon->LengthLiveStream = LengthLiveStream;
++    pClient->toAddon->SignalStatus = SignalStatus;
++    pClient->toAddon->GetDescrambleInfo = GetDescrambleInfo;
++    pClient->toAddon->GetChannelStreamProperties = GetChannelStreamProperties;
++    pClient->toAddon->GetRecordingStreamProperties = GetRecordingStreamProperties;
++    pClient->toAddon->CanPauseStream = CanPauseStream;
++    pClient->toAddon->PauseStream = PauseStream;
++    pClient->toAddon->CanSeekStream = CanSeekStream;
++    pClient->toAddon->SeekTime = SeekTime;
++    pClient->toAddon->SetSpeed = SetSpeed;
++    pClient->toAddon->FillBuffer = FillBuffer;
++
++    pClient->toAddon->OpenRecordedStream = OpenRecordedStream;
++    pClient->toAddon->CloseRecordedStream = CloseRecordedStream;
++    pClient->toAddon->ReadRecordedStream = ReadRecordedStream;
++    pClient->toAddon->SeekRecordedStream = SeekRecordedStream;
++    pClient->toAddon->LengthRecordedStream = LengthRecordedStream;
++
++    pClient->toAddon->DemuxReset = DemuxReset;
++    pClient->toAddon->DemuxAbort = DemuxAbort;
++    pClient->toAddon->DemuxFlush = DemuxFlush;
++    pClient->toAddon->DemuxRead = DemuxRead;
++
++    pClient->toAddon->GetBackendHostname = GetBackendHostname;
++
++    pClient->toAddon->IsRealTimeStream = IsRealTimeStream;
++
++    pClient->toAddon->SetEPGTimeFrame = SetEPGTimeFrame;
++
++    pClient->toAddon->OnSystemSleep = OnSystemSleep;
++    pClient->toAddon->OnSystemWake = OnSystemWake;
++    pClient->toAddon->OnPowerSavingActivated = OnPowerSavingActivated;
++    pClient->toAddon->OnPowerSavingDeactivated = OnPowerSavingDeactivated;
++    pClient->toAddon->GetStreamTimes = GetStreamTimes;
++
++    pClient->toAddon->GetStreamReadChunkSize = GetStreamReadChunkSize;
+   };
+ };
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
+index d18141cda68d..e3567a4a6afd 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
+@@ -734,9 +734,9 @@ extern "C" {
+ 
+   typedef struct AddonInstance_PVR
+   {
+-    PVR_PROPERTIES props;
+-    AddonToKodiFuncTable_PVR toKodi;
+-    KodiToAddonFuncTable_PVR toAddon;
++    PVR_PROPERTIES* props;
++    AddonToKodiFuncTable_PVR* toKodi;
++    KodiToAddonFuncTable_PVR* toAddon;
+   } AddonInstance_PVR;
+ 
+ #ifdef __cplusplus
+diff --git a/xbmc/pvr/addons/PVRClient.cpp b/xbmc/pvr/addons/PVRClient.cpp
+index 31048dcde480..461496c643b3 100644
+--- a/xbmc/pvr/addons/PVRClient.cpp
++++ b/xbmc/pvr/addons/PVRClient.cpp
+@@ -58,12 +58,22 @@ namespace PVR
+ CPVRClient::CPVRClient(const AddonInfoPtr& addonInfo)
+   : CAddonDll(addonInfo, ADDON_PVRDLL)
+ {
++  // Create all interface parts independent to make API changes easier if
++  // something is added
++  m_struct.props = new PVR_PROPERTIES();
++  m_struct.toKodi = new AddonToKodiFuncTable_PVR();
++  m_struct.toAddon = new KodiToAddonFuncTable_PVR();
++
+   ResetProperties();
+ }
+ 
+ CPVRClient::~CPVRClient()
+ {
+   Destroy();
++
++  delete m_struct.props;
++  delete m_struct.toKodi;
++  delete m_struct.toAddon;
+ }
+ 
+ void CPVRClient::StopRunningInstance()
+@@ -121,30 +131,33 @@ void CPVRClient::ResetProperties(int iClientId /* = PVR_INVALID_CLIENT_ID */)
+   m_timertypes.clear();
+   m_clientCapabilities.clear();
+ 
+-  m_struct = {{0}};
+-  m_struct.props.strUserPath = m_strUserPath.c_str();
+-  m_struct.props.strClientPath = m_strClientPath.c_str();
+-  m_struct.props.iEpgMaxDays = CServiceBroker::GetPVRManager().EpgContainer().GetFutureDaysToDisplay();
+-
+-  m_struct.toKodi.kodiInstance = this;
+-  m_struct.toKodi.TransferEpgEntry = cb_transfer_epg_entry;
+-  m_struct.toKodi.TransferChannelEntry = cb_transfer_channel_entry;
+-  m_struct.toKodi.TransferTimerEntry = cb_transfer_timer_entry;
+-  m_struct.toKodi.TransferRecordingEntry = cb_transfer_recording_entry;
+-  m_struct.toKodi.AddMenuHook = cb_add_menu_hook;
+-  m_struct.toKodi.Recording = cb_recording;
+-  m_struct.toKodi.TriggerChannelUpdate = cb_trigger_channel_update;
+-  m_struct.toKodi.TriggerChannelGroupsUpdate = cb_trigger_channel_groups_update;
+-  m_struct.toKodi.TriggerTimerUpdate = cb_trigger_timer_update;
+-  m_struct.toKodi.TriggerRecordingUpdate = cb_trigger_recording_update;
+-  m_struct.toKodi.TriggerEpgUpdate = cb_trigger_epg_update;
+-  m_struct.toKodi.FreeDemuxPacket = cb_free_demux_packet;
+-  m_struct.toKodi.AllocateDemuxPacket = cb_allocate_demux_packet;
+-  m_struct.toKodi.TransferChannelGroup = cb_transfer_channel_group;
+-  m_struct.toKodi.TransferChannelGroupMember = cb_transfer_channel_group_member;
+-  m_struct.toKodi.ConnectionStateChange = cb_connection_state_change;
+-  m_struct.toKodi.EpgEventStateChange = cb_epg_event_state_change;
+-  m_struct.toKodi.GetCodecByName = cb_get_codec_by_name;
++  m_struct.props->strUserPath = m_strUserPath.c_str();
++  m_struct.props->strClientPath = m_strClientPath.c_str();
++  m_struct.props->iEpgMaxDays =
++      CServiceBroker::GetPVRManager().EpgContainer().GetFutureDaysToDisplay();
++
++  m_struct.toKodi->kodiInstance = this;
++  m_struct.toKodi->TransferEpgEntry = cb_transfer_epg_entry;
++  m_struct.toKodi->TransferChannelEntry = cb_transfer_channel_entry;
++  m_struct.toKodi->TransferTimerEntry = cb_transfer_timer_entry;
++  m_struct.toKodi->TransferRecordingEntry = cb_transfer_recording_entry;
++  m_struct.toKodi->AddMenuHook = cb_add_menu_hook;
++  m_struct.toKodi->Recording = cb_recording;
++  m_struct.toKodi->TriggerChannelUpdate = cb_trigger_channel_update;
++  m_struct.toKodi->TriggerChannelGroupsUpdate = cb_trigger_channel_groups_update;
++  m_struct.toKodi->TriggerTimerUpdate = cb_trigger_timer_update;
++  m_struct.toKodi->TriggerRecordingUpdate = cb_trigger_recording_update;
++  m_struct.toKodi->TriggerEpgUpdate = cb_trigger_epg_update;
++  m_struct.toKodi->FreeDemuxPacket = cb_free_demux_packet;
++  m_struct.toKodi->AllocateDemuxPacket = cb_allocate_demux_packet;
++  m_struct.toKodi->TransferChannelGroup = cb_transfer_channel_group;
++  m_struct.toKodi->TransferChannelGroupMember = cb_transfer_channel_group_member;
++  m_struct.toKodi->ConnectionStateChange = cb_connection_state_change;
++  m_struct.toKodi->EpgEventStateChange = cb_epg_event_state_change;
++  m_struct.toKodi->GetCodecByName = cb_get_codec_by_name;
++
++  // Clear function addresses to have NULL if not set by addon
++  memset(m_struct.toAddon, 0, sizeof(KodiToAddonFuncTable_PVR));
+ }
+ 
+ ADDON_STATUS CPVRClient::Create(int iClientId)
+@@ -159,7 +172,7 @@ ADDON_STATUS CPVRClient::Create(int iClientId)
+   /* initialise the add-on */
+   bool bReadyToUse(false);
+   CLog::LogFC(LOGDEBUG, LOGPVR, "Creating PVR add-on instance '%s'", Name().c_str());
+-  if ((status = CAddonDll::Create(ADDON_INSTANCE_PVR, &m_struct, &m_struct.props)) == ADDON_STATUS_OK)
++  if ((status = CAddonDll::Create(ADDON_INSTANCE_PVR, &m_struct, m_struct.props)) == ADDON_STATUS_OK)
+     bReadyToUse = GetAddonProperties();
+ 
+   m_bReadyToUse = bReadyToUse;
+@@ -378,7 +391,7 @@ bool CPVRClient::GetAddonProperties()
+ 
+   /* get the capabilities */
+   PVR_ERROR retVal = DoAddonCall(__FUNCTION__, [&addonCapabilities](const AddonInstance* addon) {
+-    return addon->GetAddonCapabilities(&addonCapabilities);
++    return addon->toAddon->GetAddonCapabilities(&addonCapabilities);
+   }, true, false);
+ 
+   if (retVal != PVR_ERROR_NO_ERROR)
+@@ -386,13 +399,13 @@ bool CPVRClient::GetAddonProperties()
+ 
+   /* get the name of the backend */
+   DoAddonCall(__FUNCTION__, [&strBackendName](const AddonInstance* addon) {
+-    strBackendName = addon->GetBackendName();
++    strBackendName = addon->toAddon->GetBackendName();
+     return PVR_ERROR_NO_ERROR;
+-   }, true, false);
++  }, true, false);
+ 
+   /* get the connection string */
+   DoAddonCall(__FUNCTION__, [&strConnectionString](const AddonInstance* addon) {
+-    strConnectionString = addon->GetConnectionString();
++    strConnectionString = addon->toAddon->GetConnectionString();
+     return PVR_ERROR_NO_ERROR;
+   }, true, false);
+ 
+@@ -401,13 +414,13 @@ bool CPVRClient::GetAddonProperties()
+ 
+   /* backend version number */
+   DoAddonCall(__FUNCTION__, [&strBackendVersion](const AddonInstance* addon) {
+-    strBackendVersion = addon->GetBackendVersion();
++    strBackendVersion = addon->toAddon->GetBackendVersion();
+     return PVR_ERROR_NO_ERROR;
+   }, true, false);
+ 
+   /* backend hostname */
+   DoAddonCall(__FUNCTION__, [&strBackendHostname](const AddonInstance* addon) {
+-    strBackendHostname = addon->GetBackendHostname();
++    strBackendHostname = addon->toAddon->GetBackendHostname();
+     return PVR_ERROR_NO_ERROR;
+   }, true, false);
+ 
+@@ -416,7 +429,7 @@ bool CPVRClient::GetAddonProperties()
+     std::unique_ptr<PVR_TIMER_TYPE[]> types_array(new PVR_TIMER_TYPE[PVR_ADDON_TIMERTYPE_ARRAY_SIZE]);
+     int size = PVR_ADDON_TIMERTYPE_ARRAY_SIZE;
+ 
+-    PVR_ERROR retval = addon->GetTimerTypes(types_array.get(), &size);
++    PVR_ERROR retval = addon->toAddon->GetTimerTypes(types_array.get(), &size);
+ 
+     if (retval == PVR_ERROR_NOT_IMPLEMENTED)
+     {
+@@ -546,7 +559,7 @@ PVR_ERROR CPVRClient::GetDriveSpace(long long& iTotal, long long& iUsed)
+   return DoAddonCall(__FUNCTION__, [this, &iTotal, &iUsed](const AddonInstance* addon) {
+     long long iTotalSpace = 0;
+     long long iUsedSpace = 0;
+-    PVR_ERROR error = m_struct.toAddon.GetDriveSpace(&iTotalSpace, &iUsedSpace);
++    PVR_ERROR error = m_struct.toAddon->GetDriveSpace(&iTotalSpace, &iUsedSpace);
+     if (error == PVR_ERROR_NO_ERROR)
+     {
+       iTotal = iTotalSpace;
+@@ -559,7 +572,7 @@ PVR_ERROR CPVRClient::GetDriveSpace(long long& iTotal, long long& iUsed)
+ PVR_ERROR CPVRClient::StartChannelScan()
+ {
+   return DoAddonCall(__FUNCTION__, [](const AddonInstance* addon) {
+-    return addon->OpenDialogChannelScan();
++    return addon->toAddon->OpenDialogChannelScan();
+   }, m_clientCapabilities.SupportsChannelScan());
+ }
+ 
+@@ -568,7 +581,7 @@ PVR_ERROR CPVRClient::OpenDialogChannelAdd(const std::shared_ptr<CPVRChannel>& c
+   return DoAddonCall(__FUNCTION__, [channel](const AddonInstance* addon) {
+     PVR_CHANNEL addonChannel;
+     WriteClientChannelInfo(channel, addonChannel);
+-    return addon->OpenDialogChannelAdd(addonChannel);
++    return addon->toAddon->OpenDialogChannelAdd(addonChannel);
+   }, m_clientCapabilities.SupportsChannelSettings());
+ }
+ 
+@@ -577,7 +590,7 @@ PVR_ERROR CPVRClient::OpenDialogChannelSettings(const std::shared_ptr<CPVRChanne
+   return DoAddonCall(__FUNCTION__, [channel] (const AddonInstance* addon){
+     PVR_CHANNEL addonChannel;
+     WriteClientChannelInfo(channel, addonChannel);
+-    return addon->OpenDialogChannelSettings(addonChannel);
++    return addon->toAddon->OpenDialogChannelSettings(addonChannel);
+   }, m_clientCapabilities.SupportsChannelSettings());
+ }
+ 
+@@ -586,7 +599,7 @@ PVR_ERROR CPVRClient::DeleteChannel(const std::shared_ptr<CPVRChannel>& channel)
+   return DoAddonCall(__FUNCTION__, [channel](const AddonInstance* addon) {
+     PVR_CHANNEL addonChannel;
+     WriteClientChannelInfo(channel, addonChannel);
+-    return addon->DeleteChannel(addonChannel);
++    return addon->toAddon->DeleteChannel(addonChannel);
+   }, m_clientCapabilities.SupportsChannelSettings());
+ }
+ 
+@@ -595,7 +608,7 @@ PVR_ERROR CPVRClient::RenameChannel(const std::shared_ptr<CPVRChannel>& channel)
+   return DoAddonCall(__FUNCTION__, [channel](const AddonInstance* addon) {
+     PVR_CHANNEL addonChannel;
+     WriteClientChannelInfo(channel, addonChannel);
+-    return addon->RenameChannel(addonChannel);
++    return addon->toAddon->RenameChannel(addonChannel);
+   }, m_clientCapabilities.SupportsChannelSettings());
+ }
+ 
+@@ -609,17 +622,16 @@ PVR_ERROR CPVRClient::GetEPGForChannel(int iChannelUid, CPVREpg* epg, time_t sta
+ 
+     int iPVRTimeCorrection = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_iPVRTimeCorrection;
+ 
+-    return addon->GetEPGForChannel(&handle,
+-                                   iChannelUid,
+-                                   start ? start - iPVRTimeCorrection : 0,
+-                                   end ? end - iPVRTimeCorrection : 0);
++    return addon->toAddon->GetEPGForChannel(&handle, iChannelUid,
++                                            start ? start - iPVRTimeCorrection : 0,
++                                            end ? end - iPVRTimeCorrection : 0);
+   }, m_clientCapabilities.SupportsEPG());
+ }
+ 
+ PVR_ERROR CPVRClient::SetEPGTimeFrame(int iDays)
+ {
+   return DoAddonCall(__FUNCTION__, [iDays](const AddonInstance* addon) {
+-    return addon->SetEPGTimeFrame(iDays);
++    return addon->toAddon->SetEPGTimeFrame(iDays);
+   }, m_clientCapabilities.SupportsEPG());
+ }
+ 
+@@ -705,7 +717,7 @@ PVR_ERROR CPVRClient::IsRecordable(const std::shared_ptr<const CPVREpgInfoTag>&
+ {
+   return DoAddonCall(__FUNCTION__, [tag, &bIsRecordable](const AddonInstance* addon) {
+     CAddonEpgTag addonTag(tag);
+-    return addon->IsEPGTagRecordable(&addonTag, &bIsRecordable);
++    return addon->toAddon->IsEPGTagRecordable(&addonTag, &bIsRecordable);
+   }, m_clientCapabilities.SupportsRecordings() && m_clientCapabilities.SupportsEPG());
+ }
+ 
+@@ -713,7 +725,7 @@ PVR_ERROR CPVRClient::IsPlayable(const std::shared_ptr<const CPVREpgInfoTag>& ta
+ {
+   return DoAddonCall(__FUNCTION__, [tag, &bIsPlayable](const AddonInstance* addon) {
+     CAddonEpgTag addonTag(tag);
+-    return addon->IsEPGTagPlayable(&addonTag, &bIsPlayable);
++    return addon->toAddon->IsEPGTagPlayable(&addonTag, &bIsPlayable);
+   }, m_clientCapabilities.SupportsEPG());
+ }
+ 
+@@ -734,7 +746,8 @@ PVR_ERROR CPVRClient::GetEpgTagStreamProperties(const std::shared_ptr<CPVREpgInf
+     std::unique_ptr<PVR_NAMED_VALUE[]> properties(new PVR_NAMED_VALUE[iPropertyCount]);
+     memset(properties.get(), 0, iPropertyCount * sizeof(PVR_NAMED_VALUE));
+ 
+-    PVR_ERROR error = addon->GetEPGTagStreamProperties(&addonTag, properties.get(), &iPropertyCount);
++    PVR_ERROR error =
++        addon->toAddon->GetEPGTagStreamProperties(&addonTag, properties.get(), &iPropertyCount);
+     if (error ==  PVR_ERROR_NO_ERROR)
+       WriteStreamProperties(properties.get(), iPropertyCount, props);
+ 
+@@ -750,7 +763,7 @@ PVR_ERROR CPVRClient::GetEpgTagEdl(const std::shared_ptr<const CPVREpgInfoTag>&
+ 
+     PVR_EDL_ENTRY edl_array[PVR_ADDON_EDL_LENGTH];
+     int size = PVR_ADDON_EDL_LENGTH;
+-    PVR_ERROR error = addon->GetEPGTagEdl(&addonTag, edl_array, &size);
++    PVR_ERROR error = addon->toAddon->GetEPGTagEdl(&addonTag, edl_array, &size);
+     if (error == PVR_ERROR_NO_ERROR)
+     {
+       edls.reserve(size);
+@@ -765,7 +778,7 @@ PVR_ERROR CPVRClient::GetChannelGroupsAmount(int& iGroups)
+ {
+   iGroups = -1;
+   return DoAddonCall(__FUNCTION__, [&iGroups](const AddonInstance* addon) {
+-    iGroups = addon->GetChannelGroupsAmount();
++    iGroups = addon->toAddon->GetChannelGroupsAmount();
+     return (iGroups == -1) ? PVR_ERROR_NOT_IMPLEMENTED : PVR_ERROR_NO_ERROR;
+   }, m_clientCapabilities.SupportsChannelGroups());
+ }
+@@ -776,7 +789,7 @@ PVR_ERROR CPVRClient::GetChannelGroups(CPVRChannelGroups* groups)
+     ADDON_HANDLE_STRUCT handle = {0};
+     handle.callerAddress = this;
+     handle.dataAddress = groups;
+-    return addon->GetChannelGroups(&handle, groups->IsRadio());
++    return addon->toAddon->GetChannelGroups(&handle, groups->IsRadio());
+   }, m_clientCapabilities.SupportsChannelGroups());
+ }
+ 
+@@ -789,7 +802,7 @@ PVR_ERROR CPVRClient::GetChannelGroupMembers(CPVRChannelGroup* group)
+ 
+     PVR_CHANNEL_GROUP tag;
+     WriteClientGroupInfo(*group, tag);
+-    return addon->GetChannelGroupMembers(&handle, tag);
++    return addon->toAddon->GetChannelGroupMembers(&handle, tag);
+   }, m_clientCapabilities.SupportsChannelGroups());
+ }
+ 
+@@ -797,7 +810,7 @@ PVR_ERROR CPVRClient::GetChannelsAmount(int& iChannels)
+ {
+   iChannels = -1;
+   return DoAddonCall(__FUNCTION__, [&iChannels](const AddonInstance* addon) {
+-    iChannels = addon->GetChannelsAmount();
++    iChannels = addon->toAddon->GetChannelsAmount();
+     return (iChannels == -1) ? PVR_ERROR_NOT_IMPLEMENTED : PVR_ERROR_NO_ERROR;
+   });
+ }
+@@ -808,7 +821,7 @@ PVR_ERROR CPVRClient::GetChannels(CPVRChannelGroup& channels, bool radio)
+     ADDON_HANDLE_STRUCT handle = {0};
+     handle.callerAddress = this;
+     handle.dataAddress = &channels;
+-    return addon->GetChannels(&handle, radio);
++    return addon->toAddon->GetChannels(&handle, radio);
+   }, (radio && m_clientCapabilities.SupportsRadio()) || (!radio && m_clientCapabilities.SupportsTV()));
+ }
+ 
+@@ -816,7 +829,7 @@ PVR_ERROR CPVRClient::GetRecordingsAmount(bool deleted, int& iRecordings)
+ {
+   iRecordings = -1;
+   return DoAddonCall(__FUNCTION__, [deleted, &iRecordings](const AddonInstance* addon) {
+-    iRecordings = addon->GetRecordingsAmount(deleted);
++    iRecordings = addon->toAddon->GetRecordingsAmount(deleted);
+     return (iRecordings == -1) ? PVR_ERROR_NOT_IMPLEMENTED : PVR_ERROR_NO_ERROR;
+   }, m_clientCapabilities.SupportsRecordings() && (!deleted || m_clientCapabilities.SupportsRecordingsUndelete()));
+ }
+@@ -827,7 +840,7 @@ PVR_ERROR CPVRClient::GetRecordings(CPVRRecordings* results, bool deleted) {
+     ADDON_HANDLE_STRUCT handle = {0};
+     handle.callerAddress = this;
+     handle.dataAddress = results;
+-    return addon->GetRecordings(&handle, deleted);
++    return addon->toAddon->GetRecordings(&handle, deleted);
+   }, m_clientCapabilities.SupportsRecordings() && (!deleted || m_clientCapabilities.SupportsRecordingsUndelete()));
+ }
+ 
+@@ -836,7 +849,7 @@ PVR_ERROR CPVRClient::DeleteRecording(const CPVRRecording& recording)
+   return DoAddonCall(__FUNCTION__, [&recording](const AddonInstance* addon) {
+     PVR_RECORDING tag;
+     WriteClientRecordingInfo(recording, tag);
+-    return addon->DeleteRecording(tag);
++    return addon->toAddon->DeleteRecording(tag);
+   }, m_clientCapabilities.SupportsRecordings());
+ }
+ 
+@@ -845,14 +858,14 @@ PVR_ERROR CPVRClient::UndeleteRecording(const CPVRRecording& recording)
+   return DoAddonCall(__FUNCTION__, [&recording](const AddonInstance* addon) {
+     PVR_RECORDING tag;
+     WriteClientRecordingInfo(recording, tag);
+-    return addon->UndeleteRecording(tag);
++    return addon->toAddon->UndeleteRecording(tag);
+   }, m_clientCapabilities.SupportsRecordingsUndelete());
+ }
+ 
+ PVR_ERROR CPVRClient::DeleteAllRecordingsFromTrash()
+ {
+   return DoAddonCall(__FUNCTION__, [](const AddonInstance* addon) {
+-    return addon->DeleteAllRecordingsFromTrash();
++    return addon->toAddon->DeleteAllRecordingsFromTrash();
+   }, m_clientCapabilities.SupportsRecordingsUndelete());
+ }
+ 
+@@ -861,7 +874,7 @@ PVR_ERROR CPVRClient::RenameRecording(const CPVRRecording& recording)
+   return DoAddonCall(__FUNCTION__, [&recording](const AddonInstance* addon) {
+     PVR_RECORDING tag;
+     WriteClientRecordingInfo(recording, tag);
+-    return addon->RenameRecording(tag);
++    return addon->toAddon->RenameRecording(tag);
+   }, m_clientCapabilities.SupportsRecordings());
+ }
+ 
+@@ -870,7 +883,7 @@ PVR_ERROR CPVRClient::SetRecordingLifetime(const CPVRRecording& recording)
+   return DoAddonCall(__FUNCTION__, [&recording](const AddonInstance* addon) {
+     PVR_RECORDING tag;
+     WriteClientRecordingInfo(recording, tag);
+-    return addon->SetRecordingLifetime(&tag);
++    return addon->toAddon->SetRecordingLifetime(&tag);
+   }, m_clientCapabilities.SupportsRecordingsLifetimeChange());
+ }
+ 
+@@ -879,7 +892,7 @@ PVR_ERROR CPVRClient::SetRecordingPlayCount(const CPVRRecording& recording, int
+   return DoAddonCall(__FUNCTION__, [&recording, count](const AddonInstance* addon) {
+     PVR_RECORDING tag;
+     WriteClientRecordingInfo(recording, tag);
+-    return addon->SetRecordingPlayCount(tag, count);
++    return addon->toAddon->SetRecordingPlayCount(tag, count);
+   }, m_clientCapabilities.SupportsRecordingsPlayCount());
+ }
+ 
+@@ -888,7 +901,7 @@ PVR_ERROR CPVRClient::SetRecordingLastPlayedPosition(const CPVRRecording& record
+   return DoAddonCall(__FUNCTION__, [&recording, lastplayedposition](const AddonInstance* addon) {
+     PVR_RECORDING tag;
+     WriteClientRecordingInfo(recording, tag);
+-    return addon->SetRecordingLastPlayedPosition(tag, lastplayedposition);
++    return addon->toAddon->SetRecordingLastPlayedPosition(tag, lastplayedposition);
+   }, m_clientCapabilities.SupportsRecordingsLastPlayedPosition());
+  }
+ 
+@@ -898,7 +911,7 @@ PVR_ERROR CPVRClient::GetRecordingLastPlayedPosition(const CPVRRecording& record
+   return DoAddonCall(__FUNCTION__, [&recording, &iPosition](const AddonInstance* addon) {
+     PVR_RECORDING tag;
+     WriteClientRecordingInfo(recording, tag);
+-    iPosition = addon->GetRecordingLastPlayedPosition(tag);
++    iPosition = addon->toAddon->GetRecordingLastPlayedPosition(tag);
+     return (iPosition == -1) ? PVR_ERROR_NOT_IMPLEMENTED : PVR_ERROR_NO_ERROR;
+   }, m_clientCapabilities.SupportsRecordingsLastPlayedPosition());
+ }
+@@ -912,7 +925,7 @@ PVR_ERROR CPVRClient::GetRecordingEdl(const CPVRRecording& recording, std::vecto
+ 
+     PVR_EDL_ENTRY edl_array[PVR_ADDON_EDL_LENGTH];
+     int size = PVR_ADDON_EDL_LENGTH;
+-    PVR_ERROR error = addon->GetRecordingEdl(tag, edl_array, &size);
++    PVR_ERROR error = addon->toAddon->GetRecordingEdl(tag, edl_array, &size);
+     if (error == PVR_ERROR_NO_ERROR)
+     {
+       edls.reserve(size);
+@@ -928,7 +941,7 @@ PVR_ERROR CPVRClient::GetRecordingSize(const CPVRRecording& recording, int64_t&
+   return DoAddonCall(__FUNCTION__, [&recording, &sizeInBytes](const AddonInstance* addon) {
+     PVR_RECORDING tag;
+     WriteClientRecordingInfo(recording, tag);
+-    return addon->GetRecordingSize(&tag, &sizeInBytes);
++    return addon->toAddon->GetRecordingSize(&tag, &sizeInBytes);
+   }, m_clientCapabilities.SupportsRecordingsSize());
+ }
+ 
+@@ -936,7 +949,7 @@ PVR_ERROR CPVRClient::GetTimersAmount(int& iTimers)
+ {
+   iTimers = -1;
+   return DoAddonCall(__FUNCTION__, [&iTimers](const AddonInstance* addon) {
+-    iTimers = addon->GetTimersAmount();
++    iTimers = addon->toAddon->GetTimersAmount();
+     return (iTimers == -1) ? PVR_ERROR_NOT_IMPLEMENTED : PVR_ERROR_NO_ERROR;
+   }, m_clientCapabilities.SupportsTimers());
+ }
+@@ -947,7 +960,7 @@ PVR_ERROR CPVRClient::GetTimers(CPVRTimersContainer* results)
+     ADDON_HANDLE_STRUCT handle = {0};
+     handle.callerAddress = this;
+     handle.dataAddress = results;
+-    return addon->GetTimers(&handle);
++    return addon->toAddon->GetTimers(&handle);
+   }, m_clientCapabilities.SupportsTimers());
+ }
+ 
+@@ -956,7 +969,7 @@ PVR_ERROR CPVRClient::AddTimer(const CPVRTimerInfoTag& timer)
+   return DoAddonCall(__FUNCTION__, [&timer](const AddonInstance* addon) {
+     PVR_TIMER tag;
+     WriteClientTimerInfo(timer, tag);
+-    return addon->AddTimer(tag);
++    return addon->toAddon->AddTimer(tag);
+   }, m_clientCapabilities.SupportsTimers());
+ }
+ 
+@@ -965,7 +978,7 @@ PVR_ERROR CPVRClient::DeleteTimer(const CPVRTimerInfoTag& timer, bool bForce /*
+   return DoAddonCall(__FUNCTION__, [&timer, bForce](const AddonInstance* addon) {
+     PVR_TIMER tag;
+     WriteClientTimerInfo(timer, tag);
+-    return addon->DeleteTimer(tag, bForce);
++    return addon->toAddon->DeleteTimer(tag, bForce);
+   }, m_clientCapabilities.SupportsTimers());
+ }
+ 
+@@ -974,7 +987,7 @@ PVR_ERROR CPVRClient::UpdateTimer(const CPVRTimerInfoTag& timer)
+   return DoAddonCall(__FUNCTION__, [&timer](const AddonInstance* addon) {
+     PVR_TIMER tag;
+     WriteClientTimerInfo(timer, tag);
+-    return addon->UpdateTimer(tag);
++    return addon->toAddon->UpdateTimer(tag);
+   }, m_clientCapabilities.SupportsTimers());
+ }
+ 
+@@ -988,7 +1001,7 @@ PVR_ERROR CPVRClient::GetTimerTypes(std::vector<std::shared_ptr<CPVRTimerType>>&
+ PVR_ERROR CPVRClient::GetStreamReadChunkSize(int& iChunkSize)
+ {
+   return DoAddonCall(__FUNCTION__, [&iChunkSize](const AddonInstance* addon) {
+-    return addon->GetStreamReadChunkSize(&iChunkSize);
++    return addon->toAddon->GetStreamReadChunkSize(&iChunkSize);
+   }, m_clientCapabilities.SupportsRecordings() || m_clientCapabilities.HandlesInputStream());
+ }
+ 
+@@ -996,7 +1009,8 @@ PVR_ERROR CPVRClient::ReadLiveStream(void* lpBuf, int64_t uiBufSize, int& iRead)
+ {
+   iRead = -1;
+   return DoAddonCall(__FUNCTION__, [&lpBuf, uiBufSize, &iRead](const AddonInstance* addon) {
+-    iRead = addon->ReadLiveStream(static_cast<unsigned char *>(lpBuf), static_cast<int>(uiBufSize));
++    iRead = addon->toAddon->ReadLiveStream(static_cast<unsigned char*>(lpBuf),
++                                           static_cast<int>(uiBufSize));
+     return (iRead == -1) ? PVR_ERROR_NOT_IMPLEMENTED : PVR_ERROR_NO_ERROR;
+   });
+ }
+@@ -1005,7 +1019,8 @@ PVR_ERROR CPVRClient::ReadRecordedStream(void* lpBuf, int64_t uiBufSize, int& iR
+ {
+   iRead = -1;
+   return DoAddonCall(__FUNCTION__, [&lpBuf, uiBufSize, &iRead](const AddonInstance* addon) {
+-    iRead = addon->ReadRecordedStream(static_cast<unsigned char *>(lpBuf), static_cast<int>(uiBufSize));
++    iRead = addon->toAddon->ReadRecordedStream(static_cast<unsigned char*>(lpBuf),
++                                               static_cast<int>(uiBufSize));
+     return (iRead == -1) ? PVR_ERROR_NOT_IMPLEMENTED : PVR_ERROR_NO_ERROR;
+   });
+ }
+@@ -1014,7 +1029,7 @@ PVR_ERROR CPVRClient::SeekLiveStream(int64_t iFilePosition, int iWhence, int64_t
+ {
+   iPosition = -1;
+   return DoAddonCall(__FUNCTION__, [iFilePosition, iWhence, &iPosition](const AddonInstance* addon) {
+-    iPosition = addon->SeekLiveStream(iFilePosition, iWhence);
++    iPosition = addon->toAddon->SeekLiveStream(iFilePosition, iWhence);
+     return (iPosition == -1) ? PVR_ERROR_NOT_IMPLEMENTED : PVR_ERROR_NO_ERROR;
+   });
+ }
+@@ -1023,7 +1038,7 @@ PVR_ERROR CPVRClient::SeekRecordedStream(int64_t iFilePosition, int iWhence, int
+ {
+   iPosition = -1;
+   return DoAddonCall(__FUNCTION__, [iFilePosition, iWhence, &iPosition](const AddonInstance* addon) {
+-    iPosition = addon->SeekRecordedStream(iFilePosition, iWhence);
++    iPosition = addon->toAddon->SeekRecordedStream(iFilePosition, iWhence);
+     return (iPosition == -1) ? PVR_ERROR_NOT_IMPLEMENTED : PVR_ERROR_NO_ERROR;
+   });
+ }
+@@ -1031,7 +1046,8 @@ PVR_ERROR CPVRClient::SeekRecordedStream(int64_t iFilePosition, int iWhence, int
+ PVR_ERROR CPVRClient::SeekTime(double time, bool backwards, double* startpts)
+ {
+   return DoAddonCall(__FUNCTION__, [time, backwards, &startpts](const AddonInstance* addon) {
+-    return addon->SeekTime(time, backwards, startpts) ? PVR_ERROR_NO_ERROR : PVR_ERROR_NOT_IMPLEMENTED;
++    return addon->toAddon->SeekTime(time, backwards, startpts) ? PVR_ERROR_NO_ERROR
++                                                               : PVR_ERROR_NOT_IMPLEMENTED;
+   });
+ }
+ 
+@@ -1039,7 +1055,7 @@ PVR_ERROR CPVRClient::GetLiveStreamLength(int64_t& iLength)
+ {
+   iLength = -1;
+   return DoAddonCall(__FUNCTION__, [&iLength](const AddonInstance* addon) {
+-    iLength = addon->LengthLiveStream();
++    iLength = addon->toAddon->LengthLiveStream();
+     return (iLength == -1) ? PVR_ERROR_NOT_IMPLEMENTED : PVR_ERROR_NO_ERROR;
+   });
+ }
+@@ -1048,7 +1064,7 @@ PVR_ERROR CPVRClient::GetRecordedStreamLength(int64_t& iLength)
+ {
+   iLength = -1;
+   return DoAddonCall(__FUNCTION__, [&iLength](const AddonInstance* addon) {
+-    iLength = addon->LengthRecordedStream();
++    iLength = addon->toAddon->LengthRecordedStream();
+     return (iLength == -1) ? PVR_ERROR_NOT_IMPLEMENTED : PVR_ERROR_NO_ERROR;
+   });
+ }
+@@ -1056,14 +1072,14 @@ PVR_ERROR CPVRClient::GetRecordedStreamLength(int64_t& iLength)
+ PVR_ERROR CPVRClient::SignalQuality(PVR_SIGNAL_STATUS& qualityinfo)
+ {
+   return DoAddonCall(__FUNCTION__, [&qualityinfo](const AddonInstance* addon) {
+-    return addon->SignalStatus(qualityinfo);
++    return addon->toAddon->SignalStatus(qualityinfo);
+   });
+ }
+ 
+ PVR_ERROR CPVRClient::GetDescrambleInfo(PVR_DESCRAMBLE_INFO& descrambleinfo) const
+ {
+   return DoAddonCall(__FUNCTION__, [&descrambleinfo](const AddonInstance* addon) {
+-    return addon->GetDescrambleInfo(&descrambleinfo);
++    return addon->toAddon->GetDescrambleInfo(&descrambleinfo);
+   }, m_clientCapabilities.SupportsDescrambleInfo());
+ }
+ 
+@@ -1080,7 +1096,8 @@ PVR_ERROR CPVRClient::GetChannelStreamProperties(const std::shared_ptr<CPVRChann
+     std::unique_ptr<PVR_NAMED_VALUE[]> properties(new PVR_NAMED_VALUE[iPropertyCount]);
+     memset(properties.get(), 0, iPropertyCount * sizeof(PVR_NAMED_VALUE));
+ 
+-    PVR_ERROR error = addon->GetChannelStreamProperties(&tag, properties.get(), &iPropertyCount);
++    PVR_ERROR error =
++        addon->toAddon->GetChannelStreamProperties(&tag, properties.get(), &iPropertyCount);
+     if (error == PVR_ERROR_NO_ERROR)
+       WriteStreamProperties(properties.get(), iPropertyCount, props);
+ 
+@@ -1101,7 +1118,8 @@ PVR_ERROR CPVRClient::GetRecordingStreamProperties(const std::shared_ptr<CPVRRec
+     std::unique_ptr<PVR_NAMED_VALUE[]> properties(new PVR_NAMED_VALUE[iPropertyCount]);
+     memset(properties.get(), 0, iPropertyCount * sizeof(PVR_NAMED_VALUE));
+ 
+-    PVR_ERROR error = addon->GetRecordingStreamProperties(&tag, properties.get(), &iPropertyCount);
++    PVR_ERROR error =
++        addon->toAddon->GetRecordingStreamProperties(&tag, properties.get(), &iPropertyCount);
+     if (error == PVR_ERROR_NO_ERROR)
+       WriteStreamProperties(properties.get(), iPropertyCount, props);
+ 
+@@ -1112,14 +1130,14 @@ PVR_ERROR CPVRClient::GetRecordingStreamProperties(const std::shared_ptr<CPVRRec
+ PVR_ERROR CPVRClient::GetStreamProperties(PVR_STREAM_PROPERTIES* props)
+ {
+   return DoAddonCall(__FUNCTION__, [&props](const AddonInstance* addon) {
+-    return addon->GetStreamProperties(props);
++    return addon->toAddon->GetStreamProperties(props);
+   });
+ }
+ 
+ PVR_ERROR CPVRClient::DemuxReset()
+ {
+   return DoAddonCall(__FUNCTION__, [](const AddonInstance* addon) {
+-    addon->DemuxReset();
++    addon->toAddon->DemuxReset();
+     return PVR_ERROR_NO_ERROR;
+   }, m_clientCapabilities.HandlesDemuxing());
+ }
+@@ -1127,7 +1145,7 @@ PVR_ERROR CPVRClient::DemuxReset()
+ PVR_ERROR CPVRClient::DemuxAbort()
+ {
+   return DoAddonCall(__FUNCTION__, [](const AddonInstance* addon) {
+-    addon->DemuxAbort();
++    addon->toAddon->DemuxAbort();
+     return PVR_ERROR_NO_ERROR;
+   }, m_clientCapabilities.HandlesDemuxing());
+ }
+@@ -1135,7 +1153,7 @@ PVR_ERROR CPVRClient::DemuxAbort()
+ PVR_ERROR CPVRClient::DemuxFlush()
+ {
+   return DoAddonCall(__FUNCTION__, [](const AddonInstance* addon) {
+-    addon->DemuxFlush();
++    addon->toAddon->DemuxFlush();
+     return PVR_ERROR_NO_ERROR;
+   }, m_clientCapabilities.HandlesDemuxing());
+ }
+@@ -1143,7 +1161,7 @@ PVR_ERROR CPVRClient::DemuxFlush()
+ PVR_ERROR CPVRClient::DemuxRead(DemuxPacket* &packet)
+ {
+   return DoAddonCall(__FUNCTION__, [&packet](const AddonInstance* addon) {
+-    packet = addon->DemuxRead();
++    packet = addon->toAddon->DemuxRead();
+     return packet ? PVR_ERROR_NO_ERROR : PVR_ERROR_NOT_IMPLEMENTED;
+   }, m_clientCapabilities.HandlesDemuxing());
+ }
+@@ -1189,7 +1207,7 @@ PVR_ERROR CPVRClient::DoAddonCall(const char* strFunctionName, std::function<PVR
+     return PVR_ERROR_SERVER_ERROR;
+ 
+   // Call.
+-  const PVR_ERROR error = function(&m_struct.toAddon);
++  const PVR_ERROR error = function(&m_struct);
+ 
+   // Log error, if any.
+   if (error != PVR_ERROR_NO_ERROR && error != PVR_ERROR_NOT_IMPLEMENTED)
+@@ -1223,7 +1241,7 @@ PVR_ERROR CPVRClient::OpenLiveStream(const std::shared_ptr<CPVRChannel>& channel
+       CLog::LogFC(LOGDEBUG, LOGPVR, "Opening live stream for channel '%s'", channel->ChannelName().c_str());
+       PVR_CHANNEL tag;
+       WriteClientChannelInfo(channel, tag);
+-      return addon->OpenLiveStream(tag) ? PVR_ERROR_NO_ERROR : PVR_ERROR_NOT_IMPLEMENTED;
++      return addon->toAddon->OpenLiveStream(tag) ? PVR_ERROR_NO_ERROR : PVR_ERROR_NOT_IMPLEMENTED;
+     }
+   });
+ }
+@@ -1239,14 +1257,14 @@ PVR_ERROR CPVRClient::OpenRecordedStream(const std::shared_ptr<CPVRRecording>& r
+     PVR_RECORDING tag;
+     WriteClientRecordingInfo(*recording, tag);
+     CLog::LogFC(LOGDEBUG, LOGPVR, "Opening stream for recording '%s'", recording->m_strTitle.c_str());
+-    return addon->OpenRecordedStream(tag) ? PVR_ERROR_NO_ERROR : PVR_ERROR_NOT_IMPLEMENTED;
++    return addon->toAddon->OpenRecordedStream(tag) ? PVR_ERROR_NO_ERROR : PVR_ERROR_NOT_IMPLEMENTED;
+   }, m_clientCapabilities.SupportsRecordings());
+ }
+ 
+ PVR_ERROR CPVRClient::CloseLiveStream()
+ {
+   return DoAddonCall(__FUNCTION__, [](const AddonInstance* addon) {
+-    addon->CloseLiveStream();
++    addon->toAddon->CloseLiveStream();
+     return PVR_ERROR_NO_ERROR;
+   });
+ }
+@@ -1254,7 +1272,7 @@ PVR_ERROR CPVRClient::CloseLiveStream()
+ PVR_ERROR CPVRClient::CloseRecordedStream()
+ {
+   return DoAddonCall(__FUNCTION__, [](const AddonInstance* addon) {
+-    addon->CloseRecordedStream();
++    addon->toAddon->CloseRecordedStream();
+     return PVR_ERROR_NO_ERROR;
+   });
+ }
+@@ -1262,7 +1280,7 @@ PVR_ERROR CPVRClient::CloseRecordedStream()
+ PVR_ERROR CPVRClient::PauseStream(bool bPaused)
+ {
+   return DoAddonCall(__FUNCTION__, [bPaused](const AddonInstance* addon) {
+-    addon->PauseStream(bPaused);
++    addon->toAddon->PauseStream(bPaused);
+     return PVR_ERROR_NO_ERROR;
+   });
+ }
+@@ -1270,7 +1288,7 @@ PVR_ERROR CPVRClient::PauseStream(bool bPaused)
+ PVR_ERROR CPVRClient::SetSpeed(int speed)
+ {
+   return DoAddonCall(__FUNCTION__, [speed](const AddonInstance* addon) {
+-    addon->SetSpeed(speed);
++    addon->toAddon->SetSpeed(speed);
+     return PVR_ERROR_NO_ERROR;
+   });
+ }
+@@ -1278,7 +1296,7 @@ PVR_ERROR CPVRClient::SetSpeed(int speed)
+ PVR_ERROR CPVRClient::FillBuffer(bool mode)
+ {
+   return DoAddonCall(__FUNCTION__, [mode](const AddonInstance* addon) {
+-    addon->FillBuffer(mode);
++    addon->toAddon->FillBuffer(mode);
+     return PVR_ERROR_NO_ERROR;
+   });
+ }
+@@ -1287,7 +1305,7 @@ PVR_ERROR CPVRClient::CanPauseStream(bool& bCanPause) const
+ {
+   bCanPause = false;
+   return DoAddonCall(__FUNCTION__, [&bCanPause](const AddonInstance* addon) {
+-    bCanPause = addon->CanPauseStream();
++    bCanPause = addon->toAddon->CanPauseStream();
+     return PVR_ERROR_NO_ERROR;
+   });
+ }
+@@ -1296,7 +1314,7 @@ PVR_ERROR CPVRClient::CanSeekStream(bool& bCanSeek) const
+ {
+   bCanSeek = false;
+   return DoAddonCall(__FUNCTION__, [&bCanSeek](const AddonInstance* addon) {
+-    bCanSeek = addon->CanSeekStream();
++    bCanSeek = addon->toAddon->CanSeekStream();
+     return PVR_ERROR_NO_ERROR;
+   });
+ }
+@@ -1304,7 +1322,7 @@ PVR_ERROR CPVRClient::CanSeekStream(bool& bCanSeek) const
+ PVR_ERROR CPVRClient::GetStreamTimes(PVR_STREAM_TIMES* times)
+ {
+   return DoAddonCall(__FUNCTION__, [&times](const AddonInstance* addon) {
+-    return addon->GetStreamTimes(times);
++    return addon->toAddon->GetStreamTimes(times);
+   });
+ }
+ 
+@@ -1312,7 +1330,7 @@ PVR_ERROR CPVRClient::IsRealTimeStream(bool& bRealTime) const
+ {
+   bRealTime = false;
+   return DoAddonCall(__FUNCTION__, [&bRealTime](const AddonInstance* addon) {
+-    bRealTime = addon->IsRealTimeStream();
++    bRealTime = addon->toAddon->IsRealTimeStream();
+     return PVR_ERROR_NO_ERROR;
+   });
+ }
+@@ -1320,7 +1338,7 @@ PVR_ERROR CPVRClient::IsRealTimeStream(bool& bRealTime) const
+ PVR_ERROR CPVRClient::OnSystemSleep()
+ {
+   return DoAddonCall(__FUNCTION__, [](const AddonInstance* addon) {
+-    addon->OnSystemSleep();
++    addon->toAddon->OnSystemSleep();
+     return PVR_ERROR_NO_ERROR;
+   });
+ }
+@@ -1328,7 +1346,7 @@ PVR_ERROR CPVRClient::OnSystemSleep()
+ PVR_ERROR CPVRClient::OnSystemWake()
+ {
+   return DoAddonCall(__FUNCTION__, [](const AddonInstance* addon) {
+-    addon->OnSystemWake();
++    addon->toAddon->OnSystemWake();
+     return PVR_ERROR_NO_ERROR;
+   });
+ }
+@@ -1336,7 +1354,7 @@ PVR_ERROR CPVRClient::OnSystemWake()
+ PVR_ERROR CPVRClient::OnPowerSavingActivated()
+ {
+   return DoAddonCall(__FUNCTION__, [](const AddonInstance* addon) {
+-    addon->OnPowerSavingActivated();
++    addon->toAddon->OnPowerSavingActivated();
+     return PVR_ERROR_NO_ERROR;
+   });
+ }
+@@ -1344,7 +1362,7 @@ PVR_ERROR CPVRClient::OnPowerSavingActivated()
+ PVR_ERROR CPVRClient::OnPowerSavingDeactivated()
+ {
+   return DoAddonCall(__FUNCTION__, [](const AddonInstance* addon) {
+-    addon->OnPowerSavingDeactivated();
++    addon->toAddon->OnPowerSavingDeactivated();
+     return PVR_ERROR_NO_ERROR;
+   });
+ }
+@@ -1369,7 +1387,7 @@ PVR_ERROR CPVRClient::CallEpgTagMenuHook(const CPVRClientMenuHook& hook, const s
+     menuHook.iHookId = hook.GetId();
+     menuHook.iLocalizedStringId = hook.GetLabelId();
+ 
+-    return addon->MenuHook(menuHook, hookData);
++    return addon->toAddon->MenuHook(menuHook, hookData);
+   });
+ }
+ 
+@@ -1385,7 +1403,7 @@ PVR_ERROR CPVRClient::CallChannelMenuHook(const CPVRClientMenuHook& hook, const
+     menuHook.iHookId = hook.GetId();
+     menuHook.iLocalizedStringId = hook.GetLabelId();
+ 
+-    return addon->MenuHook(menuHook, hookData);
++    return addon->toAddon->MenuHook(menuHook, hookData);
+   });
+ }
+ 
+@@ -1401,7 +1419,7 @@ PVR_ERROR CPVRClient::CallRecordingMenuHook(const CPVRClientMenuHook& hook, cons
+     menuHook.iHookId = hook.GetId();
+     menuHook.iLocalizedStringId = hook.GetLabelId();
+ 
+-    return addon->MenuHook(menuHook, hookData);
++    return addon->toAddon->MenuHook(menuHook, hookData);
+   });
+ }
+ 
+@@ -1417,7 +1435,7 @@ PVR_ERROR CPVRClient::CallTimerMenuHook(const CPVRClientMenuHook& hook, const st
+     menuHook.iHookId = hook.GetId();
+     menuHook.iLocalizedStringId = hook.GetLabelId();
+ 
+-    return addon->MenuHook(menuHook, hookData);
++    return addon->toAddon->MenuHook(menuHook, hookData);
+   });
+ }
+ 
+@@ -1432,7 +1450,7 @@ PVR_ERROR CPVRClient::CallSettingsMenuHook(const CPVRClientMenuHook& hook)
+     menuHook.iHookId = hook.GetId();
+     menuHook.iLocalizedStringId = hook.GetLabelId();
+ 
+-    return addon->MenuHook(menuHook, hookData);
++    return addon->toAddon->MenuHook(menuHook, hookData);
+   });
+ }
+ 
+diff --git a/xbmc/pvr/addons/PVRClient.h b/xbmc/pvr/addons/PVRClient.h
+index 433fbaa1537f..f0fa4087fb1c 100644
+--- a/xbmc/pvr/addons/PVRClient.h
++++ b/xbmc/pvr/addons/PVRClient.h
+@@ -977,7 +977,7 @@ namespace PVR
+      * @param bCheckReadyToUse If true, this method will check whether this instance is ready for use and return PVR_ERROR_SERVER_ERROR if it is not.
+      * @return PVR_ERROR_NO_ERROR on success, any other PVR_ERROR_* value otherwise.
+      */
+-    typedef KodiToAddonFuncTable_PVR AddonInstance;
++    typedef AddonInstance_PVR AddonInstance;
+     PVR_ERROR DoAddonCall(const char* strFunctionName,
+                           std::function<PVR_ERROR(const AddonInstance*)> function,
+                           bool bIsImplemented = true,
+
+From b194adf57b26e4a06b5b77660141ccf61fbfb3b1 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Sat, 4 Apr 2020 18:26:01 +0200
+Subject: [PATCH 03/11] [addons][pvr] remove deprecated kodi_vfs_types.h
+
+The two structures currently used in it are moved to libXBMC_addon.h
+and kodi_vfs_types.h deleted.
+---
+ .../interfaces/Addon/AddonCallbacksAddon.cpp  |   1 -
+ xbmc/addons/interfaces/AddonInterfaces.h      |   4 +-
+ .../include/kodi/CMakeLists.txt               |   1 -
+ .../include/kodi/kodi_vfs_types.h             | 262 ------------------
+ .../include/kodi/libXBMC_addon.h              |  20 +-
+ 5 files changed, 21 insertions(+), 267 deletions(-)
+ delete mode 100644 xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_vfs_types.h
+
+diff --git a/xbmc/addons/interfaces/Addon/AddonCallbacksAddon.cpp b/xbmc/addons/interfaces/Addon/AddonCallbacksAddon.cpp
+index 1904c0b56fba..2fbbfa4184dd 100644
+--- a/xbmc/addons/interfaces/Addon/AddonCallbacksAddon.cpp
++++ b/xbmc/addons/interfaces/Addon/AddonCallbacksAddon.cpp
+@@ -13,7 +13,6 @@
+ #include "FileItem.h"
+ #include "LangInfo.h"
+ #include "ServiceBroker.h"
+-#include "addons/kodi-addon-dev-kit/include/kodi/kodi_vfs_types.h"
+ #include "addons/settings/AddonSettings.h"
+ #include "dialogs/GUIDialogKaiToast.h"
+ #include "filesystem/Directory.h"
+diff --git a/xbmc/addons/interfaces/AddonInterfaces.h b/xbmc/addons/interfaces/AddonInterfaces.h
+index d0e804370bce..ee6040fd1191 100644
+--- a/xbmc/addons/interfaces/AddonInterfaces.h
++++ b/xbmc/addons/interfaces/AddonInterfaces.h
+@@ -9,10 +9,10 @@
+ 
+ #pragma once
+ 
+-#include "addons/kodi-addon-dev-kit/include/kodi/libXBMC_addon.h"
+-
+ #include <stdint.h>
+ 
++struct AddonCB;
++
+ namespace KODI
+ {
+ namespace MESSAGING
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/CMakeLists.txt b/xbmc/addons/kodi-addon-dev-kit/include/kodi/CMakeLists.txt
+index 47d54d70568f..cf42553ef2ec 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/CMakeLists.txt
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/CMakeLists.txt
+@@ -5,7 +5,6 @@ set(HEADERS AddonBase.h
+             Network.h
+             StreamCodec.h
+             StreamCrypto.h
+-            kodi_vfs_types.h
+             libKODI_guilib.h
+             libXBMC_addon.h
+             libXBMC_pvr.h
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_vfs_types.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_vfs_types.h
+deleted file mode 100644
+index 8bc5873863be..000000000000
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/kodi_vfs_types.h
++++ /dev/null
+@@ -1,262 +0,0 @@
+-/*
+- *  Copyright (C) 2015-2018 Team Kodi
+- *
+- *  SPDX-License-Identifier: GPL-2.0-or-later
+- *  See LICENSES/README.md for more information.
+- */
+-
+-#pragma once
+-
+-#ifndef TARGET_WINDOWS
+-#ifndef __cdecl
+-#define __cdecl
+-#endif
+-#ifndef __declspec
+-#define __declspec(X)
+-#endif
+-#endif
+-
+-#include <stdint.h>
+-#include "AddonBase.h"
+-#ifdef BUILD_KODI_ADDON
+-#include "IFileTypes.h"
+-#else
+-#include "filesystem/IFileTypes.h"
+-#include "PlatformDefs.h"
+-#endif
+-
+-extern "C"
+-{
+-
+-  struct VFSProperty
+-  {
+-    char* name;
+-    char* val;
+-  };
+-
+-  struct VFSDirEntry
+-  {
+-    char* label;             //!< item label
+-    char* title;             //!< item title
+-    char* path;              //!< item path
+-    unsigned int num_props;  //!< Number of properties attached to item
+-    VFSProperty* properties; //!< Properties
+-    time_t date_time;        //!< file creation date & time
+-    bool folder;             //!< Item is a folder
+-    uint64_t size;           //!< Size of file represented by item
+-  };
+-
+-  struct VFSURL
+-  {
+-    const char* url;
+-    const char* domain;
+-    const char* hostname;
+-    const char* filename;
+-    unsigned int port;
+-    const char* options;
+-    const char* username;
+-    const char* password;
+-    const char* redacted;
+-    const char* sharename;
+-    const char* protocol;
+-  };
+-
+-  struct VFSCallbacks
+-  {
+-    //! \brief Require keyboard input
+-    //! \param heading The heading of the keyboard dialog
+-    //! \param input A pointer to the resulting string. Must be free'd by caller.
+-    //! \return True if input was received, false otherwise
+-    bool (__cdecl* GetKeyboardInput)(void* ctx, const char* heading, char** input);
+-
+-    //! \brief Display an error dialog
+-    //! \param heading The heading of the error dialog
+-    //! \param line1 The first line of the error dialog
+-    //! \param line2 The second line of the error dialog. Can be NULL
+-    //! \param line3 The third line of the error dialog. Can be NULL
+-    void (__cdecl* SetErrorDialog)(void* ctx, const char* heading, const char* line1, const char* line2, const char* line3);
+-
+-    //! \brief Prompt the user for authentication of a URL
+-    //! \param url The URL
+-    void (__cdecl* RequireAuthentication)(void* ctx, const char* url);
+-
+-    //! \brief The context to be passed to the callbacks
+-    void* ctx;
+-  };
+-
+-  typedef struct AddonProps_VFSEntry
+-  {
+-    int dummy;
+-  } AddonProps_VFSEntry;
+-
+-  typedef AddonProps_VFSEntry VFS_PROPS;
+-
+-  typedef struct AddonToKodiFuncTable_VFSEntry
+-  {
+-    KODI_HANDLE kodiInstance;
+-  } AddonToKodiFuncTable_VFSEntry;
+-
+-  typedef struct KodiToAddonFuncTable_VFSEntry
+-  {
+-    //! \brief Open a file for input
+-    //! \param url The URL of the file
+-    //! \return Context for the opened file
+-    //! \sa IFile::Open
+-    void* (__cdecl* Open) (VFSURL* url);
+-
+-    //! \brief Open a file for output
+-    //! \param url The URL of the file
+-    //! \param bOverwrite Whether or not to overwrite an existing file
+-    //! \return Context for the opened file
+-    //! \sa IFile::OpenForWrite
+-    void* (__cdecl* OpenForWrite) (VFSURL* url, bool bOverWrite);
+-
+-    //! \brief Read from a file
+-    //! \param context The context of the file
+-    //! \param buffer The buffer to read data into
+-    //! \param uiBufSize Number of bytes to read
+-    //! \return Number of bytes read
+-    //! \sa IFile::Read
+-    ssize_t (__cdecl* Read) (void* context, void* buffer, size_t uiBufSize);
+-
+-    //! \brief Write to a file
+-    //! \param context The context of the file
+-    //! \param buffer The buffer to read data from
+-    //! \param uiBufSize Number of bytes to write
+-    //! \return Number of bytes written
+-    //! \sa IFile::Write
+-    ssize_t (__cdecl* Write) (void* context, const void* buffer, size_t uiBufSize);
+-
+-    //! \brief Seek in a file
+-    //! \param context The context of the file
+-    //! \param position The position to seek to
+-    //! \param whence Position in file 'position' is relative to (SEEK_CUR, SEEK_SET, SEEK_END)
+-    //! \return Offset in file after seek
+-    //! \sa IFile::Seek
+-    int64_t  (__cdecl* Seek) (void* context, int64_t position, int whence);
+-
+-    //! \brief Truncate a file
+-    //! \param context The context of the file
+-    //! \param size The size to truncate the file to
+-    //! \return 0 on success, -1 on error
+-    //! \sa IFile::Truncate
+-    int      (__cdecl* Truncate) (void* context, int64_t size);
+-
+-    //! \brief Get total size of a file
+-    //! \param context The context of the file
+-    //! \return Total file size
+-    //! \sa IFile::GetLength
+-    int64_t  (__cdecl* GetLength) (void* context);
+-
+-    //! \brief Get current position in a file
+-    //! \param context The context of the file
+-    //! \return Current position
+-    //! \sa IFile::GetPosition
+-    int64_t  (__cdecl* GetPosition) (void* context);
+-
+-    //! \brief Get chunk size of a file
+-    //! \param context The context of the file
+-    //! \return Chunk size
+-    //! \sa IFile::GetChunkSize()
+-    int      (__cdecl* GetChunkSize)(void* context);
+-
+-    //! \brief Perform an IO-control on the file
+-    //! \param context The context of the file
+-    //! \param request The requested IO-control
+-    //! \param param Parameter attached to the IO-control
+-    //! \return -1 on error, >= 0 on success
+-    //! \sa IFile::IoControl
+-    int  (__cdecl* IoControl) (void* context, XFILE::EIoControl request, void* param);
+-
+-    //! \brief Stat a file
+-    //! \param url The URL of the file
+-    //! \param buffer The buffer to store results in
+-    //! \return -1 on error, 0 otherwise
+-    //! \sa IFile::Stat
+-    int  (__cdecl* Stat) (VFSURL* url, struct __stat64* buffer);
+-    //! \brief Close a file
+-    //! \param context The context of the file
+-    //! \return True on success, false on failure
+-    //! \sa IFile::Close
+-
+-    bool (__cdecl* Close) (void* context);
+-
+-    //! \brief Check for file existence
+-    //! \param url The URL of the file
+-    //! \return True if file exists, false otherwise
+-    //! \sa IFile::Exists
+-    bool (__cdecl* Exists) (VFSURL* url);
+-
+-    //! \brief Clear out any idle connections
+-    void (__cdecl* ClearOutIdle) ();
+-
+-    //! \brief Disconnect all connections
+-    void (__cdecl* DisconnectAll) ();
+-
+-    //! \brief Delete a file
+-    //! \param url The URL of the file
+-    //! \return True if deletion was successful, false otherwise
+-    //! \sa IFile::Delete
+-    bool (__cdecl* Delete) (VFSURL* url);
+-
+-    //! \brief Rename a file
+-    //! \param url The URL of the source file
+-    //! \param url2 The URL of the destination file
+-    //! \return True if deletion was successful, false otherwise
+-    //! \sa IFile::Rename
+-    bool (__cdecl* Rename) (VFSURL* url, VFSURL* url2);
+-
+-    //! \brief Check for directory existence
+-    //! \param url The URL of the file
+-    //! \return True if directory exists, false otherwise
+-    //! \sa IDirectory::Exists
+-    bool (__cdecl* DirectoryExists) (VFSURL* url);
+-
+-    //! \brief Remove a directory
+-    //! \param url The URL of the directory
+-    //! \return True if removal was successful, false otherwise
+-    //! \sa IDirectory::Remove
+-    bool (__cdecl* RemoveDirectory) (VFSURL* url);
+-
+-    //! \brief Create a directory
+-    //! \param url The URL of the file
+-    //! \return True if creation was successful, false otherwise
+-    //! \sa IDirectory::Create
+-    bool (__cdecl* CreateDirectory) (VFSURL* url);
+-
+-    //! \brief List a directory
+-    //! \param url The URL of the directory
+-    //! \param entries The entries in the directory
+-    //! \param num_entries Number of entries in the directory
+-    //! \param callbacks A callback structure
+-    //! \return Context for the directory listing
+-    //! \sa IDirectory::GetDirectory
+-    void* (__cdecl* GetDirectory) (VFSURL* url,
+-                                   VFSDirEntry** entries,
+-                                   int* num_entries,
+-                                   VFSCallbacks* callbacks);
+-
+-    //! \brief Free up resources after listing a directory
+-    void (__cdecl* FreeDirectory) (void* ctx);
+-
+-    //! \brief Check if file should be presented as a directory (multiple streams)
+-    //! \param url The URL of the file
+-    //! \param entries The entries in the directory
+-    //! \param num_entries Number of entries in the directory
+-    //! \param rootpath Path to root directory if multiple entries
+-    //! \return Context for the directory listing
+-    //! \sa IFileDirectory::ContainsFiles, FreeDirectory
+-    void* (__cdecl* ContainsFiles) (VFSURL* url,
+-                                    VFSDirEntry** entries,
+-                                    int* num_entries,
+-                                    char* rootpath);
+-  } KodiToAddonFuncTable_VFSEntry;
+-
+-  typedef struct AddonInstance_VFSEntry
+-  {
+-    AddonProps_VFSEntry props;
+-    AddonToKodiFuncTable_VFSEntry toKodi;
+-    KodiToAddonFuncTable_VFSEntry toAddon;
+-  } AddonInstance_VFSEntry;
+-
+-}
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_addon.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_addon.h
+index e8faafe8d3fc..18d7da84256a 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_addon.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_addon.h
+@@ -15,6 +15,7 @@
+ #include <stdio.h>
+ #include <stdint.h>
+ #include <stdarg.h>
++#include <time.h>
+ 
+ #include "versions.h"
+ #if defined(BUILD_KODI_ADDON)
+@@ -23,7 +24,6 @@
+ #include "filesystem/IFileTypes.h"
+ #endif
+ 
+-struct VFSDirEntry;
+ struct __stat64;
+ 
+ #ifdef _WIN32                   // windows
+@@ -86,6 +86,24 @@ typedef struct AddonCB
+   KODIGameLib_UnRegisterMe          GameLib_UnRegisterMe;
+ } AddonCB;
+ 
++struct VFSProperty
++{
++  char* name;
++  char* val;
++};
++
++struct VFSDirEntry
++{
++  char* label;             //!< item label
++  char* title;             //!< item title
++  char* path;              //!< item path
++  unsigned int num_props;  //!< Number of properties attached to item
++  VFSProperty* properties; //!< Properties
++  time_t date_time;        //!< file creation date & time
++  bool folder;             //!< Item is a folder
++  uint64_t size;           //!< Size of file represented by item
++};
++
+ namespace ADDON
+ {
+   typedef enum addon_log
+
+From 9d36d4ea34fcb2a541ae2b9d9ddb6fae46b13091 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Mon, 30 Mar 2020 01:31:58 +0200
+Subject: [PATCH 04/11] [addons][pvr] remove deprecated interface parts
+
+This remove some parts where since long time no more used or
+present on other place.
+---
+ xbmc/addons/interfaces/AddonInterfaces.cpp    | 21 ------------------
+ xbmc/addons/interfaces/AddonInterfaces.h      |  4 ----
+ .../include/kodi/libXBMC_addon.h              | 20 -----------------
+ .../include/kodi/xbmc_pvr_types.h             | 22 -------------------
+ 4 files changed, 67 deletions(-)
+
+diff --git a/xbmc/addons/interfaces/AddonInterfaces.cpp b/xbmc/addons/interfaces/AddonInterfaces.cpp
+index a4012ae8063b..90ace617bfb9 100644
+--- a/xbmc/addons/interfaces/AddonInterfaces.cpp
++++ b/xbmc/addons/interfaces/AddonInterfaces.cpp
+@@ -15,9 +15,7 @@
+ #include "addons/interfaces/gui/AddonGUIWindow.h"
+ #include "addons/interfaces/gui/Window.h"
+ #include "filesystem/SpecialProtocol.h"
+-#include "games/addons/GameClient.h"
+ #include "messaging/ApplicationMessenger.h"
+-#include "peripherals/addons/PeripheralAddon.h"
+ #include "pvr/addons/PVRClient.h"
+ #include "utils/log.h"
+ 
+@@ -42,8 +40,6 @@ CAddonInterfaces::CAddonInterfaces(CAddon* addon)
+   m_callbacks->GUILib_UnRegisterMe          = CAddonInterfaces::GUILib_UnRegisterMe;
+   m_callbacks->PVRLib_RegisterMe            = CAddonInterfaces::PVRLib_RegisterMe;
+   m_callbacks->PVRLib_UnRegisterMe          = CAddonInterfaces::PVRLib_UnRegisterMe;
+-  m_callbacks->GameLib_RegisterMe           = CAddonInterfaces::GameLib_RegisterMe;
+-  m_callbacks->GameLib_UnRegisterMe         = CAddonInterfaces::GameLib_UnRegisterMe;
+ }
+ 
+ CAddonInterfaces::~CAddonInterfaces()
+@@ -129,23 +125,6 @@ void CAddonInterfaces::PVRLib_UnRegisterMe(void *addonData, void *cbTable)
+ }
+ /*\_____________________________________________________________________________
+ \*/
+-void* CAddonInterfaces::GameLib_RegisterMe(void *addonData)
+-{
+-  CAddonInterfaces* addon = static_cast<CAddonInterfaces*>(addonData);
+-  if (addon == nullptr)
+-  {
+-    CLog::Log(LOGERROR, "CAddonInterfaces - %s - called with a null pointer", __FUNCTION__);
+-    return nullptr;
+-  }
+-
+-  return dynamic_cast<GAME::CGameClient*>(addon->m_addon)->GetInstanceInterface();
+-}
+-
+-void CAddonInterfaces::GameLib_UnRegisterMe(void *addonData, void *cbTable)
+-{
+-}
+-/*\_____________________________________________________________________________
+-\*/
+ void CAddonInterfaces::OnApplicationMessage(ThreadMessage* pMsg)
+ {
+   switch (pMsg->dwMessage)
+diff --git a/xbmc/addons/interfaces/AddonInterfaces.h b/xbmc/addons/interfaces/AddonInterfaces.h
+index ee6040fd1191..4ad1cac25345 100644
+--- a/xbmc/addons/interfaces/AddonInterfaces.h
++++ b/xbmc/addons/interfaces/AddonInterfaces.h
+@@ -49,10 +49,6 @@ namespace ADDON
+     \*/
+     static void*        PVRLib_RegisterMe              (void* addonData);
+     static void         PVRLib_UnRegisterMe            (void* addonData, void* cbTable);
+-    /*\_________________________________________________________________________
+-    \*/
+-    static void*        GameLib_RegisterMe             (void *addonData);
+-    static void         GameLib_UnRegisterMe           (void *addonData, void* cbTable);
+     /*
+      * API level independent functions for Kodi
+      */
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_addon.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_addon.h
+index 18d7da84256a..9fef8fb46d2c 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_addon.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_addon.h
+@@ -49,20 +49,10 @@ typedef intptr_t      ssize_t;
+ 
+ typedef void* (*KODIAddOnLib_RegisterMe)(void *addonData);
+ typedef void (*KODIAddOnLib_UnRegisterMe)(void *addonData, void *cbTable);
+-typedef void* (*KODIAudioEngineLib_RegisterMe)(void *addonData);
+-typedef void (*KODIAudioEngineLib_UnRegisterMe)(void *addonData, void *cbTable);
+ typedef void* (*KODIGUILib_RegisterMe)(void *addonData);
+ typedef void (*KODIGUILib_UnRegisterMe)(void *addonData, void *cbTable);
+ typedef void* (*KODIPVRLib_RegisterMe)(void *addonData);
+ typedef void (*KODIPVRLib_UnRegisterMe)(void *addonData, void *cbTable);
+-typedef void* (*KODICodecLib_RegisterMe)(void *addonData);
+-typedef void (*KODICodecLib_UnRegisterMe)(void *addonData, void *cbTable);
+-typedef void* (*KODIINPUTSTREAMLib_RegisterMe)(void *addonData);
+-typedef void (*KODIINPUTSTREAMLib_UnRegisterMe)(void *addonData, void *cbTable);
+-typedef void* (*KODIPeripheralLib_RegisterMe)(void *addonData);
+-typedef void (*KODIPeripheralLib_UnRegisterMe)(void *addonData, void *cbTable);
+-typedef void* (*KODIGameLib_RegisterMe)(void *addonData);
+-typedef void (*KODIGameLib_UnRegisterMe)(void *addonData, void *cbTable);
+ 
+ typedef struct AddonCB
+ {
+@@ -70,20 +60,10 @@ typedef struct AddonCB
+   void*       addonData;
+   KODIAddOnLib_RegisterMe           AddOnLib_RegisterMe;
+   KODIAddOnLib_UnRegisterMe         AddOnLib_UnRegisterMe;
+-  KODIAudioEngineLib_RegisterMe     AudioEngineLib_RegisterMe;
+-  KODIAudioEngineLib_UnRegisterMe   AudioEngineLib_UnRegisterMe;
+-  KODICodecLib_RegisterMe           CodecLib_RegisterMe;
+-  KODICodecLib_UnRegisterMe         CodecLib_UnRegisterMe;
+   KODIGUILib_RegisterMe             GUILib_RegisterMe;
+   KODIGUILib_UnRegisterMe           GUILib_UnRegisterMe;
+   KODIPVRLib_RegisterMe             PVRLib_RegisterMe;
+   KODIPVRLib_UnRegisterMe           PVRLib_UnRegisterMe;
+-  KODIINPUTSTREAMLib_RegisterMe     INPUTSTREAMLib_RegisterMe;
+-  KODIINPUTSTREAMLib_UnRegisterMe   INPUTSTREAMLib_UnRegisterMe;
+-  KODIPeripheralLib_RegisterMe      PeripheralLib_RegisterMe;
+-  KODIPeripheralLib_UnRegisterMe    PeripheralLib_UnRegisterMe;
+-  KODIGameLib_RegisterMe            GameLib_RegisterMe;
+-  KODIGameLib_UnRegisterMe          GameLib_UnRegisterMe;
+ } AddonCB;
+ 
+ struct VFSProperty
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
+index e3567a4a6afd..03fae4d0ddd3 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
+@@ -8,14 +8,6 @@
+ 
+ #pragma once
+ 
+-#ifndef TARGET_WINDOWS
+-#ifndef __cdecl
+-#define __cdecl
+-#endif
+-#ifndef __declspec
+-#define __declspec(X)
+-#endif
+-#endif
+ #include <string.h>
+ #include <stdint.h>
+ #include <stdio.h>
+@@ -33,20 +25,6 @@
+ struct DemuxPacket;
+ #endif
+ 
+-#undef ATTRIBUTE_PACKED
+-#undef PRAGMA_PACK_BEGIN
+-#undef PRAGMA_PACK_END
+-
+-#if defined(__GNUC__)
+-#define ATTRIBUTE_PACKED __attribute__ ((packed))
+-#define PRAGMA_PACK 0
+-#endif
+-
+-#if !defined(ATTRIBUTE_PACKED)
+-#define ATTRIBUTE_PACKED
+-#define PRAGMA_PACK 1
+-#endif
+-
+ #define PVR_ADDON_NAME_STRING_LENGTH          1024
+ #define PVR_ADDON_URL_STRING_LENGTH           1024
+ #define PVR_ADDON_DESC_STRING_LENGTH          1024
+
+From 85a45434b9887735e05b2531d929c3dfb1fa3b37 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Mon, 30 Mar 2020 01:52:54 +0200
+Subject: [PATCH 05/11] [addons][pvr] move xbmc_epg_types.h to xbmc_pvr_types.h
+
+This is another change to clean up the old interface where the PVR
+related EPG data is moved to it and xbmc_epg_types.h deleted.
+---
+ .../include/kodi/CMakeLists.txt               |   1 -
+ .../include/kodi/versions.h                   |   1 -
+ .../include/kodi/xbmc_epg_types.h             | 122 ------------------
+ .../include/kodi/xbmc_pvr_types.h             |  99 +++++++++++++-
+ 4 files changed, 98 insertions(+), 125 deletions(-)
+ delete mode 100644 xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_epg_types.h
+
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/CMakeLists.txt b/xbmc/addons/kodi-addon-dev-kit/include/kodi/CMakeLists.txt
+index cf42553ef2ec..5296ead413de 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/CMakeLists.txt
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/CMakeLists.txt
+@@ -10,7 +10,6 @@ set(HEADERS AddonBase.h
+             libXBMC_pvr.h
+             versions.h
+             xbmc_addon_dll.h
+-            xbmc_epg_types.h
+             xbmc_pvr_dll.h
+             xbmc_pvr_types.h)
+ 
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
+index 876f9577145d..ca1b7a857111 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
+@@ -101,7 +101,6 @@
+ #define ADDON_INSTANCE_VERSION_PVR_XML_ID             "kodi.binary.instance.pvr"
+ #define ADDON_INSTANCE_VERSION_PVR_DEPENDS            "xbmc_pvr_dll.h" \
+                                                       "xbmc_pvr_types.h" \
+-                                                      "xbmc_epg_types.h" \
+                                                       "libXBMC_pvr.h"
+ 
+ #define ADDON_INSTANCE_VERSION_SCREENSAVER            "2.0.0"
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_epg_types.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_epg_types.h
+deleted file mode 100644
+index 9aa42a7f1c89..000000000000
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_epg_types.h
++++ /dev/null
+@@ -1,122 +0,0 @@
+-/*
+- *  Copyright (C) 2005-2018 Team Kodi
+- *  This file is part of Kodi - https://kodi.tv
+- *
+- *  SPDX-License-Identifier: GPL-2.0-or-later
+- *  See LICENSES/README.md for more information.
+- */
+-
+-#pragma once
+-
+-#include <string.h>
+-#include <time.h>
+-
+-#undef ATTRIBUTE_PACKED
+-#undef PRAGMA_PACK_BEGIN
+-#undef PRAGMA_PACK_END
+-
+-#if defined(__GNUC__)
+-#define ATTRIBUTE_PACKED __attribute__ ((packed))
+-#define PRAGMA_PACK 0
+-#endif
+-
+-#if !defined(ATTRIBUTE_PACKED)
+-#define ATTRIBUTE_PACKED
+-#define PRAGMA_PACK 1
+-#endif
+-
+-/*! @name EPG entry content event types */
+-//@{
+-/* These IDs come from the DVB-SI EIT table "content descriptor"
+- * Also known under the name "E-book genre assignments"
+- */
+-#define EPG_EVENT_CONTENTMASK_UNDEFINED                0x00
+-#define EPG_EVENT_CONTENTMASK_MOVIEDRAMA               0x10
+-#define EPG_EVENT_CONTENTMASK_NEWSCURRENTAFFAIRS       0x20
+-#define EPG_EVENT_CONTENTMASK_SHOW                     0x30
+-#define EPG_EVENT_CONTENTMASK_SPORTS                   0x40
+-#define EPG_EVENT_CONTENTMASK_CHILDRENYOUTH            0x50
+-#define EPG_EVENT_CONTENTMASK_MUSICBALLETDANCE         0x60
+-#define EPG_EVENT_CONTENTMASK_ARTSCULTURE              0x70
+-#define EPG_EVENT_CONTENTMASK_SOCIALPOLITICALECONOMICS 0x80
+-#define EPG_EVENT_CONTENTMASK_EDUCATIONALSCIENCE       0x90
+-#define EPG_EVENT_CONTENTMASK_LEISUREHOBBIES           0xA0
+-#define EPG_EVENT_CONTENTMASK_SPECIAL                  0xB0
+-#define EPG_EVENT_CONTENTMASK_USERDEFINED              0xF0
+-//@}
+-
+-/* Set EPGTAG.iGenreType or EPGTAG.iGenreSubType to EPG_GENRE_USE_STRING to transfer genre strings to Kodi */
+-#define EPG_GENRE_USE_STRING                           0x100
+-
+-/* Separator to use in strings containing different tokens, for example writers, directors, actors of an event. */
+-#define EPG_STRING_TOKEN_SEPARATOR ","
+-
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-
+-  /* EPG_TAG.iFlags values */
+-  const unsigned int EPG_TAG_FLAG_UNDEFINED   = 0x00000000; /*!< @brief nothing special to say about this entry */
+-  const unsigned int EPG_TAG_FLAG_IS_SERIES   = 0x00000001; /*!< @brief this EPG entry is part of a series */
+-  const unsigned int EPG_TAG_FLAG_IS_NEW      = 0x00000002; /*!< @brief this EPG entry will be flagged as new */
+-  const unsigned int EPG_TAG_FLAG_IS_PREMIERE = 0x00000004; /*!< @brief this EPG entry will be flagged as a premiere */
+-  const unsigned int EPG_TAG_FLAG_IS_FINALE   = 0x00000008; /*!< @brief this EPG entry will be flagged as a finale */
+-  const unsigned int EPG_TAG_FLAG_IS_LIVE     = 0x00000010; /*!< @brief this EPG entry will be flagged as live */
+-
+-  /* Special EPG_TAG.iUniqueBroadcastId value */
+-
+-  /*!
+-   * @brief special EPG_TAG.iUniqueBroadcastId value to indicate that a tag has not a valid EPG event uid.
+-   */
+-  const unsigned int EPG_TAG_INVALID_UID = 0;
+-
+-  /*!
+-   * @brief special EPG_TAG.iSeriesNumber, EPG_TAG.iEpisodeNumber and EPG_TAG.iEpisodePartNumber value to indicate it is not to be used
+-   */
+-  const int EPG_TAG_INVALID_SERIES_EPISODE = -1;
+-
+-  /*!
+-   * @brief EPG event states. Used with EpgEventStateChange callback.
+-   */
+-  typedef enum
+-  {
+-    EPG_EVENT_CREATED = 0,  /*!< @brief event created */
+-    EPG_EVENT_UPDATED = 1,  /*!< @brief event updated */
+-    EPG_EVENT_DELETED = 2,  /*!< @brief event deleted */
+-  } EPG_EVENT_STATE;
+-
+-  /*!
+-   * @brief Representation of an EPG event.
+-   */
+-  typedef struct EPG_TAG {
+-    unsigned int  iUniqueBroadcastId;  /*!< @brief (required) identifier for this event. Event uids must be unique for a channel. Valid uids must be greater than EPG_TAG_INVALID_UID. */
+-    unsigned int  iUniqueChannelId;    /*!< @brief (required) unique identifier of the channel this event belongs to. */
+-    const char *  strTitle;            /*!< @brief (required) this event's title */
+-    time_t        startTime;           /*!< @brief (required) start time in UTC */
+-    time_t        endTime;             /*!< @brief (required) end time in UTC */
+-    const char *  strPlotOutline;      /*!< @brief (optional) plot outline */
+-    const char *  strPlot;             /*!< @brief (optional) plot */
+-    const char *  strOriginalTitle;    /*!< @brief (optional) originaltitle */
+-    const char *  strCast;             /*!< @brief (optional) cast. Use EPG_STRING_TOKEN_SEPARATOR to separate different persons. */
+-    const char *  strDirector;         /*!< @brief (optional) director(s). Use EPG_STRING_TOKEN_SEPARATOR to separate different persons. */
+-    const char *  strWriter;           /*!< @brief (optional) writer(s). Use EPG_STRING_TOKEN_SEPARATOR to separate different persons. */
+-    int           iYear;               /*!< @brief (optional) year */
+-    const char *  strIMDBNumber;       /*!< @brief (optional) IMDBNumber */
+-    const char *  strIconPath;         /*!< @brief (optional) icon path */
+-    int           iGenreType;          /*!< @brief (optional) genre type */
+-    int           iGenreSubType;       /*!< @brief (optional) genre sub type */
+-    const char *  strGenreDescription; /*!< @brief (optional) genre. Will be used only when iGenreType == EPG_GENRE_USE_STRING or iGenreSubType == EPG_GENRE_USE_STRING. Use EPG_STRING_TOKEN_SEPARATOR to separate different genres. */
+-    const char *  strFirstAired;       /*!< @brief (optional) first aired date of the event. Used only for display purposes. Specify in W3C date format "YYYY-MM-DD". */
+-    int           iParentalRating;     /*!< @brief (optional) parental rating */
+-    int           iStarRating;         /*!< @brief (optional) star rating */
+-    int           iSeriesNumber;       /*!< @brief (optional) series number. Set to "0" for specials/pilot. For 'invalid' set to EPG_TAG_INVALID_SERIES_EPISODE */
+-    int           iEpisodeNumber;      /*!< @brief (optional) episode number. For 'invalid' set to EPG_TAG_INVALID_SERIES_EPISODE */
+-    int           iEpisodePartNumber;  /*!< @brief (optional) episode part number. For 'invalid' set to EPG_TAG_INVALID_SERIES_EPISODE */
+-    const char *  strEpisodeName;      /*!< @brief (optional) episode name */
+-    unsigned int  iFlags;              /*!< @brief (optional) bit field of independent flags associated with the EPG entry */
+-    const char *  strSeriesLink;       /*!< @brief (optional) series link for this event */
+-  } ATTRIBUTE_PACKED EPG_TAG;
+-
+-#ifdef __cplusplus
+-}
+-#endif
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
+index 03fae4d0ddd3..21cae4ab1907 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
+@@ -13,7 +13,6 @@
+ #include <stdio.h>
+ 
+ #include "AddonBase.h"
+-#include "xbmc_epg_types.h"
+ 
+ /*! @note Define "USE_DEMUX" at compile time if demuxing in the PVR add-on is used.
+  *        Also, "DVDDemuxPacket.h" file must be in the include path of the add-on,
+@@ -77,6 +76,104 @@ extern "C" {
+     xbmc_codec_id_t   codec_id;
+   } xbmc_codec_t;
+ 
++  //--==----==----==----==----==----==----==----==----==----==----==----==----==
++  //                             PVR EPG "C" definitions
++
++  /*! @name EPG entry content event types */
++  //@{
++  /* These IDs come from the DVB-SI EIT table "content descriptor"
++   * Also known under the name "E-book genre assignments"
++   */
++  typedef enum
++  {
++    EPG_EVENT_CONTENTMASK_UNDEFINED = 0x00,
++    EPG_EVENT_CONTENTMASK_MOVIEDRAMA = 0x10,
++    EPG_EVENT_CONTENTMASK_NEWSCURRENTAFFAIRS = 0x20,
++    EPG_EVENT_CONTENTMASK_SHOW = 0x30,
++    EPG_EVENT_CONTENTMASK_SPORTS = 0x40,
++    EPG_EVENT_CONTENTMASK_CHILDRENYOUTH = 0x50,
++    EPG_EVENT_CONTENTMASK_MUSICBALLETDANCE = 0x60,
++    EPG_EVENT_CONTENTMASK_ARTSCULTURE = 0x70,
++    EPG_EVENT_CONTENTMASK_SOCIALPOLITICALECONOMICS = 0x80,
++    EPG_EVENT_CONTENTMASK_EDUCATIONALSCIENCE = 0x90,
++    EPG_EVENT_CONTENTMASK_LEISUREHOBBIES = 0xA0,
++    EPG_EVENT_CONTENTMASK_SPECIAL = 0xB0,
++    EPG_EVENT_CONTENTMASK_USERDEFINED = 0xF0
++  } EPG_EVENT_CONTENTMASK;
++  //@}
++
++  /* Set EPGTAG.iGenreType or EPGTAG.iGenreSubType to EPG_GENRE_USE_STRING to transfer genre strings to Kodi */
++  #define EPG_GENRE_USE_STRING 0x100
++
++  /* Separator to use in strings containing different tokens, for example writers, directors, actors of an event. */
++  #define EPG_STRING_TOKEN_SEPARATOR ","
++
++  /* EPG_TAG.iFlags values */
++  const unsigned int EPG_TAG_FLAG_UNDEFINED   = 0x00000000; /*!< nothing special to say about this entry */
++  const unsigned int EPG_TAG_FLAG_IS_SERIES   = 0x00000001; /*!< this EPG entry is part of a series */
++  const unsigned int EPG_TAG_FLAG_IS_NEW      = 0x00000002; /*!< this EPG entry will be flagged as new */
++  const unsigned int EPG_TAG_FLAG_IS_PREMIERE = 0x00000004; /*!< this EPG entry will be flagged as a premiere */
++  const unsigned int EPG_TAG_FLAG_IS_FINALE   = 0x00000008; /*!< this EPG entry will be flagged as a finale */
++  const unsigned int EPG_TAG_FLAG_IS_LIVE     = 0x00000010; /*!< this EPG entry will be flagged as live */
++
++  /* Special EPG_TAG.iUniqueBroadcastId value */
++
++  /*!
++   * @brief special EPG_TAG.iUniqueBroadcastId value to indicate that a tag has not a valid EPG event uid.
++   */
++  const unsigned int EPG_TAG_INVALID_UID = 0;
++
++  /*!
++   * @brief special EPG_TAG.iSeriesNumber, EPG_TAG.iEpisodeNumber and EPG_TAG.iEpisodePartNumber value to indicate it is not to be used
++   */
++  const int EPG_TAG_INVALID_SERIES_EPISODE = -1;
++
++  /*!
++   * @brief EPG event states. Used with EpgEventStateChange callback.
++   */
++  typedef enum
++  {
++    EPG_EVENT_CREATED = 0,  /*!< event created */
++    EPG_EVENT_UPDATED = 1,  /*!< event updated */
++    EPG_EVENT_DELETED = 2,  /*!< event deleted */
++  } EPG_EVENT_STATE;
++
++  /*!
++   * @brief Representation of an EPG event.
++   */
++  typedef struct EPG_TAG
++  {
++    unsigned int  iUniqueBroadcastId;  /*!< (required) identifier for this event. Event uids must be unique for a channel. Valid uids must be greater than EPG_TAG_INVALID_UID. */
++    unsigned int  iUniqueChannelId;    /*!< (required) unique identifier of the channel this event belongs to. */
++    const char *  strTitle;            /*!< (required) this event's title */
++    time_t        startTime;           /*!< (required) start time in UTC */
++    time_t        endTime;             /*!< (required) end time in UTC */
++    const char *  strPlotOutline;      /*!< (optional) plot outline */
++    const char *  strPlot;             /*!< (optional) plot */
++    const char *  strOriginalTitle;    /*!< (optional) originaltitle */
++    const char *  strCast;             /*!< (optional) cast. Use EPG_STRING_TOKEN_SEPARATOR to separate different persons. */
++    const char *  strDirector;         /*!< (optional) director(s). Use EPG_STRING_TOKEN_SEPARATOR to separate different persons. */
++    const char *  strWriter;           /*!< (optional) writer(s). Use EPG_STRING_TOKEN_SEPARATOR to separate different persons. */
++    int           iYear;               /*!< (optional) year */
++    const char *  strIMDBNumber;       /*!< (optional) IMDBNumber */
++    const char *  strIconPath;         /*!< (optional) icon path */
++    int           iGenreType;          /*!< (optional) genre type */
++    int           iGenreSubType;       /*!< (optional) genre sub type */
++    const char *  strGenreDescription; /*!< (optional) genre. Will be used only when iGenreType == EPG_GENRE_USE_STRING or iGenreSubType == EPG_GENRE_USE_STRING. Use EPG_STRING_TOKEN_SEPARATOR to separate different genres. */
++    const char *  strFirstAired;       /*!< (optional) first aired date of the event. Used only for display purposes. Specify in W3C date format "YYYY-MM-DD". */
++    int           iParentalRating;     /*!< (optional) parental rating */
++    int           iStarRating;         /*!< (optional) star rating */
++    int           iSeriesNumber;       /*!< (optional) series number. Set to "0" for specials/pilot. For 'invalid' set to EPG_TAG_INVALID_SERIES_EPISODE */
++    int           iEpisodeNumber;      /*!< (optional) episode number. For 'invalid' set to EPG_TAG_INVALID_SERIES_EPISODE */
++    int           iEpisodePartNumber;  /*!< (optional) episode part number. For 'invalid' set to EPG_TAG_INVALID_SERIES_EPISODE */
++    const char *  strEpisodeName;      /*!< (optional) episode name */
++    unsigned int  iFlags;              /*!< (optional) bit field of independent flags associated with the EPG entry */
++    const char *  strSeriesLink;       /*!< (optional) series link for this event */
++  } ATTRIBUTE_PACKED EPG_TAG;
++
++  //--==----==----==----==----==----==----==----==----==----==----==----==----==
++  //                            PVR timers "C" definitions
++
+   /*!
+    * @brief numeric PVR timer type definitions (PVR_TIMER.iTimerType values)
+    */
+
+From f7e19d8c9b8003947f7972592de14a0b45a613a8 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Mon, 30 Mar 2020 17:04:22 +0200
+Subject: [PATCH 06/11] [addons][pvr] correct CPVRClient::GetDriveSpace call
+
+This change is to make it equal to all other calls and use given
+"const AddonInstance* addon" value.
+---
+ xbmc/pvr/addons/PVRClient.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/pvr/addons/PVRClient.cpp b/xbmc/pvr/addons/PVRClient.cpp
+index 461496c643b3..9f68d471837b 100644
+--- a/xbmc/pvr/addons/PVRClient.cpp
++++ b/xbmc/pvr/addons/PVRClient.cpp
+@@ -559,7 +559,7 @@ PVR_ERROR CPVRClient::GetDriveSpace(long long& iTotal, long long& iUsed)
+   return DoAddonCall(__FUNCTION__, [this, &iTotal, &iUsed](const AddonInstance* addon) {
+     long long iTotalSpace = 0;
+     long long iUsedSpace = 0;
+-    PVR_ERROR error = m_struct.toAddon->GetDriveSpace(&iTotalSpace, &iUsedSpace);
++    PVR_ERROR error = addon->toAddon->GetDriveSpace(&iTotalSpace, &iUsedSpace);
+     if (error == PVR_ERROR_NO_ERROR)
+     {
+       iTotal = iTotalSpace;
+
+From 5e6a22951f1ee9782029044174bf235c39de3479 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Sun, 19 Apr 2020 03:01:04 +0200
+Subject: [PATCH 07/11] [addons][pvr] use STREAM_MAX_PROPERTY_COUNT from
+ inputstream also for pvr
+
+Thought to use the same on pvr and inputstream to confirm both places have the
+same size.
+
+This can prevent some update problems, for PVR this not related to his
+sources, as they not use it. Only used for PVR inside Kodi.
+---
+ .../kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h       | 2 --
+ xbmc/pvr/addons/PVRClient.cpp                              | 7 ++++---
+ 2 files changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
+index 21cae4ab1907..0a1934412dcb 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
+@@ -41,8 +41,6 @@ struct DemuxPacket;
+ #define XBMC_INVALID_CODEC_ID   0
+ #define XBMC_INVALID_CODEC      { XBMC_CODEC_TYPE_UNKNOWN, XBMC_INVALID_CODEC_ID }
+ 
+-/* defines for GetChannelStreamProperties, GetRecordingStreamProperties and GetEPGTagStreamProperties */
+-#define PVR_STREAM_MAX_PROPERTIES     20
+ #define PVR_STREAM_PROPERTY_STREAMURL "streamurl" /*!< @brief the URL of the stream that should be played. */
+ #define PVR_STREAM_PROPERTY_INPUTSTREAMCLASS  "inputstreamclass" /*!< @brief the name of the inputstream add-on that should be used by Kodi to play the stream denoted by PVR_STREAM_PROPERTY_STREAMURL. Leave blank to use Kodi's built-in playing capabilities or to allow ffmpeg to handle directly set to `inputstream.ffmpeg`. */
+ #define PVR_STREAM_PROPERTY_MIMETYPE "mimetype" /*!< @brief the MIME type of the stream that should be played. */
+diff --git a/xbmc/pvr/addons/PVRClient.cpp b/xbmc/pvr/addons/PVRClient.cpp
+index 9f68d471837b..e6045b409857 100644
+--- a/xbmc/pvr/addons/PVRClient.cpp
++++ b/xbmc/pvr/addons/PVRClient.cpp
+@@ -10,6 +10,7 @@
+ 
+ #include "ServiceBroker.h"
+ #include "cores/VideoPlayer/DVDDemuxers/DVDDemuxUtils.h"
++#include "cores/VideoPlayer/Interface/Addon/InputStreamConstants.h"
+ #include "dialogs/GUIDialogKaiToast.h"
+ #include "events/EventLog.h"
+ #include "events/NotificationEvent.h"
+@@ -742,7 +743,7 @@ PVR_ERROR CPVRClient::GetEpgTagStreamProperties(const std::shared_ptr<CPVREpgInf
+   return DoAddonCall(__FUNCTION__, [&tag, &props](const AddonInstance* addon) {
+     CAddonEpgTag addonTag(tag);
+ 
+-    unsigned int iPropertyCount = PVR_STREAM_MAX_PROPERTIES;
++    unsigned int iPropertyCount = STREAM_MAX_PROPERTY_COUNT;
+     std::unique_ptr<PVR_NAMED_VALUE[]> properties(new PVR_NAMED_VALUE[iPropertyCount]);
+     memset(properties.get(), 0, iPropertyCount * sizeof(PVR_NAMED_VALUE));
+ 
+@@ -1092,7 +1093,7 @@ PVR_ERROR CPVRClient::GetChannelStreamProperties(const std::shared_ptr<CPVRChann
+     PVR_CHANNEL tag = {0};
+     WriteClientChannelInfo(channel, tag);
+ 
+-    unsigned int iPropertyCount = PVR_STREAM_MAX_PROPERTIES;
++    unsigned int iPropertyCount = STREAM_MAX_PROPERTY_COUNT;
+     std::unique_ptr<PVR_NAMED_VALUE[]> properties(new PVR_NAMED_VALUE[iPropertyCount]);
+     memset(properties.get(), 0, iPropertyCount * sizeof(PVR_NAMED_VALUE));
+ 
+@@ -1114,7 +1115,7 @@ PVR_ERROR CPVRClient::GetRecordingStreamProperties(const std::shared_ptr<CPVRRec
+     PVR_RECORDING tag = {{0}};
+     WriteClientRecordingInfo(*recording, tag);
+ 
+-    unsigned int iPropertyCount = PVR_STREAM_MAX_PROPERTIES;
++    unsigned int iPropertyCount = STREAM_MAX_PROPERTY_COUNT;
+     std::unique_ptr<PVR_NAMED_VALUE[]> properties(new PVR_NAMED_VALUE[iPropertyCount]);
+     memset(properties.get(), 0, iPropertyCount * sizeof(PVR_NAMED_VALUE));
+ 
+
+From 3733134bc2e9ee993f542f17e079cc2a35070fde Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Sun, 19 Apr 2020 20:55:16 +0200
+Subject: [PATCH 08/11] [addons][pvr] change stream properties and do over
+ inputstream
+
+Before was them in inputstream and the same as copy in PVR, this now remove it
+there to use also the defines from inputstream.
+This to make in case of change more sure to have equal and to have it cleaner.
+
+Further is the documentation a bit changes to match the rework part.
+---
+ .../include/kodi/xbmc_pvr_types.h             | 66 ++++++++++++++++---
+ 1 file changed, 56 insertions(+), 10 deletions(-)
+
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
+index 0a1934412dcb..26ca0a257483 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/xbmc_pvr_types.h
+@@ -8,12 +8,14 @@
+ 
+ #pragma once
+ 
+-#include <string.h>
+-#include <stdint.h>
+-#include <stdio.h>
+-
+ #include "AddonBase.h"
+ 
++#ifdef BUILD_KODI_ADDON
++#include "InputStreamConstants.h"
++#else
++#include "cores/VideoPlayer/Interface/Addon/InputStreamConstants.h"
++#endif
++
+ /*! @note Define "USE_DEMUX" at compile time if demuxing in the PVR add-on is used.
+  *        Also, "DVDDemuxPacket.h" file must be in the include path of the add-on,
+  *        and the add-on should set bHandlesDemuxing to true.
+@@ -24,6 +26,10 @@
+ struct DemuxPacket;
+ #endif
+ 
++#include <stdint.h>
++#include <stdio.h>
++#include <string.h>
++
+ #define PVR_ADDON_NAME_STRING_LENGTH          1024
+ #define PVR_ADDON_URL_STRING_LENGTH           1024
+ #define PVR_ADDON_DESC_STRING_LENGTH          1024
+@@ -41,12 +47,52 @@ struct DemuxPacket;
+ #define XBMC_INVALID_CODEC_ID   0
+ #define XBMC_INVALID_CODEC      { XBMC_CODEC_TYPE_UNKNOWN, XBMC_INVALID_CODEC_ID }
+ 
+-#define PVR_STREAM_PROPERTY_STREAMURL "streamurl" /*!< @brief the URL of the stream that should be played. */
+-#define PVR_STREAM_PROPERTY_INPUTSTREAMCLASS  "inputstreamclass" /*!< @brief the name of the inputstream add-on that should be used by Kodi to play the stream denoted by PVR_STREAM_PROPERTY_STREAMURL. Leave blank to use Kodi's built-in playing capabilities or to allow ffmpeg to handle directly set to `inputstream.ffmpeg`. */
+-#define PVR_STREAM_PROPERTY_MIMETYPE "mimetype" /*!< @brief the MIME type of the stream that should be played. */
+-#define PVR_STREAM_PROPERTY_ISREALTIMESTREAM "isrealtimestream" /*!< @brief "true" to denote that the stream that should be played is a realtime stream. Any other value indicates that this is no realtime stream.*/
+-#define PVR_STREAM_PROPERTY_EPGPLAYBACKASLIVE "epgplaybackaslive" /*!< @brief "true" to denote that if the stream is from an EPG tag that it should be played is a live stream. Otherwise if it's a EPG tag it will play as normal video.*/
+-#define PVR_STREAM_PROPERTY_VALUE_INPUTSTREAMFFMPEG  "inputstream.ffmpeg" /*!< @brief special value for PVR_STREAM_PROPERTY_INPUTSTREAMCLASS to use ffmpeg to directly play a stream URL. */
++//============================================================================
++/// @brief **PVR related stream property values**
++///
++/// This is used to pass additional data to Kodi on a given PVR stream.
++///
++/// Then transferred to livestream, recordings or EPG Tag stream using the
++/// properties.
++///
++//@{
++
++/// @brief the URL of the stream that should be played.
++///
++#define PVR_STREAM_PROPERTY_STREAMURL "streamurl"
++
++/// @brief To define in stream properties the name of the inputstream add-on
++/// that should be used.
++///
++/// Leave blank to use Kodi's built-in playing capabilities or to allow ffmpeg
++/// to handle directly set to @ref PVR_STREAM_PROPERTY_VALUE_INPUTSTREAMFFMPEG.
++///
++#define PVR_STREAM_PROPERTY_INPUTSTREAM STREAM_PROPERTY_INPUTSTREAM
++
++/// @brief the MIME type of the stream that should be played.
++///
++#define PVR_STREAM_PROPERTY_MIMETYPE "mimetype"
++
++/// @brief "true" to denote that the stream that should be played is a realtime
++/// stream.
++///
++/// Any other value indicates that this is no realtime stream.
++///
++#define PVR_STREAM_PROPERTY_ISREALTIMESTREAM STREAM_PROPERTY_ISREALTIMESTREAM
++
++/// @brief "true" to denote that if the stream is from an EPG tag.
++///
++/// It should be played is a live stream. Otherwise if it's a EPG tag it will
++/// play as normal video.
++///
++#define PVR_STREAM_PROPERTY_EPGPLAYBACKASLIVE "epgplaybackaslive"
++
++/// @brief Special value for @ref PVR_STREAM_PROPERTY_INPUTSTREAM to use
++/// ffmpeg to directly play a stream URL.
++#define PVR_STREAM_PROPERTY_VALUE_INPUTSTREAMFFMPEG STREAM_PROPERTY_VALUE_INPUTSTREAMFFMPEG
++
++//@}
++//-------------------------------------------------------------------------------
+ 
+ /* using the default avformat's MAX_STREAMS value to be safe */
+ #define PVR_STREAM_MAX_STREAMS 20
+
+From 8e08ccfd5f3a51c1d97240391ef222c180cf0d21 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Mon, 20 Apr 2020 11:57:31 +0200
+Subject: [PATCH 09/11] [addons][pvr] remove not used lambda for "this" on
+ GetDriveSpace call
+
+---
+ xbmc/pvr/addons/PVRClient.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/pvr/addons/PVRClient.cpp b/xbmc/pvr/addons/PVRClient.cpp
+index e6045b409857..7e6a7138d44d 100644
+--- a/xbmc/pvr/addons/PVRClient.cpp
++++ b/xbmc/pvr/addons/PVRClient.cpp
+@@ -557,7 +557,7 @@ PVR_ERROR CPVRClient::GetDriveSpace(long long& iTotal, long long& iUsed)
+   iTotal = 0;
+   iUsed = 0;
+ 
+-  return DoAddonCall(__FUNCTION__, [this, &iTotal, &iUsed](const AddonInstance* addon) {
++  return DoAddonCall(__FUNCTION__, [&iTotal, &iUsed](const AddonInstance* addon) {
+     long long iTotalSpace = 0;
+     long long iUsedSpace = 0;
+     PVR_ERROR error = addon->toAddon->GetDriveSpace(&iTotalSpace, &iUsedSpace);
+
+From aed73d12c66cbcefe93507bd628cecc972ad1b3c Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Thu, 23 Apr 2020 17:04:38 +0200
+Subject: [PATCH 10/11] [addons][pvr] remove obsolete LOG types and sync with
+ Kodi side
+
+The LOG_NOTICE is LOG_INFO. Also are the LOG_WARNING and LOG_FATAL added.
+
+Further is the namespace ADDONS removed from them, to allow combine with
+new interface on next requests.
+---
+ .../interfaces/Addon/AddonCallbacksAddon.cpp  | 21 +++++++-----
+ .../interfaces/Addon/AddonCallbacksAddon.h    |  4 +--
+ .../include/kodi/libXBMC_addon.h              | 34 +++++++++----------
+ 3 files changed, 31 insertions(+), 28 deletions(-)
+
+diff --git a/xbmc/addons/interfaces/Addon/AddonCallbacksAddon.cpp b/xbmc/addons/interfaces/Addon/AddonCallbacksAddon.cpp
+index 2fbbfa4184dd..bf4fbcb614ad 100644
+--- a/xbmc/addons/interfaces/Addon/AddonCallbacksAddon.cpp
++++ b/xbmc/addons/interfaces/Addon/AddonCallbacksAddon.cpp
+@@ -88,7 +88,7 @@ CAddonCallbacksAddon::~CAddonCallbacksAddon()
+   delete m_callbacks;
+ }
+ 
+-void CAddonCallbacksAddon::AddOnLog(void *addonData, const addon_log_t addonLogLevel, const char *strMessage)
++void CAddonCallbacksAddon::AddOnLog(void *addonData, const int addonLogLevel, const char *strMessage)
+ {
+   CAddonInterfaces* addon = (CAddonInterfaces*) addonData;
+   if (addon == NULL || strMessage == NULL)
+@@ -101,19 +101,24 @@ void CAddonCallbacksAddon::AddOnLog(void *addonData, const addon_log_t addonLogL
+ 
+   try
+   {
+-    int xbmcLogLevel = LOGNONE;
++    int xbmcLogLevel;
+     switch (addonLogLevel)
+     {
+-      case LOG_ERROR:
+-        xbmcLogLevel = LOGERROR;
++      case LOG_DEBUG:
++        xbmcLogLevel = LOGDEBUG;
+         break;
+       case LOG_INFO:
+         xbmcLogLevel = LOGINFO;
+         break;
+-      case LOG_NOTICE:
+-        xbmcLogLevel = LOGNOTICE;
++      case LOG_WARNING:
++        xbmcLogLevel = LOGWARNING;
++        break;
++      case LOG_ERROR:
++        xbmcLogLevel = LOGERROR;
++        break;
++      case LOG_FATAL:
++        xbmcLogLevel = LOGFATAL;
+         break;
+-      case LOG_DEBUG:
+       default:
+         xbmcLogLevel = LOGDEBUG;
+         break;
+@@ -129,7 +134,7 @@ void CAddonCallbacksAddon::AddOnLog(void *addonData, const addon_log_t addonLogL
+   }
+ }
+ 
+-void CAddonCallbacksAddon::QueueNotification(void *addonData, const queue_msg_t type, const char *strMessage)
++void CAddonCallbacksAddon::QueueNotification(void *addonData, const int type, const char *strMessage)
+ {
+   CAddonInterfaces* addon = (CAddonInterfaces*) addonData;
+   if (addon == NULL || strMessage == NULL)
+diff --git a/xbmc/addons/interfaces/Addon/AddonCallbacksAddon.h b/xbmc/addons/interfaces/Addon/AddonCallbacksAddon.h
+index 798bb57bdcfc..8e56a251b592 100644
+--- a/xbmc/addons/interfaces/Addon/AddonCallbacksAddon.h
++++ b/xbmc/addons/interfaces/Addon/AddonCallbacksAddon.h
+@@ -42,10 +42,10 @@ class CAddonCallbacksAddon
+    */
+   CB_AddOnLib *GetCallbacks() { return m_callbacks; }
+ 
+-  static void AddOnLog(void *addonData, const ADDON::addon_log_t addonLogLevel, const char *strMessage);
++  static void AddOnLog(void *addonData, const int addonLogLevel, const char *strMessage);
+   static bool GetAddonSetting(void *addonData, const char *strSettingName, void *settingValue);
+   static char *TranslateSpecialProtocol(const char *strSource);
+-  static void QueueNotification(void *addonData, const ADDON::queue_msg_t type, const char *strMessage);
++  static void QueueNotification(void *addonData, const int type, const char *strMessage);
+   static bool WakeOnLan(const char *mac);
+   static char* UnknownToUTF8(const char *strSource);
+   static char* GetLocalizedString(const void* addonData, long dwCode);
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_addon.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_addon.h
+index 9fef8fb46d2c..6968619d89b2 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_addon.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/libXBMC_addon.h
+@@ -84,23 +84,21 @@ struct VFSDirEntry
+   uint64_t size;           //!< Size of file represented by item
+ };
+ 
+-namespace ADDON
++typedef enum addon_log
+ {
+-  typedef enum addon_log
+-  {
+-    LOG_DEBUG,
+-    LOG_INFO,
+-    LOG_NOTICE,
+-    LOG_ERROR
+-  } addon_log_t;
+-
+-  typedef enum queue_msg
+-  {
+-    QUEUE_INFO,
+-    QUEUE_WARNING,
+-    QUEUE_ERROR
+-  } queue_msg_t;
+-}
++  LOG_DEBUG,
++  LOG_INFO,
++  LOG_WARNING,
++  LOG_ERROR,
++  LOG_FATAL
++} addon_log_t;
++
++typedef enum queue_msg
++{
++  QUEUE_INFO,
++  QUEUE_WARNING,
++  QUEUE_ERROR
++} queue_msg_t;
+ 
+ namespace KodiAPI
+ {
+@@ -108,8 +106,8 @@ namespace AddOn
+ {
+ typedef struct CB_AddOn
+ {
+-  void (*Log)(void *addonData, const ADDON::addon_log_t loglevel, const char *msg);
+-  void (*QueueNotification)(void *addonData, const ADDON::queue_msg_t type, const char *msg);
++  void (*Log)(void *addonData, const int loglevel, const char *msg);
++  void (*QueueNotification)(void *addonData, const int type, const char *msg);
+   bool (*WakeOnLan)(const char* mac);
+   bool (*GetSetting)(void *addonData, const char *settingName, void *settingValue);
+   char* (*TranslateSpecialProtocol)(const char *strSource);
+
+From f7416ca0e3978abf15129a29cac9d6582e9c5aa3 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Mon, 30 Mar 2020 17:08:13 +0200
+Subject: [PATCH 11/11] [addons][pvr] increase PVR API version to 6.4.0
+
+---
+ xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
+index ca1b7a857111..bacfdd09788b 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/versions.h
+@@ -96,8 +96,8 @@
+ #define ADDON_INSTANCE_VERSION_PERIPHERAL_DEPENDS     "addon-instance/Peripheral.h" \
+                                                       "addon-instance/PeripheralUtils.h"
+ 
+-#define ADDON_INSTANCE_VERSION_PVR                    "6.3.0"
+-#define ADDON_INSTANCE_VERSION_PVR_MIN                "6.3.0"
++#define ADDON_INSTANCE_VERSION_PVR                    "6.4.0"
++#define ADDON_INSTANCE_VERSION_PVR_MIN                "6.4.0"
+ #define ADDON_INSTANCE_VERSION_PVR_XML_ID             "kodi.binary.instance.pvr"
+ #define ADDON_INSTANCE_VERSION_PVR_DEPENDS            "xbmc_pvr_dll.h" \
+                                                       "xbmc_pvr_types.h" \
