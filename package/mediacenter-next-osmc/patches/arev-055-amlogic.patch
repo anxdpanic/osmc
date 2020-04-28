@@ -524,44 +524,39 @@ index 66f7e96ace..a41158b4b7 100644
      ;;
    raspberry-pi)
 diff --git a/tools/depends/native/Makefile b/tools/depends/native/Makefile
-index f0077a6bc8..2c72c75d3e 100644
+index 4e012d9b22..45dee1ca78 100644
 --- a/tools/depends/native/Makefile
 +++ b/tools/depends/native/Makefile
-@@ -18,6 +18,12 @@ ifeq ($(OS),darwin_embedded)
-   NATIVE += dpkg xz tar gen_entitlements ldid
- endif
+@@ -14,6 +14,12 @@ NATIVE= m4 gettext heimdal autoconf automake \
+         meson ninja
+
 
 +ifeq ($(OS),linux)
 +  ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),raspberry-pi aml gbm))
-+    NATIVE += meson ninja
-+  endif
-+endif
++     NATIVE += meson ninja
++   endif
++ endif
 +
- ifeq ($(TARGET_PLATFORM),wayland)
-   NATIVE += expat wayland-scanner waylandpp-scanner
-   EXPAT = expat
-@@ -22,7 +22,7 @@ ifeq ($(OS),osx)
+ ifeq ($(OS),darwin_embedded)
+   NATIVE += dpkg xz tar gen_entitlements ldid
  endif
- 
- ifeq ($(OS),linux)
--  ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),raspberry-pi gbm))
-+  ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),raspberry-pi aml gbm))
-     NATIVE += meson ninja
-   endif
- endif
-diff --git a/tools/depends/target/Makefile b/tools/depends/target/Makefile
-index 0053e67d41..9c8d7dd361 100644
---- a/tools/depends/target/Makefile
-+++ b/tools/depends/target/Makefile
-@@ -21,6 +21,8 @@ endif
- ifeq ($(TARGET_PLATFORM),wayland)
-   NATIVE += expat wayland-scanner waylandpp-scanner
-   EXPAT = expat
-+else ifeq ($(TARGET_PLATFORM),aml)
-+  DEPENDS += libamcodec
- endif
+diff --git a/tools/depends/native/Makefile b/tools/depends/native/Makefile
+index 4e012d9b22..45dee1ca78 100644
+--- a/tools/depends/native/Makefile
++++ b/tools/depends/native/Makefile
+@@ -14,6 +14,12 @@ NATIVE= m4 gettext heimdal autoconf automake \
+         meson ninja
 
- .PHONY: $(NATIVE) native
+
++ifeq ($(OS),linux)
++  ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),raspberry-pi aml gbm))
++     NATIVE += meson ninja
++   endif
++ endif
++
+ ifeq ($(OS),darwin_embedded)
+   NATIVE += dpkg xz tar gen_entitlements ldid
+ endif
 diff --git a/tools/depends/target/libamcodec/01-flags.patch b/tools/depends/target/libamcodec/01-flags.patch
 new file mode 100644
 index 0000000000..d47b13eba1
