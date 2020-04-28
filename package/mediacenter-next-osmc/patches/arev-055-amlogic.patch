@@ -544,19 +544,6 @@ diff --git a/tools/depends/native/Makefile b/tools/depends/native/Makefile
 index 4e012d9b22..8564c8fb72 100644
 --- a/tools/depends/native/Makefile
 +++ b/tools/depends/native/Makefile
-@@ -18,6 +18,12 @@ ifeq ($(OS),darwin_embedded)
-   NATIVE += dpkg xz tar gen_entitlements ldid
- endif
-
-+ifeq ($(OS),linux)
-+  ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),raspberry-pi aml gbm))
-+     NATIVE += meson ninja
-+   endif
-+endif
-+
- ifeq ($(TARGET_PLATFORM),wayland)
-   NATIVE += expat wayland-scanner waylandpp-scanner
-   EXPAT = expat
 diff --git a/tools/depends/target/libamcodec/01-flags.patch b/tools/depends/target/libamcodec/01-flags.patch
 new file mode 100644
 index 0000000000..d47b13eba1
