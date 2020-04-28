@@ -527,6 +527,19 @@ diff --git a/tools/depends/native/Makefile b/tools/depends/native/Makefile
 index f0077a6bc8..2c72c75d3e 100644
 --- a/tools/depends/native/Makefile
 +++ b/tools/depends/native/Makefile
+@@ -18,6 +18,12 @@ ifeq ($(OS),darwin_embedded)
+   NATIVE += dpkg xz tar gen_entitlements ldid
+ endif
+
++ifeq ($(OS),linux)
++  ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),raspberry-pi aml gbm))
++    NATIVE += meson ninja
++  endif
++endif
++
+ ifeq ($(TARGET_PLATFORM),wayland)
+   NATIVE += expat wayland-scanner waylandpp-scanner
+   EXPAT = expat
 @@ -22,7 +22,7 @@ ifeq ($(OS),osx)
  endif
  
