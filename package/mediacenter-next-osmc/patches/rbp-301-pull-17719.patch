@@ -1,0 +1,571 @@
+From e07b0ec7960036ffb4cda7ce921d80048f49db87 Mon Sep 17 00:00:00 2001
+From: enen92 <92enen@gmail.com>
+Date: Tue, 21 Apr 2020 15:38:19 +0100
+Subject: [PATCH] Addons: Move migration and addon updates to AddonManager
+
+---
+ xbmc/Application.cpp                | 45 +++++++++++-------
+ xbmc/addons/AddonDatabase.cpp       |  4 +-
+ xbmc/addons/AddonDatabase.h         |  4 +-
+ xbmc/addons/AddonInstaller.cpp      | 34 ++++++--------
+ xbmc/addons/AddonInstaller.h        | 11 +++--
+ xbmc/addons/AddonManager.cpp        | 72 +++++++++++++++++++++++++----
+ xbmc/addons/AddonManager.h          | 40 ++++++++++++----
+ xbmc/addons/AddonSystemSettings.cpp | 50 ++------------------
+ xbmc/addons/AddonSystemSettings.h   | 19 ++++----
+ xbmc/addons/RepositoryUpdater.cpp   |  8 ++--
+ 10 files changed, 165 insertions(+), 122 deletions(-)
+
+diff --git a/xbmc/Application.cpp b/xbmc/Application.cpp
+index 1b623d029798..f46c49bc64a5 100644
+--- a/xbmc/Application.cpp
++++ b/xbmc/Application.cpp
+@@ -783,26 +783,39 @@ bool CApplication::Initialize()
+ 
+     std::vector<std::string> incompatibleAddons;
+     event.Reset();
+-    std::atomic<bool> isMigratingAddons(false);
+-    CJobManager::GetInstance().Submit([&event, &incompatibleAddons, &isMigratingAddons]() {
+-        incompatibleAddons = CAddonSystemSettings::GetInstance().MigrateAddons([&isMigratingAddons]() {
+-          isMigratingAddons = true;
+-        });
+-        event.Set();
+-      }, CJob::PRIORITY_DEDICATED);
+-    localizedStr = g_localizeStrings.Get(24151);
+-    iDots = 1;
+-    while (!event.WaitMSec(1000))
++
++    // Addon migration
++    ADDON::VECADDONS incompatible;
++    if (CServiceBroker::GetAddonMgr().GetIncompatibleAddons(incompatible))
+     {
+-      if (isMigratingAddons)
+-        CServiceBroker::GetRenderSystem()->ShowSplash(std::string(iDots, ' ') + localizedStr + std::string(iDots, '.'));
+-      if (iDots == 3)
++      if (CAddonSystemSettings::GetInstance().GetAddonAutoUpdateMode() == AUTO_UPDATES_ON)
++      {
++        CJobManager::GetInstance().Submit(
++            [&event, &incompatibleAddons]() {
++              if (CServiceBroker::GetRepositoryUpdater().CheckForUpdates())
++                CServiceBroker::GetRepositoryUpdater().Await();
++
++              incompatibleAddons = CServiceBroker::GetAddonMgr().MigrateAddons();
++              event.Set();
++            },
++            CJob::PRIORITY_DEDICATED);
++        localizedStr = g_localizeStrings.Get(24151);
+         iDots = 1;
+-      else
+-        ++iDots;
++        while (!event.WaitMSec(1000))
++        {
++          CServiceBroker::GetRenderSystem()->ShowSplash(std::string(iDots, ' ') + localizedStr +
++                                                        std::string(iDots, '.'));
++          if (iDots == 3)
++            iDots = 1;
++          else
++            ++iDots;
++        }
++        m_incompatibleAddons = incompatibleAddons;
++      }
+     }
++
++    // Start splashscreen and load skin
+     CServiceBroker::GetRenderSystem()->ShowSplash("");
+-    m_incompatibleAddons = incompatibleAddons;
+     m_confirmSkinChange = true;
+ 
+     std::string defaultSkin = std::static_pointer_cast<const CSettingString>(settings->GetSetting(CSettings::SETTING_LOOKANDFEEL_SKIN))->GetDefault();
+diff --git a/xbmc/addons/AddonDatabase.cpp b/xbmc/addons/AddonDatabase.cpp
+index 886d90507054..fcce03a77bbe 100644
+--- a/xbmc/addons/AddonDatabase.cpp
++++ b/xbmc/addons/AddonDatabase.cpp
+@@ -557,12 +557,12 @@ bool CAddonDatabase::GetAddon(int id, AddonPtr &addon)
+   return false;
+ }
+ 
+-bool CAddonDatabase::GetRepositoryContent(VECADDONS& addons)
++bool CAddonDatabase::GetRepositoryContent(VECADDONS& addons) const
+ {
+   return GetRepositoryContent("", addons);
+ }
+ 
+-bool CAddonDatabase::GetRepositoryContent(const std::string& id, VECADDONS& addons)
++bool CAddonDatabase::GetRepositoryContent(const std::string& id, VECADDONS& addons) const
+ {
+   try
+   {
+diff --git a/xbmc/addons/AddonDatabase.h b/xbmc/addons/AddonDatabase.h
+index 932a669c05d5..fd65b55cac6f 100644
+--- a/xbmc/addons/AddonDatabase.h
++++ b/xbmc/addons/AddonDatabase.h
+@@ -52,10 +52,10 @@ class CAddonDatabase : public CDatabase
+    \param id id of the repository
+    \returns true on success, false on error or if repository have never been synced.
+    */
+-  bool GetRepositoryContent(const std::string& id, ADDON::VECADDONS& addons);
++  bool GetRepositoryContent(const std::string& id, ADDON::VECADDONS& addons) const;
+ 
+   /*! Get addons across all repositories */
+-  bool GetRepositoryContent(ADDON::VECADDONS& addons);
++  bool GetRepositoryContent(ADDON::VECADDONS& addons) const;
+ 
+   /*!
+    \brief Set repo last checked date, and create the repo if needed
+diff --git a/xbmc/addons/AddonInstaller.cpp b/xbmc/addons/AddonInstaller.cpp
+index 98ebab52fe03..26d74db9d193 100644
+--- a/xbmc/addons/AddonInstaller.cpp
++++ b/xbmc/addons/AddonInstaller.cpp
+@@ -416,30 +416,24 @@ void CAddonInstaller::PrunePackageCache()
+     delete it->second;
+ }
+ 
+-void CAddonInstaller::InstallUpdates()
++void CAddonInstaller::InstallAddons(const VECADDONS& addons, bool wait)
+ {
+-  auto updates = CServiceBroker::GetAddonMgr().GetAvailableUpdates();
+-  for (const auto& addon : updates)
++  for (const auto& addon : addons)
+   {
+-    if (!CServiceBroker::GetAddonMgr().IsBlacklisted(addon->ID()))
+-    {
+-      AddonPtr toInstall;
+-      RepositoryPtr repo;
+-      if (CAddonInstallJob::GetAddon(addon->ID(), repo, toInstall))
+-        DoInstall(toInstall, repo, true, false, true);
+-    }
++    AddonPtr toInstall;
++    RepositoryPtr repo;
++    if (CAddonInstallJob::GetAddon(addon->ID(), repo, toInstall))
++      DoInstall(toInstall, repo, true, false, true);
+   }
+-}
+-
+-void CAddonInstaller::InstallUpdatesAndWait()
+-{
+-  InstallUpdates();
+-  CSingleLock lock(m_critSection);
+-  if (!m_downloadJobs.empty())
++  if (wait)
+   {
+-    m_idle.Reset();
+-    lock.Leave();
+-    m_idle.Wait();
++    CSingleLock lock(m_critSection);
++    if (!m_downloadJobs.empty())
++    {
++      m_idle.Reset();
++      lock.Leave();
++      m_idle.Wait();
++    }
+   }
+ }
+ 
+diff --git a/xbmc/addons/AddonInstaller.h b/xbmc/addons/AddonInstaller.h
+index 533e87918bd8..45099232371c 100644
+--- a/xbmc/addons/AddonInstaller.h
++++ b/xbmc/addons/AddonInstaller.h
+@@ -48,6 +48,13 @@ class CAddonInstaller : public IJobCallback
+    */
+   bool InstallOrUpdate(const std::string &addonID, bool background = true, bool modal = false);
+ 
++  /*! \brief Installs a vector of addons
++   \param addons the list of addons to install
++   \param wait if the method should wait for all the DoInstall jobs to finish or if it should return right away
++   \sa DoInstall
++   */
++  void InstallAddons(const ADDON::VECADDONS& addons, bool wait);
++
+   /*! \brief Install an addon from the given zip path
+    \param path the zip file to install from
+    \return true if successful, false otherwise
+@@ -83,10 +90,6 @@ class CAddonInstaller : public IJobCallback
+    */
+   bool HasJob(const std::string& ID) const;
+ 
+-  /*! Install update and block until all updates have installed. */
+-  void InstallUpdatesAndWait();
+-  void InstallUpdates();
+-
+   void OnJobComplete(unsigned int jobID, bool success, CJob* job) override;
+   void OnJobProgress(unsigned int jobID, unsigned int progress, unsigned int total, const CJob *job) override;
+ 
+diff --git a/xbmc/addons/AddonManager.cpp b/xbmc/addons/AddonManager.cpp
+index ba891e6f35dd..38ffd360a168 100644
+--- a/xbmc/addons/AddonManager.cpp
++++ b/xbmc/addons/AddonManager.cpp
+@@ -10,6 +10,8 @@
+ 
+ #include "LangInfo.h"
+ #include "ServiceBroker.h"
++#include "addons/AddonInstaller.h"
++#include "addons/AddonSystemSettings.h"
+ #include "addons/addoninfo/AddonInfoBuilder.h"
+ #include "events/AddonManagementEvent.h"
+ #include "events/EventLog.h"
+@@ -192,7 +194,7 @@ bool CAddonMgr::ReloadSettings(const std::string &id)
+   return false;
+ }
+ 
+-VECADDONS CAddonMgr::GetAvailableUpdates()
++VECADDONS CAddonMgr::GetAvailableUpdates() const
+ {
+   CSingleLock lock(m_critSection);
+   auto start = XbmcThreads::SystemClockMillis();
+@@ -225,7 +227,7 @@ bool CAddonMgr::HasAvailableUpdates()
+   return !GetAvailableUpdates().empty();
+ }
+ 
+-bool CAddonMgr::GetAddons(VECADDONS& addons)
++bool CAddonMgr::GetAddons(VECADDONS& addons) const
+ {
+   return GetAddonsInternal(ADDON_UNKNOWN, addons, true);
+ }
+@@ -339,7 +341,7 @@ bool CAddonMgr::GetInstalledBinaryAddon(const std::string& addonId, BINARY_ADDON
+   return ret;
+ }
+ 
+-bool CAddonMgr::GetAddonsInternal(const TYPE &type, VECADDONS &addons, bool enabledOnly)
++bool CAddonMgr::GetAddonsInternal(const TYPE& type, VECADDONS& addons, bool enabledOnly) const
+ {
+   CSingleLock lock(m_critSection);
+ 
+@@ -369,7 +371,60 @@ bool CAddonMgr::GetAddonsInternal(const TYPE &type, VECADDONS &addons, bool enab
+   return addons.size() > 0;
+ }
+ 
+-bool CAddonMgr::GetAddon(const std::string &str, AddonPtr &addon, const TYPE &type/*=ADDON_UNKNOWN*/, bool enabledOnly /*= true*/)
++bool CAddonMgr::GetIncompatibleAddons(VECADDONS& incompatible) const
++{
++  GetAddons(incompatible);
++  incompatible.erase(std::remove_if(incompatible.begin(), incompatible.end(),
++                                    [this](const AddonPtr a) { return IsCompatible(*a); }),
++                     incompatible.end());
++  return !incompatible.empty();
++}
++
++std::vector<std::string> CAddonMgr::MigrateAddons()
++{
++  CLog::Log(LOGINFO, "ADDON: waiting for add-ons to update...");
++  CheckAndInstallAddonUpdates(true);
++
++  VECADDONS incompatible;
++  GetIncompatibleAddons(incompatible);
++  std::vector<std::string> changed;
++
++  for (const auto& addon : incompatible)
++  {
++    CLog::Log(LOGINFO, "ADDON: {} version {} is incompatible", addon->ID(),
++              addon->Version().asString());
++
++    if (!CAddonSystemSettings::GetInstance().UnsetActive(addon))
++    {
++      CLog::Log(LOGWARNING, "ADDON: failed to unset {}", addon->ID());
++      continue;
++    }
++    if (!DisableAddon(addon->ID()))
++    {
++      CLog::Log(LOGWARNING, "ADDON: failed to disable {}", addon->ID());
++    }
++    changed.push_back(addon->Name());
++  }
++
++  return changed;
++}
++
++void CAddonMgr::CheckAndInstallAddonUpdates(bool wait) const
++{
++  // Get Addons in need of an update and remove all the blacklisted ones
++  auto updates = GetAvailableUpdates();
++  updates.erase(std::remove_if(updates.begin(), updates.end(), [this](const AddonPtr& addon) {
++    return IsBlacklisted(addon->ID());
++  }), updates.end());
++
++  // install all
++  CAddonInstaller::GetInstance().InstallAddons(updates, wait);
++}
++
++bool CAddonMgr::GetAddon(const std::string& str,
++                         AddonPtr& addon,
++                         const TYPE& type /*=ADDON_UNKNOWN*/,
++                         bool enabledOnly /*= true*/) const
+ {
+   CSingleLock lock(m_critSection);
+ 
+@@ -621,7 +676,7 @@ bool CAddonMgr::EnableAddon(const std::string& id)
+   return true;
+ }
+ 
+-bool CAddonMgr::IsAddonDisabled(const std::string& ID)
++bool CAddonMgr::IsAddonDisabled(const std::string& ID) const
+ {
+   CSingleLock lock(m_critSection);
+   return m_disabled.find(ID) != m_disabled.end();
+@@ -715,7 +770,7 @@ bool CAddonMgr::AddonsFromRepoXML(const CRepository::DirInfo& repo, const std::s
+   return true;
+ }
+ 
+-bool CAddonMgr::IsCompatible(const IAddon& addon)
++bool CAddonMgr::IsCompatible(const IAddon& addon) const
+ {
+   for (const auto& dependency : addon.GetDependencies())
+   {
+@@ -781,7 +836,7 @@ std::vector<DependencyInfo> CAddonMgr::GetDepsRecursive(const std::string& id)
+   return added;
+ }
+ 
+-bool CAddonMgr::GetAddonInfos(AddonInfos& addonInfos, TYPE type)
++bool CAddonMgr::GetAddonInfos(AddonInfos& addonInfos, TYPE type) const
+ {
+   CSingleLock lock(m_critSection);
+ 
+@@ -795,7 +850,8 @@ bool CAddonMgr::GetAddonInfos(AddonInfos& addonInfos, TYPE type)
+   return !addonInfos.empty();
+ }
+ 
+-const AddonInfoPtr CAddonMgr::GetAddonInfo(const std::string& id, TYPE type /*= ADDON_UNKNOWN*/)
++const AddonInfoPtr CAddonMgr::GetAddonInfo(const std::string& id,
++                                           TYPE type /*= ADDON_UNKNOWN*/) const
+ {
+   CSingleLock lock(m_critSection);
+ 
+diff --git a/xbmc/addons/AddonManager.h b/xbmc/addons/AddonManager.h
+index db790e8d973d..26e69587a348 100644
+--- a/xbmc/addons/AddonManager.h
++++ b/xbmc/addons/AddonManager.h
+@@ -76,7 +76,10 @@ namespace ADDON
+      \param enabledOnly whether we only want enabled addons - set to false to allow both enabled and disabled addons - defaults to true.
+      \return true if an addon matching the id of the given type is available and is enabled (if enabledOnly is true).
+      */
+-    bool GetAddon(const std::string &id, AddonPtr &addon, const TYPE &type = ADDON_UNKNOWN, bool enabledOnly = true);
++    bool GetAddon(const std::string& id,
++                  AddonPtr& addon,
++                  const TYPE& type = ADDON_UNKNOWN,
++                  bool enabledOnly = true) const;
+ 
+     bool HasType(const std::string &id, const TYPE &type);
+ 
+@@ -85,7 +88,7 @@ namespace ADDON
+     bool HasInstalledAddons(const TYPE &type);
+ 
+     /*! Returns all installed, enabled add-ons. */
+-    bool GetAddons(VECADDONS& addons);
++    bool GetAddons(VECADDONS& addons) const;
+ 
+     /*! Returns enabled add-ons with given type. */
+     bool GetAddons(VECADDONS& addons, const TYPE& type);
+@@ -137,7 +140,7 @@ namespace ADDON
+     bool ReloadSettings(const std::string &id);
+ 
+     /*! Get addons with available updates */
+-    VECADDONS GetAvailableUpdates();
++    VECADDONS GetAvailableUpdates() const;
+ 
+     /*! Returns true if there is any addon with available updates, otherwise false */
+     bool HasAvailableUpdates();
+@@ -149,6 +152,27 @@ namespace ADDON
+      */
+     bool FindAddons();
+ 
++    /*!
++     * Fills the the provided vector with the list of incompatible addons and returns if there's any.
++     *
++     * @return true if there are incompatible addons
++     */
++    bool GetIncompatibleAddons(VECADDONS& incompatible) const;
++
++    /*!
++     * Migrate all the addons (updates all addons that have an update pending and disables those
++     * that got incompatible)
++     *
++     * @return list of all addons that were modified.
++     */
++    std::vector<std::string> MigrateAddons();
++
++    /*!
++     * Install available addon updates, if any.
++     * @param wait If kodi should wait for all updates to download and install before returning
++     */
++    void CheckAndInstallAddonUpdates(bool wait) const;
++
+     /*!
+      * @note: should only be called by AddonInstaller
+      *
+@@ -180,7 +204,7 @@ namespace ADDON
+      \param ID id of the addon
+      \sa DisableAddon
+      */
+-    bool IsAddonDisabled(const std::string& ID);
++    bool IsAddonDisabled(const std::string& ID) const;
+ 
+     /* \brief Checks whether an addon can be disabled via DisableAddon.
+      \param ID id of the addon
+@@ -229,14 +253,14 @@ namespace ADDON
+ 
+     bool ServicesHasStarted() const;
+ 
+-    bool IsCompatible(const IAddon& addon);
++    bool IsCompatible(const IAddon& addon) const;
+ 
+     /*! \brief Recursively get dependencies for an add-on
+      */
+     std::vector<DependencyInfo> GetDepsRecursive(const std::string& id);
+ 
+-    bool GetAddonInfos(AddonInfos& addonInfos, TYPE type);
+-    const AddonInfoPtr GetAddonInfo(const std::string& id, TYPE type = ADDON_UNKNOWN);
++    bool GetAddonInfos(AddonInfos& addonInfos, TYPE type) const;
++    const AddonInfoPtr GetAddonInfo(const std::string& id, TYPE type = ADDON_UNKNOWN) const;
+ 
+     /*!
+      * @brief Get the path where temporary add-on files are stored
+@@ -252,7 +276,7 @@ namespace ADDON
+ 
+     VECADDONS m_updateableAddons;
+ 
+-    bool GetAddonsInternal(const TYPE &type, VECADDONS &addons, bool enabledOnly);
++    bool GetAddonsInternal(const TYPE& type, VECADDONS& addons, bool enabledOnly) const;
+     bool EnableSingle(const std::string& id);
+ 
+     void FindAddons(ADDON_INFO_LIST& addonmap, const std::string& path);
+diff --git a/xbmc/addons/AddonSystemSettings.cpp b/xbmc/addons/AddonSystemSettings.cpp
+index a25bea6c420e..8443e5635728 100644
+--- a/xbmc/addons/AddonSystemSettings.cpp
++++ b/xbmc/addons/AddonSystemSettings.cpp
+@@ -9,9 +9,7 @@
+ #include "AddonSystemSettings.h"
+ 
+ #include "ServiceBroker.h"
+-#include "addons/AddonInstaller.h"
+ #include "addons/AddonManager.h"
+-#include "addons/RepositoryUpdater.h"
+ #include "guilib/GUIComponent.h"
+ #include "guilib/GUIWindowManager.h"
+ #include "messaging/helpers/DialogHelper.h"
+@@ -118,51 +116,9 @@ bool CAddonSystemSettings::UnsetActive(const AddonPtr& addon)
+   return true;
+ }
+ 
+-
+-std::vector<std::string> CAddonSystemSettings::MigrateAddons(std::function<void(void)> onMigrate)
++int CAddonSystemSettings::GetAddonAutoUpdateMode() const
+ {
+-  auto getIncompatible = [](){
+-    VECADDONS incompatible;
+-    CServiceBroker::GetAddonMgr().GetAddons(incompatible);
+-    incompatible.erase(std::remove_if(incompatible.begin(), incompatible.end(),
+-        [](const AddonPtr a){ return CServiceBroker::GetAddonMgr().IsCompatible(*a); }), incompatible.end());
+-    return incompatible;
+-  };
+-
+-  if (getIncompatible().empty())
+-    return std::vector<std::string>();
+-
+-  if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_ADDONS_AUTOUPDATES) == AUTO_UPDATES_ON)
+-  {
+-    onMigrate();
+-
+-    if (CServiceBroker::GetRepositoryUpdater().CheckForUpdates())
+-      CServiceBroker::GetRepositoryUpdater().Await();
+-
+-    CLog::Log(LOGINFO, "ADDON: waiting for add-ons to update...");
+-    CAddonInstaller::GetInstance().InstallUpdatesAndWait();
+-  }
+-
+-  auto incompatible = getIncompatible();
+-  for (const auto& addon : incompatible)
+-    CLog::Log(LOGINFO, "ADDON: %s version %s is incompatible", addon->ID().c_str(),
+-              addon->Version().asString().c_str());
+-
+-  std::vector<std::string> changed;
+-  for (const auto& addon : incompatible)
+-  {
+-    if (!UnsetActive(addon))
+-    {
+-      CLog::Log(LOGWARNING, "ADDON: failed to unset %s", addon->ID().c_str());
+-      continue;
+-    }
+-    if (!CServiceBroker::GetAddonMgr().DisableAddon(addon->ID()))
+-    {
+-      CLog::Log(LOGWARNING, "ADDON: failed to disable %s", addon->ID().c_str());
+-    }
+-    changed.push_back(addon->Name());
+-  }
+-
+-  return changed;
++  return CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(
++      CSettings::SETTING_ADDONS_AUTOUPDATES);
+ }
+ }
+diff --git a/xbmc/addons/AddonSystemSettings.h b/xbmc/addons/AddonSystemSettings.h
+index c7217d71b30c..2db382c904a5 100644
+--- a/xbmc/addons/AddonSystemSettings.h
++++ b/xbmc/addons/AddonSystemSettings.h
+@@ -32,26 +32,23 @@ class CAddonSystemSettings : public ISettingCallback
+   bool SetActive(const TYPE& type, const std::string& addonID);
+   bool IsActive(const IAddon& addon);
+ 
++  /*!
++   * Gets Kodi addon auto update mode
++   *
++   * @return the autoupdate mode value
++  */
++  int GetAddonAutoUpdateMode() const;
++
+   /*!
+    * Attempt to unset addon as active. Returns true if addon is no longer active,
+    * false if it could not be unset (e.g. if the addon is the default)
+    */
+   bool UnsetActive(const AddonPtr& addon);
+ 
+-  /*!
+-   * Check compatibility of installed addons and attempt to migrate.
+-   *
+-   * @param onMigrate Called when a long running migration task takes place.
+-   * @return list of addons that was modified.
+-   */
+-  std::vector<std::string> MigrateAddons(std::function<void(void)> onMigrate);
+-
+ private:
+   CAddonSystemSettings();
+-  CAddonSystemSettings(const CAddonSystemSettings&) = default;
++  CAddonSystemSettings(const CAddonSystemSettings&) = delete;
+   CAddonSystemSettings& operator=(const CAddonSystemSettings&) = delete;
+-  CAddonSystemSettings(CAddonSystemSettings&&);
+-  CAddonSystemSettings& operator=(CAddonSystemSettings&&);
+   ~CAddonSystemSettings() override = default;
+ 
+   const std::map<ADDON::TYPE, std::string> m_activeSettings;
+diff --git a/xbmc/addons/RepositoryUpdater.cpp b/xbmc/addons/RepositoryUpdater.cpp
+index fefabd9f339d..581ce09aa1cf 100644
+--- a/xbmc/addons/RepositoryUpdater.cpp
++++ b/xbmc/addons/RepositoryUpdater.cpp
+@@ -79,7 +79,7 @@ void CRepositoryUpdater::OnJobComplete(unsigned int jobID, bool success, CJob* j
+ 
+     VECADDONS updates = m_addonMgr.GetAvailableUpdates();
+ 
+-    if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_ADDONS_AUTOUPDATES) == AUTO_UPDATES_NOTIFY)
++    if (CAddonSystemSettings::GetInstance().GetAddonAutoUpdateMode() == AUTO_UPDATES_NOTIFY)
+     {
+       if (!updates.empty())
+       {
+@@ -97,9 +97,9 @@ void CRepositoryUpdater::OnJobComplete(unsigned int jobID, bool success, CJob* j
+       }
+     }
+ 
+-    if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_ADDONS_AUTOUPDATES) == AUTO_UPDATES_ON)
++    if (CAddonSystemSettings::GetInstance().GetAddonAutoUpdateMode() == AUTO_UPDATES_ON)
+     {
+-      CAddonInstaller::GetInstance().InstallUpdates();
++      m_addonMgr.CheckAndInstallAddonUpdates(false);
+     }
+ 
+     ScheduleUpdate();
+@@ -207,7 +207,7 @@ void CRepositoryUpdater::ScheduleUpdate()
+   CSingleLock lock(m_criticalSection);
+   m_timer.Stop(true);
+ 
+-  if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_ADDONS_AUTOUPDATES) == AUTO_UPDATES_NEVER)
++  if (CAddonSystemSettings::GetInstance().GetAddonAutoUpdateMode() == AUTO_UPDATES_NEVER)
+     return;
+ 
+   if (!m_addonMgr.HasAddons(ADDON_REPOSITORY))

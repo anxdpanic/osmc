@@ -1,0 +1,53 @@
+From 7d2de98fe4fa8bab6802e9c2da78bec2c5f95051 Mon Sep 17 00:00:00 2001
+From: montellese <montellese@kodi.tv>
+Date: Sun, 19 Apr 2020 23:56:16 +0200
+Subject: [PATCH 1/2] fix log levels in debug builds
+
+---
+ xbmc/utils/log.cpp | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/xbmc/utils/log.cpp b/xbmc/utils/log.cpp
+index bdbcfb695ed0..858f36710811 100644
+--- a/xbmc/utils/log.cpp
++++ b/xbmc/utils/log.cpp
+@@ -159,16 +159,10 @@ void CLog::SetLogLevel(int level)
+   m_logLevel = level;
+ 
+   auto spdLevel = spdlog::level::info;
+-#if defined(_DEBUG) || defined(PROFILE)
+-  spdLevel = spdlog::level::trace;
+-#else
+   if (level <= LOG_LEVEL_NONE)
+     spdLevel = spdlog::level::off;
+   else if (level >= LOG_LEVEL_DEBUG)
+     spdLevel = spdlog::level::trace;
+-  else
+-    spdLevel = spdlog::level::info;
+-#endif
+ 
+   if (m_defaultLogger != nullptr && m_defaultLogger->level() == spdLevel)
+     return;
+
+From b8b6922a8773a20f6db4b1e60b81ecc3e8d97edb Mon Sep 17 00:00:00 2001
+From: montellese <montellese@kodi.tv>
+Date: Sun, 19 Apr 2020 23:56:43 +0200
+Subject: [PATCH 2/2] use python style formatting in CLog::SetLogLevel()
+
+---
+ xbmc/utils/log.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/utils/log.cpp b/xbmc/utils/log.cpp
+index 858f36710811..7fb87feed23b 100644
+--- a/xbmc/utils/log.cpp
++++ b/xbmc/utils/log.cpp
+@@ -168,7 +168,7 @@ void CLog::SetLogLevel(int level)
+     return;
+ 
+   spdlog::set_level(spdLevel);
+-  FormatAndLogInternal(spdlog::level::info, "Log level changed to \"%s\"",
++  FormatAndLogInternal(spdlog::level::info, "Log level changed to \"{}\"",
+                        spdlog::level::to_string_view(spdLevel));
+ }
+ 

@@ -1,0 +1,22 @@
+From e2a71f0fdb5fd92d3d6d528c392533cf0ed6ba50 Mon Sep 17 00:00:00 2001
+From: montellese <montellese@kodi.tv>
+Date: Tue, 21 Apr 2020 20:53:51 +0200
+Subject: [PATCH] [settings] don't load setting values twice
+
+---
+ xbmc/settings/Settings.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/settings/Settings.cpp b/xbmc/settings/Settings.cpp
+index dcd9db625f82..322690e135b5 100644
+--- a/xbmc/settings/Settings.cpp
++++ b/xbmc/settings/Settings.cpp
+@@ -480,7 +480,7 @@ bool CSettings::Load(const std::string &file)
+   CXBMCTinyXML xmlDoc;
+   bool updated = false;
+   if (!XFILE::CFile::Exists(file) || !xmlDoc.LoadFile(file) ||
+-      !Load(xmlDoc.RootElement(), updated) || !Load(xmlDoc.RootElement()))
++      !Load(xmlDoc.RootElement(), updated))
+   {
+     CLog::Log(LOGERROR, "CSettings: unable to load settings from %s, creating new default settings", file.c_str());
+     if (!Reset())
