@@ -540,23 +540,15 @@ diff --git a/tools/depends/target/Makefile b/tools/depends/target/Makefile
 index 0053e67d41..9c8d7dd361 100644
 --- a/tools/depends/target/Makefile
 +++ b/tools/depends/target/Makefile
-@@ -72,13 +72,15 @@ ifeq ($(OS),linux)
-   DEPENDS += alsa-lib
-   ALSA_LIB = alsa-lib
-   LIBUUID = libuuid
--  ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),raspberry-pi gbm))
-+  ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),raspberry-pi aml gbm))
-     DEPENDS += libxkbcommon libinput libudev libevdev mtdev
-   endif
- endif
- 
+@@ -21,6 +21,8 @@ endif
  ifeq ($(TARGET_PLATFORM),wayland)
-   DEPENDS += wayland waylandpp wayland-protocols
+   NATIVE += expat wayland-scanner waylandpp-scanner
+   EXPAT = expat
 +else ifeq ($(TARGET_PLATFORM),aml)
 +  DEPENDS += libamcodec
  endif
- 
- .PHONY: $(DEPENDS)
+
+ .PHONY: $(NATIVE) native
 diff --git a/tools/depends/target/libamcodec/01-flags.patch b/tools/depends/target/libamcodec/01-flags.patch
 new file mode 100644
 index 0000000000..d47b13eba1
