@@ -1,0 +1,61 @@
+From 50ec042f205f2b9f58813dfdc07e7555292e5c67 Mon Sep 17 00:00:00 2001
+From: Brent Murphy <bmurphy@bcmcs.net>
+Date: Sun, 26 Apr 2020 14:44:27 +1000
+Subject: [PATCH] [cmake] ADDONS_TO_BUILD exclusion regex
+
+Implements an exclusion match regex to exclude an addon/s from building
+
+example usage
+ADDONS_TO_BUILD='game.libretro.* -game.libretro.mrboom peripheral.joystick'
+
+game.libretro.mrboom will not build, but game.libretro and game.libretro.2048 will
+---
+ cmake/addons/CMakeLists.txt | 27 ++++++++++++++++++++++++++-
+ 1 file changed, 26 insertions(+), 1 deletion(-)
+
+diff --git a/cmake/addons/CMakeLists.txt b/cmake/addons/CMakeLists.txt
+index 3dccc014b2ba..20f2b6df4fb9 100644
+--- a/cmake/addons/CMakeLists.txt
++++ b/cmake/addons/CMakeLists.txt
+@@ -244,15 +244,40 @@ endif()
+ # error either in ADDONS_TO_BUILD or in the directory configuration.
+ set(SUPPORTED_ADDON_FOUND FALSE)
+ 
++set(EXCLUDE_ADDONS "")
++foreach(addon ${ADDONS_TO_BUILD})
++  set(FOUND_EXCLUSION "")
++  string(REGEX MATCH "^[-].*" FOUND_EXCLUSION "${addon}")
++  if(NOT FOUND_EXCLUSION STREQUAL "")
++    # Remove beginning - and then append to excluded addon list
++    STRING(REGEX MATCH "-([^ ]*)"  excluded_addon ${FOUND_EXCLUSION})
++    list(APPEND EXCLUDE_ADDONS ${CMAKE_MATCH_1})
++    message(STATUS "Exclusion found ${CMAKE_MATCH_1}")
++  endif()
++endforeach()
++
+ foreach(addon ${addons})
+   if(NOT (addon MATCHES platforms.txt))
+     file(STRINGS ${addon} def)
+     string(REPLACE " " ";" def ${def})
+     list(GET def 0 id)
+ 
++    list(FIND ADDONS_TO_BUILD ${id} idx)
++    set(ADDON_EXCLUDE FALSE)
++    foreach(exclusion ${EXCLUDE_ADDONS})
++      if(id MATCHES "${exclusion}")
++        set(ADDON_EXCLUDE TRUE)
++        message(STATUS "Addon ${id} matches exclusion rule -${exclusion}")
++        break()
++      endif()
++    endforeach()
++
++    if(ADDON_EXCLUDE)
++      continue()
++    endif()
++
+     set(ADDON_FOUND FALSE)
+     # try to find a perfect match
+-    list(FIND ADDONS_TO_BUILD ${id} idx)
+     if(idx GREATER -1 OR "${ADDONS_TO_BUILD}" STREQUAL "all")
+       set(ADDON_FOUND TRUE)
+     # Maybe we have a regex
