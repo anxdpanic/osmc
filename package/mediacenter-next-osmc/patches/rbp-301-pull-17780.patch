@@ -1,0 +1,235 @@
+From a4b587acb7fbe4d81018a0b70123709f08874f84 Mon Sep 17 00:00:00 2001
+From: Anton Fedchin <anightik@gmail.com>
+Date: Tue, 28 Apr 2020 16:46:54 +0300
+Subject: [PATCH] [windows] don't mark render buffer as loaded until
+ UploadBuffer is called
+
+try to fix #17521
+---
+ .../VideoRenderers/windows/RendererBase.cpp   |  1 +
+ .../VideoRenderers/windows/RendererBase.h     |  3 ++-
+ .../VideoRenderers/windows/RendererDXVA.cpp   | 21 +++++--------------
+ .../VideoRenderers/windows/RendererDXVA.h     |  3 ---
+ .../windows/RendererShaders.cpp               | 17 +++------------
+ .../VideoRenderers/windows/RendererShaders.h  |  2 --
+ .../windows/RendererSoftware.cpp              | 20 +++++++-----------
+ .../VideoRenderers/windows/RendererSoftware.h |  1 -
+ 8 files changed, 19 insertions(+), 49 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererBase.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererBase.cpp
+index 44ba4a75a54a..7b23f4b058fa 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererBase.cpp
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererBase.cpp
+@@ -44,6 +44,7 @@ void CRenderBuffer::ReleasePicture()
+   if (videoBuffer)
+     videoBuffer->Release();
+   videoBuffer = nullptr;
++  m_bLoaded = false;
+ }
+ 
+ CRenderBuffer::CRenderBuffer(AVPixelFormat av_pix_format, unsigned width, unsigned height)
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererBase.h b/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererBase.h
+index 6174b6c1fb4b..e6083cffdcf3 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererBase.h
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererBase.h
+@@ -49,10 +49,10 @@ class CRenderBuffer
+ 
+   unsigned GetWidth() const { return m_widthTex; }
+   unsigned GetHeight() const { return m_heightTex; }
++  bool IsLoaded() { return m_bLoaded; }
+ 
+   virtual void AppendPicture(const VideoPicture& picture);
+   virtual void ReleasePicture();
+-  virtual bool IsLoaded() { return false; }
+   virtual bool UploadBuffer() { return false; }
+   virtual HRESULT GetResource(ID3D11Resource** ppResource, unsigned* index) const;
+ 
+@@ -92,6 +92,7 @@ class CRenderBuffer
+   Microsoft::WRL::ComPtr<ID3D11Texture2D> m_staging;
+   D3D11_TEXTURE2D_DESC m_sDesc{};
+   bool m_bPending = false;
++  bool m_bLoaded = false;
+ };
+ 
+ class CRendererBase
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererDXVA.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererDXVA.cpp
+index 990f2302310f..7b8f3fd4ac22 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererDXVA.cpp
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererDXVA.cpp
+@@ -267,21 +267,16 @@ CRendererDXVA::CRenderBufferImpl::~CRenderBufferImpl()
+   CRenderBufferImpl::ReleasePicture();
+ }
+ 
+-bool CRendererDXVA::CRenderBufferImpl::IsLoaded()
+-{
+-  if (videoBuffer && videoBuffer->GetFormat() == AV_PIX_FMT_D3D11VA_VLD)
+-    return true;
+-
+-  return m_loaded;
+-}
+-
+ bool CRendererDXVA::CRenderBufferImpl::UploadBuffer()
+ {
+   if (!videoBuffer)
+     return false;
+ 
+   if (videoBuffer->GetFormat() == AV_PIX_FMT_D3D11VA_VLD)
++  {
++    m_bLoaded = true;
+     return true;
++  }
+ 
+   return UploadToTexture();
+ }
+@@ -303,12 +298,6 @@ HRESULT CRendererDXVA::CRenderBufferImpl::GetResource(ID3D11Resource** ppResourc
+   return S_OK;
+ }
+ 
+-void CRendererDXVA::CRenderBufferImpl::ReleasePicture()
+-{
+-  __super::ReleasePicture();
+-  m_loaded = false;
+-}
+-
+ DXGI_FORMAT CRendererDXVA::CRenderBufferImpl::GetDXGIFormat(AVPixelFormat format, DXGI_FORMAT default_fmt)
+ {
+   switch (format)
+@@ -394,6 +383,6 @@ bool CRendererDXVA::CRenderBufferImpl::UploadToTexture()
+     convert_yuv420_p01x_chrome(&src[1], &srcStrides[1], 2, 32, dst[1], dstStride[1], bpp);
+   }
+ 
+-  m_loaded = m_texture.UnlockRect(0);
+-  return m_loaded;
++  m_bLoaded = m_texture.UnlockRect(0);
++  return m_bLoaded;
+ }
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererDXVA.h b/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererDXVA.h
+index 566d851214f0..0b7b89e9421b 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererDXVA.h
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererDXVA.h
+@@ -53,9 +53,7 @@ class CRendererDXVA::CRenderBufferImpl : public CRenderBuffer
+   explicit CRenderBufferImpl(AVPixelFormat av_pix_format, unsigned width, unsigned height);
+   ~CRenderBufferImpl();
+ 
+-  bool IsLoaded() override;
+   bool UploadBuffer() override;
+-  void ReleasePicture() override;
+   HRESULT GetResource(ID3D11Resource** ppResource, unsigned* index) const override;
+ 
+   static DXGI_FORMAT GetDXGIFormat(AVPixelFormat format, DXGI_FORMAT default_fmt = DXGI_FORMAT_UNKNOWN);
+@@ -63,6 +61,5 @@ class CRendererDXVA::CRenderBufferImpl : public CRenderBuffer
+ private:
+   bool UploadToTexture();
+ 
+-  bool m_loaded = false;
+   CD3DTexture m_texture;
+ };
+\ No newline at end of file
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererShaders.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererShaders.cpp
+index fbfc800405d5..04bdc8504dcb 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererShaders.cpp
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererShaders.cpp
+@@ -274,18 +274,6 @@ void CRendererShaders::CRenderBufferImpl::AppendPicture(const VideoPicture& pict
+   }
+ }
+ 
+-bool CRendererShaders::CRenderBufferImpl::IsLoaded()
+-{
+-  if (!videoBuffer)
+-    return false;
+-
+-  if (videoBuffer->GetFormat() == AV_PIX_FMT_D3D11VA_VLD &&
+-    AV_PIX_FMT_D3D11VA_VLD == av_format)
+-    return true;
+-
+-  return m_bLoaded;
+-}
+-
+ bool CRendererShaders::CRenderBufferImpl::UploadBuffer()
+ {
+   if (!videoBuffer)
+@@ -293,7 +281,9 @@ bool CRendererShaders::CRenderBufferImpl::UploadBuffer()
+ 
+   if (videoBuffer->GetFormat() == AV_PIX_FMT_D3D11VA_VLD)
+   {
+-    if (AV_PIX_FMT_D3D11VA_VLD != av_format)
++    if (AV_PIX_FMT_D3D11VA_VLD == av_format)
++      m_bLoaded = true;
++    else
+       m_bLoaded = UploadFromGPU();
+   }
+   else
+@@ -353,7 +343,6 @@ void CRendererShaders::CRenderBufferImpl::ReleasePicture()
+ 
+   m_planes[0] = nullptr;
+   m_planes[1] = nullptr;
+-  m_bLoaded = false;
+ }
+ 
+ bool CRendererShaders::CRenderBufferImpl::UploadFromGPU()
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererShaders.h b/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererShaders.h
+index d568625b8ef6..b0c9790bfffc 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererShaders.h
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererShaders.h
+@@ -56,7 +56,6 @@ class CRendererShaders::CRenderBufferImpl : public CRenderBuffer
+   ~CRenderBufferImpl();
+ 
+   void AppendPicture(const VideoPicture& picture) override;
+-  bool IsLoaded() override;
+   bool UploadBuffer() override;
+   unsigned GetViewCount() const override;
+   ID3D11View* GetView(unsigned viewIdx) override;
+@@ -66,7 +65,6 @@ class CRendererShaders::CRenderBufferImpl : public CRenderBuffer
+   bool UploadFromGPU();
+   bool UploadFromBuffer() const;
+ 
+-  bool m_bLoaded = false;
+   unsigned m_viewCount = 0;
+   CD3DTexture m_textures[YuvImage::MAX_PLANES];
+   Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_planes[2];
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererSoftware.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererSoftware.cpp
+index ceeb851a69be..7cf22f382285 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererSoftware.cpp
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererSoftware.cpp
+@@ -179,21 +179,17 @@ void CRendererSoftware::CRenderBufferImpl::ReleasePicture()
+   __super::ReleasePicture();
+ }
+ 
+-bool CRendererSoftware::CRenderBufferImpl::IsLoaded()
+-{
+-  if (!videoBuffer)
+-    return false;
+-
+-  if (videoBuffer->GetFormat() == AV_PIX_FMT_D3D11VA_VLD)
+-    return m_msr.pData != nullptr;
+-  return true;
+-}
+-
+ bool CRendererSoftware::CRenderBufferImpl::UploadBuffer()
+ {
+   if (!m_staging)
+     return false;
+ 
+-  // map will finish copying data from GPU to CPU
+-  return SUCCEEDED(SUCCEEDED(DX::DeviceResources::Get()->GetImmediateContext()->Map(m_staging.Get(), 0, D3D11_MAP_READ, 0, &m_msr)));
++  if (videoBuffer->GetFormat() == AV_PIX_FMT_D3D11VA_VLD && m_msr.pData == nullptr)
++  {
++    // map will finish copying data from GPU to CPU
++    m_bLoaded = SUCCEEDED(DX::DeviceResources::Get()->GetImmediateContext()->Map(
++        m_staging.Get(), 0, D3D11_MAP_READ, 0, &m_msr));
++  }
++
++  return m_bLoaded;
+ }
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererSoftware.h b/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererSoftware.h
+index 32aaeccfc43c..4a3f808bd167 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererSoftware.h
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/windows/RendererSoftware.h
+@@ -47,7 +47,6 @@ class CRendererSoftware::CRenderBufferImpl : public CRenderBuffer
+   bool GetDataPlanes(uint8_t*(&planes)[3], int(&strides)[3]) override;
+ 
+   void ReleasePicture() override;
+-  bool IsLoaded() override;
+   bool UploadBuffer() override;
+ 
+ private:
