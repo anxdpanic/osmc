@@ -1,0 +1,25 @@
+From 780ed08ef6015e619e65ba5d2bb31e02e85588a4 Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Sun, 10 May 2020 15:04:14 +0200
+Subject: [PATCH] [video] ** CID 1463261:  Resource leaks  (RESOURCE_LEAK)
+ /xbmc/video/ContextMenus.cpp: 171 in
+ CONTEXTMENU::<unnamed>::AddRecordingsToPlayListAndSort(const
+ std::shared_ptr<CFileItem> &, CFileItemList &)()
+
+---
+ xbmc/video/ContextMenus.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/video/ContextMenus.cpp b/xbmc/video/ContextMenus.cpp
+index 459804096997..c7097b633342 100644
+--- a/xbmc/video/ContextMenus.cpp
++++ b/xbmc/video/ContextMenus.cpp
+@@ -165,7 +165,7 @@ void AddRecordingsToPlayListAndSort(const std::shared_ptr<CFileItem>& item,
+     const int windowId = CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindow();
+     if (windowId == WINDOW_TV_RECORDINGS || windowId == WINDOW_RADIO_RECORDINGS)
+     {
+-      const CGUIViewState* viewState = CGUIViewState::GetViewState(windowId, queuedItems);
++      std::unique_ptr<CGUIViewState> viewState(CGUIViewState::GetViewState(windowId, queuedItems));
+       if (viewState)
+         queuedItems.Sort(viewState->GetSortMethod());
+     }

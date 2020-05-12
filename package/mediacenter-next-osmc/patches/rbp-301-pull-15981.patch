@@ -1,0 +1,26 @@
+From 839e6f12bb0d0e5b9d2bf6e09b299e95ae102211 Mon Sep 17 00:00:00 2001
+From: Anton Fedchin <anightik@gmail.com>
+Date: Wed, 24 Apr 2019 17:01:31 +0300
+Subject: [PATCH] [video] clear library entries from plugins if media source is
+ removed.
+
+---
+ xbmc/video/windows/GUIWindowVideoNav.cpp | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/xbmc/video/windows/GUIWindowVideoNav.cpp b/xbmc/video/windows/GUIWindowVideoNav.cpp
+index b42e1676817d..07b15d631caa 100644
+--- a/xbmc/video/windows/GUIWindowVideoNav.cpp
++++ b/xbmc/video/windows/GUIWindowVideoNav.cpp
+@@ -1024,9 +1024,8 @@ bool CGUIWindowVideoNav::OnContextButton(int itemNumber, CONTEXT_BUTTON button)
+     item = m_vecItems->Get(itemNumber);
+   if (CGUIDialogContextMenu::OnContextButton("video", item, button))
+   {
+-    //! @todo should we search DB for entries from plugins?
+-    if (button == CONTEXT_BUTTON_REMOVE_SOURCE && !item->IsPlugin()
+-        && !item->IsLiveTV() &&!item->IsRSS() && !URIUtils::IsUPnP(item->GetPath()))
++    if (button == CONTEXT_BUTTON_REMOVE_SOURCE && !item->IsLiveTV() 
++        &&!item->IsRSS() && !URIUtils::IsUPnP(item->GetPath()))
+     {
+       // if the source has been properly removed, remove the cached source list because the list has changed
+       if (OnUnAssignContent(item->GetPath(), 20375, 20340))

@@ -1,0 +1,144 @@
+From 72a898cd118a89480191b6ba72218a94690f5515 Mon Sep 17 00:00:00 2001
+From: phunkyfish <phunkyfish@gmail.com>
+Date: Thu, 30 Apr 2020 11:46:37 +0100
+Subject: [PATCH] [videoplayer] Fix TS Streams by disallowing streaminfo for
+ realtime streams
+
+---
+ .../VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp   |  8 +++++---
+ .../VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.h     |  3 ++-
+ .../VideoPlayer/DVDDemuxers/DVDDemuxVobsub.cpp   |  2 +-
+ .../DVDDemuxers/DVDFactoryDemuxer.cpp            | 16 +---------------
+ xbmc/utils/URIUtils.cpp                          |  5 -----
+ xbmc/utils/URIUtils.h                            |  1 -
+ 6 files changed, 9 insertions(+), 26 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp
+index a2a1b9e23f03..0489a2493364 100644
+--- a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp
++++ b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp
+@@ -200,11 +200,12 @@ bool CDVDDemuxFFmpeg::Aborted()
+   return false;
+ }
+ 
+-bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool streaminfo, bool fileinfo)
++bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool fileinfo)
+ {
+   AVInputFormat* iformat = NULL;
+   std::string strFile;
+-  m_streaminfo = streaminfo;
++  m_streaminfo = !pInput->IsRealtime() && !m_reopen;
++  m_reopen = false;
+   m_currentPts = DVD_NOPTS_VALUE;
+   m_speed = DVD_PLAYSPEED_NORMAL;
+   m_program = UINT_MAX;
+@@ -629,6 +630,7 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool streami
+     int64_t duration = m_pFormatContext->duration;
+     std::shared_ptr<CDVDInputStream> pInputStream = m_pInput;
+     Dispose();
++    m_reopen = true;
+     if (!Open(pInputStream, false))
+       return false;
+     m_pFormatContext->duration = duration;
+@@ -678,7 +680,7 @@ bool CDVDDemuxFFmpeg::Reset()
+ {
+   std::shared_ptr<CDVDInputStream> pInputStream = m_pInput;
+   Dispose();
+-  return Open(pInputStream, m_streaminfo);
++  return Open(pInputStream, false);
+ }
+ 
+ void CDVDDemuxFFmpeg::Flush()
+diff --git a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.h b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.h
+index 2dd75e403416..a20d9432af92 100644
+--- a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.h
++++ b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.h
+@@ -83,7 +83,7 @@ class CDVDDemuxFFmpeg : public CDVDDemux
+   CDVDDemuxFFmpeg();
+   ~CDVDDemuxFFmpeg() override;
+ 
+-  bool Open(std::shared_ptr<CDVDInputStream> pInput, bool streaminfo = true, bool fileinfo = false);
++  bool Open(std::shared_ptr<CDVDInputStream> pInput, bool fileinfo);
+   void Dispose();
+   bool Reset() override ;
+   void Flush() override;
+@@ -169,6 +169,7 @@ class CDVDDemuxFFmpeg : public CDVDDemux
+   }m_pkt;
+ 
+   bool m_streaminfo;
++  bool m_reopen = false;
+   bool m_checkTransportStream;
+   int m_displayTime = 0;
+   double m_dtsAtDisplayTime;
+diff --git a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxVobsub.cpp b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxVobsub.cpp
+index 1b003239ce4f..3f84899e93c6 100644
+--- a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxVobsub.cpp
++++ b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxVobsub.cpp
+@@ -65,7 +65,7 @@ bool CDVDDemuxVobsub::Open(const std::string& filename, int source, const std::s
+     return false;
+ 
+   m_Demuxer.reset(new CDVDDemuxFFmpeg());
+-  if(!m_Demuxer->Open(m_Input))
++  if (!m_Demuxer->Open(m_Input, false))
+     return false;
+ 
+   CDVDStreamInfo hints;
+diff --git a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDFactoryDemuxer.cpp b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDFactoryDemuxer.cpp
+index ebe7c4c99283..8a02b2c3dbfa 100644
+--- a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDFactoryDemuxer.cpp
++++ b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDFactoryDemuxer.cpp
+@@ -60,20 +60,6 @@ CDVDDemux* CDVDFactoryDemuxer::CreateDemuxer(std::shared_ptr<CDVDInputStream> pI
+       return nullptr;
+   }
+ 
+-  bool streaminfo = true; /* Look for streams before playback */
+-  if (pInputStream->IsStreamType(DVDSTREAM_TYPE_PVRMANAGER))
+-  {
+-    /* Don't parse the streaminfo for some cases of streams to reduce the channel switch time */
+-    bool useFastswitch = URIUtils::IsUsingFastSwitch(pInputStream->GetFileName());
+-    streaminfo = !useFastswitch;
+-  }
+-
+-  if (pInputStream->IsStreamType(DVDSTREAM_TYPE_FFMPEG))
+-  {
+-    bool useFastswitch = URIUtils::IsUsingFastSwitch(pInputStream->GetFileName());
+-    streaminfo = !useFastswitch;
+-  }
+-
+   // Try to open the MultiFiles demuxer
+   if (pInputStream->IsStreamType(DVDSTREAM_TYPE_MULTIFILES))
+   {
+@@ -85,7 +71,7 @@ CDVDDemux* CDVDFactoryDemuxer::CreateDemuxer(std::shared_ptr<CDVDInputStream> pI
+   }
+ 
+   std::unique_ptr<CDVDDemuxFFmpeg> demuxer(new CDVDDemuxFFmpeg());
+-  if(demuxer->Open(pInputStream, streaminfo, fileinfo))
++  if (demuxer->Open(pInputStream, fileinfo))
+     return demuxer.release();
+   else
+     return NULL;
+diff --git a/xbmc/utils/URIUtils.cpp b/xbmc/utils/URIUtils.cpp
+index ac97ad20ecee..738c946a50ac 100644
+--- a/xbmc/utils/URIUtils.cpp
++++ b/xbmc/utils/URIUtils.cpp
+@@ -1439,8 +1439,3 @@ bool URIUtils::UpdateUrlEncoding(std::string &strFilename)
+   strFilename = newFilename;
+   return true;
+ }
+-
+-bool URIUtils::IsUsingFastSwitch(const std::string& strFile)
+-{
+-  return IsUDP(strFile) || IsTCP(strFile) || IsPVRChannel(strFile);
+-}
+diff --git a/xbmc/utils/URIUtils.h b/xbmc/utils/URIUtils.h
+index 14f962a03da7..31db0ec16181 100644
+--- a/xbmc/utils/URIUtils.h
++++ b/xbmc/utils/URIUtils.h
+@@ -157,7 +157,6 @@ class URIUtils
+   static bool IsPVRChannel(const std::string& strFile);
+   static bool IsPVRChannelGroup(const std::string& strFile);
+   static bool IsPVRGuideItem(const std::string& strFile);
+-  static bool IsUsingFastSwitch(const std::string& strFile);
+ 
+   static std::string AppendSlash(std::string strFolder);
+   static void AddSlashAtEnd(std::string& strFolder);

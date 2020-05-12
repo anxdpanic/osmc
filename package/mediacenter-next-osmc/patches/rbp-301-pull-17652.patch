@@ -1,0 +1,869 @@
+From 7e8bfb706dece12dcf8cb51873d10a5cdab9c52c Mon Sep 17 00:00:00 2001
+From: djp952 <djp952@gmail.com>
+Date: Fri, 10 Apr 2020 11:20:57 -0400
+Subject: [PATCH] HTTP Directory parser enhancements for multi-line anchor tags
+
+---
+ cmake/installdata/test-reference-data.txt     |   7 +
+ xbmc/filesystem/HTTPDirectory.cpp             |  87 ++++--
+ xbmc/filesystem/test/CMakeLists.txt           |   1 +
+ xbmc/filesystem/test/TestHTTPDirectory.cpp    | 290 ++++++++++++++++++
+ .../data/httpdirectory/apache-default.html    |  15 +
+ .../test/data/httpdirectory/apache-fancy.html |  15 +
+ .../test/data/httpdirectory/apache-html.html  |  19 ++
+ .../data/httpdirectory/basic-multiline.html   |  16 +
+ .../test/data/httpdirectory/basic.html        |  13 +
+ .../data/httpdirectory/lighttp-default.html   | 211 +++++++++++++
+ .../data/httpdirectory/nginx-default.html     |  11 +
+ 11 files changed, 651 insertions(+), 34 deletions(-)
+ create mode 100644 xbmc/filesystem/test/TestHTTPDirectory.cpp
+ create mode 100644 xbmc/filesystem/test/data/httpdirectory/apache-default.html
+ create mode 100644 xbmc/filesystem/test/data/httpdirectory/apache-fancy.html
+ create mode 100644 xbmc/filesystem/test/data/httpdirectory/apache-html.html
+ create mode 100644 xbmc/filesystem/test/data/httpdirectory/basic-multiline.html
+ create mode 100644 xbmc/filesystem/test/data/httpdirectory/basic.html
+ create mode 100644 xbmc/filesystem/test/data/httpdirectory/lighttp-default.html
+ create mode 100644 xbmc/filesystem/test/data/httpdirectory/nginx-default.html
+
+diff --git a/cmake/installdata/test-reference-data.txt b/cmake/installdata/test-reference-data.txt
+index 8bc1c03adca1..91738ba9a1a5 100644
+--- a/cmake/installdata/test-reference-data.txt
++++ b/cmake/installdata/test-reference-data.txt
+@@ -6,6 +6,13 @@ xbmc/filesystem/test/reffile.txt.rar
+ xbmc/filesystem/test/reffile.txt.zip
+ xbmc/filesystem/test/refRARnormal.rar
+ xbmc/filesystem/test/refRARstored.rar
++xbmc/filesystem/test/data/httpdirectory/apache-default.html
++xbmc/filesystem/test/data/httpdirectory/apache-fancy.html
++xbmc/filesystem/test/data/httpdirectory/apache-html.html
++xbmc/filesystem/test/data/httpdirectory/basic.html
++xbmc/filesystem/test/data/httpdirectory/basic-multiline.html
++xbmc/filesystem/test/data/httpdirectory/lighttp-default.html
++xbmc/filesystem/test/data/httpdirectory/nginx-default.html
+ xbmc/network/test/data/test.html
+ xbmc/network/test/data/test.png
+ xbmc/network/test/data/test-ranges.txt
+diff --git a/xbmc/filesystem/HTTPDirectory.cpp b/xbmc/filesystem/HTTPDirectory.cpp
+index 1a26a2abf0ba..7bf61dc2d105 100644
+--- a/xbmc/filesystem/HTTPDirectory.cpp
++++ b/xbmc/filesystem/HTTPDirectory.cpp
+@@ -32,7 +32,6 @@ bool CHTTPDirectory::GetDirectory(const CURL& url, CFileItemList &items)
+ {
+   CCurlFile http;
+ 
+-  std::string strName, strLink;
+   std::string strBasePath = url.GetFileName();
+ 
+   if(!http.Open(url))
+@@ -42,31 +41,36 @@ bool CHTTPDirectory::GetDirectory(const CURL& url, CFileItemList &items)
+   }
+ 
+   CRegExp reItem(true); // HTML is case-insensitive
+-  reItem.RegComp("<a href=\"(.*)\">(.*)</a>");
++  reItem.RegComp("<a href=\"(.*?)\">\\s*(.*?)\\s*</a>(.+?)(?=<a|</tr|$)");
+ 
+-  CRegExp reDateTime(true);
+-  reDateTime.RegComp("<td align=\"right\">([0-9]{2})-([A-Z]{3})-([0-9]{4}) ([0-9]{2}):([0-9]{2}) +</td>");
++  CRegExp reDateTimeHtml(true);
++  reDateTimeHtml.RegComp(
++      "<td align=\"right\">([0-9]{2})-([A-Z]{3})-([0-9]{4}) ([0-9]{2}):([0-9]{2}) +</td>");
+ 
+   CRegExp reDateTimeLighttp(true);
+-  reDateTimeLighttp.RegComp("<td class=\"m\">([0-9]{4})-([A-Z]{3})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})</td>");
++  reDateTimeLighttp.RegComp(
++      "<td class=\"m\">([0-9]{4})-([A-Z]{3})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})</td>");
+ 
+   CRegExp reDateTimeNginx(true);
+-  reDateTimeNginx.RegComp("</a> +([0-9]{2})-([A-Z]{3})-([0-9]{4}) ([0-9]{2}):([0-9]{2}) ");
++  reDateTimeNginx.RegComp("([0-9]{2})-([A-Z]{3})-([0-9]{4}) ([0-9]{2}):([0-9]{2})");
+ 
+   CRegExp reDateTimeApacheNewFormat(true);
+-  reDateTimeApacheNewFormat.RegComp("<td align=\"right\">([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}) +</td>");
++  reDateTimeApacheNewFormat.RegComp(
++      "<td align=\"right\">([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}) +</td>");
+ 
+-  CRegExp reSize(true);
+-  reSize.RegComp("> *([0-9.]+)(B|K|M|G| )</td>");
++  CRegExp reDateTime(true);
++  reDateTime.RegComp("([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2})");
+ 
+-  CRegExp reSizeNginx(true);
+-  reSizeNginx.RegComp(" +([0-9]+)(B|K|M|G)?$");
++  CRegExp reSizeHtml(true);
++  reSizeHtml.RegComp("> *([0-9.]+)(B|K|M|G| )</td>");
++
++  CRegExp reSize(true);
++  reSize.RegComp(" +([0-9]+)(B|K|M|G)?(?=\\s|<|$)");
+ 
+   /* read response from server into string buffer */
+-  char buffer[MAX_PATH + 1024];
+-  while(http.ReadString(buffer, sizeof(buffer)-1))
++  std::string strBuffer;
++  if (http.ReadData(strBuffer) && strBuffer.length() > 0)
+   {
+-    std::string strBuffer = buffer;
+     std::string fileCharset(http.GetProperty(XFILE::FILE_PROPERTY_CONTENT_CHARSET));
+     if (!fileCharset.empty() && fileCharset != "UTF-8")
+     {
+@@ -75,12 +79,19 @@ bool CHTTPDirectory::GetDirectory(const CURL& url, CFileItemList &items)
+         strBuffer = converted;
+     }
+ 
+-    StringUtils::RemoveCRLF(strBuffer);
+-
+-    if (reItem.RegFind(strBuffer.c_str()) >= 0)
++    unsigned int bufferOffset = 0;
++    while (bufferOffset < strBuffer.length())
+     {
+-      strLink = reItem.GetMatch(1);
+-      strName = reItem.GetMatch(2);
++      int matchOffset = reItem.RegFind(strBuffer.c_str(), bufferOffset);
++      if (matchOffset < 0)
++        break;
++
++      bufferOffset = matchOffset + reItem.GetSubLength(0);
++
++      std::string strLink = reItem.GetMatch(1);
++      std::string strName = reItem.GetMatch(2);
++      std::string strMetadata = reItem.GetMatch(3);
++      StringUtils::Trim(strMetadata);
+ 
+       if(strLink[0] == '/')
+         strLink = strLink.substr(1);
+@@ -158,15 +169,15 @@ bool CHTTPDirectory::GetDirectory(const CURL& url, CFileItemList &items)
+         std::string day, month, year, hour, minute;
+         int monthNum = 0;
+ 
+-        if (reDateTime.RegFind(strBuffer.c_str()) >= 0)
++        if (reDateTimeHtml.RegFind(strMetadata.c_str()) >= 0)
+         {
+-          day = reDateTime.GetMatch(1);
+-          month = reDateTime.GetMatch(2);
+-          year = reDateTime.GetMatch(3);
+-          hour = reDateTime.GetMatch(4);
+-          minute = reDateTime.GetMatch(5);
++          day = reDateTimeHtml.GetMatch(1);
++          month = reDateTimeHtml.GetMatch(2);
++          year = reDateTimeHtml.GetMatch(3);
++          hour = reDateTimeHtml.GetMatch(4);
++          minute = reDateTimeHtml.GetMatch(5);
+         }
+-        else if (reDateTimeNginx.RegFind(strBuffer.c_str()) >= 0)
++        else if (reDateTimeNginx.RegFind(strMetadata.c_str()) >= 0)
+         {
+           day = reDateTimeNginx.GetMatch(1);
+           month = reDateTimeNginx.GetMatch(2);
+@@ -174,7 +185,7 @@ bool CHTTPDirectory::GetDirectory(const CURL& url, CFileItemList &items)
+           hour = reDateTimeNginx.GetMatch(4);
+           minute = reDateTimeNginx.GetMatch(5);
+         }
+-        else if (reDateTimeLighttp.RegFind(strBuffer.c_str()) >= 0)
++        else if (reDateTimeLighttp.RegFind(strMetadata.c_str()) >= 0)
+         {
+           day = reDateTimeLighttp.GetMatch(3);
+           month = reDateTimeLighttp.GetMatch(2);
+@@ -182,7 +193,7 @@ bool CHTTPDirectory::GetDirectory(const CURL& url, CFileItemList &items)
+           hour = reDateTimeLighttp.GetMatch(4);
+           minute = reDateTimeLighttp.GetMatch(5);
+         }
+-        else if (reDateTimeApacheNewFormat.RegFind(strBuffer.c_str()) >= 0)
++        else if (reDateTimeApacheNewFormat.RegFind(strMetadata.c_str()) >= 0)
+         {
+           day = reDateTimeApacheNewFormat.GetMatch(3);
+           monthNum = atoi(reDateTimeApacheNewFormat.GetMatch(2).c_str());
+@@ -190,6 +201,14 @@ bool CHTTPDirectory::GetDirectory(const CURL& url, CFileItemList &items)
+           hour = reDateTimeApacheNewFormat.GetMatch(4);
+           minute = reDateTimeApacheNewFormat.GetMatch(5);
+         }
++        else if (reDateTime.RegFind(strMetadata.c_str()) >= 0)
++        {
++          day = reDateTime.GetMatch(3);
++          monthNum = atoi(reDateTime.GetMatch(2).c_str());
++          year = reDateTime.GetMatch(1);
++          hour = reDateTime.GetMatch(4);
++          minute = reDateTime.GetMatch(5);
++        }
+ 
+         if (month.length() > 0)
+           monthNum = CDateTime::MonthStringToMonthNum(month);
+@@ -201,10 +220,10 @@ bool CHTTPDirectory::GetDirectory(const CURL& url, CFileItemList &items)
+ 
+         if (!pItem->m_bIsFolder)
+         {
+-          if (reSize.RegFind(strBuffer.c_str()) >= 0)
++          if (reSizeHtml.RegFind(strMetadata.c_str()) >= 0)
+           {
+-            double Size = atof(reSize.GetMatch(1).c_str());
+-            std::string strUnit(reSize.GetMatch(2));
++            double Size = atof(reSizeHtml.GetMatch(1).c_str());
++            std::string strUnit(reSizeHtml.GetMatch(2));
+ 
+             if (strUnit == "K")
+               Size = Size * 1024;
+@@ -215,10 +234,10 @@ bool CHTTPDirectory::GetDirectory(const CURL& url, CFileItemList &items)
+ 
+             pItem->m_dwSize = (int64_t)Size;
+           }
+-          else if (reSizeNginx.RegFind(strBuffer.c_str()) >= 0)
++          else if (reSize.RegFind(strMetadata.c_str()) >= 0)
+           {
+-            double Size = atof(reSizeNginx.GetMatch(1).c_str());
+-            std::string strUnit(reSizeNginx.GetMatch(2));
++            double Size = atof(reSize.GetMatch(1).c_str());
++            std::string strUnit(reSize.GetMatch(2));
+ 
+             if (strUnit == "K")
+               Size = Size * 1024;
+diff --git a/xbmc/filesystem/test/CMakeLists.txt b/xbmc/filesystem/test/CMakeLists.txt
+index c50d534a6533..235acc8549cf 100644
+--- a/xbmc/filesystem/test/CMakeLists.txt
++++ b/xbmc/filesystem/test/CMakeLists.txt
+@@ -1,6 +1,7 @@
+ set(SOURCES TestDirectory.cpp
+             TestFile.cpp
+             TestFileFactory.cpp
++            TestHTTPDirectory.cpp
+             TestZipFile.cpp
+             TestZipManager.cpp)
+ 
+diff --git a/xbmc/filesystem/test/TestHTTPDirectory.cpp b/xbmc/filesystem/test/TestHTTPDirectory.cpp
+new file mode 100644
+index 000000000000..3ca4784a7100
+--- /dev/null
++++ b/xbmc/filesystem/test/TestHTTPDirectory.cpp
+@@ -0,0 +1,290 @@
++/*
++ *  Copyright (C) 2015-2020 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#include "FileItem.h"
++#include "URL.h"
++#include "filesystem/CurlFile.h"
++#include "filesystem/HTTPDirectory.h"
++#include "network/WebServer.h"
++#include "network/httprequesthandler/HTTPVfsHandler.h"
++#include "settings/MediaSourceSettings.h"
++#include "test/TestUtils.h"
++#include "utils/StringUtils.h"
++#include "utils/URIUtils.h"
++#include "utils/XTimeUtils.h"
++
++#include <random>
++#include <stdlib.h>
++
++#include <gtest/gtest.h>
++
++using namespace XFILE;
++
++#define WEBSERVER_HOST "localhost"
++
++#define SOURCE_PATH "xbmc/filesystem/test/data/httpdirectory/"
++
++#define TEST_FILE_APACHE_DEFAULT "apache-default.html"
++#define TEST_FILE_APACHE_FANCY "apache-fancy.html"
++#define TEST_FILE_APACHE_HTML "apache-html.html"
++#define TEST_FILE_BASIC "basic.html"
++#define TEST_FILE_BASIC_MULTILINE "basic-multiline.html"
++#define TEST_FILE_LIGHTTP_DEFAULT "lighttp-default.html"
++#define TEST_FILE_NGINX_DEFAULT "nginx-default.html"
++
++#define SAMPLE_ITEM_COUNT 6
++
++#define SAMPLE_ITEM_1_LABEL "folder1"
++#define SAMPLE_ITEM_2_LABEL "folder2"
++#define SAMPLE_ITEM_3_LABEL "sample3.mpg"
++#define SAMPLE_ITEM_4_LABEL "sample4.mpg"
++#define SAMPLE_ITEM_5_LABEL "sample5.mpg"
++#define SAMPLE_ITEM_6_LABEL "sample6.mpg"
++
++#define SAMPLE_ITEM_1_SIZE 0
++#define SAMPLE_ITEM_2_SIZE 0
++#define SAMPLE_ITEM_3_SIZE 123
++#define SAMPLE_ITEM_4_SIZE 125952 // 123K
++#define SAMPLE_ITEM_5_SIZE 128974848 // 123M
++#define SAMPLE_ITEM_6_SIZE 132070244352 // 123G
++
++// HTTPDirectory ignores the seconds component of parsed date/times
++#define SAMPLE_ITEM_1_DATETIME "2019-01-01 01:01:00"
++#define SAMPLE_ITEM_2_DATETIME "2019-02-02 02:02:00"
++#define SAMPLE_ITEM_3_DATETIME "2019-03-03 03:03:00"
++#define SAMPLE_ITEM_4_DATETIME "2019-04-04 04:04:00"
++#define SAMPLE_ITEM_5_DATETIME "2019-05-05 05:05:00"
++#define SAMPLE_ITEM_6_DATETIME "2019-06-06 06:06:00"
++
++class TestHTTPDirectory : public testing::Test
++{
++protected:
++  TestHTTPDirectory() : m_sourcePath(XBMC_REF_FILE_PATH(SOURCE_PATH))
++  {
++    std::random_device rd;
++    std::mt19937 mt(rd());
++    std::uniform_int_distribution<uint16_t> dist(49152, 65535);
++    m_webServerPort = dist(mt);
++
++    m_baseUrl = StringUtils::Format("http://" WEBSERVER_HOST ":%u", m_webServerPort);
++  }
++
++  ~TestHTTPDirectory() override = default;
++
++protected:
++  void SetUp() override
++  {
++    SetupMediaSources();
++
++    m_webServer.Start(m_webServerPort, "", "");
++    m_webServer.RegisterRequestHandler(&m_vfsHandler);
++  }
++
++  void TearDown() override
++  {
++    if (m_webServer.IsStarted())
++      m_webServer.Stop();
++
++    m_webServer.UnregisterRequestHandler(&m_vfsHandler);
++
++    TearDownMediaSources();
++  }
++
++  void SetupMediaSources()
++  {
++    CMediaSource source;
++    source.strName = "WebServer Share";
++    source.strPath = m_sourcePath;
++    source.vecPaths.push_back(m_sourcePath);
++    source.m_allowSharing = true;
++    source.m_iDriveType = CMediaSource::SOURCE_TYPE_LOCAL;
++    source.m_iLockMode = LOCK_MODE_EVERYONE;
++    source.m_ignore = true;
++
++    CMediaSourceSettings::GetInstance().AddShare("videos", source);
++  }
++
++  void TearDownMediaSources() { CMediaSourceSettings::GetInstance().Clear(); }
++
++  std::string GetUrl(const std::string& path)
++  {
++    if (path.empty())
++      return m_baseUrl;
++
++    return URIUtils::AddFileToFolder(m_baseUrl, path);
++  }
++
++  std::string GetUrlOfTestFile(const std::string& testFile)
++  {
++    if (testFile.empty())
++      return "";
++
++    std::string path = URIUtils::AddFileToFolder(m_sourcePath, testFile);
++    path = CURL::Encode(path);
++    path = URIUtils::AddFileToFolder("vfs", path);
++
++    return GetUrl(path);
++  }
++
++  void CheckFileItemTypes(CFileItemList const& items)
++  {
++    ASSERT_EQ(items.GetObjectCount(), SAMPLE_ITEM_COUNT);
++
++    // folders
++    ASSERT_TRUE(items[0]->m_bIsFolder);
++    ASSERT_TRUE(items[1]->m_bIsFolder);
++
++    // files
++    ASSERT_FALSE(items[2]->m_bIsFolder);
++    ASSERT_FALSE(items[3]->m_bIsFolder);
++    ASSERT_FALSE(items[4]->m_bIsFolder);
++    ASSERT_FALSE(items[5]->m_bIsFolder);
++  }
++
++  void CheckFileItemLabels(CFileItemList const& items)
++  {
++    ASSERT_EQ(items.GetObjectCount(), SAMPLE_ITEM_COUNT);
++
++    ASSERT_STREQ(items[0]->GetLabel().c_str(), SAMPLE_ITEM_1_LABEL);
++    ASSERT_STREQ(items[1]->GetLabel().c_str(), SAMPLE_ITEM_2_LABEL);
++    ASSERT_STREQ(items[2]->GetLabel().c_str(), SAMPLE_ITEM_3_LABEL);
++    ASSERT_STREQ(items[3]->GetLabel().c_str(), SAMPLE_ITEM_4_LABEL);
++    ASSERT_STREQ(items[4]->GetLabel().c_str(), SAMPLE_ITEM_5_LABEL);
++    ASSERT_STREQ(items[5]->GetLabel().c_str(), SAMPLE_ITEM_6_LABEL);
++  }
++
++  void CheckFileItemDateTimes(CFileItemList const& items)
++  {
++    ASSERT_EQ(items.GetObjectCount(), SAMPLE_ITEM_COUNT);
++
++    ASSERT_STREQ(items[0]->m_dateTime.GetAsDBDateTime().c_str(), SAMPLE_ITEM_1_DATETIME);
++    ASSERT_STREQ(items[1]->m_dateTime.GetAsDBDateTime().c_str(), SAMPLE_ITEM_2_DATETIME);
++    ASSERT_STREQ(items[2]->m_dateTime.GetAsDBDateTime().c_str(), SAMPLE_ITEM_3_DATETIME);
++    ASSERT_STREQ(items[3]->m_dateTime.GetAsDBDateTime().c_str(), SAMPLE_ITEM_4_DATETIME);
++    ASSERT_STREQ(items[4]->m_dateTime.GetAsDBDateTime().c_str(), SAMPLE_ITEM_5_DATETIME);
++    ASSERT_STREQ(items[5]->m_dateTime.GetAsDBDateTime().c_str(), SAMPLE_ITEM_6_DATETIME);
++  }
++
++  void CheckFileItemSizes(CFileItemList const& items)
++  {
++    ASSERT_EQ(items.GetObjectCount(), SAMPLE_ITEM_COUNT);
++
++    // folders
++    ASSERT_EQ(items[0]->m_dwSize, SAMPLE_ITEM_1_SIZE);
++    ASSERT_EQ(items[1]->m_dwSize, SAMPLE_ITEM_2_SIZE);
++
++    // files - due to K/M/G conversions provided by some formats, allow for
++    // non-zero values that are less than or equal to the expected file size
++    ASSERT_NE(items[2]->m_dwSize, 0);
++    ASSERT_LE(items[2]->m_dwSize, SAMPLE_ITEM_3_SIZE);
++    ASSERT_NE(items[3]->m_dwSize, 0);
++    ASSERT_LE(items[3]->m_dwSize, SAMPLE_ITEM_4_SIZE);
++    ASSERT_NE(items[4]->m_dwSize, 0);
++    ASSERT_LE(items[4]->m_dwSize, SAMPLE_ITEM_5_SIZE);
++    ASSERT_NE(items[5]->m_dwSize, 0);
++    ASSERT_LE(items[5]->m_dwSize, SAMPLE_ITEM_6_SIZE);
++  }
++
++  void CheckFileItems(CFileItemList const& items)
++  {
++    CheckFileItemTypes(items);
++    CheckFileItemLabels(items);
++  }
++
++  void CheckFileItemsAndMetadata(CFileItemList const& items)
++  {
++    CheckFileItems(items);
++    CheckFileItemDateTimes(items);
++    CheckFileItemSizes(items);
++  }
++
++  CWebServer m_webServer;
++  uint16_t m_webServerPort;
++  std::string m_baseUrl;
++  std::string const m_sourcePath;
++  CHTTPVfsHandler m_vfsHandler;
++  CHTTPDirectory m_httpDirectory;
++};
++
++TEST_F(TestHTTPDirectory, IsStarted)
++{
++  ASSERT_TRUE(m_webServer.IsStarted());
++}
++
++TEST_F(TestHTTPDirectory, ApacheDefaultIndex)
++{
++  CFileItemList items;
++
++  ASSERT_TRUE(m_httpDirectory.Exists(CURL(GetUrlOfTestFile(TEST_FILE_APACHE_DEFAULT))));
++  ASSERT_TRUE(
++      m_httpDirectory.GetDirectory(CURL(GetUrlOfTestFile(TEST_FILE_APACHE_DEFAULT)), items));
++
++  CheckFileItems(items);
++}
++
++TEST_F(TestHTTPDirectory, ApacheFancyIndex)
++{
++  CFileItemList items;
++
++  ASSERT_TRUE(m_httpDirectory.Exists(CURL(GetUrlOfTestFile(TEST_FILE_APACHE_FANCY))));
++  ASSERT_TRUE(m_httpDirectory.GetDirectory(CURL(GetUrlOfTestFile(TEST_FILE_APACHE_FANCY)), items));
++
++  CheckFileItemsAndMetadata(items);
++}
++
++TEST_F(TestHTTPDirectory, ApacheHtmlIndex)
++{
++  CFileItemList items;
++
++  ASSERT_TRUE(m_httpDirectory.Exists(CURL(GetUrlOfTestFile(TEST_FILE_APACHE_HTML))));
++  ASSERT_TRUE(m_httpDirectory.GetDirectory(CURL(GetUrlOfTestFile(TEST_FILE_APACHE_HTML)), items));
++
++  CheckFileItemsAndMetadata(items);
++}
++
++TEST_F(TestHTTPDirectory, BasicIndex)
++{
++  CFileItemList items;
++
++  ASSERT_TRUE(m_httpDirectory.Exists(CURL(GetUrlOfTestFile(TEST_FILE_BASIC))));
++  ASSERT_TRUE(m_httpDirectory.GetDirectory(CURL(GetUrlOfTestFile(TEST_FILE_BASIC)), items));
++
++  CheckFileItems(items);
++}
++
++TEST_F(TestHTTPDirectory, BasicMultilineIndex)
++{
++  CFileItemList items;
++
++  ASSERT_TRUE(m_httpDirectory.Exists(CURL(GetUrlOfTestFile(TEST_FILE_BASIC_MULTILINE))));
++  ASSERT_TRUE(
++      m_httpDirectory.GetDirectory(CURL(GetUrlOfTestFile(TEST_FILE_BASIC_MULTILINE)), items));
++
++  CheckFileItems(items);
++}
++
++TEST_F(TestHTTPDirectory, LighttpDefaultIndex)
++{
++  CFileItemList items;
++
++  ASSERT_TRUE(m_httpDirectory.Exists(CURL(GetUrlOfTestFile(TEST_FILE_LIGHTTP_DEFAULT))));
++  ASSERT_TRUE(
++      m_httpDirectory.GetDirectory(CURL(GetUrlOfTestFile(TEST_FILE_LIGHTTP_DEFAULT)), items));
++
++  CheckFileItemsAndMetadata(items);
++}
++
++TEST_F(TestHTTPDirectory, NginxDefaultIndex)
++{
++  CFileItemList items;
++
++  ASSERT_TRUE(m_httpDirectory.Exists(CURL(GetUrlOfTestFile(TEST_FILE_NGINX_DEFAULT))));
++  ASSERT_TRUE(m_httpDirectory.GetDirectory(CURL(GetUrlOfTestFile(TEST_FILE_NGINX_DEFAULT)), items));
++
++  CheckFileItemsAndMetadata(items);
++}
+diff --git a/xbmc/filesystem/test/data/httpdirectory/apache-default.html b/xbmc/filesystem/test/data/httpdirectory/apache-default.html
+new file mode 100644
+index 000000000000..0aa8210c8f24
+--- /dev/null
++++ b/xbmc/filesystem/test/data/httpdirectory/apache-default.html
+@@ -0,0 +1,15 @@
++<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
++<html>
++ <head>
++  <title>Index of /</title>
++ </head>
++ <body>
++<h1>Index of /</h1>
++<ul><li><a href="folder1/"> folder1/</a></li>
++<li><a href="folder2/"> folder2/</a></li>
++<li><a href="sample3.mpg"> sample3.mpg</a></li>
++<li><a href="sample4.mpg"> sample4.mpg</a></li>
++<li><a href="sample5.mpg"> sample5.mpg</a></li>
++<li><a href="sample6.mpg"> sample6.mpg</a></li>
++</ul>
++</body></html>
+\ No newline at end of file
+diff --git a/xbmc/filesystem/test/data/httpdirectory/apache-fancy.html b/xbmc/filesystem/test/data/httpdirectory/apache-fancy.html
+new file mode 100644
+index 000000000000..92552166f359
+--- /dev/null
++++ b/xbmc/filesystem/test/data/httpdirectory/apache-fancy.html
+@@ -0,0 +1,15 @@
++<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
++<html>
++ <head>
++  <title>Index of /</title>
++ </head>
++ <body>
++<h1>Index of /</h1>
++<pre>      <a href="?C=N;O=D;F=1">Name</a>                    <a href="?C=M;O=A;F=1">Last modified</a>      <a href="?C=S;O=A;F=1">Size</a>  <a href="?C=D;O=A;F=1">Description</a><hr>      <a href="folder1/">folder1/</a>                2019-01-01 01:01    -   
++      <a href="folder2/">folder2/</a>                2019-02-02 02:02    -   
++      <a href="sample3.mpg">sample3.mpg</a>             2019-03-03 03:03  123   
++      <a href="sample4.mpg">sample4.mpg</a>             2019-04-04 04:04  123K  
++      <a href="sample5.mpg">sample5.mpg</a>             2019-05-05 05:05  123M  
++      <a href="sample6.mpg">sample6.mpg</a>             2019-06-06 06:06  123G  
++<hr></pre>
++</body></html>
+diff --git a/xbmc/filesystem/test/data/httpdirectory/apache-html.html b/xbmc/filesystem/test/data/httpdirectory/apache-html.html
+new file mode 100644
+index 000000000000..676e6ba7883b
+--- /dev/null
++++ b/xbmc/filesystem/test/data/httpdirectory/apache-html.html
+@@ -0,0 +1,19 @@
++<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
++<html>
++ <head>
++  <title>Index of /</title>
++ </head>
++ <body>
++<h1>Index of /</h1>
++  <table>
++   <tr><th valign="top">&nbsp;</th><th><a href="?C=N;O=D;F=2">Name</a></th><th><a href="?C=M;O=A;F=2">Last modified</a></th><th><a href="?C=S;O=A;F=2">Size</a></th><th><a href="?C=D;O=A;F=2">Description</a></th></tr>
++   <tr><th colspan="5"><hr></th></tr>
++<tr><td valign="top">&nbsp;</td><td><a href="folder1/">folder1/</a>               </td><td align="right">2019-01-01 01:01  </td><td align="right">  - </td><td>&nbsp;</td></tr>
++<tr><td valign="top">&nbsp;</td><td><a href="folder2/">folder2/</a>               </td><td align="right">2019-02-02 02:02  </td><td align="right">  - </td><td>&nbsp;</td></tr>
++<tr><td valign="top">&nbsp;</td><td><a href="sample3.mpg">sample3.mpg</a>            </td><td align="right">2019-03-03 03:03  </td><td align="right">123 </td><td>&nbsp;</td></tr>
++<tr><td valign="top">&nbsp;</td><td><a href="sample4.mpg">sample4.mpg</a>            </td><td align="right">2019-04-04 04:04  </td><td align="right">123K</td><td>&nbsp;</td></tr>
++<tr><td valign="top">&nbsp;</td><td><a href="sample5.mpg">sample5.mpg</a>            </td><td align="right">2019-05-05 05:05  </td><td align="right">123M</td><td>&nbsp;</td></tr>
++<tr><td valign="top">&nbsp;</td><td><a href="sample6.mpg">sample6.mpg</a>            </td><td align="right">2019-06-06 06:06  </td><td align="right">123G</td><td>&nbsp;</td></tr>
++   <tr><th colspan="5"><hr></th></tr>
++</table>
++</body></html>
+diff --git a/xbmc/filesystem/test/data/httpdirectory/basic-multiline.html b/xbmc/filesystem/test/data/httpdirectory/basic-multiline.html
+new file mode 100644
+index 000000000000..8f23f546ab20
+--- /dev/null
++++ b/xbmc/filesystem/test/data/httpdirectory/basic-multiline.html
+@@ -0,0 +1,16 @@
++<html>
++  <head>
++    <title>Directory Listing</title>
++  </head>
++  <body>
++    <a href="folder1/">folder1/</a>
++    <a href="folder2/">
++      folder2/
++    </a>
++    <a href="sample3.mpg">sample3.mpg</a>
++    <a href="sample4.mpg">sample4.mpg</a> <a href="sample5.mpg">sample5.mpg</a>
++    <a href="sample6.mpg">
++      sample6.mpg
++    </a>
++  </body>
++</html>
+\ No newline at end of file
+diff --git a/xbmc/filesystem/test/data/httpdirectory/basic.html b/xbmc/filesystem/test/data/httpdirectory/basic.html
+new file mode 100644
+index 000000000000..09f207efadf1
+--- /dev/null
++++ b/xbmc/filesystem/test/data/httpdirectory/basic.html
+@@ -0,0 +1,13 @@
++<html>
++  <head>
++    <title>Directory Listing</title>
++  </head>
++  <body>
++    <a href="folder1/">folder1/</a>
++    <a href="folder2/">folder2/</a>
++    <a href="sample3.mpg">sample3.mpg</a>
++    <a href="sample4.mpg">sample4.mpg</a>
++    <a href="sample5.mpg">sample5.mpg</a>
++    <a href="sample6.mpg">sample6.mpg</a>
++  </body>
++</html>
+\ No newline at end of file
+diff --git a/xbmc/filesystem/test/data/httpdirectory/lighttp-default.html b/xbmc/filesystem/test/data/httpdirectory/lighttp-default.html
+new file mode 100644
+index 000000000000..9aa7d3d383ac
+--- /dev/null
++++ b/xbmc/filesystem/test/data/httpdirectory/lighttp-default.html
+@@ -0,0 +1,211 @@
++<!DOCTYPE html>
++<html>
++<head>
++<title>Index of /</title>
++<style type="text/css">
++a, a:active {text-decoration: none; color: blue;}
++a:visited {color: #48468F;}
++a:hover, a:focus {text-decoration: underline; color: red;}
++body {background-color: #F5F5F5;}
++h2 {margin-bottom: 12px;}
++table {margin-left: 12px;}
++th, td { font: 90% monospace; text-align: left;}
++th { font-weight: bold; padding-right: 14px; padding-bottom: 3px;}
++td {padding-right: 14px;}
++td.s, th.s {text-align: right;}
++div.list { background-color: white; border-top: 1px solid #646464; border-bottom: 1px solid #646464; padding-top: 10px; padding-bottom: 14px;}
++div.foot { font: 90% monospace; color: #787878; padding-top: 4px;}
++</style>
++</head>
++<body>
++<h2>Index of /</h2>
++<div class="list">
++<table summary="Directory Listing" cellpadding="0" cellspacing="0">
++<thead><tr><th class="n">Name</th><th class="m">Last Modified</th><th class="s">Size</th><th class="t">Type</th></tr></thead>
++<tbody>
++<tr class="d"><td class="n"><a href="folder1/">folder1</a>/</td><td class="m">2019-Jan-01 01:01:01</td><td class="s">- &nbsp;</td><td class="t">Directory</td></tr>
++<tr class="d"><td class="n"><a href="folder2/">folder2</a>/</td><td class="m">2019-Feb-02 02:02:02</td><td class="s">- &nbsp;</td><td class="t">Directory</td></tr>
++<tr><td class="n"><a href="sample3.mpg">sample3.mpg</a></td><td class="m">2019-Mar-03 03:03:03</td><td class="s">0.1K</td><td class="t">video/mpeg</td></tr>
++<tr><td class="n"><a href="sample4.mpg">sample4.mpg</a></td><td class="m">2019-Apr-04 04:04:04</td><td class="s">123.0K</td><td class="t">video/mpeg</td></tr>
++<tr><td class="n"><a href="sample5.mpg">sample5.mpg</a></td><td class="m">2019-May-05 05:05:05</td><td class="s">123.0M</td><td class="t">video/mpeg</td></tr>
++<tr><td class="n"><a href="sample6.mpg">sample6.mpg</a></td><td class="m">2019-Jun-06 06:06:06</td><td class="s">123.0G</td><td class="t">video/mpeg</td></tr>
++</tbody>
++</table>
++</div>
++<div class="foot">lighttpd/1.4.49</div>
++
++<script type="text/javascript">
++// <!--
++
++var click_column;
++var name_column = 0;
++var date_column = 1;
++var size_column = 2;
++var type_column = 3;
++var prev_span = null;
++
++if (typeof(String.prototype.localeCompare) === 'undefined') {
++ String.prototype.localeCompare = function(str, locale, options) {
++   return ((this == str) ? 0 : ((this > str) ? 1 : -1));
++ };
++}
++
++if (typeof(String.prototype.toLocaleUpperCase) === 'undefined') {
++ String.prototype.toLocaleUpperCase = function() {
++  return this.toUpperCase();
++ };
++}
++
++function get_inner_text(el) {
++ if((typeof el == 'string')||(typeof el == 'undefined'))
++  return el;
++ if(el.innerText)
++  return el.innerText;
++ else {
++  var str = "";
++  var cs = el.childNodes;
++  var l = cs.length;
++  for (i=0;i<l;i++) {
++   if (cs[i].nodeType==1) str += get_inner_text(cs[i]);
++   else if (cs[i].nodeType==3) str += cs[i].nodeValue;
++  }
++ }
++ return str;
++}
++
++function isdigit(c) {
++ return (c >= '0' && c <= '9');
++}
++
++function unit_multiplier(unit) {
++ return (unit=='K') ? 1000
++      : (unit=='M') ? 1000000
++      : (unit=='G') ? 1000000000
++      : (unit=='T') ? 1000000000000
++      : (unit=='P') ? 1000000000000000
++      : (unit=='E') ? 1000000000000000000 : 1;
++}
++
++var li_date_regex=/(\d{4})-(\w{3})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/;
++
++var li_mon = ['Jan','Feb','Mar','Apr','May','Jun',
++              'Jul','Aug','Sep','Oct','Nov','Dec'];
++
++function li_mon_num(mon) {
++ var i; for (i = 0; i < 12 && mon != li_mon[i]; ++i); return i;
++}
++
++function li_date_cmp(s1, s2) {
++ var dp1 = li_date_regex.exec(s1)
++ var dp2 = li_date_regex.exec(s2)
++ for (var i = 1; i < 7; ++i) {
++  var cmp = (2 != i)
++   ? parseInt(dp1[i]) - parseInt(dp2[i])
++   : li_mon_num(dp1[2]) - li_mon_num(dp2[2]);
++  if (0 != cmp) return cmp;
++ }
++ return 0;
++}
++
++function sortfn_then_by_name(a,b,sort_column) {
++ if (sort_column == name_column || sort_column == type_column) {
++  var ad = (a.cells[type_column].innerHTML === 'Directory');
++  var bd = (b.cells[type_column].innerHTML === 'Directory');
++  if (ad != bd) return (ad ? -1 : 1);
++ }
++ var at = get_inner_text(a.cells[sort_column]);
++ var bt = get_inner_text(b.cells[sort_column]);
++ var cmp;
++ if (sort_column == name_column) {
++  if (at == '..') return -1;
++  if (bt == '..') return  1;
++ }
++ if (a.cells[sort_column].className == 'int') {
++  cmp = parseInt(at)-parseInt(bt);
++ } else if (sort_column == date_column) {
++  var ad = isdigit(at.substr(0,1));
++  var bd = isdigit(bt.substr(0,1));
++  if (ad != bd) return (!ad ? -1 : 1);
++  cmp = li_date_cmp(at,bt);
++ } else if (sort_column == size_column) {
++  var ai = parseInt(at, 10) * unit_multiplier(at.substr(-1,1));
++  var bi = parseInt(bt, 10) * unit_multiplier(bt.substr(-1,1));
++  if (at.substr(0,1) == '-') ai = -1;
++  if (bt.substr(0,1) == '-') bi = -1;
++  cmp = ai - bi;
++ } else {
++  cmp = at.toLocaleUpperCase().localeCompare(bt.toLocaleUpperCase());
++  if (0 != cmp) return cmp;
++  cmp = at.localeCompare(bt);
++ }
++ if (0 != cmp || sort_column == name_column) return cmp;
++ return sortfn_then_by_name(a,b,name_column);
++}
++
++function sortfn(a,b) {
++ return sortfn_then_by_name(a,b,click_column);
++}
++
++function resort(lnk) {
++ var span = lnk.childNodes[1];
++ var table = lnk.parentNode.parentNode.parentNode.parentNode;
++ var rows = new Array();
++ for (j=1;j<table.rows.length;j++)
++  rows[j-1] = table.rows[j];
++ click_column = lnk.parentNode.cellIndex;
++ rows.sort(sortfn);
++
++ if (prev_span != null) prev_span.innerHTML = '';
++ if (span.getAttribute('sortdir')=='down') {
++  span.innerHTML = '&uarr;';
++  span.setAttribute('sortdir','up');
++  rows.reverse();
++ } else {
++  span.innerHTML = '&darr;';
++  span.setAttribute('sortdir','down');
++ }
++ for (i=0;i<rows.length;i++)
++  table.tBodies[0].appendChild(rows[i]);
++ prev_span = span;
++}
++
++function init_sort(init_sort_column, ascending) {
++ var tables = document.getElementsByTagName("table");
++ for (var i = 0; i < tables.length; i++) {
++  var table = tables[i];
++  //var c = table.getAttribute("class")
++  //if (-1 != c.split(" ").indexOf("sort")) {
++   var row = table.rows[0].cells;
++   for (var j = 0; j < row.length; j++) {
++    var n = row[j];
++    if (n.childNodes.length == 1 && n.childNodes[0].nodeType == 3) {
++     var link = document.createElement("a");
++     var title = n.childNodes[0].nodeValue.replace(/:$/, "");
++     link.appendChild(document.createTextNode(title));
++     link.setAttribute("href", "#");
++     link.setAttribute("class", "sortheader");
++     link.setAttribute("onclick", "resort(this);return false;");
++     var arrow = document.createElement("span");
++     arrow.setAttribute("class", "sortarrow");
++     arrow.appendChild(document.createTextNode(":"));
++     link.appendChild(arrow)
++     n.replaceChild(link, n.firstChild);
++    }
++   }
++   var lnk = row[init_sort_column].firstChild;
++   if (ascending) {
++    var span = lnk.childNodes[1];
++    span.setAttribute('sortdir','down');
++   }
++   resort(lnk);
++  //}
++ }
++}
++
++init_sort(0, 0);
++
++// -->
++</script>
++
++</body>
++</html>
+diff --git a/xbmc/filesystem/test/data/httpdirectory/nginx-default.html b/xbmc/filesystem/test/data/httpdirectory/nginx-default.html
+new file mode 100644
+index 000000000000..5942ed32291a
+--- /dev/null
++++ b/xbmc/filesystem/test/data/httpdirectory/nginx-default.html
+@@ -0,0 +1,11 @@
++<html>
++<head><title>Index of /</title></head>
++<body>
++<h1>Index of /</h1><hr><pre><a href="folder1/">folder1/</a>                                           01-Jan-2019 01:01                   -
++<a href="folder2/">folder2/</a>                                           02-Feb-2019 02:02                   -
++<a href="sample3.mpg">sample3.mpg</a>                                        03-Mar-2019 03:03                 123
++<a href="sample4.mpg">sample4.mpg</a>                                        04-Apr-2019 04:04              125952
++<a href="sample5.mpg">sample5.mpg</a>                                        05-May-2019 05:05           128974848
++<a href="sample6.mpg">sample6.mpg</a>                                        06-Jun-2019 06:06        132070244352
++</pre><hr></body>
++</html>

@@ -1,0 +1,23 @@
+From ada096dec3f89119708880a376140269766e3f79 Mon Sep 17 00:00:00 2001
+From: montellese <montellese@kodi.tv>
+Date: Wed, 6 May 2020 20:10:01 +0200
+Subject: [PATCH] fix creating unique index for actors on MySQL after bffa7bb5
+ (thanks @mkreisl)
+
+---
+ xbmc/video/VideoDatabase.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/video/VideoDatabase.cpp b/xbmc/video/VideoDatabase.cpp
+index 3bbc5c8a687f..36f2f359f8b3 100644
+--- a/xbmc/video/VideoDatabase.cpp
++++ b/xbmc/video/VideoDatabase.cpp
+@@ -267,7 +267,7 @@ void CVideoDatabase::CreateAnalytics()
+   m_pDS->exec("CREATE UNIQUE INDEX ix_actor_1 ON actor (name(255))");
+   m_pDS->exec("CREATE INDEX ix_actor_link_1 ON actor_link (media_type(20))");
+   m_pDS->exec("CREATE UNIQUE INDEX ix_actor_link_2 ON "
+-              "actor_link (actor_id, media_id, media_type, role)");
++              "actor_link (actor_id, media_id, media_type(20), role(255))");
+ 
+   CreateLinkIndex("tag");
+   CreateForeignLinkIndex("director", "actor");

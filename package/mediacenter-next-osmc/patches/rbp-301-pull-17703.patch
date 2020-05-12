@@ -1,0 +1,236 @@
+From 87e72528f824ad08f13426ef2241dc99d5cfd9e5 Mon Sep 17 00:00:00 2001
+From: enen92 <92enen@gmail.com>
+Date: Sat, 25 Apr 2020 17:48:14 +0100
+Subject: [PATCH 1/3] Addons: Do not submit install jobs in the background
+
+---
+ xbmc/addons/AddonInstaller.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/addons/AddonInstaller.cpp b/xbmc/addons/AddonInstaller.cpp
+index 26d74db9d193..289cc1e1b735 100644
+--- a/xbmc/addons/AddonInstaller.cpp
++++ b/xbmc/addons/AddonInstaller.cpp
+@@ -423,7 +423,7 @@ void CAddonInstaller::InstallAddons(const VECADDONS& addons, bool wait)
+     AddonPtr toInstall;
+     RepositoryPtr repo;
+     if (CAddonInstallJob::GetAddon(addon->ID(), repo, toInstall))
+-      DoInstall(toInstall, repo, true, false, true);
++      DoInstall(toInstall, repo, false, false, true);
+   }
+   if (wait)
+   {
+
+From 1f28211f19eb7dc97975d8caac46e4e4c2f189f2 Mon Sep 17 00:00:00 2001
+From: enen92 <92enen@gmail.com>
+Date: Sat, 25 Apr 2020 17:50:19 +0100
+Subject: [PATCH 2/3] Addons: Ensure addon installation order when migrating to
+ matrix
+
+---
+ xbmc/addons/AddonManager.cpp | 48 +++++++++++++++++++++++++++++++++++-
+ xbmc/addons/AddonManager.h   |  6 +++++
+ 2 files changed, 53 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/addons/AddonManager.cpp b/xbmc/addons/AddonManager.cpp
+index 38ffd360a168..e899bb226bb4 100644
+--- a/xbmc/addons/AddonManager.cpp
++++ b/xbmc/addons/AddonManager.cpp
+@@ -417,10 +417,56 @@ void CAddonMgr::CheckAndInstallAddonUpdates(bool wait) const
+     return IsBlacklisted(addon->ID());
+   }), updates.end());
+ 
+-  // install all
++  // sort addons by dependencies (ensure install order) and install all
++  SortByDependencies(updates);
+   CAddonInstaller::GetInstance().InstallAddons(updates, wait);
+ }
+ 
++void CAddonMgr::SortByDependencies(VECADDONS& updates) const
++{
++  std::vector<std::shared_ptr<ADDON::IAddon>> sorted;
++  while (!updates.empty())
++  {
++    for (auto it = updates.begin(); it != updates.end();)
++    {
++      const auto& addon = *it;
++
++      const auto& dependencies = addon->GetDependencies();
++      bool addToSortedList = true;
++      // if the addon has dependencies we need to check for each dependency if it also has
++      // an update to be installed (and in that case, if it is already in the sorted vector).
++      // if all dependency match the said conditions, the addon doesn't depend on other addons
++      // waiting to be updated. Hence, the addon being processed can be installed (i.e. added to
++      // the end of the sorted vector of addon updates)
++      for (const auto& dep : dependencies)
++      {
++        auto comparator = [&dep](const std::shared_ptr<ADDON::IAddon>& addon) {
++          return addon->ID() == dep.id;
++        };
++
++        if ((std::any_of(updates.begin(), updates.end(), comparator)) &&
++            (!std::any_of(sorted.begin(), sorted.end(), comparator)))
++        {
++          addToSortedList = false;
++          break;
++        }
++      }
++
++      // add to the end of sorted list of addons
++      if (addToSortedList)
++      {
++        sorted.emplace_back(std::move(addon));
++        it = updates.erase(it);
++      }
++      else
++      {
++        ++it;
++      }
++    }
++  }
++  updates = sorted;
++}
++
+ bool CAddonMgr::GetAddon(const std::string& str,
+                          AddonPtr& addon,
+                          const TYPE& type /*=ADDON_UNKNOWN*/,
+diff --git a/xbmc/addons/AddonManager.h b/xbmc/addons/AddonManager.h
+index 26e69587a348..956d76c50322 100644
+--- a/xbmc/addons/AddonManager.h
++++ b/xbmc/addons/AddonManager.h
+@@ -281,6 +281,12 @@ namespace ADDON
+ 
+     void FindAddons(ADDON_INFO_LIST& addonmap, const std::string& path);
+ 
++    /*!\brief Sort a list of addons for installation, i.e., defines the order of installation depending
++     * of each addon dependencies.
++     * \param[in,out] updates the vector of addons to sort
++     */
++    void SortByDependencies(VECADDONS& updates) const;
++
+     std::set<std::string> m_disabled;
+     std::set<std::string> m_updateBlacklist;
+     static std::map<TYPE, IAddonMgrCallback*> m_managers;
+
+From a51463c1b6f8cd0cdf87ed77444b6dd3c2b4b06d Mon Sep 17 00:00:00 2001
+From: enen92 <92enen@gmail.com>
+Date: Sun, 26 Apr 2020 12:35:47 +0100
+Subject: [PATCH 3/3] Addons: Guard the addon installation process while
+ migrating
+
+---
+ xbmc/addons/AddonManager.cpp | 36 +++++++++++++++++++++++++++---------
+ xbmc/addons/AddonManager.h   | 23 +++++++++++++++++++++++
+ 2 files changed, 50 insertions(+), 9 deletions(-)
+
+diff --git a/xbmc/addons/AddonManager.cpp b/xbmc/addons/AddonManager.cpp
+index e899bb226bb4..7a015aa8f809 100644
+--- a/xbmc/addons/AddonManager.cpp
++++ b/xbmc/addons/AddonManager.cpp
+@@ -382,9 +382,14 @@ bool CAddonMgr::GetIncompatibleAddons(VECADDONS& incompatible) const
+ 
+ std::vector<std::string> CAddonMgr::MigrateAddons()
+ {
++  // install all addon updates
++  std::lock_guard<std::mutex> lock(m_installAddonsMutex);
+   CLog::Log(LOGINFO, "ADDON: waiting for add-ons to update...");
+-  CheckAndInstallAddonUpdates(true);
++  VECADDONS updates;
++  GetAddonUpdateCandidates(updates);
++  InstallAddonUpdates(updates, true);
+ 
++  // get addons that became incompatible and disable them
+   VECADDONS incompatible;
+   GetIncompatibleAddons(incompatible);
+   std::vector<std::string> changed;
+@@ -411,15 +416,21 @@ std::vector<std::string> CAddonMgr::MigrateAddons()
+ 
+ void CAddonMgr::CheckAndInstallAddonUpdates(bool wait) const
+ {
+-  // Get Addons in need of an update and remove all the blacklisted ones
+-  auto updates = GetAvailableUpdates();
+-  updates.erase(std::remove_if(updates.begin(), updates.end(), [this](const AddonPtr& addon) {
+-    return IsBlacklisted(addon->ID());
+-  }), updates.end());
++  std::lock_guard<std::mutex> lock(m_installAddonsMutex);
++  VECADDONS updates;
++  GetAddonUpdateCandidates(updates);
++  InstallAddonUpdates(updates, wait);
++}
+ 
+-  // sort addons by dependencies (ensure install order) and install all
+-  SortByDependencies(updates);
+-  CAddonInstaller::GetInstance().InstallAddons(updates, wait);
++bool CAddonMgr::GetAddonUpdateCandidates(VECADDONS& updates) const
++{
++  // Get Addons in need of an update and remove all the blacklisted ones
++  updates = GetAvailableUpdates();
++  updates.erase(
++      std::remove_if(updates.begin(), updates.end(),
++                     [this](const AddonPtr& addon) { return IsBlacklisted(addon->ID()); }),
++      updates.end());
++  return updates.empty();
+ }
+ 
+ void CAddonMgr::SortByDependencies(VECADDONS& updates) const
+@@ -467,6 +478,13 @@ void CAddonMgr::SortByDependencies(VECADDONS& updates) const
+   updates = sorted;
+ }
+ 
++void CAddonMgr::InstallAddonUpdates(VECADDONS& updates, bool wait) const
++{
++  // sort addons by dependencies (ensure install order) and install all
++  SortByDependencies(updates);
++  CAddonInstaller::GetInstance().InstallAddons(updates, wait);
++}
++
+ bool CAddonMgr::GetAddon(const std::string& str,
+                          AddonPtr& addon,
+                          const TYPE& type /*=ADDON_UNKNOWN*/,
+diff --git a/xbmc/addons/AddonManager.h b/xbmc/addons/AddonManager.h
+index 956d76c50322..3bca19ae3e42 100644
+--- a/xbmc/addons/AddonManager.h
++++ b/xbmc/addons/AddonManager.h
+@@ -14,6 +14,8 @@
+ #include "threads/CriticalSection.h"
+ #include "utils/EventStream.h"
+ 
++#include <mutex>
++
+ namespace ADDON
+ {
+   typedef std::map<TYPE, VECADDONS> MAPADDONS;
+@@ -281,12 +283,33 @@ namespace ADDON
+ 
+     void FindAddons(ADDON_INFO_LIST& addonmap, const std::string& path);
+ 
++    /*!
++     * Get the list of of available updates
++     * \param[in,out] updates the vector of addons to be filled with addons that need to be updated (not blacklisted)
++     * \return if there are any addons needing updates
++     */
++    bool GetAddonUpdateCandidates(VECADDONS& updates) const;
++
+     /*!\brief Sort a list of addons for installation, i.e., defines the order of installation depending
+      * of each addon dependencies.
+      * \param[in,out] updates the vector of addons to sort
+      */
+     void SortByDependencies(VECADDONS& updates) const;
+ 
++    /*!
++     * Install the list of addon updates via AddonInstaller
++     * \param[in,out] updates the vector of addons to install (will be sorted)
++     * \param wait if the process should wait for all addons to install
++     */
++    void InstallAddonUpdates(VECADDONS& updates, bool wait) const;
++
++    // This guards the addon installation process to make sure
++    // addon updates are not installed concurrently
++    // while the migration is running. Addon updates can be triggered
++    // as a result of a repository update event.
++    // (migration will install any available update anyway)
++    mutable std::mutex m_installAddonsMutex;
++
+     std::set<std::string> m_disabled;
+     std::set<std::string> m_updateBlacklist;
+     static std::map<TYPE, IAddonMgrCallback*> m_managers;

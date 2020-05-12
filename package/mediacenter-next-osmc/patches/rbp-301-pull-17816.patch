@@ -1,0 +1,61 @@
+From e2d010a28ff2ad3c9ebcdecf466c02435138709b Mon Sep 17 00:00:00 2001
+From: Matt Huisman <me@matthuisman.nz>
+Date: Thu, 7 May 2020 19:34:46 +1200
+Subject: [PATCH 1/2] ffmpeg version in Matrix returns 'hls' not
+ 'hls,applehttp' for hls format
+
+---
+ xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp
+index 0489a2493364..5ab402a9b4b9 100644
+--- a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp
++++ b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp
+@@ -588,7 +588,7 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool fileinf
+           }
+         }
+       }
+-      else if (m_pFormatContext->iformat && strcmp(m_pFormatContext->iformat->name, "hls,applehttp") == 0)
++      else if (m_pFormatContext->iformat && strcmp(m_pFormatContext->iformat->name, "hls") == 0)
+       {
+         nProgram = HLSSelectProgram();
+       }
+@@ -638,7 +638,7 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool fileinf
+ 
+   // seems to be a bug in ffmpeg, hls jumps back to start after a couple of seconds
+   // this cures the issue
+-  if (m_pFormatContext->iformat && strcmp(m_pFormatContext->iformat->name, "hls,applehttp") == 0)
++  if (m_pFormatContext->iformat && strcmp(m_pFormatContext->iformat->name, "hls") == 0)
+   {
+     SeekTime(0);
+   }
+
+From f1970b4506df4b639e37f9a1af52d9c64478eb78 Mon Sep 17 00:00:00 2001
+From: Matt Huisman <me@matthuisman.nz>
+Date: Thu, 7 May 2020 21:09:35 +1200
+Subject: [PATCH 2/2] remove seek hls work-around as no longer required. This
+ also breaks ability to play live hls from live (not start)
+
+---
+ xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp
+index 5ab402a9b4b9..9785d9ccd34f 100644
+--- a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp
++++ b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp
+@@ -636,13 +636,6 @@ bool CDVDDemuxFFmpeg::Open(std::shared_ptr<CDVDInputStream> pInput, bool fileinf
+     m_pFormatContext->duration = duration;
+   }
+ 
+-  // seems to be a bug in ffmpeg, hls jumps back to start after a couple of seconds
+-  // this cures the issue
+-  if (m_pFormatContext->iformat && strcmp(m_pFormatContext->iformat->name, "hls") == 0)
+-  {
+-    SeekTime(0);
+-  }
+-
+   return true;
+ }
+ 
