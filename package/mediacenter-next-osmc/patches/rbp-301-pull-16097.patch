@@ -1,0 +1,612 @@
+From 8d12f608696cc729089151639adee3728be80c13 Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Sun, 24 Nov 2019 16:11:59 -0800
+Subject: [PATCH 1/4] remove SysfsUtils.h header from non linux platforms
+
+---
+ xbmc/platform/win10/CPUInfoWin10.cpp    | 1 -
+ xbmc/platform/win32/CPUInfoWin32.cpp    | 1 -
+ xbmc/windowing/android/AndroidUtils.cpp | 1 -
+ 3 files changed, 3 deletions(-)
+
+diff --git a/xbmc/platform/win10/CPUInfoWin10.cpp b/xbmc/platform/win10/CPUInfoWin10.cpp
+index 8a18c89699a5..7457c835bc20 100644
+--- a/xbmc/platform/win10/CPUInfoWin10.cpp
++++ b/xbmc/platform/win10/CPUInfoWin10.cpp
+@@ -12,7 +12,6 @@
+ #include "settings/AdvancedSettings.h"
+ #include "settings/SettingsComponent.h"
+ #include "utils/StringUtils.h"
+-#include "utils/SysfsUtils.h"
+ #include "utils/Temperature.h"
+ 
+ #include <winrt/Windows.Foundation.Metadata.h>
+diff --git a/xbmc/platform/win32/CPUInfoWin32.cpp b/xbmc/platform/win32/CPUInfoWin32.cpp
+index 086402f8bfe0..e42fc2001293 100644
+--- a/xbmc/platform/win32/CPUInfoWin32.cpp
++++ b/xbmc/platform/win32/CPUInfoWin32.cpp
+@@ -12,7 +12,6 @@
+ #include "settings/AdvancedSettings.h"
+ #include "settings/SettingsComponent.h"
+ #include "utils/StringUtils.h"
+-#include "utils/SysfsUtils.h"
+ #include "utils/Temperature.h"
+ 
+ #include "platform/win32/CharsetConverter.h"
+diff --git a/xbmc/windowing/android/AndroidUtils.cpp b/xbmc/windowing/android/AndroidUtils.cpp
+index b9ce20e3ee55..d24cc34a6fd7 100644
+--- a/xbmc/windowing/android/AndroidUtils.cpp
++++ b/xbmc/windowing/android/AndroidUtils.cpp
+@@ -13,7 +13,6 @@
+ #include "settings/SettingsComponent.h"
+ #include "settings/lib/SettingsManager.h"
+ #include "utils/StringUtils.h"
+-#include "utils/SysfsUtils.h"
+ #include "utils/log.h"
+ #include "windowing/GraphicContext.h"
+ 
+
+From 98e7dabc8e18cfe2b9f3605f33d7371b194a674f Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Tue, 20 Nov 2018 15:22:07 -0800
+Subject: [PATCH 2/4] SysfsUtils: cleanup and improve interface according to
+ the documentation
+
+as written in the kernel docs:
+
+sysfs allocates a buffer of size (PAGE_SIZE) and passes it to the
+method. Sysfs will call the method exactly once for each read or
+write.
+
+for more info please consult the kernel documentation:
+
+https://www.kernel.org/doc/Documentation/filesystems/sysfs.txt
+---
+ xbmc/platform/linux/CPUInfoLinux.cpp |  56 +++++---------
+ xbmc/utils/CMakeLists.txt            |   7 +-
+ xbmc/utils/SysfsUtils.cpp            | 111 ++-------------------------
+ xbmc/utils/SysfsUtils.h              |  37 +++++++--
+ xbmc/utils/SystemInfo.cpp            |  21 ++---
+ xbmc/utils/test/TestSystemInfo.cpp   |  12 +--
+ 6 files changed, 73 insertions(+), 171 deletions(-)
+
+diff --git a/xbmc/platform/linux/CPUInfoLinux.cpp b/xbmc/platform/linux/CPUInfoLinux.cpp
+index e5e6ac249f84..22aa043c0ed3 100644
+--- a/xbmc/platform/linux/CPUInfoLinux.cpp
++++ b/xbmc/platform/linux/CPUInfoLinux.cpp
+@@ -68,23 +68,17 @@ std::shared_ptr<CCPUInfo> CCPUInfo::GetCPUInfo()
+ 
+ CCPUInfoLinux::CCPUInfoLinux()
+ {
+-  // new socs use the sysfs soc interface to describe the hardware
+-  if (SysfsUtils::Has("/sys/bus/soc/devices/soc0"))
+-  {
+-    std::string machine;
+-    std::string family;
+-    std::string socId;
+-    if (SysfsUtils::Has("/sys/bus/soc/devices/soc0/machine"))
+-      SysfsUtils::GetString("/sys/bus/soc/devices/soc0/machine", machine);
+-    if (SysfsUtils::Has("/sys/bus/soc/devices/soc0/family"))
+-      SysfsUtils::GetString("/sys/bus/soc/devices/soc0/family", family);
+-    if (SysfsUtils::Has("/sys/bus/soc/devices/soc0/soc_id"))
+-      SysfsUtils::GetString("/sys/bus/soc/devices/soc0/soc_id", socId);
+-    if (m_cpuHardware.empty() && !machine.empty())
+-      m_cpuHardware = machine;
+-    if (!family.empty() && !socId.empty())
+-      m_cpuSoC = family + " " + socId;
+-  }
++  CSysfsPath machinePath{"/sys/bus/soc/devices/soc0/machine"};
++  if (machinePath.Exists())
++    m_cpuHardware = machinePath.Get<std::string>();
++
++  CSysfsPath familyPath{"/sys/bus/soc/devices/soc0/family"};
++  if (familyPath.Exists())
++    m_cpuSoC = familyPath.Get<std::string>();
++
++  CSysfsPath socPath{"/sys/bus/soc/devices/soc0/soc_id"};
++  if (socPath.Exists())
++    m_cpuSoC += " " + socPath.Get<std::string>();
+ 
+   m_cpuCount = sysconf(_SC_NPROCESSORS_ONLN);
+ 
+@@ -284,34 +278,26 @@ int CCPUInfoLinux::GetUsedPercentage()
+ 
+ float CCPUInfoLinux::GetCPUFrequency()
+ {
+-  int value{-1};
+-  if (SysfsUtils::Has("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq"))
+-    SysfsUtils::GetInt("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq", value);
++  float value{0};
++  CSysfsPath path("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq");
+ 
+-  value /= 1000.0;
++  if (path.Exists())
++    value = path.Get<float>() / 1000.0;
+ 
+   return value;
+ }
+ 
+ bool CCPUInfoLinux::GetTemperature(CTemperature& temperature)
+ {
+-  if (!SysfsUtils::Has("/sys/class/hwmon/hwmon0/temp1_input"))
+-    return CCPUInfoPosix::GetTemperature(temperature);
+-
+-  int value{-1};
+-  char scale{'c'};
++  int value{0};
++  CSysfsPath path("/sys/class/hwmon/hwmon0/temp1_input");
+ 
+-  SysfsUtils::GetInt("/sys/class/hwmon/hwmon0/temp1_input", value);
+-  value = value / 1000.0;
+-  scale = 'c';
++  if (!path.Exists())
++    return CCPUInfoPosix::GetTemperature(temperature);
+ 
+-  if (scale == 'C' || scale == 'c')
+-    temperature = CTemperature::CreateFromCelsius(value);
+-  else if (scale == 'F' || scale == 'f')
+-    temperature = CTemperature::CreateFromFahrenheit(value);
+-  else
+-    return false;
++  value = path.Get<int>() / 1000.0;
+ 
++  temperature = CTemperature::CreateFromCelsius(value);
+   temperature.SetValid(true);
+ 
+   return true;
+diff --git a/xbmc/utils/CMakeLists.txt b/xbmc/utils/CMakeLists.txt
+index 826915edb8dd..d13f1ae3e4d4 100644
+--- a/xbmc/utils/CMakeLists.txt
++++ b/xbmc/utils/CMakeLists.txt
+@@ -59,7 +59,6 @@ set(SOURCES ActorProtocol.cpp
+             StreamUtils.cpp
+             StringUtils.cpp
+             StringValidation.cpp
+-            SysfsUtils.cpp
+             SystemInfo.cpp
+             Temperature.cpp
+             TextSearch.cpp
+@@ -151,7 +150,6 @@ set(HEADERS ActorProtocol.h
+             StreamUtils.h
+             StringUtils.h
+             StringValidation.h
+-            SysfsUtils.h
+             SystemInfo.h
+             Temperature.h
+             TextSearch.h
+@@ -187,6 +185,11 @@ if(NOT CORE_SYSTEM_NAME STREQUAL windows AND NOT CORE_SYSTEM_NAME STREQUAL windo
+   list(APPEND HEADERS GLUtils.h)
+ endif()
+ 
++if(CORE_SYSTEM_NAME STREQUAL linux)
++  list(APPEND SOURCES SysfsUtils.cpp)
++  list(APPEND HEADERS SysfsUtils.h)
++endif()
++
+ if(CORE_PLATFORM_NAME_LC STREQUAL gbm)
+   list(APPEND SOURCES EGLImage.cpp)
+   list(APPEND HEADERS EGLImage.h)
+diff --git a/xbmc/utils/SysfsUtils.cpp b/xbmc/utils/SysfsUtils.cpp
+index 044d4c4b6cd3..b27ea50f5367 100644
+--- a/xbmc/utils/SysfsUtils.cpp
++++ b/xbmc/utils/SysfsUtils.cpp
+@@ -7,114 +7,13 @@
+  */
+ 
+ #include "SysfsUtils.h"
+-#include "utils/log.h"
+-#include "utils/StringUtils.h"
+ 
+-#include <unistd.h>
+-#include <stdio.h>
+-#include <stdlib.h>
+-#include <fcntl.h>
+-#include <string.h>
+-
+-#ifdef TARGET_WINDOWS_STORE
+-#include <io.h>
+-#endif
+-
+-int SysfsUtils::SetString(const std::string& path, const std::string& valstr)
+-{
+-  int fd = open(path.c_str(), O_RDWR, 0644);
+-  int ret = 0;
+-  if (fd >= 0)
+-  {
+-    if (write(fd, valstr.c_str(), valstr.size()) < 0)
+-      ret = -1;
+-    close(fd);
+-  }
+-  if (ret)
+-    CLog::Log(LOGERROR, "%s: error writing %s",__FUNCTION__, path.c_str());
+-
+-  return ret;
+-}
+-
+-int SysfsUtils::GetString(const std::string& path, std::string& valstr)
++bool CSysfsPath::Exists()
+ {
+-  int len;
+-  char buf[256] = {0};
++  std::ifstream file(m_path);
+ 
+-  int fd = open(path.c_str(), O_RDONLY);
+-  if (fd >= 0)
+-  {
+-    valstr.clear();
+-    while ((len = read(fd, buf, 256)) > 0)
+-      valstr.append(buf, len);
+-    close(fd);
+-
+-    StringUtils::Trim(valstr);
+-
+-    return 0;
+-  }
+-
+-  CLog::Log(LOGERROR, "%s: error reading %s",__FUNCTION__, path.c_str());
+-  valstr = "fail";
+-  return -1;
+-}
+-
+-int SysfsUtils::SetInt(const std::string& path, const int val)
+-{
+-  int fd = open(path.c_str(), O_RDWR, 0644);
+-  int ret = 0;
+-  if (fd >= 0)
+-  {
+-    char bcmd[16];
+-    sprintf(bcmd, "%d", val);
+-    if (write(fd, bcmd, strlen(bcmd)) < 0)
+-      ret = -1;
+-    close(fd);
+-  }
+-  if (ret)
+-    CLog::Log(LOGERROR, "%s: error writing %s",__FUNCTION__, path.c_str());
++  if (!file.is_open())
++    return false;
+ 
+-  return ret;
+-}
+-
+-int SysfsUtils::GetInt(const std::string& path, int& val)
+-{
+-  int fd = open(path.c_str(), O_RDONLY);
+-  int ret = 0;
+-  if (fd >= 0)
+-  {
+-    char bcmd[16];
+-    if (read(fd, bcmd, sizeof(bcmd)) < 0)
+-      ret = -1;
+-    else
+-      val = strtol(bcmd, NULL, 16);
+-
+-    close(fd);
+-  }
+-  if (ret)
+-    CLog::Log(LOGERROR, "%s: error reading %s",__FUNCTION__, path.c_str());
+-
+-  return ret;
+-}
+-
+-bool SysfsUtils::Has(const std::string &path)
+-{
+-  int fd = open(path.c_str(), O_RDONLY);
+-  if (fd >= 0)
+-  {
+-    close(fd);
+-    return true;
+-  }
+-  return false;
+-}
+-
+-bool SysfsUtils::HasRW(const std::string &path)
+-{
+-  int fd = open(path.c_str(), O_RDWR);
+-  if (fd >= 0)
+-  {
+-    close(fd);
+-    return true;
+-  }
+-  return false;
++  return true;
+ }
+diff --git a/xbmc/utils/SysfsUtils.h b/xbmc/utils/SysfsUtils.h
+index b173a456bc17..499d3d4a933c 100644
+--- a/xbmc/utils/SysfsUtils.h
++++ b/xbmc/utils/SysfsUtils.h
+@@ -8,15 +8,38 @@
+ 
+ #pragma once
+ 
++#include "utils/log.h"
++
++#include <fstream>
+ #include <string>
+ 
+-class SysfsUtils
++class CSysfsPath
+ {
+ public:
+-  static int SetString(const std::string& path, const std::string& valstr);
+-  static int GetString(const std::string& path, std::string& valstr);
+-  static int SetInt(const std::string& path, const int val);
+-  static int GetInt(const std::string& path, int& val);
+-  static bool Has(const std::string& path);
+-  static bool HasRW(const std::string &path);
++  CSysfsPath() = default;
++  CSysfsPath(const std::string& path) : m_path(path) {}
++  ~CSysfsPath() = default;
++
++  bool Exists();
++
++  template<typename T>
++  T Get()
++  {
++    std::ifstream file(m_path);
++
++    T value;
++
++    file >> value;
++
++    if (file.bad())
++    {
++      CLog::LogF(LOGERROR, "error reading from '{}'", m_path);
++      throw std::runtime_error("error reading from " + m_path);
++    }
++
++    return value;
++  }
++
++private:
++  std::string m_path;
+ };
+diff --git a/xbmc/utils/SystemInfo.cpp b/xbmc/utils/SystemInfo.cpp
+index a85c10d185ea..812d0c8e06d7 100644
+--- a/xbmc/utils/SystemInfo.cpp
++++ b/xbmc/utils/SystemInfo.cpp
+@@ -723,19 +723,10 @@ std::string CSysInfo::GetManufacturerName(void)
+     auto manufacturer = eas.SystemManufacturer();
+     g_charsetConverter.wToUTF8(std::wstring(manufacturer.c_str()), manufName);
+ #elif defined(TARGET_LINUX)
+-    if (SysfsUtils::Has("/sys/bus/soc/devices/soc0/family"))
+-    {
+-      std::string family;
+-      SysfsUtils::GetString("/sys/bus/soc/devices/soc0/family", family);
+-      if (SysfsUtils::Has("/sys/bus/soc/devices/soc0/soc_id"))
+-      {
+-        std::string soc_id;
+-        SysfsUtils::GetString("/sys/bus/soc/devices/soc0/soc_id", soc_id);
+-        manufName = family + " " + soc_id;
+-      }
+-      else
+-        manufName = family;
+-    }
++
++    auto cpuInfo = CServiceBroker::GetCPUInfo();
++    manufName = cpuInfo->GetCPUSoC();
++
+ #elif defined(TARGET_WINDOWS)
+     // We just don't care, might be useful on embedded
+ #endif
+@@ -770,8 +761,8 @@ std::string CSysInfo::GetModelName(void)
+     auto manufacturer = eas.SystemProductName();
+     g_charsetConverter.wToUTF8(std::wstring(manufacturer.c_str()), modelName);
+ #elif defined(TARGET_LINUX)
+-    if (SysfsUtils::Has("/sys/bus/soc/devices/soc0/machine"))
+-      SysfsUtils::GetString("/sys/bus/soc/devices/soc0/machine", modelName);
++    auto cpuInfo = CServiceBroker::GetCPUInfo();
++    modelName = cpuInfo->GetCPUHardware();
+ #elif defined(TARGET_WINDOWS)
+     // We just don't care, might be useful on embedded
+ #endif
+diff --git a/xbmc/utils/test/TestSystemInfo.cpp b/xbmc/utils/test/TestSystemInfo.cpp
+index b80d32bc33e1..1f2b0a10f346 100644
+--- a/xbmc/utils/test/TestSystemInfo.cpp
++++ b/xbmc/utils/test/TestSystemInfo.cpp
+@@ -6,9 +6,11 @@
+  *  See LICENSES/README.md for more information.
+  */
+ 
+-#include "utils/SystemInfo.h"
+-#include "settings/Settings.h"
+ #include "GUIInfoManager.h"
++#include "ServiceBroker.h"
++#include "settings/Settings.h"
++#include "utils/CPUInfo.h"
++#include "utils/SystemInfo.h"
+ #if defined(TARGET_WINDOWS)
+ #include "platform/win32/CharsetConverter.h"
+ #endif
+@@ -18,10 +20,8 @@
+ class TestSystemInfo : public testing::Test
+ {
+ protected:
+-  TestSystemInfo()
+-  = default;
+-  ~TestSystemInfo() override
+-  = default;
++  TestSystemInfo() { CServiceBroker::RegisterCPUInfo(CCPUInfo::GetCPUInfo()); }
++  ~TestSystemInfo() { CServiceBroker::UnregisterCPUInfo(); }
+ };
+ 
+ TEST_F(TestSystemInfo, Print_System_Info)
+
+From af927c17985c00a9b831e45c1441e153341276da Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Sun, 24 Nov 2019 15:41:07 -0800
+Subject: [PATCH 3/4] SysfsUtils: move to platform/linux and rename to
+ SysfsPath
+
+---
+ xbmc/platform/linux/CMakeLists.txt                          | 2 ++
+ xbmc/platform/linux/CPUInfoLinux.cpp                        | 3 ++-
+ xbmc/{utils/SysfsUtils.cpp => platform/linux/SysfsPath.cpp} | 2 +-
+ xbmc/{utils/SysfsUtils.h => platform/linux/SysfsPath.h}     | 0
+ xbmc/utils/CMakeLists.txt                                   | 5 -----
+ xbmc/utils/SystemInfo.cpp                                   | 3 ++-
+ 6 files changed, 7 insertions(+), 8 deletions(-)
+ rename xbmc/{utils/SysfsUtils.cpp => platform/linux/SysfsPath.cpp} (92%)
+ rename xbmc/{utils/SysfsUtils.h => platform/linux/SysfsPath.h} (100%)
+
+diff --git a/xbmc/platform/linux/CMakeLists.txt b/xbmc/platform/linux/CMakeLists.txt
+index 653227d9444f..a36f4e82fa5a 100644
+--- a/xbmc/platform/linux/CMakeLists.txt
++++ b/xbmc/platform/linux/CMakeLists.txt
+@@ -1,11 +1,13 @@
+ set(SOURCES CPUInfoLinux.cpp
+             MemUtils.cpp
+             OptionalsReg.cpp
++            SysfsPath.cpp
+             TimeUtils.cpp)
+ 
+ set(HEADERS CPUInfoLinux.h
+             OptionalsReg.h
+             PlatformConstants.h
++            SysfsPath.h
+             TimeUtils.h)
+ 
+ if(ALSA_FOUND)
+diff --git a/xbmc/platform/linux/CPUInfoLinux.cpp b/xbmc/platform/linux/CPUInfoLinux.cpp
+index 22aa043c0ed3..30526d1f8d74 100644
+--- a/xbmc/platform/linux/CPUInfoLinux.cpp
++++ b/xbmc/platform/linux/CPUInfoLinux.cpp
+@@ -9,9 +9,10 @@
+ #include "CPUInfoLinux.h"
+ 
+ #include "utils/StringUtils.h"
+-#include "utils/SysfsUtils.h"
+ #include "utils/Temperature.h"
+ 
++#include "platform/linux/SysfsPath.h"
++
+ #include <fstream>
+ #include <regex>
+ #include <sstream>
+diff --git a/xbmc/utils/SysfsUtils.cpp b/xbmc/platform/linux/SysfsPath.cpp
+similarity index 92%
+rename from xbmc/utils/SysfsUtils.cpp
+rename to xbmc/platform/linux/SysfsPath.cpp
+index b27ea50f5367..f5b503c5a522 100644
+--- a/xbmc/utils/SysfsUtils.cpp
++++ b/xbmc/platform/linux/SysfsPath.cpp
+@@ -6,7 +6,7 @@
+  *  See LICENSES/README.md for more information.
+  */
+ 
+-#include "SysfsUtils.h"
++#include "SysfsPath.h"
+ 
+ bool CSysfsPath::Exists()
+ {
+diff --git a/xbmc/utils/SysfsUtils.h b/xbmc/platform/linux/SysfsPath.h
+similarity index 100%
+rename from xbmc/utils/SysfsUtils.h
+rename to xbmc/platform/linux/SysfsPath.h
+diff --git a/xbmc/utils/CMakeLists.txt b/xbmc/utils/CMakeLists.txt
+index d13f1ae3e4d4..aee35f1e362d 100644
+--- a/xbmc/utils/CMakeLists.txt
++++ b/xbmc/utils/CMakeLists.txt
+@@ -185,11 +185,6 @@ if(NOT CORE_SYSTEM_NAME STREQUAL windows AND NOT CORE_SYSTEM_NAME STREQUAL windo
+   list(APPEND HEADERS GLUtils.h)
+ endif()
+ 
+-if(CORE_SYSTEM_NAME STREQUAL linux)
+-  list(APPEND SOURCES SysfsUtils.cpp)
+-  list(APPEND HEADERS SysfsUtils.h)
+-endif()
+-
+ if(CORE_PLATFORM_NAME_LC STREQUAL gbm)
+   list(APPEND SOURCES EGLImage.cpp)
+   list(APPEND HEADERS EGLImage.h)
+diff --git a/xbmc/utils/SystemInfo.cpp b/xbmc/utils/SystemInfo.cpp
+index 812d0c8e06d7..f7353e79d822 100644
+--- a/xbmc/utils/SystemInfo.cpp
++++ b/xbmc/utils/SystemInfo.cpp
+@@ -68,8 +68,9 @@ using namespace winrt::Windows::System::Profile;
+ #elif defined(TARGET_FREEBSD)
+ #include <sys/param.h>
+ #elif defined(TARGET_LINUX)
++#include "platform/linux/SysfsPath.h"
++
+ #include <linux/version.h>
+-#include "utils/SysfsUtils.h"
+ #endif
+ 
+ #include <system_error>
+
+From 7683a1dd08735246653d59069b6f80eeb0d1f82a Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Wed, 8 May 2019 22:44:17 -0700
+Subject: [PATCH 4/4] kodi-test: add test cases for CSysfsPath
+
+---
+ cmake/treedata/linux/tests.txt             |  1 +
+ xbmc/platform/linux/test/CMakeLists.txt    |  3 ++
+ xbmc/platform/linux/test/TestSysfsPath.cpp | 40 ++++++++++++++++++++++
+ 3 files changed, 44 insertions(+)
+ create mode 100644 cmake/treedata/linux/tests.txt
+ create mode 100644 xbmc/platform/linux/test/CMakeLists.txt
+ create mode 100644 xbmc/platform/linux/test/TestSysfsPath.cpp
+
+diff --git a/cmake/treedata/linux/tests.txt b/cmake/treedata/linux/tests.txt
+new file mode 100644
+index 000000000000..3f3a3e35fd6a
+--- /dev/null
++++ b/cmake/treedata/linux/tests.txt
+@@ -0,0 +1 @@
++xbmc/platform/linux/test platform/linux/test
+diff --git a/xbmc/platform/linux/test/CMakeLists.txt b/xbmc/platform/linux/test/CMakeLists.txt
+new file mode 100644
+index 000000000000..1fb0281ce033
+--- /dev/null
++++ b/xbmc/platform/linux/test/CMakeLists.txt
+@@ -0,0 +1,3 @@
++list(APPEND SOURCES TestSysfsPath.cpp)
++
++core_add_test_library(linux_test)
+diff --git a/xbmc/platform/linux/test/TestSysfsPath.cpp b/xbmc/platform/linux/test/TestSysfsPath.cpp
+new file mode 100644
+index 000000000000..9d8171bc6052
+--- /dev/null
++++ b/xbmc/platform/linux/test/TestSysfsPath.cpp
+@@ -0,0 +1,40 @@
++/*
++ *  Copyright (C) 2005-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#include "platform/linux/SysfsPath.h"
++
++#include <fstream>
++
++#include <gtest/gtest.h>
++
++struct TestSysfsPath : public ::testing::Test
++{
++  ~TestSysfsPath() { std::remove("/tmp/kodi-test"); }
++};
++
++TEST_F(TestSysfsPath, SysfsPathTest)
++{
++  int temp{1234};
++  std::ofstream output{"/tmp/kodi-test"};
++  output << temp;
++  output.close();
++
++  CSysfsPath path("/tmp/kodi-test");
++  ASSERT_TRUE(path.Exists());
++  ASSERT_TRUE(path.Get<int>() == 1234);
++  ASSERT_TRUE(path.Get<float>() == 1234);
++  ASSERT_TRUE(path.Get<double>() == 1234);
++  ASSERT_TRUE(path.Get<uint64_t>() == 1234);
++  ASSERT_TRUE(path.Get<uint16_t>() == 1234);
++  ASSERT_TRUE(path.Get<unsigned int>() == 1234);
++  ASSERT_TRUE(path.Get<unsigned long int>() == 1234);
++  ASSERT_TRUE(path.Get<std::string>() == "1234");
++
++  CSysfsPath otherPath{"/thispathdoesnotexist"};
++  ASSERT_FALSE(otherPath.Exists());
++}
