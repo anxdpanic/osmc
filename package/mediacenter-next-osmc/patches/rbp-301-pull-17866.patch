@@ -1,0 +1,40 @@
+From ceacd4063c6367e86bfb3e5e1aefffebbcbe5ce1 Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Mon, 11 May 2020 12:45:38 +0200
+Subject: [PATCH] [android] Fix crash on Kodi exit (powersyscall no more
+ available, but called).
+
+---
+ xbmc/platform/android/activity/XBMCApp.cpp | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/xbmc/platform/android/activity/XBMCApp.cpp b/xbmc/platform/android/activity/XBMCApp.cpp
+index a3013ff9657a..48a26d1f1c42 100644
+--- a/xbmc/platform/android/activity/XBMCApp.cpp
++++ b/xbmc/platform/android/activity/XBMCApp.cpp
+@@ -251,8 +251,11 @@ void CXBMCApp::onResume()
+     RequestVisibleBehind(true);
+ 
+   if (g_application.IsInitialized())
+-    dynamic_cast<CAndroidPowerSyscall*>(CServiceBroker::GetPowerManager().GetPowerSyscall())
+-        ->SetOnResume();
++  {
++    IPowerSyscall* syscall = CServiceBroker::GetPowerManager().GetPowerSyscall();
++    if (syscall)
++      static_cast<CAndroidPowerSyscall*>(syscall)->SetOnResume();
++  }
+ }
+ 
+ void CXBMCApp::onPause()
+@@ -274,8 +277,9 @@ void CXBMCApp::onPause()
+   EnableWakeLock(false);
+   m_hasReqVisible = false;
+ 
+-  dynamic_cast<CAndroidPowerSyscall*>(CServiceBroker::GetPowerManager().GetPowerSyscall())
+-      ->SetOnPause();
++  IPowerSyscall* syscall = CServiceBroker::GetPowerManager().GetPowerSyscall();
++  if (syscall)
++    static_cast<CAndroidPowerSyscall*>(syscall)->SetOnPause();
+ }
+ 
+ void CXBMCApp::onStop()

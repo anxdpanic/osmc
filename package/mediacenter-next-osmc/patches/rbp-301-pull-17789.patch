@@ -1,0 +1,81 @@
+From 313e002eb32c8630615a12596f53c244fb5c2c3e Mon Sep 17 00:00:00 2001
+From: enen92 <92enen@gmail.com>
+Date: Thu, 30 Apr 2020 11:46:14 +0100
+Subject: [PATCH] [python] drop xbmc.abortRequested flag
+
+---
+ .../doxygen/Modules/modules_python.dox                |  5 +++++
+ xbmc/interfaces/python/AddonPythonInvoker.cpp         |  1 -
+ xbmc/interfaces/python/PythonInvoker.cpp              | 11 -----------
+ .../python/HTTPPythonWsgiInvoker.cpp                  |  1 -
+ 4 files changed, 5 insertions(+), 13 deletions(-)
+
+diff --git a/xbmc/addons/kodi-addon-dev-kit/doxygen/Modules/modules_python.dox b/xbmc/addons/kodi-addon-dev-kit/doxygen/Modules/modules_python.dox
+index 379d5a69866a..2f64d5cea01b 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/doxygen/Modules/modules_python.dox
++++ b/xbmc/addons/kodi-addon-dev-kit/doxygen/Modules/modules_python.dox
+@@ -228,6 +228,11 @@ web applications or frameworks for the Python programming language.
+       "",
+       <b>xbmc.validatePath()</b> function was moved to the xbmcvfs module.
+ }
++\python_removed_function{
++      abortRequested,
++      "",
++      <b>xbmc.abortRequested</b> flag was removed completely. Use xbmc.Monitor().abortRequested().
++}
+ */
+ /*!
+ @page python_v18 Python API v18
+diff --git a/xbmc/interfaces/python/AddonPythonInvoker.cpp b/xbmc/interfaces/python/AddonPythonInvoker.cpp
+index bc9ec093f346..091a95a09dd9 100644
+--- a/xbmc/interfaces/python/AddonPythonInvoker.cpp
++++ b/xbmc/interfaces/python/AddonPythonInvoker.cpp
+@@ -19,7 +19,6 @@
+ #define RUNSCRIPT_PREAMBLE \
+         "" \
+         "import " MODULE "\n" \
+-        "xbmc.abortRequested = False\n" \
+         "class xbmcout:\n" \
+         "  def __init__(self, loglevel=" MODULE ".LOGDEBUG):\n" \
+         "    self.ll=loglevel\n" \
+diff --git a/xbmc/interfaces/python/PythonInvoker.cpp b/xbmc/interfaces/python/PythonInvoker.cpp
+index f9896a302da4..d217d46f95ad 100644
+--- a/xbmc/interfaces/python/PythonInvoker.cpp
++++ b/xbmc/interfaces/python/PythonInvoker.cpp
+@@ -403,11 +403,6 @@ bool CPythonInvoker::execute(const std::string& script, const std::vector<std::w
+ 
+   if (m_threadState)
+   {
+-    PyObject* m = PyImport_AddModule("xbmc");
+-    if (m == NULL || PyObject_SetAttrString(m, "abortRequested", PyBool_FromLong(1)))
+-      CLog::Log(LOGERROR, "CPythonInvoker(%d, %s): failed to set abortRequested", GetId(),
+-                m_sourceFile.c_str());
+-
+     // make sure all sub threads have finished
+     for (PyThreadState* old = nullptr; m_threadState != nullptr;)
+     {
+@@ -499,12 +494,6 @@ bool CPythonInvoker::stop(bool abort)
+         AbortNotification();
+       }
+ 
+-      PyObject* m;
+-      m = PyImport_AddModule("xbmc");
+-      if (m == NULL || PyObject_SetAttrString(m, "abortRequested", PyBool_FromLong(1)))
+-        CLog::Log(LOGERROR, "CPythonInvoker(%d, %s): failed to set abortRequested", GetId(),
+-                  m_sourceFile.c_str());
+-
+       PyEval_ReleaseThread(m_threadState);
+     }
+     else
+diff --git a/xbmc/network/httprequesthandler/python/HTTPPythonWsgiInvoker.cpp b/xbmc/network/httprequesthandler/python/HTTPPythonWsgiInvoker.cpp
+index c856832afaa1..70824876de53 100644
+--- a/xbmc/network/httprequesthandler/python/HTTPPythonWsgiInvoker.cpp
++++ b/xbmc/network/httprequesthandler/python/HTTPPythonWsgiInvoker.cpp
+@@ -26,7 +26,6 @@
+ #define RUNSCRIPT_PREAMBLE \
+   "" \
+   "import " MODULE "\n" \
+-  "xbmc.abortRequested = False\n" \
+   "class xbmcout:\n" \
+   "  def __init__(self, loglevel=" MODULE ".LOGNOTICE):\n" \
+   "    self.ll=loglevel\n" \

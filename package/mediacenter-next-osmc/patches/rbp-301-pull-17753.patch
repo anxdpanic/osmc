@@ -1,0 +1,26 @@
+From e2e31def4aabffdfc071235a0df941b500373d6c Mon Sep 17 00:00:00 2001
+From: Danila Vershinin <ciapnz@gmail.com>
+Date: Sat, 25 Apr 2020 23:49:48 +0300
+Subject: [PATCH] Log button name in event client
+
+---
+ xbmc/network/EventClient.cpp | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/network/EventClient.cpp b/xbmc/network/EventClient.cpp
+index 1980ef665ad2..5fb2036cbfd5 100644
+--- a/xbmc/network/EventClient.cpp
++++ b/xbmc/network/EventClient.cpp
+@@ -370,7 +370,11 @@ bool CEventClient::OnPacketBUTTON(CEventPacket *packet)
+   float famount = 0;
+   bool active = (flags & PTB_DOWN) ? true : false;
+   
+-  CLog::Log(LOGDEBUG, "EventClient: button code %d %s", bcode, active ? "pressed" : "released");
++  if (flags & PTB_USE_NAME)
++    CLog::Log(LOGDEBUG, "EventClient: button name \"%s\" map \"%s\" %s",
++              button.c_str(), map.c_str(), active ? "pressed" : "released");
++  else
++    CLog::Log(LOGDEBUG, "EventClient: button code %d %s", bcode, active ? "pressed" : "released");
+ 
+   if(flags & PTB_USE_AMOUNT)
+   {

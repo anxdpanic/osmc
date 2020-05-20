@@ -1,0 +1,537 @@
+From c8e65e0c20621efc5818aad263bfe9db3438cf0f Mon Sep 17 00:00:00 2001
+From: Philipp Kerling <yol@casix.org>
+Date: Mon, 10 Feb 2020 18:01:10 +0100
+Subject: [PATCH 1/6] [network] Use application name for web server auth prompt
+
+---
+ xbmc/network/WebServer.cpp | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/network/WebServer.cpp b/xbmc/network/WebServer.cpp
+index 3a3bf7dd73f4..7371bfa0739a 100644
+--- a/xbmc/network/WebServer.cpp
++++ b/xbmc/network/WebServer.cpp
+@@ -8,6 +8,7 @@
+ 
+ #include "WebServer.h"
+ 
++#include "CompileInfo.h"
+ #include "ServiceBroker.h"
+ #include "Util.h"
+ #include "XBDateTime.h"
+@@ -112,7 +113,8 @@ int CWebServer::AskForAuthentication(const HTTPRequest& request) const
+ 
+   LogResponse(request, MHD_HTTP_UNAUTHORIZED);
+ 
+-  ret = MHD_queue_basic_auth_fail_response(request.connection, "XBMC", response);
++  ret =
++      MHD_queue_basic_auth_fail_response(request.connection, CCompileInfo::GetAppName(), response);
+   MHD_destroy_response(response);
+ 
+   return ret;
+
+From 60c41f0d456c720165f57da12b903519ec351342 Mon Sep 17 00:00:00 2001
+From: Philipp Kerling <yol@casix.org>
+Date: Mon, 10 Feb 2020 18:02:27 +0100
+Subject: [PATCH 2/6] [network] Show warning dialog when enabling web server
+
+The Kodi web interface is very powerful and can be used to take
+complete control of a device, which may not be obvious to users.
+Therefore, this commit introduces an explicit warning when enabling
+the web interface.
+---
+ addons/resource.language.en_gb/resources/strings.po | 9 ++++++++-
+ xbmc/network/NetworkServices.cpp                    | 7 +++++++
+ 2 files changed, 15 insertions(+), 1 deletion(-)
+
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index 5d5ad0715689..0376c3993444 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -9736,6 +9736,7 @@ msgstr ""
+ 
+ #. generic warning label used at several places
+ #: xbmc/addons/AddonSystemSettings.cpp
++#: xbmc/network/NetworkServices.cpp
+ #: xbmc/pvr/channels/PVRChannelGroupInternal.cpp
+ #: xbmc/pvr/PVRManager.cpp
+ msgctxt "#19098"
+@@ -20762,7 +20763,13 @@ msgctxt "#36631"
+ msgid "Force weak SMBv1 security for compatibility with the USB sharing features on some WiFi routers and NAS devices."
+ msgstr ""
+ 
+-#empty strings from id 36632 to 36898
++#. Text in confirm dialog when enabling setting "Services -> Control -> Allow remote control via HTTP"
++#: xbmc/network/NetworkServices.cpp
++msgctxt "#36632"
++msgid "Anyone who has access to the web interface will be able to completely control this application and, therefore, this device, so it should never be exposed on the Internet. A password must be set below. Proceed?"
++msgstr ""
++
++#empty strings from id 36633 to 36898
+ 
+ #. Description of setting with label #729 "Enable SSL"
+ #: system/settings/settings.xml
+diff --git a/xbmc/network/NetworkServices.cpp b/xbmc/network/NetworkServices.cpp
+index dcff9cc77f86..84fa3225ea9c 100644
+--- a/xbmc/network/NetworkServices.cpp
++++ b/xbmc/network/NetworkServices.cpp
+@@ -180,6 +180,13 @@ bool CNetworkServices::OnSettingChanging(std::shared_ptr<const CSetting> setting
+ 
+     if (m_settings->GetBool(CSettings::SETTING_SERVICES_WEBSERVER))
+     {
++      if (settingId == CSettings::SETTING_SERVICES_WEBSERVER &&
++          HELPERS::ShowYesNoDialogText(19098, 36632) != DialogResponse::YES)
++      {
++        // Revert change, do not start server
++        return false;
++      }
++
+       if (!StartWebserver())
+       {
+         HELPERS::ShowOKDialogText(CVariant{33101}, CVariant{33100});
+
+From 1828d12817bf0edb88b4d8d6c24a737ef3f77a23 Mon Sep 17 00:00:00 2001
+From: Philipp Kerling <yol@casix.org>
+Date: Mon, 10 Feb 2020 18:03:59 +0100
+Subject: [PATCH 3/6] [network] Clarify "remote control" settings
+
+The remote control settings do not use the username, password, and SSL
+certificate that is set for the web server, which is not completely
+clear on first glance. This makes enabling remote control on all
+interfaces particularly dangerous. Clarify this in the explanation.
+---
+ addons/resource.language.en_gb/resources/strings.po | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index 0376c3993444..678587a3a873 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -19471,7 +19471,7 @@ msgstr ""
+ #. Description of setting with label #791 "Allow remote control from programs on this system"
+ #: system/settings/settings.xml
+ msgctxt "#36334"
+-msgid "Allow programs on this device to control this application via the web interface or the JSON-RPC interface protocol."
++msgid "Allow programs on this device to control this application via the JSON-RPC over WebSocket, JSON-RPC over TCP, or EventServer protocol, without authentication."
+ msgstr ""
+ 
+ #. Description of setting with label #792 "Port"
+@@ -19495,7 +19495,7 @@ msgstr ""
+ #. Description of setting with label #794 "Allow remote control from programs on other systems"
+ #: system/settings/settings.xml
+ msgctxt "#36338"
+-msgid "Allow programs on the network to control this application."
++msgid "Allow programs on the network to control this application via the JSON-RPC over WebSocket, JSON-RPC over TCP, or EventServer protocol, without authentication. It allows anyone with access to the network to completely control this application and, therefore, this device. Never expose these interfaces to the Internet."
+ msgstr ""
+ 
+ #. Description of setting with label #795 "Initial repeat delay (ms)"
+
+From 277f885370d102980a901cfcdda46bd2d98e2465 Mon Sep 17 00:00:00 2001
+From: Philipp Kerling <yol@casix.org>
+Date: Mon, 10 Feb 2020 18:05:47 +0100
+Subject: [PATCH 4/6] [network] Show warning dialog when enabling remote
+ control on all interfaces
+
+The remote control settings do not use the username, password, and SSL
+certificate that is set for the web server, which makes enabling remote
+control on all interfaces very dangerous. Introduce a warning dialog
+that explicitly tells the user about this.
+---
+ addons/resource.language.en_gb/resources/strings.po | 8 +++++++-
+ xbmc/network/NetworkServices.cpp                    | 7 +++++++
+ 2 files changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index 678587a3a873..d53856675375 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -20769,7 +20769,13 @@ msgctxt "#36632"
+ msgid "Anyone who has access to the web interface will be able to completely control this application and, therefore, this device, so it should never be exposed on the Internet. A password must be set below. Proceed?"
+ msgstr ""
+ 
+-#empty strings from id 36633 to 36898
++#. Text in confirm dialog when enabling setting "Services -> Control -> Allow remote control from applications on other systems"
++#: xbmc/network/NetworkServices.cpp
++msgctxt "#36633"
++msgid "These services offer neither authentication nor encryption. Anyone who can connect to them will be able to completely control this application and, therefore, this device, so they should never be exposed to the Internet. Proceed?"
++msgstr ""
++
++#empty strings from id 36634 to 36898
+ 
+ #. Description of setting with label #729 "Enable SSL"
+ #: system/settings/settings.xml
+diff --git a/xbmc/network/NetworkServices.cpp b/xbmc/network/NetworkServices.cpp
+index 84fa3225ea9c..72997e970065 100644
+--- a/xbmc/network/NetworkServices.cpp
++++ b/xbmc/network/NetworkServices.cpp
+@@ -391,6 +391,13 @@ bool CNetworkServices::OnSettingChanging(std::shared_ptr<const CSetting> setting
+   }
+   else if (settingId == CSettings::SETTING_SERVICES_ESALLINTERFACES)
+   {
++    if (m_settings->GetBool(CSettings::SETTING_SERVICES_ESALLINTERFACES) &&
++        HELPERS::ShowYesNoDialogText(19098, 36633) != DialogResponse::YES)
++    {
++      // Revert change, do not start server
++      return false;
++    }
++
+     if (m_settings->GetBool(CSettings::SETTING_SERVICES_ESENABLED))
+     {
+       if (!StopEventServer(true, true))
+
+From bff1de111f4f43ca9aa9d39168c29f3b541ffc45 Mon Sep 17 00:00:00 2001
+From: Philipp Kerling <yol@casix.org>
+Date: Sat, 15 Feb 2020 22:15:19 +0100
+Subject: [PATCH 5/6] [network] Discourage exposing the web server port
+
+---
+ addons/resource.language.en_gb/resources/strings.po | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index d53856675375..2fc2f4fb96f1 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -19435,7 +19435,7 @@ msgstr ""
+ #. Description of setting with label #263 "Allow remote control via HTTP"
+ #: system/settings/settings.xml
+ msgctxt "#36328"
+-msgid "Enable remote users to control this application through the built-in web server."
++msgid "Enable remote users to control this application through the built-in web server. Never expose the web server port to the Internet."
+ msgstr ""
+ 
+ #. Description of setting with label #730 "Port"
+
+From 028ac6dec909cad464070321a4b71059796cf3aa Mon Sep 17 00:00:00 2001
+From: Philipp Kerling <yol@casix.org>
+Date: Thu, 30 Apr 2020 21:57:58 +0200
+Subject: [PATCH 6/6] [network] Add setting for web server authentication and
+ enable by default
+
+---
+ .../resources/strings.po                      | 46 +++++++--
+ system/settings/settings.xml                  | 14 +--
+ xbmc/network/NetworkServices.cpp              | 98 ++++++++++++++++---
+ xbmc/settings/Settings.cpp                    |  2 +
+ xbmc/settings/Settings.h                      |  1 +
+ 5 files changed, 130 insertions(+), 31 deletions(-)
+
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index 2fc2f4fb96f1..18aebe66970a 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -1193,6 +1193,7 @@ msgstr ""
+ 
+ #: xbmc/dialogs/GUIDialogFileBrowser.cpp
+ #: xbmc/games/dialogs/GUIDialogSelectGameClient.cpp
++#: xbmc/network/NetworkServices.cpp
+ #: xbmc/pvr/PVRGUIActions.cpp
+ #: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+ #: xbmc/music/windows/GUIWindowMusicBase.cpp
+@@ -4096,7 +4097,17 @@ msgctxt "#1051"
+ msgid "Enter web address"
+ msgstr ""
+ 
+-#empty strings from id 1052 to 1179
++#: system/settings/settings.xml
++msgctxt "#1052"
++msgid "Require authentication"
++msgstr ""
++
++#: system/settings/settings.xml
++msgctxt "#1053"
++msgid "Choose whether requests to the web server require a username and a password, which must be set below if enabled. It is recommended to always leave this setting enabled."
++msgstr ""
++
++#empty strings from id 1054 to 1179
+ 
+ #: system/settings/settings.xml
+ msgctxt "#1180"
+@@ -16741,7 +16752,12 @@ msgctxt "#33103"
+ msgid "Remote communication server"
+ msgstr ""
+ 
+-#empty strings from id 33104 to 33199
++#: xbmc/network/NetworkServices.cpp
++msgctxt "#33104"
++msgid "You have previously enabled the web interface without setting up a password. The web server has been disabled until you either explicitly allow this or set up authentication. Please review your settings."
++msgstr ""
++
++#empty strings from id 33105 to 33199
+ 
+ #: xbmc/network/eventclient.cpp
+ msgctxt "#33200"
+@@ -19447,13 +19463,13 @@ msgstr ""
+ #. Description of setting with label #1048 "Username"
+ #: system/settings/settings.xml
+ msgctxt "#36330"
+-msgid "Define the web server username. This only takes effect when both the username and the password are set."
++msgid "Define the web server username. Must be set when authentication is enabled."
+ msgstr ""
+ 
+ #. Description of setting with label #1048 "Password"
+ #: system/settings/settings.xml
+ msgctxt "#36331"
+-msgid "Define the web server password. This only takes effect when both the username and the password are set."
++msgid "Define the web server password. Must be set when authentication is enabled."
+ msgstr ""
+ 
+ #. Description of setting with label #199 "Web interface"
+@@ -20766,7 +20782,7 @@ msgstr ""
+ #. Text in confirm dialog when enabling setting "Services -> Control -> Allow remote control via HTTP"
+ #: xbmc/network/NetworkServices.cpp
+ msgctxt "#36632"
+-msgid "Anyone who has access to the web interface will be able to completely control this application and, therefore, this device, so it should never be exposed on the Internet. A password must be set below. Proceed?"
++msgid "Anyone who has access to the web interface will be able to completely control this application and, therefore, this device, so it should never be exposed on the Internet. A password should be set below. Proceed?"
+ msgstr ""
+ 
+ #. Text in confirm dialog when enabling setting "Services -> Control -> Allow remote control from applications on other systems"
+@@ -20775,7 +20791,25 @@ msgctxt "#36633"
+ msgid "These services offer neither authentication nor encryption. Anyone who can connect to them will be able to completely control this application and, therefore, this device, so they should never be exposed to the Internet. Proceed?"
+ msgstr ""
+ 
+-#empty strings from id 36634 to 36898
++#. Text in confirm dialog when disabling setting "Services -> Control -> Require authentication"
++#: xbmc/network/NetworkServices.cpp
++msgctxt "#36634"
++msgid "Anyone who has access to the web interface will be able to completely control this application and, therefore, this device, so it should be secured by a password. Are you sure you want to disable authentication?"
++msgstr ""
++
++#. Text in error dialog when trying to enter an invalid web server configuration
++#: xbmc/network/NetworkServices.cpp
++msgctxt "#36635"
++msgid "If web server authentication is enabled, a password must be entered as well."
++msgstr ""
++
++#. Text in error dialog when trying to enter an invalid web server configuration by enabling authentication without a password set
++#: xbmc/network/NetworkServices.cpp
++msgctxt "#36636"
++msgid "You must first enter a password before web server authentication can be enabled."
++msgstr ""
++
++#empty strings from id 36637 to 36898
+ 
+ #. Description of setting with label #729 "Enable SSL"
+ #: system/settings/settings.xml
+diff --git a/system/settings/settings.xml b/system/settings/settings.xml
+index 983c891589b6..82b1bb7c38aa 100755
+--- a/system/settings/settings.xml
++++ b/system/settings/settings.xml
+@@ -1710,18 +1710,17 @@
+           </updates>
+           <control type="edit" format="integer" />
+         </setting>
++        <setting id="services.webserverauthentication" parent="services.webserver" type="boolean" label="1052" help="1053">
++          <level>1</level>
++          <default>true</default>
++          <control type="toggle" />
++        </setting>
+         <setting id="services.webserverusername" type="string" parent="services.webserver" label="1048" help="36330">
+           <level>1</level>
+           <default>kodi</default>
+-          <constraints>
+-            <allowempty>true</allowempty>
+-          </constraints>
+           <updates>
+             <update type="change" />
+           </updates>
+-          <dependencies>
+-            <dependency type="enable" setting="services.webserver">true</dependency>
+-          </dependencies>
+           <control type="edit" format="string" />
+         </setting>
+         <setting id="services.webserverpassword" type="string" parent="services.webserver" label="733" help="36331">
+@@ -1730,9 +1729,6 @@
+           <constraints>
+             <allowempty>true</allowempty>
+           </constraints>
+-          <dependencies>
+-            <dependency type="enable" setting="services.webserver">true</dependency>
+-          </dependencies>
+           <control type="edit" format="string">
+             <hidden>true</hidden>
+           </control>
+diff --git a/xbmc/network/NetworkServices.cpp b/xbmc/network/NetworkServices.cpp
+index 72997e970065..801c0d65ac09 100644
+--- a/xbmc/network/NetworkServices.cpp
++++ b/xbmc/network/NetworkServices.cpp
+@@ -109,6 +109,7 @@ CNetworkServices::CNetworkServices()
+   std::set<std::string> settingSet{
+     CSettings::SETTING_SERVICES_WEBSERVER,
+     CSettings::SETTING_SERVICES_WEBSERVERPORT,
++    CSettings::SETTING_SERVICES_WEBSERVERAUTHENTICATION,
+     CSettings::SETTING_SERVICES_WEBSERVERUSERNAME,
+     CSettings::SETTING_SERVICES_WEBSERVERPASSWORD,
+     CSettings::SETTING_SERVICES_WEBSERVERSSL,
+@@ -171,15 +172,51 @@ bool CNetworkServices::OnSettingChanging(std::shared_ptr<const CSetting> setting
+ 
+   const std::string &settingId = setting->GetId();
+ #ifdef HAS_WEB_SERVER
++  // Ask user to confirm disabling the authentication requirement, but not when the configuration
++  // would be invalid when authentication was enabled (meaning that the change was triggered
++  // automatically)
++  if (settingId == CSettings::SETTING_SERVICES_WEBSERVERAUTHENTICATION &&
++      !std::static_pointer_cast<const CSettingBool>(setting)->GetValue() &&
++      (!m_settings->GetBool(CSettings::SETTING_SERVICES_WEBSERVER) ||
++       (m_settings->GetBool(CSettings::SETTING_SERVICES_WEBSERVER) &&
++        !m_settings->GetString(CSettings::SETTING_SERVICES_WEBSERVERPASSWORD).empty())) &&
++      HELPERS::ShowYesNoDialogText(19098, 36634) != DialogResponse::YES)
++  {
++    // Leave it as-is
++    return false;
++  }
++
+   if (settingId == CSettings::SETTING_SERVICES_WEBSERVER ||
+       settingId == CSettings::SETTING_SERVICES_WEBSERVERPORT ||
+-      settingId == CSettings::SETTING_SERVICES_WEBSERVERSSL)
++      settingId == CSettings::SETTING_SERVICES_WEBSERVERSSL ||
++      settingId == CSettings::SETTING_SERVICES_WEBSERVERAUTHENTICATION ||
++      settingId == CSettings::SETTING_SERVICES_WEBSERVERUSERNAME ||
++      settingId == CSettings::SETTING_SERVICES_WEBSERVERPASSWORD)
+   {
+     if (IsWebserverRunning() && !StopWebserver())
+       return false;
+ 
+     if (m_settings->GetBool(CSettings::SETTING_SERVICES_WEBSERVER))
+     {
++      // Prevent changing to an invalid configuration
++      if ((settingId == CSettings::SETTING_SERVICES_WEBSERVER ||
++           settingId == CSettings::SETTING_SERVICES_WEBSERVERAUTHENTICATION ||
++           settingId == CSettings::SETTING_SERVICES_WEBSERVERPASSWORD) &&
++          m_settings->GetBool(CSettings::SETTING_SERVICES_WEBSERVERAUTHENTICATION) &&
++          m_settings->GetString(CSettings::SETTING_SERVICES_WEBSERVERPASSWORD).empty())
++      {
++        if (settingId == CSettings::SETTING_SERVICES_WEBSERVERAUTHENTICATION)
++        {
++          HELPERS::ShowOKDialogText(CVariant{257}, CVariant{36636});
++        }
++        else
++        {
++          HELPERS::ShowOKDialogText(CVariant{257}, CVariant{36635});
++        }
++        return false;
++      }
++
++      // Ask for confirmation when enabling the web server
+       if (settingId == CSettings::SETTING_SERVICES_WEBSERVER &&
+           HELPERS::ShowYesNoDialogText(19098, 36632) != DialogResponse::YES)
+       {
+@@ -438,16 +475,7 @@ void CNetworkServices::OnSettingChanged(std::shared_ptr<const CSetting> setting)
+   if (setting == NULL)
+     return;
+ 
+-  const std::string &settingId = setting->GetId();
+-#ifdef HAS_WEB_SERVER
+-  if (settingId == CSettings::SETTING_SERVICES_WEBSERVERUSERNAME ||
+-      settingId == CSettings::SETTING_SERVICES_WEBSERVERPASSWORD)
+-  {
+-    m_webserver.SetCredentials(m_settings->GetString(CSettings::SETTING_SERVICES_WEBSERVERUSERNAME),
+-                               m_settings->GetString(CSettings::SETTING_SERVICES_WEBSERVERPASSWORD));
+-  }
+-  else
+-#endif // HAS_WEB_SERVER
++  const std::string& settingId = setting->GetId();
+   if (settingId == CSettings::SETTING_SMB_WINSSERVER ||
+       settingId == CSettings::SETTING_SMB_WORKGROUP ||
+       settingId == CSettings::SETTING_SMB_MINPROTOCOL ||
+@@ -491,10 +519,6 @@ bool CNetworkServices::OnSettingUpdate(std::shared_ptr<CSetting> setting, const
+ void CNetworkServices::Start()
+ {
+   StartZeroconf();
+-#ifdef HAS_WEB_SERVER
+-  if (m_settings->GetBool(CSettings::SETTING_SERVICES_WEBSERVER) && !StartWebserver())
+-    CGUIDialogKaiToast::QueueNotification(CGUIDialogKaiToast::Warning, g_localizeStrings.Get(33101), g_localizeStrings.Get(33100));
+-#endif // HAS_WEB_SERVER
+   if (m_settings->GetBool(CSettings::SETTING_SERVICES_UPNP))
+     StartUPnP();
+   if (m_settings->GetBool(CSettings::SETTING_SERVICES_ESENABLED) && !StartEventServer())
+@@ -502,6 +526,32 @@ void CNetworkServices::Start()
+   if (m_settings->GetBool(CSettings::SETTING_SERVICES_ESENABLED) && !StartJSONRPCServer())
+     CGUIDialogKaiToast::QueueNotification(CGUIDialogKaiToast::Warning, g_localizeStrings.Get(33103), g_localizeStrings.Get(33100));
+ 
++#ifdef HAS_WEB_SERVER
++  // Start web server after eventserver and JSON-RPC server, so users can use these interfaces
++  // to confirm the warning message below if it is shown
++  if (m_settings->GetBool(CSettings::SETTING_SERVICES_WEBSERVER))
++  {
++    // services.webserverauthentication setting was added in Kodi v18 and requires a valid password
++    // to be set, but on upgrade the setting will be activated automatically regardless of whether
++    // a password was set before -> this can lead to an invalid configuration
++    if (m_settings->GetBool(CSettings::SETTING_SERVICES_WEBSERVERAUTHENTICATION) &&
++        m_settings->GetString(CSettings::SETTING_SERVICES_WEBSERVERPASSWORD).empty())
++    {
++      // Alert user to new default security settings in new Kodi version
++      HELPERS::ShowOKDialogText(33101, 33104);
++      // Fix settings: Disable web server
++      m_settings->SetBool(CSettings::SETTING_SERVICES_WEBSERVER, false);
++      // Bring user to settings screen where authentication can be configured properly
++      CServiceBroker::GetGUI()->GetWindowManager().ActivateWindow(
++          WINDOW_SETTINGS_SERVICE, std::vector<std::string>{"services.webserverauthentication"});
++    }
++    // Only try to start server if configuration is OK
++    else if (!StartWebserver())
++      CGUIDialogKaiToast::QueueNotification(
++          CGUIDialogKaiToast::Warning, g_localizeStrings.Get(33101), g_localizeStrings.Get(33100));
++  }
++#endif // HAS_WEB_SERVER
++
+   // note - airtunesserver has to start before airplay server (ios7 client detection bug)
+   StartAirTunesServer();
+   StartAirPlayServer();
+@@ -533,6 +583,14 @@ bool CNetworkServices::StartWebserver()
+   if (!m_settings->GetBool(CSettings::SETTING_SERVICES_WEBSERVER))
+     return false;
+ 
++  if (m_settings->GetBool(CSettings::SETTING_SERVICES_WEBSERVERAUTHENTICATION) &&
++      m_settings->GetString(CSettings::SETTING_SERVICES_WEBSERVERPASSWORD).empty())
++  {
++    CLog::Log(LOGERROR, "Tried to start webserver with invalid configuration (authentication "
++                        "enabled, but no password set");
++    return false;
++  }
++
+   int webPort = m_settings->GetInt(CSettings::SETTING_SERVICES_WEBSERVERPORT);
+   if (!ValidatePort(webPort))
+   {
+@@ -543,7 +601,15 @@ bool CNetworkServices::StartWebserver()
+   if (IsWebserverRunning())
+     return true;
+ 
+-  if (!m_webserver.Start(webPort, m_settings->GetString(CSettings::SETTING_SERVICES_WEBSERVERUSERNAME), m_settings->GetString(CSettings::SETTING_SERVICES_WEBSERVERPASSWORD)))
++  std::string username;
++  std::string password;
++  if (m_settings->GetBool(CSettings::SETTING_SERVICES_WEBSERVERAUTHENTICATION))
++  {
++    username = m_settings->GetString(CSettings::SETTING_SERVICES_WEBSERVERUSERNAME);
++    password = m_settings->GetString(CSettings::SETTING_SERVICES_WEBSERVERPASSWORD);
++  }
++
++  if (!m_webserver.Start(webPort, username, password))
+     return false;
+ 
+ #ifdef HAS_ZEROCONF
+diff --git a/xbmc/settings/Settings.cpp b/xbmc/settings/Settings.cpp
+index 322690e135b5..67e87a53e58f 100644
+--- a/xbmc/settings/Settings.cpp
++++ b/xbmc/settings/Settings.cpp
+@@ -300,6 +300,8 @@ const std::string CSettings::SETTING_SERVICES_UPNPCONTROLLER = "services.upnpcon
+ const std::string CSettings::SETTING_SERVICES_UPNPRENDERER = "services.upnprenderer";
+ const std::string CSettings::SETTING_SERVICES_WEBSERVER = "services.webserver";
+ const std::string CSettings::SETTING_SERVICES_WEBSERVERPORT = "services.webserverport";
++const std::string CSettings::SETTING_SERVICES_WEBSERVERAUTHENTICATION =
++    "services.webserverauthentication";
+ const std::string CSettings::SETTING_SERVICES_WEBSERVERUSERNAME = "services.webserverusername";
+ const std::string CSettings::SETTING_SERVICES_WEBSERVERPASSWORD = "services.webserverpassword";
+ const std::string CSettings::SETTING_SERVICES_WEBSERVERSSL = "services.webserverssl";
+diff --git a/xbmc/settings/Settings.h b/xbmc/settings/Settings.h
+index 0a10ef3fa7e2..7280587324c6 100644
+--- a/xbmc/settings/Settings.h
++++ b/xbmc/settings/Settings.h
+@@ -265,6 +265,7 @@ class CSettings : public CSettingsBase, public CSettingCreator, public CSettingC
+   static const std::string SETTING_SERVICES_UPNPRENDERER;
+   static const std::string SETTING_SERVICES_WEBSERVER;
+   static const std::string SETTING_SERVICES_WEBSERVERPORT;
++  static const std::string SETTING_SERVICES_WEBSERVERAUTHENTICATION;
+   static const std::string SETTING_SERVICES_WEBSERVERUSERNAME;
+   static const std::string SETTING_SERVICES_WEBSERVERPASSWORD;
+   static const std::string SETTING_SERVICES_WEBSERVERSSL;

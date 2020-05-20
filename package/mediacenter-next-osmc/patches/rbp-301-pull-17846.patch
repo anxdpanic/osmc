@@ -1,0 +1,29 @@
+From 12e24d3cbeb120684c19766b0469bc21247bdfa0 Mon Sep 17 00:00:00 2001
+From: Charles Surett <surettcharles@gmail.com>
+Date: Mon, 11 May 2020 17:36:37 -0400
+Subject: [PATCH] Use poster before thumbnail in Top Shelf
+
+---
+ xbmc/platform/darwin/tvos/TVOSTopShelf.mm | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/platform/darwin/tvos/TVOSTopShelf.mm b/xbmc/platform/darwin/tvos/TVOSTopShelf.mm
+index 8af537b2472d..852f40d2e92d 100644
+--- a/xbmc/platform/darwin/tvos/TVOSTopShelf.mm
++++ b/xbmc/platform/darwin/tvos/TVOSTopShelf.mm
+@@ -124,7 +124,14 @@
+         };
+ 
+     fillSharedDicts(movies, @"movies", @"moviesTitle", 20386,
+-                    [](CFileItemPtr videoItem) { return videoItem->GetArt("thumb"); },
++                    [](CFileItemPtr videoItem) {
++                      if (videoItem->HasArt("poster"))
++                      {
++                        return videoItem->GetArt("poster");
++                      }
++                      else
++                        return videoItem->GetArt("thumb");
++                    },
+                     [](CFileItemPtr videoItem) { return videoItem->GetLabel(); });
+ 
+     CVideoDatabase videoDb;

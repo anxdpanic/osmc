@@ -1,0 +1,232 @@
+From 26aabfe1a9ddb6365222506cbc1dbcfc6c29bb1f Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Mon, 11 May 2020 20:42:16 +0200
+Subject: [PATCH] [PVR] Fix crash due to unsynchronized concurrent EPG database
+ access.
+
+---
+ xbmc/pvr/epg/Epg.cpp          | 59 ++++++++++-------------------------
+ xbmc/pvr/epg/Epg.h            | 10 ++++++
+ xbmc/pvr/epg/EpgContainer.cpp | 22 ++++++++++---
+ xbmc/pvr/epg/EpgDatabase.cpp  | 19 ++++++-----
+ xbmc/pvr/epg/EpgDatabase.h    |  6 ++--
+ 5 files changed, 55 insertions(+), 61 deletions(-)
+
+diff --git a/xbmc/pvr/epg/Epg.cpp b/xbmc/pvr/epg/Epg.cpp
+index 7f87d69829a9..01faa576b3fe 100644
+--- a/xbmc/pvr/epg/Epg.cpp
++++ b/xbmc/pvr/epg/Epg.cpp
+@@ -293,60 +293,35 @@ std::vector<std::shared_ptr<CPVREpgInfoTag>> CPVREpg::GetTags() const
+ 
+ bool CPVREpg::Persist(const std::shared_ptr<CPVREpgDatabase>& database, bool bQueueWrite)
+ {
++  // Note: It is guaranteed that both this EPG instance and database instance are already
++  //       locked when this method gets called! No additional locking is needed here!
++
+   if (!database)
+   {
+     CLog::LogF(LOGERROR, "No EPG database");
+     return false;
+   }
+ 
+-  bool bLastScanTimeNeedsSave = false;
+-  bool bTagsNeedSave = false;
+-  bool bEpgNeedsSave = false;
+-  int iEpgID = -1;
+-  std::string name;
+-  std::string scraper;
+-  CDateTime lastScanTime;
+-
++  if (m_iEpgID <= 0 || m_bChanged)
+   {
+-    CSingleLock lock(m_critSection);
+-
+-    bLastScanTimeNeedsSave = m_bUpdateLastScanTime;
+-    bTagsNeedSave = m_tags.NeedsSave();
+-    bEpgNeedsSave = m_iEpgID <= 0 || m_bChanged;
+-    iEpgID = m_iEpgID;
+-    name = m_strName;
+-    scraper = m_strScraperName;
+-    lastScanTime = m_lastScanTime;
+-
+-    m_bChanged = false;
+-    m_bUpdateLastScanTime = false;
++    const int iId = database->Persist(*this, m_iEpgID > 0);
++    if (iId > 0 && m_iEpgID != iId)
++    {
++      m_iEpgID = iId;
++      m_tags.SetEpgID(iId);
++    }
+   }
+ 
+-  database->Lock();
+-
+-  int iNewEpgID = iEpgID;
+-  if (bEpgNeedsSave)
+-    iNewEpgID = database->Persist(iEpgID, name, scraper, iEpgID > 0);
+-
+-  if (bLastScanTimeNeedsSave)
+-    database->PersistLastEpgScanTime(iNewEpgID, lastScanTime, bQueueWrite);
+-
+-  bool bRet = bQueueWrite || database->CommitInsertQueries();
+-
+-  database->Unlock();
+-
+-  if (iNewEpgID > 0 && iNewEpgID != iEpgID)
+-  {
+-    CSingleLock lock(m_critSection);
++  if (m_tags.NeedsSave())
++    m_tags.Persist(!bQueueWrite);
+ 
+-    m_iEpgID = iNewEpgID;
+-    m_tags.SetEpgID(iNewEpgID);
+-  }
++  if (m_bUpdateLastScanTime)
++    database->PersistLastEpgScanTime(m_iEpgID, m_lastScanTime, bQueueWrite);
+ 
+-  if (bTagsNeedSave)
+-    m_tags.Persist(!bQueueWrite);
++  m_bChanged = false;
++  m_bUpdateLastScanTime = false;
+ 
+-  return bRet;
++  return bQueueWrite || database->CommitInsertQueries();
+ }
+ 
+ bool CPVREpg::Delete(const std::shared_ptr<CPVREpgDatabase>& database)
+diff --git a/xbmc/pvr/epg/Epg.h b/xbmc/pvr/epg/Epg.h
+index e8371de7b5d4..a2225a029396 100644
+--- a/xbmc/pvr/epg/Epg.h
++++ b/xbmc/pvr/epg/Epg.h
+@@ -260,6 +260,16 @@ namespace PVR
+      */
+     CEventStream<PVREvent>& Events() { return m_events; }
+ 
++    /*!
++     * @brief Lock the instance. No other thread gets access to this EPG until Unlock was called.
++     */
++    void Lock() { m_critSection.lock(); }
++
++    /*!
++     * @brief Unlock the instance. Other threads may get access to this EPG again.
++     */
++    void Unlock() { m_critSection.unlock(); }
++
+   private:
+     CPVREpg() = delete;
+     CPVREpg(const CPVREpg&) = delete;
+diff --git a/xbmc/pvr/epg/EpgContainer.cpp b/xbmc/pvr/epg/EpgContainer.cpp
+index f7c6d2d5c138..12ac71092169 100644
+--- a/xbmc/pvr/epg/EpgContainer.cpp
++++ b/xbmc/pvr/epg/EpgContainer.cpp
+@@ -282,7 +282,12 @@ bool CPVREpgContainer::PersistAll(unsigned int iMaxTimeslice) const
+     for (const auto& epg : m_epgIdToEpgMap)
+     {
+       if (epg.second && epg.second->NeedsSave())
++      {
++        // Note: We need to obtain a lock for every epg instance before we can lock
++        //       the epg db. This order is important. Otherwise deadlocks may occure.
++        epg.second->Lock();
+         changedEpgs.emplace_back(epg.second);
++      }
+     }
+   }
+ 
+@@ -290,20 +295,27 @@ bool CPVREpgContainer::PersistAll(unsigned int iMaxTimeslice) const
+ 
+   if (!changedEpgs.empty())
+   {
++    // Note: We must lock the db the whole time, otherwise races may occure.
++    database->Lock();
++
+     XbmcThreads::EndTime processTimeslice(iMaxTimeslice);
+     for (const auto& epg : changedEpgs)
+     {
+-      CLog::Log(LOGDEBUG, "EPG Container: Persisting events for channel '%s'...",
+-                epg->GetChannelData()->ChannelName().c_str());
++      if (!processTimeslice.IsTimePast())
++      {
++        CLog::Log(LOGDEBUG, "EPG Container: Persisting events for channel '%s'...",
++                  epg->GetChannelData()->ChannelName().c_str());
+ 
+-      bReturn &= epg->Persist(database, true);
++        bReturn &= epg->Persist(database, true);
++      }
+ 
+-      if (processTimeslice.IsTimePast())
+-        break;
++      epg->Unlock();
+     }
+ 
+     if (bReturn)
+       database->CommitInsertQueries();
++
++    database->Unlock();
+   }
+ 
+   return bReturn;
+diff --git a/xbmc/pvr/epg/EpgDatabase.cpp b/xbmc/pvr/epg/EpgDatabase.cpp
+index 24a842835a1f..3f3d89d3516d 100644
+--- a/xbmc/pvr/epg/EpgDatabase.cpp
++++ b/xbmc/pvr/epg/EpgDatabase.cpp
+@@ -969,31 +969,30 @@ bool CPVREpgDatabase::PersistLastEpgScanTime(int iEpgId,
+   return bQueueWrite ? QueueInsertQuery(strQuery) : ExecuteQuery(strQuery);
+ }
+ 
+-int CPVREpgDatabase::Persist(int iEpgId,
+-                             const std::string& name,
+-                             const std::string& scraper,
+-                             bool bQueueWrite)
++int CPVREpgDatabase::Persist(const CPVREpg& epg, bool bQueueWrite)
+ {
+-  int iReturn(-1);
++  int iReturn = -1;
+   std::string strQuery;
+ 
+   CSingleLock lock(m_critSection);
+-  if (iEpgId > 0)
++  if (epg.EpgID() > 0)
+     strQuery = PrepareSQL("REPLACE INTO epg (idEpg, sName, sScraperName) "
+-        "VALUES (%u, '%s', '%s');", iEpgId, name.c_str(), scraper.c_str());
++                          "VALUES (%u, '%s', '%s');",
++                          epg.EpgID(), epg.Name().c_str(), epg.ScraperName().c_str());
+   else
+     strQuery = PrepareSQL("INSERT INTO epg (sName, sScraperName) "
+-        "VALUES ('%s', '%s');", name.c_str(), scraper.c_str());
++                          "VALUES ('%s', '%s');",
++                          epg.Name().c_str(), epg.ScraperName().c_str());
+ 
+   if (bQueueWrite)
+   {
+     if (QueueInsertQuery(strQuery))
+-      iReturn = iEpgId <= 0 ? 0 : iEpgId;
++      iReturn = epg.EpgID() <= 0 ? 0 : epg.EpgID();
+   }
+   else
+   {
+     if (ExecuteQuery(strQuery))
+-      iReturn = iEpgId <= 0 ? static_cast<int>(m_pDS->lastinsertid()) : iEpgId;
++      iReturn = epg.EpgID() <= 0 ? static_cast<int>(m_pDS->lastinsertid()) : epg.EpgID();
+   }
+ 
+   return iReturn;
+diff --git a/xbmc/pvr/epg/EpgDatabase.h b/xbmc/pvr/epg/EpgDatabase.h
+index 078a718a9787..0753d94a5d30 100644
+--- a/xbmc/pvr/epg/EpgDatabase.h
++++ b/xbmc/pvr/epg/EpgDatabase.h
+@@ -228,13 +228,11 @@ namespace PVR
+ 
+     /*!
+      * @brief Persist an EPG table. It's entries are not persisted.
+-     * @param iEpgId The ID of the EPG.
+-     * @param name The name of the EPG.
+-     * @param scraper The name of the scraper of the EPG.
++     * @param epg The table to persist.
+      * @param bQueueWrite Don't execute the query immediately but queue it if true.
+      * @return The database ID of this entry or 0 if bSingleUpdate is false and the query was queued.
+      */
+-    int Persist(int iEpgId, const std::string& name, const std::string& scraper, bool bQueueWrite);
++    int Persist(const CPVREpg& epg, bool bQueueWrite);
+ 
+     /*!
+      * @brief Erase all EPG tags with the given epg ID and an end time less than the given time.

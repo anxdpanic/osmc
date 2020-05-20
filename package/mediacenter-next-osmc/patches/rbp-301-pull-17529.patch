@@ -1,0 +1,393 @@
+From 3a9d2681786ffd03eb880d7fde6fe972071187d4 Mon Sep 17 00:00:00 2001
+From: Garrett Brown <themagnificentmrb@gmail.com>
+Date: Sat, 16 May 2020 16:45:44 -0700
+Subject: [PATCH 1/5] [peripherals] Style changes and parameter grouping in
+ PeripheralJoystick.h
+
+---
+ xbmc/peripherals/devices/PeripheralJoystick.h | 45 ++++++++++---------
+ 1 file changed, 25 insertions(+), 20 deletions(-)
+
+diff --git a/xbmc/peripherals/devices/PeripheralJoystick.h b/xbmc/peripherals/devices/PeripheralJoystick.h
+index c345f0238450..d42cabd31e98 100644
+--- a/xbmc/peripherals/devices/PeripheralJoystick.h
++++ b/xbmc/peripherals/devices/PeripheralJoystick.h
+@@ -82,19 +82,19 @@ namespace PERIPHERALS
+      * \brief Get the number of elements reported by the driver
+      */
+     unsigned int ButtonCount(void) const { return m_buttonCount; }
+-    unsigned int HatCount(void) const    { return m_hatCount; }
+-    unsigned int AxisCount(void) const   { return m_axisCount; }
+-    unsigned int MotorCount(void) const  { return m_motorCount; }
+-    bool SupportsPowerOff(void) const    { return m_supportsPowerOff; }
++    unsigned int HatCount(void) const { return m_hatCount; }
++    unsigned int AxisCount(void) const { return m_axisCount; }
++    unsigned int MotorCount(void) const { return m_motorCount; }
++    bool SupportsPowerOff(void) const { return m_supportsPowerOff; }
+ 
+     /*!
+      * \brief Set joystick properties
+      */
+-    void SetProvider(const std::string& provider) { m_strProvider   = provider; }
+-    void SetRequestedPort(int port)               { m_requestedPort = port; }
+-    void SetButtonCount(unsigned int buttonCount) { m_buttonCount   = buttonCount; }
+-    void SetHatCount(unsigned int hatCount)       { m_hatCount      = hatCount; }
+-    void SetAxisCount(unsigned int axisCount)     { m_axisCount     = axisCount; }
++    void SetProvider(const std::string& provider) { m_strProvider = provider; }
++    void SetRequestedPort(int port) { m_requestedPort = port; }
++    void SetButtonCount(unsigned int buttonCount) { m_buttonCount = buttonCount; }
++    void SetHatCount(unsigned int hatCount) { m_hatCount = hatCount; }
++    void SetAxisCount(unsigned int axisCount) { m_axisCount = axisCount; }
+     void SetMotorCount(unsigned int motorCount); // specialized to update m_features
+     void SetSupportsPowerOff(bool bSupportsPowerOff); // specialized to update m_features
+ 
+@@ -109,20 +109,25 @@ namespace PERIPHERALS
+       bool bPromiscuous;
+     };
+ 
+-    std::string                         m_strProvider;
+-    int                                 m_requestedPort;
+-    unsigned int                        m_buttonCount;
+-    unsigned int                        m_hatCount;
+-    unsigned int                        m_axisCount;
+-    unsigned int                        m_motorCount;
+-    bool                                m_supportsPowerOff;
++    // State parameters
++    std::string m_strProvider;
++    int m_requestedPort;
++    unsigned int m_buttonCount;
++    unsigned int m_hatCount;
++    unsigned int m_axisCount;
++    unsigned int m_motorCount;
++    bool m_supportsPowerOff;
++    CDateTime m_lastActive;
++
++    // Input clients
+     std::unique_ptr<KODI::JOYSTICK::CKeymapHandling> m_appInput;
+     std::unique_ptr<KODI::JOYSTICK::CRumbleGenerator> m_rumbleGenerator;
+     std::unique_ptr<KODI::JOYSTICK::IInputHandler> m_joystickMonitor;
+-    std::unique_ptr<KODI::JOYSTICK::IButtonMap>      m_buttonMap;
++    std::unique_ptr<KODI::JOYSTICK::IButtonMap> m_buttonMap;
+     std::unique_ptr<KODI::JOYSTICK::CDeadzoneFilter> m_deadzoneFilter;
+-    std::vector<DriverHandler>          m_driverHandlers;
+-    CCriticalSection                    m_handlerMutex;
+-    CDateTime m_lastActive;
++    std::vector<DriverHandler> m_driverHandlers;
++
++    // Synchronization parameters
++    CCriticalSection m_handlerMutex;
+   };
+ }
+
+From bc0b08284364d39260b747187432e9c839432e25 Mon Sep 17 00:00:00 2001
+From: Garrett Brown <themagnificentmrb@gmail.com>
+Date: Sat, 16 May 2020 16:45:49 -0700
+Subject: [PATCH 2/5] [peripherals] Re-introduce "input.enablejoystick" setting
+
+This setting was removed in the joystick subsystem introduced in Kodi 17
+Krypton. Instead, controller input could be disabled from the GUI by
+disabling the peripheral.joystick add-on.
+
+The reason for re-adding this setting is due to Kodi's interaction with the
+window manager. On systems without a window manager, Kodi won't receive an
+event when the main app loses focus. By introducing this setting, an API is
+provided to clients so they can appropriately control controller input based
+on external knowledge.
+---
+ system/settings/settings.xml                  |  5 +++
+ xbmc/input/InputManager.cpp                   | 14 ++++++
+ xbmc/input/InputManager.h                     | 11 +++++
+ .../devices/PeripheralJoystick.cpp            | 43 +++++++++++++++++--
+ 4 files changed, 69 insertions(+), 4 deletions(-)
+
+diff --git a/system/settings/settings.xml b/system/settings/settings.xml
+index 983c891589b6..bfabc52f6917 100755
+--- a/system/settings/settings.xml
++++ b/system/settings/settings.xml
+@@ -2713,6 +2713,11 @@
+           <control type="toggle" />
+           <default>true</default>
+         </setting>
++        <setting id="input.enablejoystick" type="boolean" label="35100" help="36378">
++          <level>0</level>
++          <control type="toggle" />
++          <default>true</default>
++        </setting>
+         <setting id="input.asknewcontrollers" type="boolean">
+           <level>0</level>
+           <control type="toggle" />
+diff --git a/xbmc/input/InputManager.cpp b/xbmc/input/InputManager.cpp
+index f3e665e1007e..ec2585ba6215 100644
+--- a/xbmc/input/InputManager.cpp
++++ b/xbmc/input/InputManager.cpp
+@@ -49,6 +49,8 @@ using EVENTSERVER::CEventServer;
+ using namespace KODI;
+ using namespace MESSAGING;
+ 
++const std::string CInputManager::SETTING_INPUT_ENABLE_CONTROLLER = "input.enablejoystick";
++
+ CInputManager::CInputManager(const CAppParamParser &params) :
+   m_keymapEnvironment(new CKeymapEnvironment),
+   m_buttonTranslator(new CButtonTranslator),
+@@ -66,6 +68,7 @@ CInputManager::CInputManager(const CAppParamParser &params) :
+   // Register settings
+   std::set<std::string> settingSet;
+   settingSet.insert(CSettings::SETTING_INPUT_ENABLEMOUSE);
++  settingSet.insert(SETTING_INPUT_ENABLE_CONTROLLER);
+   CServiceBroker::GetSettingsComponent()->GetSettings()->RegisterCallback(this, settingSet);
+ }
+ 
+@@ -89,6 +92,9 @@ void CInputManager::InitializeInputs()
+ 
+   m_Mouse.Initialize();
+   m_Mouse.SetEnabled(CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_INPUT_ENABLEMOUSE));
++
++  m_enableController = CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(
++      SETTING_INPUT_ENABLE_CONTROLLER);
+ }
+ 
+ void CInputManager::Deinitialize()
+@@ -744,6 +750,11 @@ void CInputManager::SetMouseState(MOUSE_STATE mouseState)
+   m_Mouse.SetState(mouseState);
+ }
+ 
++bool CInputManager::IsControllerEnabled() const
++{
++  return m_enableController;
++}
++
+ void CInputManager::OnSettingChanged(std::shared_ptr<const CSetting> setting)
+ {
+   if (setting == nullptr)
+@@ -752,6 +763,9 @@ void CInputManager::OnSettingChanged(std::shared_ptr<const CSetting> setting)
+   const std::string &settingId = setting->GetId();
+   if (settingId == CSettings::SETTING_INPUT_ENABLEMOUSE)
+     m_Mouse.SetEnabled(std::dynamic_pointer_cast<const CSettingBool>(setting)->GetValue());
++
++  else if (settingId == SETTING_INPUT_ENABLE_CONTROLLER)
++    m_enableController = std::dynamic_pointer_cast<const CSettingBool>(setting)->GetValue();
+ }
+ 
+ bool CInputManager::OnAction(const CAction& action)
+diff --git a/xbmc/input/InputManager.h b/xbmc/input/InputManager.h
+index b8d75fe70a7e..ba6f1dec5b53 100644
+--- a/xbmc/input/InputManager.h
++++ b/xbmc/input/InputManager.h
+@@ -167,6 +167,11 @@ class CInputManager : public ISettingCallback,
+    */
+   void SetMouseResolution(int maxX, int maxY, float speedX, float speedY);
+ 
++  /*! \brief Get the status of the controller-enable setting
++   * \return True if controller input is enabled for the UI, false otherwise
++   */
++  bool IsControllerEnabled() const;
++
+   /*! \brief Returns whether or not we can handle a given built-in command.
+    *
+    */
+@@ -289,6 +294,12 @@ class CInputManager : public ISettingCallback,
+   std::vector<KODI::MOUSE::IMouseDriverHandler*> m_mouseHandlers;
+ 
+   std::unique_ptr<KODI::KEYBOARD::IKeyboardDriverHandler> m_keyboardEasterEgg;
++
++  // Input state
++  bool m_enableController = true;
++
++  // Settings
++  static const std::string SETTING_INPUT_ENABLE_CONTROLLER;
+ };
+ 
+ /// \}
+diff --git a/xbmc/peripherals/devices/PeripheralJoystick.cpp b/xbmc/peripherals/devices/PeripheralJoystick.cpp
+index 1f3f8456df0a..085dd3efb8d5 100644
+--- a/xbmc/peripherals/devices/PeripheralJoystick.cpp
++++ b/xbmc/peripherals/devices/PeripheralJoystick.cpp
+@@ -192,8 +192,12 @@ IKeymap *CPeripheralJoystick::GetKeymap(const std::string &controllerId)
+ 
+ bool CPeripheralJoystick::OnButtonMotion(unsigned int buttonIndex, bool bPressed)
+ {
+-  CLog::Log(LOGDEBUG, "BUTTON [ %u ] on \"%s\" %s", buttonIndex,
+-            DeviceName().c_str(), bPressed ? "pressed" : "released");
++  // Silence debug log if controllers are not enabled
++  if (m_manager.GetInputManager().IsControllerEnabled())
++  {
++    CLog::Log(LOGDEBUG, "BUTTON [ %u ] on \"%s\" %s", buttonIndex, DeviceName().c_str(),
++              bPressed ? "pressed" : "released");
++  }
+ 
+   // Avoid sending activated input if the app is in the background
+   if (bPressed && !g_application.IsAppFocused())
+@@ -203,6 +207,15 @@ bool CPeripheralJoystick::OnButtonMotion(unsigned int buttonIndex, bool bPressed
+ 
+   CSingleLock lock(m_handlerMutex);
+ 
++  // Check GUI setting and send button release if controllers are disabled
++  if (!m_manager.GetInputManager().IsControllerEnabled())
++  {
++    for (std::vector<DriverHandler>::iterator it = m_driverHandlers.begin();
++         it != m_driverHandlers.end(); ++it)
++      it->handler->OnButtonMotion(buttonIndex, false);
++    return true;
++  }
++
+   // Process promiscuous handlers
+   for (auto& it : m_driverHandlers)
+   {
+@@ -235,8 +248,12 @@ bool CPeripheralJoystick::OnButtonMotion(unsigned int buttonIndex, bool bPressed
+ 
+ bool CPeripheralJoystick::OnHatMotion(unsigned int hatIndex, HAT_STATE state)
+ {
+-  CLog::Log(LOGDEBUG, "HAT [ %u ] on \"%s\" %s", hatIndex,
+-            DeviceName().c_str(), CJoystickTranslator::HatStateToString(state));
++  // Silence debug log if controllers are not enabled
++  if (m_manager.GetInputManager().IsControllerEnabled())
++  {
++    CLog::Log(LOGDEBUG, "HAT [ %u ] on \"%s\" %s", hatIndex, DeviceName().c_str(),
++              CJoystickTranslator::HatStateToString(state));
++  }
+ 
+   // Avoid sending activated input if the app is in the background
+   if (state != HAT_STATE::NONE && !g_application.IsAppFocused())
+@@ -246,6 +263,15 @@ bool CPeripheralJoystick::OnHatMotion(unsigned int hatIndex, HAT_STATE state)
+ 
+   CSingleLock lock(m_handlerMutex);
+ 
++  // Check GUI setting and send hat unpressed if controllers are disabled
++  if (!m_manager.GetInputManager().IsControllerEnabled())
++  {
++    for (std::vector<DriverHandler>::iterator it = m_driverHandlers.begin();
++         it != m_driverHandlers.end(); ++it)
++      it->handler->OnHatMotion(hatIndex, HAT_STATE::NONE);
++    return true;
++  }
++
+   // Process promiscuous handlers
+   for (auto& it : m_driverHandlers)
+   {
+@@ -294,6 +320,15 @@ bool CPeripheralJoystick::OnAxisMotion(unsigned int axisIndex, float position)
+ 
+   CSingleLock lock(m_handlerMutex);
+ 
++  // Check GUI setting and send analog axis centered if controllers are disabled
++  if (!m_manager.GetInputManager().IsControllerEnabled())
++  {
++    for (std::vector<DriverHandler>::iterator it = m_driverHandlers.begin();
++         it != m_driverHandlers.end(); ++it)
++      it->handler->OnAxisMotion(axisIndex, center, center, range);
++    return true;
++  }
++
+   // Process promiscuous handlers
+   for (auto& it : m_driverHandlers)
+   {
+
+From 419a74e90056b8014bfad116a29b71925eb4f154 Mon Sep 17 00:00:00 2001
+From: Garrett Brown <themagnificentmrb@gmail.com>
+Date: Sat, 16 May 2020 16:45:53 -0700
+Subject: [PATCH 3/5] [strings] Reword re-introduced controller setting for
+ consistency in the UI
+
+This setting was removed in Kodi 17 Krypton, so both of these were dead
+strings in 17 and 18.
+
+In the v17 joystick subsystem, the European-preferred verbage of "joystick"
+was changed to "controller" for a more general audience. Now that we're
+re-introducing the setting strings, let's use "controller" for concistency.
+---
+ addons/resource.language.en_gb/resources/strings.po | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index 32894012d893..09fd909b929d 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -17389,14 +17389,14 @@ msgstr ""
+ 
+ #: system/settings/settings.xml
+ msgctxt "#35100"
+-msgid "Enable joystick and gamepad support"
++msgid "Enable controller support"
+ msgstr ""
+ 
+ #empty string with id 35101
+ 
+ #: system/peripherals.xml
+ msgctxt "#35102"
+-msgid "Disable joystick when this device is present"
++msgid "Disable controllers when this device is present"
+ msgstr ""
+ 
+ #. Label for mouse buttons. Used in the controller mapping dialog.
+@@ -19728,10 +19728,10 @@ msgctxt "#36377"
+ msgid "Use a mouse or touch screen device to control the interface. Note: Disabling will cause you to lose control over this application when no keyboard or remote is present."
+ msgstr ""
+ 
+-#. Description of setting with label #35100 "Enable joystick and gamepad support"
++#. Description of setting with label #35100 "Enable controller support"
+ #: system/settings/settings.xml
+ msgctxt "#36378"
+-msgid "Use a joystick to control the interface."
++msgid "Use a game controller to control the interface."
+ msgstr ""
+ 
+ #. Description of settings category with label #798 Internet access
+
+From 8b56fadf814bcb2bd6c78d75c115214ddccc0580 Mon Sep 17 00:00:00 2001
+From: Garrett Brown <themagnificentmrb@gmail.com>
+Date: Sat, 16 May 2020 16:45:57 -0700
+Subject: [PATCH 4/5] [strings] Remove unused joystick strings
+
+---
+ addons/resource.language.en_gb/resources/strings.po | 8 --------
+ 1 file changed, 8 deletions(-)
+
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index 09fd909b929d..91de059ed7ee 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -6088,14 +6088,6 @@ msgctxt "#13023"
+ msgid "Successfully removed storage device"
+ msgstr ""
+ 
+-msgctxt "#13024"
+-msgid "Joystick plugged"
+-msgstr ""
+-
+-msgctxt "#13025"
+-msgid "Joystick unplugged"
+-msgstr ""
+-
+ #: system/settings/settings.xml
+ msgctxt "#13026"
+ msgid "Try to wakeup remote servers on access"
+
+From cbf4b6a5b658dbad733c31b445ef2560fb1c835f Mon Sep 17 00:00:00 2001
+From: Garrett Brown <themagnificentmrb@gmail.com>
+Date: Sat, 16 May 2020 16:59:01 -0700
+Subject: [PATCH 5/5] [settings] Make enable mouse/controller advanced settings
+
+These options can kill Kodi if no alternative input method is available, so
+let's hide them by default.
+---
+ system/settings/settings.xml | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/system/settings/settings.xml b/system/settings/settings.xml
+index bfabc52f6917..87e26fae253e 100755
+--- a/system/settings/settings.xml
++++ b/system/settings/settings.xml
+@@ -2709,12 +2709,12 @@
+       </group>
+       <group id="2" label="14094">
+         <setting id="input.enablemouse" type="boolean" label="21369" help="36377">
+-          <level>0</level>
++          <level>2</level>
+           <control type="toggle" />
+           <default>true</default>
+         </setting>
+         <setting id="input.enablejoystick" type="boolean" label="35100" help="36378">
+-          <level>0</level>
++          <level>2</level>
+           <control type="toggle" />
+           <default>true</default>
+         </setting>
