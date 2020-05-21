@@ -13,7 +13,7 @@ index 8cfc77a..6421e66 100644
 --- a/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDDemuxers/DVDDemuxFFmpeg.cpp
 @@ -1248,7 +1248,7 @@ bool CDVDDemuxFFmpeg::SeekTime(double time, bool backwards, double *startpts)
-   if(m_currentPts == DVD_NOPTS_VALUE)
+   if (m_currentPts == DVD_NOPTS_VALUE)
      CLog::Log(LOGDEBUG, "%s - unknown position after seek", __FUNCTION__);
    else
 -    CLog::Log(LOGDEBUG, "%s - seek ended up on time %d", __FUNCTION__, (int)(m_currentPts / DVD_TIME_BASE * 1000));
@@ -23,7 +23,7 @@ index 8cfc77a..6421e66 100644
    if (startpts)
 @@ -1908,7 +1908,20 @@ bool CDVDDemuxFFmpeg::SeekChapter(int chapter, double* startpts)
  
-   AVChapter *ch = m_pFormatContext->chapters[chapter-1];
+   AVChapter* ch = m_pFormatContext->chapters[chapter - 1];
    double dts = ConvertTimestamp(ch->start, ch->time_base.den, ch->time_base.num);
 -  return SeekTime(DVD_TIME_TO_MSEC(dts), true, startpts);
 +  bool rtn = SeekTime(DVD_TIME_TO_MSEC(dts), true, startpts);
@@ -42,7 +42,7 @@ index 8cfc77a..6421e66 100644
 +  return rtn;
  }
  
- std::string CDVDDemuxFFmpeg::GetStreamCodecName(int iStreamId)
+ AVCodec* codec = avcodec_find_decoder(stream->codec);
 -- 
 2.7.4
 
