@@ -359,11 +359,11 @@ then
         ADDONS_AUDIO_ENCODERS="audioencoder.flac audioencoder.lame audioencoder.vorbis audioencoder.wav"
         ADDONS_INPUTSTREAM="inputstream.ffmpegdirect inputstream.adaptive inputstream.rtmp"
 	ADDONS_PERIPHERAL="peripheral.xarcade peripheral.joystick peripheral.steamcontroller" #imagedecoder.raw
-	ADDONS_PVR="pvr.hts pvr.waipu pvr.sledovanitv.cz pvr.mythtv pvr.pctv pvr.stalker pvr.zattoo pvr.vbox pvr.wmc pvr.nextpvr pvr.njoy pvr.teleboy pvr.vdr.vnsi pvr.dvbviewer pvr.hdhomerun pvr.iptvsimple pvr.demo pvr.mediaportal.tvserver pvr.argustv pvr.dvblink  pvr.vuplus pvr.freebox" #pvr.octonet
+	ADDONS_PVR="pvr.hts pvr.waipu pvr.sledovanitv.cz pvr.mythtv pvr.pctv pvr.stalker pvr.zattoo pvr.vbox pvr.wmc pvr.nextpvr pvr.njoy pvr.teleboy pvr.vdr.vnsi pvr.dvbviewer pvr.hdhomerun pvr.iptvsimple pvr.demo pvr.mediaportal.tvserver pvr.argustv pvr.dvblink  pvr.vuplus pvr.freebox pvr.octonet"
 	ADDONS_SCREENSAVERS="screensaver.shadertoy" #screensaver.biogenesis screensaver.greynetic screensaver.matrixtrails screensaver.pingpong screensaver.pyro screensaver.stars"
 	ADDONS_VFS="vfs.sacd vfs.libarchive vfs.rar vfs.sftp"
         #ADDONS_VISUALIZATIONS="visualization.fishbmc visualization.goom visualization.projectm visualization.shadertoy visualization.spectrum visualization.vsxu visualization.waveform"
-	ADDONS_GAME="game.libretro.mame2000 game.libretro.mame2003 game.libretro.scummvm game.libretro game.libretro.2048 game.libretro.beetle-gba game.libretro.fceumm game.libretro.gw game.libretro.beetle-pce-fast game.libretro.bnes game.libretro.nestopia game.libretro.bsnes-mercury-balanced game.libretro.bluemsx game.libretro.vecx game.libretro.gambatte game.libretro.beetle-bsnes game.libretro.meteor game.libretro.mgba game.libretro.vba-next game.libretro.quicknes game.libretro.stella game.libretro.dosbox game.libretro.vbam game.libretro.genplus game.libretro.opera" #game.libretro.snes9x
+	ADDONS_GAME="game.libretro.mame2000 game.libretro.mame2003 game.libretro.scummvm game.libretro game.libretro.2048 game.libretro.beetle-gba game.libretro.fceumm game.libretro.gw game.libretro.beetle-pce-fast game.libretro.bnes game.libretro.nestopia game.libretro.bsnes-mercury-balanced game.libretro.bluemsx game.libretro.vecx game.libretro.gambatte game.libretro.beetle-bsnes game.libretro.meteor game.libretro.mgba game.libretro.vba-next game.libretro.quicknes game.libretro.stella game.libretro.dosbox game.libretro.vbam game.libretro.genplus game.libretro.operax game.libretro.snes9x"
 	if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ]
 	then
 	    ADDONS_TO_BUILD="${ADDONS_AUDIO_DECODERS} ${ADDONS_AUDIO_ENCODERS} ${ADDONS_INPUTSTREAM} ${ADDONS_PERIPHERAL} ${ADDONS_PVR} ${ADDONS_SCREENSAVERS} ${ADDONS_VFS} ${ADDONS_VISUALIZATIONS} ${ADDONS_GAME}"
