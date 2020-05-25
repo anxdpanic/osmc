@@ -1,0 +1,23 @@
+From 8d7474f512bfa01f5e775cbabb670038e0386d49 Mon Sep 17 00:00:00 2001
+From: kert <kaidokert@gmail.com>
+Date: Sun, 24 May 2020 01:47:50 -0700
+Subject: [PATCH] [GBM] add VirtualBox
+
+---
+ xbmc/windowing/gbm/DRMUtils.cpp | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/windowing/gbm/DRMUtils.cpp b/xbmc/windowing/gbm/DRMUtils.cpp
+index 537376ec350f..6d198cf520a9 100644
+--- a/xbmc/windowing/gbm/DRMUtils.cpp
++++ b/xbmc/windowing/gbm/DRMUtils.cpp
+@@ -600,7 +600,8 @@ bool CDRMUtils::OpenDrm(bool needConnector)
+     "vc4",
+     "virtio_gpu",
+     "sun4i-drm",
+-    "meson"
++    "meson",
++    "vboxvideo",
+   };
+ 
+   for (auto module : modules)

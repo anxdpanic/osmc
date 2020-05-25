@@ -1,0 +1,27 @@
+From 692492a3c3e37bc7985667830ffaa0d206fa5e2d Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Sun, 24 May 2020 16:31:50 +0200
+Subject: [PATCH] [addons][pvr][stream] fix nullset init of PVR_STREAM_TIMES in
+ inputstream
+
+Before was this value given like it was to addons, if they not write then
+all parts or makes a memset about a wrong data can be used.
+
+This add a `= {}` to makes a 0 set and to confirm nothing wrong comes.
+---
+ xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamPVRBase.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamPVRBase.cpp b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamPVRBase.cpp
+index 969fd4f073b2..0d6ea25175bc 100644
+--- a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamPVRBase.cpp
++++ b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamPVRBase.cpp
+@@ -102,7 +102,7 @@ int CInputStreamPVRBase::GetBlockSize()
+ 
+ bool CInputStreamPVRBase::GetTimes(Times &times)
+ {
+-  PVR_STREAM_TIMES streamTimes;
++  PVR_STREAM_TIMES streamTimes = {};
+   if (m_client && m_client->GetStreamTimes(&streamTimes) == PVR_ERROR_NO_ERROR)
+   {
+     times.startTime = streamTimes.startTime;

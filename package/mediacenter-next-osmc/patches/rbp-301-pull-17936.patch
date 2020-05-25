@@ -1,0 +1,65 @@
+From 21863462fdec34f793c46d8042e8e647fd814374 Mon Sep 17 00:00:00 2001
+From: phunkyfish <phunkyfish@gmail.com>
+Date: Sun, 24 May 2020 10:45:04 +0100
+Subject: [PATCH 1/2] [pvr] fix setting initial recording size value from addon
+
+---
+ xbmc/pvr/recordings/PVRRecording.cpp | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/pvr/recordings/PVRRecording.cpp b/xbmc/pvr/recordings/PVRRecording.cpp
+index 0d0e68c1722f..807b7556fdae 100644
+--- a/xbmc/pvr/recordings/PVRRecording.cpp
++++ b/xbmc/pvr/recordings/PVRRecording.cpp
+@@ -97,7 +97,8 @@ CPVRRecording::CPVRRecording(const PVR_RECORDING& recording, unsigned int iClien
+   if (strlen(recording.strFirstAired) > 0)
+     m_firstAired.SetFromW3CDateTime(recording.strFirstAired);
+   m_iFlags = recording.iFlags;
+-  m_sizeInBytes = recording.sizeInBytes;
++  if (recording.sizeInBytes >= 0)
++    m_sizeInBytes = recording.sizeInBytes;
+ 
+   SetGenre(recording.iGenreType, recording.iGenreSubType, recording.strGenreDescription);
+   CVideoInfoTag::SetPlayCount(recording.iPlayCount);
+
+From e45bc89a3dabf7b505c95022bb31d8acdf675df2 Mon Sep 17 00:00:00 2001
+From: phunkyfish <phunkyfish@gmail.com>
+Date: Sun, 24 May 2020 11:00:49 +0100
+Subject: [PATCH 2/2] [pvr] remove unused SetSizeInBytes function call
+
+---
+ xbmc/pvr/recordings/PVRRecording.cpp | 6 ------
+ xbmc/pvr/recordings/PVRRecording.h   | 6 ------
+ 2 files changed, 12 deletions(-)
+
+diff --git a/xbmc/pvr/recordings/PVRRecording.cpp b/xbmc/pvr/recordings/PVRRecording.cpp
+index 807b7556fdae..a85dbd7a70a9 100644
+--- a/xbmc/pvr/recordings/PVRRecording.cpp
++++ b/xbmc/pvr/recordings/PVRRecording.cpp
+@@ -606,9 +606,3 @@ int64_t CPVRRecording::GetSizeInBytes() const
+   CSingleLock lock(m_critSection);
+   return m_sizeInBytes;
+ }
+-
+-void CPVRRecording::SetSizeInBytes(int64_t sizeInBytes)
+-{
+-  CSingleLock lock(m_critSection);
+-  m_sizeInBytes = sizeInBytes;
+-}
+diff --git a/xbmc/pvr/recordings/PVRRecording.h b/xbmc/pvr/recordings/PVRRecording.h
+index a2149788e78c..2043d668347c 100644
+--- a/xbmc/pvr/recordings/PVRRecording.h
++++ b/xbmc/pvr/recordings/PVRRecording.h
+@@ -369,12 +369,6 @@ namespace PVR
+     */
+    int64_t GetSizeInBytes() const;
+ 
+-   /*!
+-    * @brief set the size in bytes of this recording
+-    * @param sizeInBytes The size in bytes
+-    */
+-   void SetSizeInBytes(int64_t sizeInBytes);
+-
+   private:
+     CDateTime m_recordingTime; /*!< start time of the recording */
+     bool m_bGotMetaData;

@@ -1,0 +1,30 @@
+From dbb927c72a09d5db67304b2dcc57b184aa57897a Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Sat, 16 May 2020 07:31:34 +0200
+Subject: [PATCH] [PVR] Fix context menu item 'Add timer' visibility
+ conditions.
+
+---
+ xbmc/pvr/PVRContextMenus.cpp | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/xbmc/pvr/PVRContextMenus.cpp b/xbmc/pvr/PVRContextMenus.cpp
+index 0e8280c1da0f..cb8efccbb8e7 100644
+--- a/xbmc/pvr/PVRContextMenus.cpp
++++ b/xbmc/pvr/PVRContextMenus.cpp
+@@ -455,13 +455,8 @@ namespace PVR
+     bool AddTimerRule::IsVisible(const CFileItem& item) const
+     {
+       const std::shared_ptr<CPVREpgInfoTag> epg = item.GetEPGInfoTag();
+-      if (epg && !epg->IsGapTag() &&
+-          !CServiceBroker::GetPVRManager().Timers()->GetTimerForEpgTag(epg))
+-      {
+-        const std::shared_ptr<CPVRClient> client = CServiceBroker::GetPVRManager().GetClient(item);
+-        return client && client->GetClientCapabilities().SupportsTimers();
+-      }
+-      return false;
++      return (epg && !epg->IsGapTag() &&
++              !CServiceBroker::GetPVRManager().Timers()->GetTimerForEpgTag(epg));
+     }
+ 
+     bool AddTimerRule::Execute(const CFileItemPtr& item) const

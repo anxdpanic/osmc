@@ -1,0 +1,104 @@
+From 50f8e889c896049be180fde5c8a2da3864e2d9f3 Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Sun, 24 May 2020 13:19:15 +0200
+Subject: [PATCH] [PVR] Fix channel playback time issues.
+
+---
+ xbmc/pvr/PVRPlaybackState.cpp | 18 +++++++++++-------
+ xbmc/pvr/PVRPlaybackState.h   |  8 +++++---
+ xbmc/pvr/epg/EpgInfoTag.cpp   |  8 ++------
+ xbmc/pvr/epg/EpgTagsCache.cpp |  5 ++++-
+ 4 files changed, 22 insertions(+), 17 deletions(-)
+
+diff --git a/xbmc/pvr/PVRPlaybackState.cpp b/xbmc/pvr/PVRPlaybackState.cpp
+index c60bc0e99276..24abef6b487b 100644
+--- a/xbmc/pvr/PVRPlaybackState.cpp
++++ b/xbmc/pvr/PVRPlaybackState.cpp
+@@ -321,14 +321,18 @@ std::shared_ptr<CPVRChannelGroup> CPVRPlaybackState::GetPlayingGroup(bool bRadio
+   return CServiceBroker::GetPVRManager().ChannelGroups()->GetSelectedGroup(bRadio);
+ }
+ 
+-CDateTime CPVRPlaybackState::GetPlaybackTime() const
++CDateTime CPVRPlaybackState::GetChannelPlaybackTime(int iClientID, int iUniqueChannelID) const
+ {
+-  // start time valid?
+-  time_t startTime = CServiceBroker::GetDataCacheCore().GetStartTime();
+-  if (startTime > 0)
+-    return CDateTime(startTime + CServiceBroker::GetDataCacheCore().GetPlayTime() / 1000);
+-  else
+-    return CDateTime::GetUTCDateTime();
++  if (IsPlayingChannel(iClientID, iUniqueChannelID))
++  {
++    // start time valid?
++    time_t startTime = CServiceBroker::GetDataCacheCore().GetStartTime();
++    if (startTime > 0)
++      return CDateTime(startTime + CServiceBroker::GetDataCacheCore().GetPlayTime() / 1000);
++  }
++
++  // not playing / playing live
++  return CDateTime::GetUTCDateTime();
+ }
+ 
+ void CPVRPlaybackState::UpdateLastWatched(const std::shared_ptr<CPVRChannel>& channel, const CDateTime& time)
+diff --git a/xbmc/pvr/PVRPlaybackState.h b/xbmc/pvr/PVRPlaybackState.h
+index 37315f9ab066..dc38247c05ff 100644
+--- a/xbmc/pvr/PVRPlaybackState.h
++++ b/xbmc/pvr/PVRPlaybackState.h
+@@ -192,10 +192,12 @@ class CPVRPlaybackState
+   std::shared_ptr<CPVRChannelGroup> GetPlayingGroup(bool bRadio) const;
+ 
+   /*!
+-   * @brief Get current playback time, taking timeshifting into account.
+-   * @return The playback time.
++   * @brief Get current playback time for the given channel, taking timeshifting into account.
++   * @param iClientID The client id.
++   * @param iUniqueChannelID The channel uid.
++   * @return The playback time or 'now' if not playing.
+    */
+-  CDateTime GetPlaybackTime() const;
++  CDateTime GetChannelPlaybackTime(int iClientID, int iUniqueChannelID) const;
+ 
+ private:
+   /*!
+diff --git a/xbmc/pvr/epg/EpgInfoTag.cpp b/xbmc/pvr/epg/EpgInfoTag.cpp
+index d98f834f97e8..298c99d4b117 100644
+--- a/xbmc/pvr/epg/EpgInfoTag.cpp
++++ b/xbmc/pvr/epg/EpgInfoTag.cpp
+@@ -196,12 +196,8 @@ int CPVREpgInfoTag::ClientID() const
+ 
+ CDateTime CPVREpgInfoTag::GetCurrentPlayingTime() const
+ {
+-  const std::shared_ptr<CPVRPlaybackState> playbackState =
+-      CServiceBroker::GetPVRManager().PlaybackState();
+-  if (playbackState && playbackState->IsPlayingChannel(ClientID(), UniqueChannelID()))
+-    return playbackState->GetPlaybackTime();
+-  else
+-    return CDateTime::GetUTCDateTime();
++  return CServiceBroker::GetPVRManager().PlaybackState()->GetChannelPlaybackTime(ClientID(),
++                                                                                 UniqueChannelID());
+ }
+ 
+ bool CPVREpgInfoTag::IsActive() const
+diff --git a/xbmc/pvr/epg/EpgTagsCache.cpp b/xbmc/pvr/epg/EpgTagsCache.cpp
+index 78e0e45ec7c2..c31a35c0489c 100644
+--- a/xbmc/pvr/epg/EpgTagsCache.cpp
++++ b/xbmc/pvr/epg/EpgTagsCache.cpp
+@@ -11,6 +11,7 @@
+ #include "ServiceBroker.h"
+ #include "pvr/PVRManager.h"
+ #include "pvr/PVRPlaybackState.h"
++#include "pvr/epg/EpgChannelData.h"
+ #include "pvr/epg/EpgDatabase.h"
+ #include "pvr/epg/EpgInfoTag.h"
+ #include "utils/log.h"
+@@ -65,7 +66,9 @@ void CPVREpgTagsCache::Reset()
+ 
+ void CPVREpgTagsCache::Refresh(bool bUpdateIfNeeded)
+ {
+-  const CDateTime activeTime = CServiceBroker::GetPVRManager().PlaybackState()->GetPlaybackTime();
++  const CDateTime activeTime =
++      CServiceBroker::GetPVRManager().PlaybackState()->GetChannelPlaybackTime(
++          m_channelData->ClientId(), m_channelData->UniqueClientChannelId());
+ 
+   if (m_nowActiveStart.IsValid() && m_nowActiveEnd.IsValid() && m_nowActiveStart <= activeTime &&
+       m_nowActiveEnd > activeTime)

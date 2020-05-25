@@ -1,0 +1,44 @@
+From 0a7198e36a2309902f5cf4fd80af7d2da07c466d Mon Sep 17 00:00:00 2001
+From: Rechi <Rechi@users.noreply.github.com>
+Date: Wed, 20 May 2020 20:03:09 +0200
+Subject: [PATCH] [cmake] fix FindPackageHandleStandardArgs name mismatch
+
+CMake >= 3.17 issues a warning if <PackageName> doesn't match CMAKE_FIND_PACKAGE_NAME
+---
+ cmake/modules/FindLibUSB.cmake | 2 +-
+ cmake/modules/FindSSE.cmake    | 2 ++
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/cmake/modules/FindLibUSB.cmake b/cmake/modules/FindLibUSB.cmake
+index 17cf6ec7cc48..7bf3a922b0aa 100644
+--- a/cmake/modules/FindLibUSB.cmake
++++ b/cmake/modules/FindLibUSB.cmake
+@@ -24,7 +24,7 @@ find_library(LIBUSB_LIBRARY NAMES usb
+ set(LIBUSB_VERSION ${PC_LIBUSB_VERSION})
+ 
+ include(FindPackageHandleStandardArgs)
+-find_package_handle_standard_args(LIBUSB
++find_package_handle_standard_args(LibUSB
+                                   REQUIRED_VARS LIBUSB_LIBRARY LIBUSB_INCLUDE_DIR
+                                   VERSION_VAR LIBUSB_VERSION)
+ 
+diff --git a/cmake/modules/FindSSE.cmake b/cmake/modules/FindSSE.cmake
+index 08e3630590a1..d9d5c7af089e 100644
+--- a/cmake/modules/FindSSE.cmake
++++ b/cmake/modules/FindSSE.cmake
+@@ -141,6 +141,7 @@ include(FindPackageHandleStandardArgs)
+ find_package_handle_standard_args(SSE
+                                   REQUIRED_VARS _SSE_TRUE _SSE_OK
+                                   FAIL_MESSAGE "Could not find hardware support for SSE")
++set(FPHSA_NAME_MISMATCHED ON)
+ find_package_handle_standard_args(SSE2
+                                   REQUIRED_VARS _SSE2_TRUE _SSE2_OK
+                                   FAIL_MESSAGE "Could not find hardware support for SSE2")
+@@ -162,6 +163,7 @@ find_package_handle_standard_args(AVX
+ find_package_handle_standard_args(AVX2
+                                   REQUIRED_VARS _AVX2_TRUE _AVX2_OK
+                                   FAIL_MESSAGE "Could not find hardware support for AVX2")
++unset(FPHSA_NAME_MISMATCHED)
+ 
+ mark_as_advanced(SSE2_FOUND SSE3_FOUND SSSE3_FOUND SSE4_1_FOUND SSE4_2_FOUND AVX_FOUND AVX2_FOUND)
+ 

@@ -1,0 +1,522 @@
+From 490ce64f04df680212d59b05452ffc2e31aee334 Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Fri, 15 May 2020 22:54:09 +0200
+Subject: [PATCH] [PVR][Estuary] Dynamic PVR categories for Estuary home
+ screen.
+
+---
+ .../skin.estuary/media/DefaultPVRChannels.png | Bin 0 -> 2897 bytes
+ .../pvr/epg.png => DefaultPVRGuide.png}       | Bin
+ ...recording.png => DefaultPVRRecordings.png} | Bin
+ .../skin.estuary/media/DefaultPVRSearch.png   | Bin 0 -> 1981 bytes
+ ...imer-rule.png => DefaultPVRTimerRules.png} | Bin
+ .../pvr/timer.png => DefaultPVRTimers.png}    | Bin
+ addons/skin.estuary/xml/Home.xml              |   9 +-
+ addons/skin.estuary/xml/Includes_Home.xml     |  48 +--------
+ xbmc/pvr/addons/PVRClients.cpp                |  24 +++++
+ xbmc/pvr/addons/PVRClients.h                  |  11 ++
+ xbmc/pvr/filesystem/PVRGUIDirectory.cpp       |  98 ++++++++++++++++++
+ xbmc/pvr/timers/PVRTimersPath.cpp             |   4 +
+ xbmc/pvr/timers/PVRTimersPath.h               |   4 +
+ xbmc/pvr/windows/GUIWindowPVRChannels.cpp     |  11 +-
+ xbmc/pvr/windows/GUIWindowPVRGuide.cpp        |  12 ++-
+ 15 files changed, 166 insertions(+), 55 deletions(-)
+ create mode 100644 addons/skin.estuary/media/DefaultPVRChannels.png
+ rename addons/skin.estuary/media/{icons/pvr/epg.png => DefaultPVRGuide.png} (100%)
+ rename addons/skin.estuary/media/{icons/pvr/recording.png => DefaultPVRRecordings.png} (100%)
+ create mode 100644 addons/skin.estuary/media/DefaultPVRSearch.png
+ rename addons/skin.estuary/media/{icons/pvr/timer-rule.png => DefaultPVRTimerRules.png} (100%)
+ rename addons/skin.estuary/media/{icons/pvr/timer.png => DefaultPVRTimers.png} (100%)
+
+diff --git a/addons/skin.estuary/media/DefaultPVRChannels.png b/addons/skin.estuary/media/DefaultPVRChannels.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..86e98fd590a302b92f7096a7da6c785d4d01eb17
+GIT binary patch
+literal 2897
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/addons/skin.estuary/media/icons/pvr/epg.png b/addons/skin.estuary/media/DefaultPVRGuide.png
+similarity index 100%
+rename from addons/skin.estuary/media/icons/pvr/epg.png
+rename to addons/skin.estuary/media/DefaultPVRGuide.png
+diff --git a/addons/skin.estuary/media/icons/pvr/recording.png b/addons/skin.estuary/media/DefaultPVRRecordings.png
+similarity index 100%
+rename from addons/skin.estuary/media/icons/pvr/recording.png
+rename to addons/skin.estuary/media/DefaultPVRRecordings.png
+diff --git a/addons/skin.estuary/media/DefaultPVRSearch.png b/addons/skin.estuary/media/DefaultPVRSearch.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..7a74fb7499e386f68a8881614b1bdc196848bbe9
+GIT binary patch
+literal 1981
+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
+b8~%OIS2~;p5Uv<NZ5eQ|aj|Z;q9pzouH!uW
+
+literal 0
+HcmV?d00001
+
+diff --git a/addons/skin.estuary/media/icons/pvr/timer-rule.png b/addons/skin.estuary/media/DefaultPVRTimerRules.png
+similarity index 100%
+rename from addons/skin.estuary/media/icons/pvr/timer-rule.png
+rename to addons/skin.estuary/media/DefaultPVRTimerRules.png
+diff --git a/addons/skin.estuary/media/icons/pvr/timer.png b/addons/skin.estuary/media/DefaultPVRTimers.png
+similarity index 100%
+rename from addons/skin.estuary/media/icons/pvr/timer.png
+rename to addons/skin.estuary/media/DefaultPVRTimers.png
+diff --git a/addons/skin.estuary/xml/Home.xml b/addons/skin.estuary/xml/Home.xml
+index a639eddfa096..b5e1290f52d1 100644
+--- a/addons/skin.estuary/xml/Home.xml
++++ b/addons/skin.estuary/xml/Home.xml
+@@ -402,11 +402,12 @@
+ 							</control>
+ 						</control>
+ 						<include content="WidgetListCategories" condition="System.HasPVRAddon">
++							<param name="content_path" value="pvr://tv/"/>
+ 							<param name="widget_header" value="$LOCALIZE[31148]"/>
++							<param name="widget_target" value="pvr"/>
+ 							<param name="list_id" value="12900"/>
+-							<param name="pvr_submenu" value="true"/>
+-							<param name="pvr_type" value="TV"/>
+ 						</include>
++
+ 						<include content="WidgetListChannels" condition="System.HasPVRAddon">
+ 							<param name="content_path" value="pvr://channels/tv/*?view=lastplayed"/>
+ 							<param name="sortby" value="lastplayed"/>
+@@ -482,10 +483,10 @@
+ 							</control>
+ 						</control>
+ 						<include content="WidgetListCategories" condition="System.HasPVRAddon">
++							<param name="content_path" value="pvr://radio/"/>
+ 							<param name="widget_header" value="$LOCALIZE[31148]"/>
++							<param name="widget_target" value="pvr"/>
+ 							<param name="list_id" value="13900"/>
+-							<param name="pvr_submenu" value="true"/>
+-							<param name="pvr_type" value="Radio"/>
+ 						</include>
+ 						<include content="WidgetListChannels" condition="System.HasPVRAddon">
+ 							<param name="content_path" value="pvr://channels/radio/*?view=lastplayed"/>
+diff --git a/addons/skin.estuary/xml/Includes_Home.xml b/addons/skin.estuary/xml/Includes_Home.xml
+index 857e3b2724f1..d3c24b2b8179 100644
+--- a/addons/skin.estuary/xml/Includes_Home.xml
++++ b/addons/skin.estuary/xml/Includes_Home.xml
+@@ -307,10 +307,8 @@
+ 		<param name="item_limit">20</param>
+ 		<param name="icon">$INFO[ListItem.Icon]</param>
+ 		<param name="icon_height">120</param>
+-		<param name="pvr_submenu">false</param>
+ 		<param name="additional_movie_items">false</param>
+ 		<param name="additional_tvshow_items">false</param>
+-		<param name="pvr_type">TV</param>
+ 		<param name="visible">true</param>
+ 		<definition>
+ 			<include content="CategoryLabel">
+@@ -408,56 +406,12 @@
+ 						</control>
+ 					</control>
+ 				</focusedlayout>
+-				<include condition="!$PARAM[pvr_submenu]" content="SubmenuContent">
+-					<param name="widget_target" value="$PARAM[widget_target]"/>
+-					<param name="item_limit" value="$PARAM[item_limit]"/>
+-					<param name="content_path" value="$PARAM[content_path]"/>
+-				</include>
+-				<include condition="$PARAM[pvr_submenu]" content="PVRSubMenuContent">
+-					<param name="pvr_type" value="$PARAM[pvr_type]"/>
+-				</include>
++				<content target="$PARAM[widget_target]" limit="$PARAM[item_limit]">$PARAM[content_path]</content>
+ 				<include condition="$PARAM[additional_movie_items]" content="MovieSubmenuItems" />
+ 				<include condition="$PARAM[additional_tvshow_items]" content="TVShowSubmenuItems" />
+ 			</control>
+ 		</definition>
+ 	</include>
+-	<include name="SubmenuContent">
+-		<content target="$PARAM[widget_target]" limit="$PARAM[item_limit]">$PARAM[content_path]</content>
+-	</include>
+-	<include name="PVRSubMenuContent">
+-		<content>
+-			<item>
+-				<label>$LOCALIZE[19019]</label>
+-				<onclick>ActivateWindow($PARAM[pvr_type]Channels)</onclick>
+-				<thumb>DefaultAddonPeripheral.png</thumb>
+-			</item>
+-			<item>
+-				<label>$LOCALIZE[19069]</label>
+-				<onclick>ActivateWindow($PARAM[pvr_type]Guide)</onclick>
+-				<thumb>icons/pvr/epg.png</thumb>
+-			</item>
+-			<item>
+-				<label>$LOCALIZE[19017]</label>
+-				<onclick>ActivateWindow($PARAM[pvr_type]Recordings)</onclick>
+-				<thumb>icons/pvr/recording.png</thumb>
+-			</item>
+-			<item>
+-				<label>$LOCALIZE[19040]</label>
+-				<onclick>ActivateWindow($PARAM[pvr_type]Timers)</onclick>
+-				<thumb>icons/pvr/timer.png</thumb>
+-			</item>
+-			<item>
+-				<label>$LOCALIZE[19138]</label>
+-				<onclick>ActivateWindow($PARAM[pvr_type]TimerRules)</onclick>
+-				<thumb>icons/pvr/timer-rule.png</thumb>
+-			</item>
+-			<item>
+-				<label>$LOCALIZE[137]</label>
+-				<onclick>ActivateWindow($PARAM[pvr_type]Search)</onclick>
+-				<thumb>DefaultAddonsSearch.png</thumb>
+-			</item>
+-		</content>
+-	</include>
+ 	<include name="MovieSubmenuItems">
+ 		<content>
+ 			<item>
+diff --git a/xbmc/pvr/addons/PVRClients.cpp b/xbmc/pvr/addons/PVRClients.cpp
+index 1d6ad65b661c..971655fea1b4 100644
+--- a/xbmc/pvr/addons/PVRClients.cpp
++++ b/xbmc/pvr/addons/PVRClients.cpp
+@@ -563,6 +563,30 @@ bool CPVRClients::AnyClientSupportingRecordingsSize() const
+   return recordingSizeClients.size() != 0;
+ }
+ 
++bool CPVRClients::AnyClientSupportingEPG() const
++{
++  bool bHaveSupportingClient = false;
++  ForCreatedClients(__FUNCTION__,
++                    [&bHaveSupportingClient](const std::shared_ptr<CPVRClient>& client) {
++                      if (client->GetClientCapabilities().SupportsEPG())
++                        bHaveSupportingClient = true;
++                      return PVR_ERROR_NO_ERROR;
++                    });
++  return bHaveSupportingClient;
++}
++
++bool CPVRClients::AnyClientSupportingRecordings() const
++{
++  bool bHaveSupportingClient = false;
++  ForCreatedClients(__FUNCTION__,
++                    [&bHaveSupportingClient](const std::shared_ptr<CPVRClient>& client) {
++                      if (client->GetClientCapabilities().SupportsRecordings())
++                        bHaveSupportingClient = true;
++                      return PVR_ERROR_NO_ERROR;
++                    });
++  return bHaveSupportingClient;
++}
++
+ void CPVRClients::OnSystemSleep()
+ {
+   ForCreatedClients(__FUNCTION__, [](const std::shared_ptr<CPVRClient>& client) {
+diff --git a/xbmc/pvr/addons/PVRClients.h b/xbmc/pvr/addons/PVRClients.h
+index 1b3dcd8ea164..50288ecd56df 100644
+--- a/xbmc/pvr/addons/PVRClients.h
++++ b/xbmc/pvr/addons/PVRClients.h
+@@ -273,6 +273,17 @@ namespace PVR
+      */
+     bool AnyClientSupportingRecordingsSize() const;
+ 
++    /*!
++     * @brief Get whether or not any client supports EPG.
++     * @return True if any client supports EPG.
++     */
++    bool AnyClientSupportingEPG() const;
++
++    /*!
++     * @brief Get whether or not any client supports recordings.
++     * @return True if any client supports recordings.
++     */
++    bool AnyClientSupportingRecordings() const;
+     //@}
+ 
+     /*! @name Power management methods */
+diff --git a/xbmc/pvr/filesystem/PVRGUIDirectory.cpp b/xbmc/pvr/filesystem/PVRGUIDirectory.cpp
+index 5d6daa299118..89a952f045b5 100644
+--- a/xbmc/pvr/filesystem/PVRGUIDirectory.cpp
++++ b/xbmc/pvr/filesystem/PVRGUIDirectory.cpp
+@@ -11,7 +11,10 @@
+ #include "FileItem.h"
+ #include "ServiceBroker.h"
+ #include "guilib/LocalizeStrings.h"
++#include "guilib/WindowIDs.h"
++#include "input/WindowTranslator.h"
+ #include "pvr/PVRManager.h"
++#include "pvr/addons/PVRClients.h"
+ #include "pvr/channels/PVRChannel.h"
+ #include "pvr/channels/PVRChannelGroup.h"
+ #include "pvr/channels/PVRChannelGroups.h"
+@@ -53,6 +56,85 @@ bool CPVRGUIDirectory::SupportsWriteFileOperations() const
+   return URIUtils::IsPVRRecording(filename);
+ }
+ 
++namespace
++{
++
++bool GetRootDirectory(bool bRadio, CFileItemList& results)
++{
++  std::shared_ptr<CFileItem> item;
++
++  const std::shared_ptr<CPVRClients> clients = CServiceBroker::GetPVRManager().Clients();
++
++  // Channels
++  item.reset(new CFileItem(
++      bRadio ? CPVRChannelsPath::PATH_RADIO_CHANNELS : CPVRChannelsPath::PATH_TV_CHANNELS, true));
++  item->SetLabel(g_localizeStrings.Get(19019)); // Channels
++  item->SetProperty("node.target", CWindowTranslator::TranslateWindow(bRadio ? WINDOW_RADIO_CHANNELS
++                                                                             : WINDOW_TV_CHANNELS));
++  item->SetArt("icon", "DefaultPVRChannels.png");
++  results.Add(item);
++
++  // EPG
++  const bool bAnyClientSupportingEPG = clients->AnyClientSupportingEPG();
++  if (bAnyClientSupportingEPG)
++  {
++    item.reset(
++        new CFileItem(StringUtils::Format("pvr://guide/%s/", bRadio ? "radio" : "tv"), true));
++    item->SetLabel(g_localizeStrings.Get(19069)); // Guide
++    item->SetProperty("node.target", CWindowTranslator::TranslateWindow(bRadio ? WINDOW_RADIO_GUIDE
++                                                                               : WINDOW_TV_GUIDE));
++    item->SetArt("icon", "DefaultPVRGuide.png");
++    results.Add(item);
++  }
++
++  // Recordings
++  if (clients->AnyClientSupportingRecordings())
++  {
++    item.reset(new CFileItem(bRadio ? CPVRRecordingsPath::PATH_ACTIVE_RADIO_RECORDINGS
++                                    : CPVRRecordingsPath::PATH_ACTIVE_TV_RECORDINGS,
++                             true));
++    item->SetLabel(g_localizeStrings.Get(19017)); // Recordings
++    item->SetProperty("node.target", CWindowTranslator::TranslateWindow(
++                                         bRadio ? WINDOW_RADIO_RECORDINGS : WINDOW_TV_RECORDINGS));
++    item->SetArt("icon", "DefaultPVRRecordings.png");
++    results.Add(item);
++  }
++
++  // Timers/Timer rules
++  // - always present, because Reminders are always available, no client support needed for this
++  item.reset(new CFileItem(
++      bRadio ? CPVRTimersPath::PATH_RADIO_TIMERS : CPVRTimersPath::PATH_TV_TIMERS, true));
++  item->SetLabel(g_localizeStrings.Get(19040)); // Timers
++  item->SetProperty("node.target", CWindowTranslator::TranslateWindow(bRadio ? WINDOW_RADIO_TIMERS
++                                                                             : WINDOW_TV_TIMERS));
++  item->SetArt("icon", "DefaultPVRTimers.png");
++  results.Add(item);
++
++  item.reset(new CFileItem(
++      bRadio ? CPVRTimersPath::PATH_RADIO_TIMER_RULES : CPVRTimersPath::PATH_TV_TIMER_RULES, true));
++  item->SetLabel(g_localizeStrings.Get(19138)); // Timer rules
++  item->SetProperty("node.target", CWindowTranslator::TranslateWindow(
++                                       bRadio ? WINDOW_RADIO_TIMER_RULES : WINDOW_TV_TIMER_RULES));
++  item->SetArt("icon", "DefaultPVRTimerRules.png");
++  results.Add(item);
++
++  // Search
++  if (bAnyClientSupportingEPG)
++  {
++    item.reset(
++        new CFileItem(StringUtils::Format("pvr://search/%s/", bRadio ? "radio" : "tv"), true));
++    item->SetLabel(g_localizeStrings.Get(137)); // Search
++    item->SetProperty("node.target", CWindowTranslator::TranslateWindow(bRadio ? WINDOW_RADIO_SEARCH
++                                                                               : WINDOW_TV_SEARCH));
++    item->SetArt("icon", "DefaultPVRSearch.png");
++    results.Add(item);
++  }
++
++  return true;
++}
++
++} // unnamed namespace
++
+ bool CPVRGUIDirectory::GetDirectory(CFileItemList& results) const
+ {
+   std::string base = m_url.Get();
+@@ -89,6 +171,22 @@ bool CPVRGUIDirectory::GetDirectory(CFileItemList& results) const
+     }
+     return true;
+   }
++  else if (StringUtils::StartsWith(fileName, "tv"))
++  {
++    if (CServiceBroker::GetPVRManager().IsStarted())
++    {
++      return GetRootDirectory(false, results);
++    }
++    return true;
++  }
++  else if (StringUtils::StartsWith(fileName, "radio"))
++  {
++    if (CServiceBroker::GetPVRManager().IsStarted())
++    {
++      return GetRootDirectory(true, results);
++    }
++    return true;
++  }
+   else if (StringUtils::StartsWith(fileName, "recordings"))
+   {
+     if (CServiceBroker::GetPVRManager().IsStarted())
+diff --git a/xbmc/pvr/timers/PVRTimersPath.cpp b/xbmc/pvr/timers/PVRTimersPath.cpp
+index bad8f3977d66..05c368003fd3 100644
+--- a/xbmc/pvr/timers/PVRTimersPath.cpp
++++ b/xbmc/pvr/timers/PVRTimersPath.cpp
+@@ -19,6 +19,10 @@ using namespace PVR;
+ 
+ const std::string CPVRTimersPath::PATH_ADDTIMER = "pvr://timers/addtimer/";
+ const std::string CPVRTimersPath::PATH_NEW = "pvr://timers/new/";
++const std::string CPVRTimersPath::PATH_TV_TIMERS = "pvr://timers/tv/timers/";
++const std::string CPVRTimersPath::PATH_TV_TIMER_RULES = "pvr://timers/radio/timers/";
++const std::string CPVRTimersPath::PATH_RADIO_TIMERS = "pvr://timers/tv/rules/";
++const std::string CPVRTimersPath::PATH_RADIO_TIMER_RULES = "pvr://timers/radio/rules/";
+ 
+ CPVRTimersPath::CPVRTimersPath(const std::string& strPath)
+ {
+diff --git a/xbmc/pvr/timers/PVRTimersPath.h b/xbmc/pvr/timers/PVRTimersPath.h
+index a577692e07b1..a5acb81c3cb3 100644
+--- a/xbmc/pvr/timers/PVRTimersPath.h
++++ b/xbmc/pvr/timers/PVRTimersPath.h
+@@ -17,6 +17,10 @@ namespace PVR
+   public:
+     static const std::string PATH_ADDTIMER;
+     static const std::string PATH_NEW;
++    static const std::string PATH_TV_TIMERS;
++    static const std::string PATH_TV_TIMER_RULES;
++    static const std::string PATH_RADIO_TIMERS;
++    static const std::string PATH_RADIO_TIMER_RULES;
+ 
+     explicit CPVRTimersPath(const std::string& strPath);
+     CPVRTimersPath(const std::string& strPath, int iClientId, int iParentId);
+diff --git a/xbmc/pvr/windows/GUIWindowPVRChannels.cpp b/xbmc/pvr/windows/GUIWindowPVRChannels.cpp
+index 8e68d1b5a221..5714338b6c92 100644
+--- a/xbmc/pvr/windows/GUIWindowPVRChannels.cpp
++++ b/xbmc/pvr/windows/GUIWindowPVRChannels.cpp
+@@ -132,9 +132,16 @@ bool CGUIWindowPVRChannelsBase::OnMessage(CGUIMessage& message)
+   switch (message.GetMessage())
+   {
+     case GUI_MSG_WINDOW_INIT:
+-      // if a path to a channel group is given we must init that group instead of last played/selected group
+-      m_channelGroupPath = message.GetStringParam(0);
++    {
++      const CPVRChannelsPath path(message.GetStringParam(0));
++      if (path.IsValid() && path.IsChannelGroup())
++      {
++        // if a path to a channel group is given we must init
++        // that group instead of last played/selected group
++        m_channelGroupPath = message.GetStringParam(0);
++      }
+       break;
++    }
+ 
+     case GUI_MSG_CLICKED:
+       if (message.GetSenderId() == m_viewControl.GetCurrentControl())
+diff --git a/xbmc/pvr/windows/GUIWindowPVRGuide.cpp b/xbmc/pvr/windows/GUIWindowPVRGuide.cpp
+index b7ad0e3c9d6e..eedd212b0900 100644
+--- a/xbmc/pvr/windows/GUIWindowPVRGuide.cpp
++++ b/xbmc/pvr/windows/GUIWindowPVRGuide.cpp
+@@ -27,6 +27,7 @@
+ #include "pvr/channels/PVRChannel.h"
+ #include "pvr/channels/PVRChannelGroup.h"
+ #include "pvr/channels/PVRChannelGroupsContainer.h"
++#include "pvr/channels/PVRChannelsPath.h"
+ #include "pvr/epg/EpgChannelData.h"
+ #include "pvr/epg/EpgContainer.h"
+ #include "pvr/epg/EpgInfoTag.h"
+@@ -368,9 +369,16 @@ bool CGUIWindowPVRGuideBase::OnMessage(CGUIMessage& message)
+   switch (message.GetMessage())
+   {
+     case GUI_MSG_WINDOW_INIT:
+-      // if a path to a channel group is given we must init that group instead of last played/selected group
+-      m_channelGroupPath = message.GetStringParam(0);
++    {
++      const CPVRChannelsPath path(message.GetStringParam(0));
++      if (path.IsValid() && path.IsChannelGroup())
++      {
++        // if a path to a channel group is given we must init
++        // that group instead of last played/selected group
++        m_channelGroupPath = message.GetStringParam(0);
++      }
+       break;
++    }
+ 
+     case GUI_MSG_ITEM_SELECTED:
+       message.SetParam1(GetCurrentListItemIndex(GetCurrentListItem()));
