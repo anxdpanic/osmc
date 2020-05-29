@@ -9,7 +9,7 @@ then
 pull_source "https://github.com/popcornmix/xbmc/archive/d632c454e73f49c81a0d4a8de74b082a78e9f2d4.tar.gz" "$(pwd)/src"
 API_VERSION="19"
 else
-pull_source "https://github.com/xbmc/xbmc/archive/57639ae610655d8d6a68cfef6fc07c314b6ac642.tar.gz" "$(pwd)/src"
+pull_source "https://github.com/xbmc/xbmc/archive/944a94a482a064ae53743eb891cf6f01fb22b19e.tar.gz" "$(pwd)/src"
 API_VERSION="19"
 
 
