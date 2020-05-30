@@ -355,7 +355,7 @@ then
 	pushd cmake/addons/
 	mkdir build
 	cd build
-        #ADDONS_AUDIO_DECODERS="audiodecoder.modplug audiodecoder.nosefart audiodecoder.sidplay audiodecoder.snesapu"
+        #ADDONS_AUDIO_DECODERS="audiodecoder.timidity audiodecoder.modplug audiodecoder.nosefart audiodecoder.sidplay audiodecoder.snesapu"
         ADDONS_AUDIO_ENCODERS="audioencoder.flac audioencoder.lame audioencoder.vorbis audioencoder.wav"
         ADDONS_INPUTSTREAM="inputstream.ffmpegdirect inputstream.adaptive inputstream.rtmp"
 	ADDONS_PERIPHERAL="peripheral.xarcade peripheral.joystick peripheral.steamcontroller"
