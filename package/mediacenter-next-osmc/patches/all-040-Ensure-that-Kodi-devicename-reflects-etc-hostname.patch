@@ -40,7 +40,7 @@ index a27bda4..e76ed82 100644
    switch (info.m_info)
    {
      ///////////////////////////////////////////////////////////////////////////////////////////////
-@@ -277,8 +278,12 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
+@@ -277,8 +278,13 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
        value = g_langInfo.GetTemperatureUnitString();
        return true;
      case SYSTEM_FRIENDLY_NAME:
@@ -50,6 +50,7 @@ index a27bda4..e76ed82 100644
 +       std::string hostname("osmc");
 +       CServiceBroker::GetNetwork().GetHostName(hostname); 
 +       strLabel = hostname.c_str();
++       value = strLabel;
 +       return true;
 +    }
      case SYSTEM_STEREOSCOPIC_MODE:
