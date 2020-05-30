@@ -1,0 +1,93 @@
+From f95bc8f6e387319f9e6e4b9a9ab4b16e66bb14b7 Mon Sep 17 00:00:00 2001
+From: Greg McCarthy <greg@gjmccarthy.co.uk>
+Date: Sat, 30 May 2020 12:37:37 +0100
+Subject: [PATCH] Revert "[cmake] FindGtest.cmake: properly support debug and
+ release builds"
+
+This reverts commit 4a0ce1098089e2dbfaf56ea18dfa437c832a9a33.
+---
+ cmake/modules/FindGtest.cmake | 53 ++++++++++++++---------------------
+ 1 file changed, 21 insertions(+), 32 deletions(-)
+
+diff --git a/cmake/modules/FindGtest.cmake b/cmake/modules/FindGtest.cmake
+index b59554b23e..0802123d92 100644
+--- a/cmake/modules/FindGtest.cmake
++++ b/cmake/modules/FindGtest.cmake
+@@ -8,10 +8,6 @@
+ # GTEST_FOUND - system has gtest
+ # GTEST_INCLUDE_DIRS - the gtest include directories
+ # GTEST_LIBRARIES - the gtest libraries
+-#
+-# and the following imported targets:
+-#
+-#   Gtest::Gtest   - The gtest library
+ 
+ if(ENABLE_INTERNAL_GTEST)
+   include(ExternalProject)
+@@ -43,42 +39,35 @@ if(ENABLE_INTERNAL_GTEST)
+                       INSTALL_DIR ${CMAKE_BINARY_DIR}/${CORE_BUILD_DIR}
+                       CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} -DBUILD_GMOCK=OFF -DINSTALL_GTEST=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> -DCMAKE_INSTALL_LIBDIR=lib
+                       BUILD_BYPRODUCTS ${GTEST_LIBRARY})
+-  set_target_properties(gtest PROPERTIES FOLDER "External Projects")
++
++  include(FindPackageHandleStandardArgs)
++  find_package_handle_standard_args(Gtest
++                                    REQUIRED_VARS GTEST_LIBRARY GTEST_INCLUDE_DIR
++                                    VERSION_VAR GTEST_VERSION)
++
++  set(GTEST_LIBRARIES ${GTEST_LIBRARY})
++  set(GTEST_INCLUDE_DIRS ${GTEST_INCLUDE_DIR})
+ else()
+   if(PKG_CONFIG_FOUND)
+     pkg_check_modules(PC_GTEST gtest>=1.10.0 QUIET)
+-    set(GTEST_VERSION ${PC_GTEST_VERSION})
+-  elseif(WIN32)
+-    set(GTEST_VERSION 1.10.0)
+   endif()
+ 
++  find_library(GTEST_LIBRARY NAMES gtest
++                             PATHS ${PC_GTEST_LIBDIR})
++
+   find_path(GTEST_INCLUDE_DIR NAMES gtest/gtest.h
+                               PATHS ${PC_GTEST_INCLUDEDIR})
+ 
+-  find_library(GTEST_LIBRARY_RELEASE NAMES gtest
+-                                     PATHS ${PC_GTEST_LIBDIR})
+-  find_library(GTEST_LIBRARY_DEBUG NAMES gtestd
+-                                   PATHS ${PC_GTEST_LIBDIR})
++  set(GTEST_VERSION ${PC_GTEST_VERSION})
+ 
+-  include(SelectLibraryConfigurations)
+-  select_library_configurations(GTEST)
+-endif()
++  include(FindPackageHandleStandardArgs)
++  find_package_handle_standard_args(Gtest
++                                    REQUIRED_VARS GTEST_LIBRARY GTEST_INCLUDE_DIR
++                                    VERSION_VAR GTEST_VERSION)
+ 
+-include(FindPackageHandleStandardArgs)
+-find_package_handle_standard_args(Gtest
+-                                  REQUIRED_VARS GTEST_LIBRARY GTEST_INCLUDE_DIR
+-                                  VERSION_VAR GTEST_VERSION)
+-
+-if(GTEST_FOUND)
+-  set(GTEST_LIBRARIES ${GTEST_LIBRARY})
+-  set(GTEST_INCLUDE_DIRS ${GTEST_INCLUDE_DIR})
+-endif()
+-
+-if(NOT TARGET Gtest::Gtest)
+-  add_library(Gtest::Gtest UNKNOWN IMPORTED)
+-  set_target_properties(Gtest::Gtest PROPERTIES
+-                                     IMPORTED_LOCATION "${GTEST_LIBRARY}"
+-                                     INTERFACE_INCLUDE_DIRECTORIES "${GTEST_INCLUDE_DIR}")
++  if(GTEST_FOUND)
++    set(GTEST_LIBRARIES ${GTEST_LIBRARY})
++    set(GTEST_INCLUDE_DIRS ${GTEST_INCLUDE_DIR})
++  endif()
++  mark_as_advanced(GTEST_INCLUDE_DIR GTEST_LIBRARY)
+ endif()
+-
+-mark_as_advanced(GTEST_INCLUDE_DIR GTEST_LIBRARY)
+-- 
+2.26.2
+
