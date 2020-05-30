@@ -1,0 +1,61 @@
+From 46fdf047db118a00824d0431a4701a9ef0542547 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Sun, 24 May 2020 23:36:55 +0200
+Subject: [PATCH] [addons][plugin] don't use extra ways to check "provides"
+
+Before was it separate done by addon.xml and database content and
+added to the addon extra info instead of extension values.
+
+Now becomes them added to the extension values and the extra info no
+need to check.
+---
+ xbmc/addons/PluginSource.cpp        | 14 --------------
+ xbmc/addons/addoninfo/AddonType.cpp | 10 ++++++++++
+ 2 files changed, 10 insertions(+), 14 deletions(-)
+
+diff --git a/xbmc/addons/PluginSource.cpp b/xbmc/addons/PluginSource.cpp
+index 44c982484ef5..16fdfbb19e3c 100644
+--- a/xbmc/addons/PluginSource.cpp
++++ b/xbmc/addons/PluginSource.cpp
+@@ -21,20 +21,6 @@ namespace ADDON
+ CPluginSource::CPluginSource(const AddonInfoPtr& addonInfo, TYPE addonType) : CAddon(addonInfo, addonType)
+ {
+   std::string provides = addonInfo->Type(addonType)->GetValue("provides").asString();
+-  if (provides.empty())
+-  {
+-    /*
+-     * If "provides" was empty, check about them in addon extra info. This become
+-     * needed for addons from repo content where the addon is stored inside a
+-     * database and the related type classes are not created on addon info.
+-     * The database add then "provides" to there.
+-     */
+-    const auto& i = addonInfo->ExtraInfo().find("provides");
+-    if (i != addonInfo->ExtraInfo().end())
+-      provides = i->second;
+-    else
+-      provides = "executable"; // if nothing fall back to "executable"
+-  }
+ 
+   for (auto values : addonInfo->Type(addonType)->GetValues())
+   {
+diff --git a/xbmc/addons/addoninfo/AddonType.cpp b/xbmc/addons/addoninfo/AddonType.cpp
+index 771ba923b0c7..19e96bd73fb9 100644
+--- a/xbmc/addons/addoninfo/AddonType.cpp
++++ b/xbmc/addons/addoninfo/AddonType.cpp
+@@ -24,6 +24,16 @@ void CAddonType::SetProvides(const std::string& content)
+ {
+   if (!content.empty())
+   {
++    /*
++     * Normally the "provides" becomes added from xml scan, but for add-ons
++     * stored in the database (e.g. repository contents) it might not be
++     * available. Since this information is available in add-on metadata for the
++     * main type (see extrainfo) we take the function contents and insert it if
++     * empty.
++     */
++    if (GetValue("provides").empty())
++      Insert("provides", content);
++
+     for (auto provide : StringUtils::Split(content, ' '))
+     {
+       TYPE content = CAddonInfo::TranslateSubContent(provide);

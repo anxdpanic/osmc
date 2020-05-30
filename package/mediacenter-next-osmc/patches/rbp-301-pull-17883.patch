@@ -1,0 +1,31 @@
+From 37463b05dc10c1ed7213d0ecf60c5c9cbc378b87 Mon Sep 17 00:00:00 2001
+From: i96751414 <i96751414@gmail.com>
+Date: Sun, 17 May 2020 20:00:18 +0100
+Subject: [PATCH] Check if item is playable before adding 'play from here' or
+ 'play only this' to context menu
+
+---
+ xbmc/video/windows/GUIWindowVideoBase.cpp | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/xbmc/video/windows/GUIWindowVideoBase.cpp b/xbmc/video/windows/GUIWindowVideoBase.cpp
+index f9761319e4ae..a5afac7bcd77 100644
+--- a/xbmc/video/windows/GUIWindowVideoBase.cpp
++++ b/xbmc/video/windows/GUIWindowVideoBase.cpp
+@@ -897,10 +897,12 @@ void CGUIWindowVideoBase::GetContextButtons(int itemNumber, CContextButtons &but
+         buttons.Add(CONTEXT_BUTTON_PLAY_PARTYMODE, 15216); // Play in Partymode
+       }
+ 
+-      //if the item isn't a folder or script, is a member of a list rather than a single item
+-      //and we're not on the last element of the list,
+-      //then add add either 'play from here' or 'play only this' depending on default behaviour
+-      if (!(item->m_bIsFolder || item->IsScript()) && m_vecItems->Size() > 1 && itemNumber < m_vecItems->Size()-1)
++      // if the item isn't a folder or script, is not explicitly marked as not playable,
++      // is a member of a list rather than a single item and we're not on the last element of the list,
++      // then add either 'play from here' or 'play only this' depending on default behaviour
++      if (!(item->m_bIsFolder || item->IsScript()) &&
++          (!item->HasProperty("IsPlayable") || item->GetProperty("IsPlayable").asBoolean()) &&
++          m_vecItems->Size() > 1 && itemNumber < m_vecItems->Size() - 1)
+       {
+         if (!CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_VIDEOPLAYER_AUTOPLAYNEXTITEM))
+           buttons.Add(CONTEXT_BUTTON_PLAY_AND_QUEUE, 13412);
