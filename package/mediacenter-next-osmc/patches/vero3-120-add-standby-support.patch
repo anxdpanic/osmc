@@ -152,7 +152,7 @@ index 8b7fe93..bfd59c1 100644
 @@ -26,6 +26,7 @@
  #endif
  #include "utils/StringUtils.h"
- #include "platform/linux/XTimeUtils.h"
+ #include "utils/XTimeUtils.h"
 +#include "Application.h"
  
  using namespace KODI::MESSAGING;
