@@ -234,8 +234,7 @@ then
 	fi
 	if [ "$1" == "rbp2" ]
 	then
-		CPU="cortex-a7"
-		COMPFLAGS="-mcpu=cortex-a7 -mtune=cortex-a7 -mfloat-abi=hard -O3 -mfpu=neon-vfpv4 -fomit-frame-pointer "
+		COMPFLAGS="-march=armv7-a -mfloat-abi=hard -O3 -mfpu=neon-vfpv4 -fomit-frame-pointer "
 	fi
 	if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ]; then
 	LIBRARY_PATH+=/opt/vc/lib && \
@@ -259,7 +258,6 @@ then
             -DCORE_SYSTEM_NAME=linux \
             -DCORE_PLATFORM_NAME=rbpi \
             -DWITH_ARCH=arm \
-            -DWITH_CPU=${CPU} \
             -DENABLE_APP_AUTONAME=OFF \
             -DENABLE_INTERNAL_FMT=ON \
             -DENABLE_INTERNAL_SPDLOG=ON \
@@ -295,7 +293,6 @@ then
             -DENABLE_OPTICAL=1 \
             -DENABLE_DVDCSS=1 \
             -DWITH_ARCH=arm \
-            -DWITH_CPU="cortex-a5" \
             -DCORE_PLATFORM_NAME=aml \
             -DCORE_SYSTEM_NAME=linux \
             -DENABLE_APP_AUTONAME=OFF \
