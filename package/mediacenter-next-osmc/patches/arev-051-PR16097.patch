@@ -1,0 +1,455 @@
+From ffe5c6b65e08b66c155f77867b4258d5bb80c71a Mon Sep 17 00:00:00 2001
+From: Greg McCarthy <greg@gjmccarthy.co.uk>
+Date: Mon, 20 Jan 2020 14:04:29 +0000
+Subject: [PATCH] Revert "Merge pull request #16097 from lrusak/sysfs-cleanup"
+
+This reverts commit 3a9278b6b97cdf07e9e63da5a24c13275ea9a283, reversing
+changes made to f11ef83a1ca38c89f4fca3e873c43ad7bb142d21.
+---
+ cmake/treedata/linux/tests.txt             |   1 -
+ xbmc/platform/linux/CMakeLists.txt         |   2 -
+ xbmc/platform/linux/CPUInfoLinux.cpp       |  59 ++++++++------
+ xbmc/platform/linux/SysfsPath.cpp          |  19 -----
+ xbmc/platform/linux/SysfsPath.h            |  45 -----------
+ xbmc/platform/linux/test/CMakeLists.txt    |   3 -
+ xbmc/platform/linux/test/TestSysfsPath.cpp |  40 ----------
+ xbmc/platform/win10/CPUInfoWin10.cpp       |   1 +
+ xbmc/platform/win32/CPUInfoWin32.cpp       |   1 +
+ xbmc/utils/CMakeLists.txt                  |   2 +
+ xbmc/utils/SysfsUtils.cpp                  | 120 +++++++++++++++++++++++++++++
+ xbmc/utils/SysfsUtils.h                    |  22 ++++++
+ xbmc/utils/SystemInfo.cpp                  |  24 ++++--
+ xbmc/utils/test/TestSystemInfo.cpp         |  12 +--
+ xbmc/windowing/android/AndroidUtils.cpp    |   1 +
+ 15 files changed, 205 insertions(+), 147 deletions(-)
+ delete mode 100644 cmake/treedata/linux/tests.txt
+ delete mode 100644 xbmc/platform/linux/SysfsPath.cpp
+ delete mode 100644 xbmc/platform/linux/SysfsPath.h
+ delete mode 100644 xbmc/platform/linux/test/CMakeLists.txt
+ delete mode 100644 xbmc/platform/linux/test/TestSysfsPath.cpp
+ create mode 100644 xbmc/utils/SysfsUtils.cpp
+ create mode 100644 xbmc/utils/SysfsUtils.h
+
+diff --git a/cmake/treedata/linux/tests.txt b/cmake/treedata/linux/tests.txt
+deleted file mode 100644
+index 3f3a3e35fd..0000000000
+--- a/cmake/treedata/linux/tests.txt
++++ /dev/null
+@@ -1 +0,0 @@
+-xbmc/platform/linux/test platform/linux/test
+diff --git a/xbmc/platform/linux/CMakeLists.txt b/xbmc/platform/linux/CMakeLists.txt
+index a36f4e82fa..653227d944 100644
+--- a/xbmc/platform/linux/CMakeLists.txt
++++ b/xbmc/platform/linux/CMakeLists.txt
+@@ -1,12 +1,10 @@
+ set(SOURCES CPUInfoLinux.cpp
+             MemUtils.cpp
+             OptionalsReg.cpp
+-            SysfsPath.cpp
+             TimeUtils.cpp)
+ 
+ set(HEADERS CPUInfoLinux.h
+             OptionalsReg.h
+-            SysfsPath.h
+             TimeUtils.h)
+ 
+ if(ALSA_FOUND)
+diff --git a/xbmc/platform/linux/CPUInfoLinux.cpp b/xbmc/platform/linux/CPUInfoLinux.cpp
+index 30526d1f8d..e5e6ac249f 100644
+--- a/xbmc/platform/linux/CPUInfoLinux.cpp
++++ b/xbmc/platform/linux/CPUInfoLinux.cpp
+@@ -9,10 +9,9 @@
+ #include "CPUInfoLinux.h"
+ 
+ #include "utils/StringUtils.h"
++#include "utils/SysfsUtils.h"
+ #include "utils/Temperature.h"
+ 
+-#include "platform/linux/SysfsPath.h"
+-
+ #include <fstream>
+ #include <regex>
+ #include <sstream>
+@@ -69,17 +68,23 @@ std::shared_ptr<CCPUInfo> CCPUInfo::GetCPUInfo()
+ 
+ CCPUInfoLinux::CCPUInfoLinux()
+ {
+-  CSysfsPath machinePath{"/sys/bus/soc/devices/soc0/machine"};
+-  if (machinePath.Exists())
+-    m_cpuHardware = machinePath.Get<std::string>();
+-
+-  CSysfsPath familyPath{"/sys/bus/soc/devices/soc0/family"};
+-  if (familyPath.Exists())
+-    m_cpuSoC = familyPath.Get<std::string>();
+-
+-  CSysfsPath socPath{"/sys/bus/soc/devices/soc0/soc_id"};
+-  if (socPath.Exists())
+-    m_cpuSoC += " " + socPath.Get<std::string>();
++  // new socs use the sysfs soc interface to describe the hardware
++  if (SysfsUtils::Has("/sys/bus/soc/devices/soc0"))
++  {
++    std::string machine;
++    std::string family;
++    std::string socId;
++    if (SysfsUtils::Has("/sys/bus/soc/devices/soc0/machine"))
++      SysfsUtils::GetString("/sys/bus/soc/devices/soc0/machine", machine);
++    if (SysfsUtils::Has("/sys/bus/soc/devices/soc0/family"))
++      SysfsUtils::GetString("/sys/bus/soc/devices/soc0/family", family);
++    if (SysfsUtils::Has("/sys/bus/soc/devices/soc0/soc_id"))
++      SysfsUtils::GetString("/sys/bus/soc/devices/soc0/soc_id", socId);
++    if (m_cpuHardware.empty() && !machine.empty())
++      m_cpuHardware = machine;
++    if (!family.empty() && !socId.empty())
++      m_cpuSoC = family + " " + socId;
++  }
+ 
+   m_cpuCount = sysconf(_SC_NPROCESSORS_ONLN);
+ 
+@@ -279,26 +284,34 @@ int CCPUInfoLinux::GetUsedPercentage()
+ 
+ float CCPUInfoLinux::GetCPUFrequency()
+ {
+-  float value{0};
+-  CSysfsPath path("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq");
++  int value{-1};
++  if (SysfsUtils::Has("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq"))
++    SysfsUtils::GetInt("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq", value);
+ 
+-  if (path.Exists())
+-    value = path.Get<float>() / 1000.0;
++  value /= 1000.0;
+ 
+   return value;
+ }
+ 
+ bool CCPUInfoLinux::GetTemperature(CTemperature& temperature)
+ {
+-  int value{0};
+-  CSysfsPath path("/sys/class/hwmon/hwmon0/temp1_input");
+-
+-  if (!path.Exists())
++  if (!SysfsUtils::Has("/sys/class/hwmon/hwmon0/temp1_input"))
+     return CCPUInfoPosix::GetTemperature(temperature);
+ 
+-  value = path.Get<int>() / 1000.0;
++  int value{-1};
++  char scale{'c'};
++
++  SysfsUtils::GetInt("/sys/class/hwmon/hwmon0/temp1_input", value);
++  value = value / 1000.0;
++  scale = 'c';
++
++  if (scale == 'C' || scale == 'c')
++    temperature = CTemperature::CreateFromCelsius(value);
++  else if (scale == 'F' || scale == 'f')
++    temperature = CTemperature::CreateFromFahrenheit(value);
++  else
++    return false;
+ 
+-  temperature = CTemperature::CreateFromCelsius(value);
+   temperature.SetValid(true);
+ 
+   return true;
+diff --git a/xbmc/platform/linux/test/CMakeLists.txt b/xbmc/platform/linux/test/CMakeLists.txt
+deleted file mode 100644
+index 1fb0281ce0..0000000000
+--- a/xbmc/platform/linux/test/CMakeLists.txt
++++ /dev/null
+@@ -1,3 +0,0 @@
+-list(APPEND SOURCES TestSysfsPath.cpp)
+-
+-core_add_test_library(linux_test)
+diff --git a/xbmc/platform/win10/CPUInfoWin10.cpp b/xbmc/platform/win10/CPUInfoWin10.cpp
+index 7457c835bc..8a18c89699 100644
+--- a/xbmc/platform/win10/CPUInfoWin10.cpp
++++ b/xbmc/platform/win10/CPUInfoWin10.cpp
+@@ -12,6 +12,7 @@
+ #include "settings/AdvancedSettings.h"
+ #include "settings/SettingsComponent.h"
+ #include "utils/StringUtils.h"
++#include "utils/SysfsUtils.h"
+ #include "utils/Temperature.h"
+ 
+ #include <winrt/Windows.Foundation.Metadata.h>
+diff --git a/xbmc/platform/win32/CPUInfoWin32.cpp b/xbmc/platform/win32/CPUInfoWin32.cpp
+index e42fc20012..086402f8bf 100644
+--- a/xbmc/platform/win32/CPUInfoWin32.cpp
++++ b/xbmc/platform/win32/CPUInfoWin32.cpp
+@@ -12,6 +12,7 @@
+ #include "settings/AdvancedSettings.h"
+ #include "settings/SettingsComponent.h"
+ #include "utils/StringUtils.h"
++#include "utils/SysfsUtils.h"
+ #include "utils/Temperature.h"
+ 
+ #include "platform/win32/CharsetConverter.h"
+diff --git a/xbmc/utils/CMakeLists.txt b/xbmc/utils/CMakeLists.txt
+index aee35f1e36..826915edb8 100644
+--- a/xbmc/utils/CMakeLists.txt
++++ b/xbmc/utils/CMakeLists.txt
+@@ -59,6 +59,7 @@ set(SOURCES ActorProtocol.cpp
+             StreamUtils.cpp
+             StringUtils.cpp
+             StringValidation.cpp
++            SysfsUtils.cpp
+             SystemInfo.cpp
+             Temperature.cpp
+             TextSearch.cpp
+@@ -150,6 +151,7 @@ set(HEADERS ActorProtocol.h
+             StreamUtils.h
+             StringUtils.h
+             StringValidation.h
++            SysfsUtils.h
+             SystemInfo.h
+             Temperature.h
+             TextSearch.h
+diff --git a/xbmc/utils/SysfsUtils.cpp b/xbmc/utils/SysfsUtils.cpp
+new file mode 100644
+index 0000000000..044d4c4b6c
+--- /dev/null
++++ b/xbmc/utils/SysfsUtils.cpp
+@@ -0,0 +1,120 @@
++/*
++ *  Copyright (C) 2011-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#include "SysfsUtils.h"
++#include "utils/log.h"
++#include "utils/StringUtils.h"
++
++#include <unistd.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <fcntl.h>
++#include <string.h>
++
++#ifdef TARGET_WINDOWS_STORE
++#include <io.h>
++#endif
++
++int SysfsUtils::SetString(const std::string& path, const std::string& valstr)
++{
++  int fd = open(path.c_str(), O_RDWR, 0644);
++  int ret = 0;
++  if (fd >= 0)
++  {
++    if (write(fd, valstr.c_str(), valstr.size()) < 0)
++      ret = -1;
++    close(fd);
++  }
++  if (ret)
++    CLog::Log(LOGERROR, "%s: error writing %s",__FUNCTION__, path.c_str());
++
++  return ret;
++}
++
++int SysfsUtils::GetString(const std::string& path, std::string& valstr)
++{
++  int len;
++  char buf[256] = {0};
++
++  int fd = open(path.c_str(), O_RDONLY);
++  if (fd >= 0)
++  {
++    valstr.clear();
++    while ((len = read(fd, buf, 256)) > 0)
++      valstr.append(buf, len);
++    close(fd);
++
++    StringUtils::Trim(valstr);
++
++    return 0;
++  }
++
++  CLog::Log(LOGERROR, "%s: error reading %s",__FUNCTION__, path.c_str());
++  valstr = "fail";
++  return -1;
++}
++
++int SysfsUtils::SetInt(const std::string& path, const int val)
++{
++  int fd = open(path.c_str(), O_RDWR, 0644);
++  int ret = 0;
++  if (fd >= 0)
++  {
++    char bcmd[16];
++    sprintf(bcmd, "%d", val);
++    if (write(fd, bcmd, strlen(bcmd)) < 0)
++      ret = -1;
++    close(fd);
++  }
++  if (ret)
++    CLog::Log(LOGERROR, "%s: error writing %s",__FUNCTION__, path.c_str());
++
++  return ret;
++}
++
++int SysfsUtils::GetInt(const std::string& path, int& val)
++{
++  int fd = open(path.c_str(), O_RDONLY);
++  int ret = 0;
++  if (fd >= 0)
++  {
++    char bcmd[16];
++    if (read(fd, bcmd, sizeof(bcmd)) < 0)
++      ret = -1;
++    else
++      val = strtol(bcmd, NULL, 16);
++
++    close(fd);
++  }
++  if (ret)
++    CLog::Log(LOGERROR, "%s: error reading %s",__FUNCTION__, path.c_str());
++
++  return ret;
++}
++
++bool SysfsUtils::Has(const std::string &path)
++{
++  int fd = open(path.c_str(), O_RDONLY);
++  if (fd >= 0)
++  {
++    close(fd);
++    return true;
++  }
++  return false;
++}
++
++bool SysfsUtils::HasRW(const std::string &path)
++{
++  int fd = open(path.c_str(), O_RDWR);
++  if (fd >= 0)
++  {
++    close(fd);
++    return true;
++  }
++  return false;
++}
+diff --git a/xbmc/utils/SysfsUtils.h b/xbmc/utils/SysfsUtils.h
+new file mode 100644
+index 0000000000..b173a456bc
+--- /dev/null
++++ b/xbmc/utils/SysfsUtils.h
+@@ -0,0 +1,22 @@
++/*
++ *  Copyright (C) 2011-2018 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#pragma once
++
++#include <string>
++
++class SysfsUtils
++{
++public:
++  static int SetString(const std::string& path, const std::string& valstr);
++  static int GetString(const std::string& path, std::string& valstr);
++  static int SetInt(const std::string& path, const int val);
++  static int GetInt(const std::string& path, int& val);
++  static bool Has(const std::string& path);
++  static bool HasRW(const std::string &path);
++};
+diff --git a/xbmc/utils/SystemInfo.cpp b/xbmc/utils/SystemInfo.cpp
+index f7353e79d8..a85c10d185 100644
+--- a/xbmc/utils/SystemInfo.cpp
++++ b/xbmc/utils/SystemInfo.cpp
+@@ -68,9 +68,8 @@ using namespace winrt::Windows::System::Profile;
+ #elif defined(TARGET_FREEBSD)
+ #include <sys/param.h>
+ #elif defined(TARGET_LINUX)
+-#include "platform/linux/SysfsPath.h"
+-
+ #include <linux/version.h>
++#include "utils/SysfsUtils.h"
+ #endif
+ 
+ #include <system_error>
+@@ -724,10 +723,19 @@ std::string CSysInfo::GetManufacturerName(void)
+     auto manufacturer = eas.SystemManufacturer();
+     g_charsetConverter.wToUTF8(std::wstring(manufacturer.c_str()), manufName);
+ #elif defined(TARGET_LINUX)
+-
+-    auto cpuInfo = CServiceBroker::GetCPUInfo();
+-    manufName = cpuInfo->GetCPUSoC();
+-
++    if (SysfsUtils::Has("/sys/bus/soc/devices/soc0/family"))
++    {
++      std::string family;
++      SysfsUtils::GetString("/sys/bus/soc/devices/soc0/family", family);
++      if (SysfsUtils::Has("/sys/bus/soc/devices/soc0/soc_id"))
++      {
++        std::string soc_id;
++        SysfsUtils::GetString("/sys/bus/soc/devices/soc0/soc_id", soc_id);
++        manufName = family + " " + soc_id;
++      }
++      else
++        manufName = family;
++    }
+ #elif defined(TARGET_WINDOWS)
+     // We just don't care, might be useful on embedded
+ #endif
+@@ -762,8 +770,8 @@ std::string CSysInfo::GetModelName(void)
+     auto manufacturer = eas.SystemProductName();
+     g_charsetConverter.wToUTF8(std::wstring(manufacturer.c_str()), modelName);
+ #elif defined(TARGET_LINUX)
+-    auto cpuInfo = CServiceBroker::GetCPUInfo();
+-    modelName = cpuInfo->GetCPUHardware();
++    if (SysfsUtils::Has("/sys/bus/soc/devices/soc0/machine"))
++      SysfsUtils::GetString("/sys/bus/soc/devices/soc0/machine", modelName);
+ #elif defined(TARGET_WINDOWS)
+     // We just don't care, might be useful on embedded
+ #endif
+diff --git a/xbmc/utils/test/TestSystemInfo.cpp b/xbmc/utils/test/TestSystemInfo.cpp
+index 1f2b0a10f3..b80d32bc33 100644
+--- a/xbmc/utils/test/TestSystemInfo.cpp
++++ b/xbmc/utils/test/TestSystemInfo.cpp
+@@ -6,11 +6,9 @@
+  *  See LICENSES/README.md for more information.
+  */
+ 
+-#include "GUIInfoManager.h"
+-#include "ServiceBroker.h"
+-#include "settings/Settings.h"
+-#include "utils/CPUInfo.h"
+ #include "utils/SystemInfo.h"
++#include "settings/Settings.h"
++#include "GUIInfoManager.h"
+ #if defined(TARGET_WINDOWS)
+ #include "platform/win32/CharsetConverter.h"
+ #endif
+@@ -20,8 +18,10 @@
+ class TestSystemInfo : public testing::Test
+ {
+ protected:
+-  TestSystemInfo() { CServiceBroker::RegisterCPUInfo(CCPUInfo::GetCPUInfo()); }
+-  ~TestSystemInfo() { CServiceBroker::UnregisterCPUInfo(); }
++  TestSystemInfo()
++  = default;
++  ~TestSystemInfo() override
++  = default;
+ };
+ 
+ TEST_F(TestSystemInfo, Print_System_Info)
+diff --git a/xbmc/windowing/android/AndroidUtils.cpp b/xbmc/windowing/android/AndroidUtils.cpp
+index d24cc34a6f..b9ce20e3ee 100644
+--- a/xbmc/windowing/android/AndroidUtils.cpp
++++ b/xbmc/windowing/android/AndroidUtils.cpp
+@@ -13,6 +13,7 @@
+ #include "settings/SettingsComponent.h"
+ #include "settings/lib/SettingsManager.h"
+ #include "utils/StringUtils.h"
++#include "utils/SysfsUtils.h"
+ #include "utils/log.h"
+ #include "windowing/GraphicContext.h"
+ 
+-- 
+2.16.4
+
