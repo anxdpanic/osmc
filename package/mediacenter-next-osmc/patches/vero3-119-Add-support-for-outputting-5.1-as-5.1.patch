@@ -22,7 +22,7 @@ index 7dc6713..d216439 100644
 +#include "settings/SettingsComponent.h"
  #if defined(HAS_LIBAMCODEC)
  #include "utils/AMLUtils.h"
- "include "untils/SysfsUtils.h"
+ #include "utils/SysfsUtils.h"
 @@ -74,6 +76,8 @@ static unsigned int ALSASampleRateList[] =
    0
  };
