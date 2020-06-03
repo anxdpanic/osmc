@@ -1,0 +1,24 @@
+From 8a4423eb8e6b339073bb3799fe0be5a491fa3b21 Mon Sep 17 00:00:00 2001
+From: popcornmix <popcornmix@gmail.com>
+Date: Thu, 28 May 2020 17:57:18 +0100
+Subject: [PATCH] [gbm] Avoid dereferncing null crtc
+
+Currently we are storing null crtc pointers in m_crtcs
+We don't want to dereference these when destroying
+---
+ xbmc/windowing/gbm/DRMUtils.cpp | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/xbmc/windowing/gbm/DRMUtils.cpp b/xbmc/windowing/gbm/DRMUtils.cpp
+index 0e96a414e0c1..a2da4ce4377e 100644
+--- a/xbmc/windowing/gbm/DRMUtils.cpp
++++ b/xbmc/windowing/gbm/DRMUtils.cpp
+@@ -792,6 +792,8 @@ void CDRMUtils::DestroyDrm()
+ 
+   for (auto crtc : m_crtcs)
+   {
++    if (!crtc)
++      continue;
+     drmModeFreeCrtc(crtc->crtc);
+     FreeProperties(crtc);
+     delete crtc;

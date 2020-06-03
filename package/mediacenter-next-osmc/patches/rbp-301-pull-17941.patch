@@ -1,0 +1,88 @@
+From 6786dc3c6b306cc2517a25ae1a09004d265c708a Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Sun, 24 May 2020 09:00:40 -0700
+Subject: [PATCH] [depends] bump dav1d to 0.7.0
+
+---
+ .../BuildDependencies/scripts/0_package.target-win10-arm.list   | 2 +-
+ .../BuildDependencies/scripts/0_package.target-win10-win32.list | 2 +-
+ .../BuildDependencies/scripts/0_package.target-win10-x64.list   | 2 +-
+ project/BuildDependencies/scripts/0_package.target-win32.list   | 2 +-
+ project/BuildDependencies/scripts/0_package.target-x64.list     | 2 +-
+ tools/depends/target/dav1d/DAV1D-VERSION                        | 2 +-
+ 6 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/project/BuildDependencies/scripts/0_package.target-win10-arm.list b/project/BuildDependencies/scripts/0_package.target-win10-arm.list
+index 6909f695333b..df88f74da9bf 100644
+--- a/project/BuildDependencies/scripts/0_package.target-win10-arm.list
++++ b/project/BuildDependencies/scripts/0_package.target-win10-arm.list
+@@ -8,7 +8,7 @@
+ ;PLEASE KEEP THIS LIST IN ALPHABETICAL ORDER!
+ crossguid-0.2.2-win10-arm-v141-20200105.7z
+ curl-7.67.0-win10-arm-v141-20200105.7z
+-dav1d-0.6.0-win10-arm-v141-20200409.7z
++dav1d-0.7.0-win10-arm-v142-20200529.7z
+ flatbuffers-1.11.0-20200105.7z
+ fmt-6.1.2-win10-arm-v141-20200105.7z
+ freetype-2.10.1-win10-arm-v141-20200105.7z
+diff --git a/project/BuildDependencies/scripts/0_package.target-win10-win32.list b/project/BuildDependencies/scripts/0_package.target-win10-win32.list
+index 8464b14a0f0b..b70c92aa7dd2 100644
+--- a/project/BuildDependencies/scripts/0_package.target-win10-win32.list
++++ b/project/BuildDependencies/scripts/0_package.target-win10-win32.list
+@@ -8,7 +8,7 @@
+ ;PLEASE KEEP THIS LIST IN ALPHABETICAL ORDER!
+ crossguid-0.2.2-win10-win32-v141-20200105.7z
+ curl-7.67.0-win10-win32-v141-20200105.7z
+-dav1d-0.6.0-win10-win32-v141-20200409.7z
++dav1d-0.7.0-win10-win32-v142-20200529.7z
+ flatbuffers-1.11.0-20200105.7z
+ fmt-6.1.2-win10-win32-v141-20200105.7z
+ freetype-2.10.1-win10-win32-v141-20200105.7z
+diff --git a/project/BuildDependencies/scripts/0_package.target-win10-x64.list b/project/BuildDependencies/scripts/0_package.target-win10-x64.list
+index 99c2439396b5..9b5a20c82d41 100644
+--- a/project/BuildDependencies/scripts/0_package.target-win10-x64.list
++++ b/project/BuildDependencies/scripts/0_package.target-win10-x64.list
+@@ -8,7 +8,7 @@
+ ;PLEASE KEEP THIS LIST IN ALPHABETICAL ORDER!
+ crossguid-0.2.2-win10-x64-v141-20200105.7z
+ curl-7.67.0-win10-x64-v141-20200105.7z
+-dav1d-0.6.0-win10-x64-v141-20200409.7z
++dav1d-0.7.0-win10-x64-v142-20200529.7z
+ flatbuffers-1.11.0-20200105.7z
+ fmt-6.1.2-win10-x64-v141-20200105.7z
+ freetype-2.10.1-win10-x64-v141-20200105.7z
+diff --git a/project/BuildDependencies/scripts/0_package.target-win32.list b/project/BuildDependencies/scripts/0_package.target-win32.list
+index 041e21367e23..dd0dc30a78d0 100644
+--- a/project/BuildDependencies/scripts/0_package.target-win32.list
++++ b/project/BuildDependencies/scripts/0_package.target-win32.list
+@@ -8,7 +8,7 @@
+ ;PLEASE KEEP THIS LIST IN ALPHABETICAL ORDER!
+ crossguid-0.2.2-win32-v141-20200105.7z
+ curl-7.67.0-win32-v141-20200105.7z
+-dav1d-0.6.0-win32-v141-20200409.7z
++dav1d-0.7.0-win32-v142-20200529.7z
+ detours-64ec13-win32-v141-20200105.7z
+ dnssd-878.260.1-win32-v141-20200105.7z
+ flatbuffers-1.11.0-20200105.7z
+diff --git a/project/BuildDependencies/scripts/0_package.target-x64.list b/project/BuildDependencies/scripts/0_package.target-x64.list
+index bea57cfb850c..ebbc74479b74 100644
+--- a/project/BuildDependencies/scripts/0_package.target-x64.list
++++ b/project/BuildDependencies/scripts/0_package.target-x64.list
+@@ -8,7 +8,7 @@
+ ;PLEASE KEEP THIS LIST IN ALPHABETICAL ORDER!
+ crossguid-0.2.2-x64-v141-20200105.7z
+ curl-7.67.0-x64-v141-20200105.7z
+-dav1d-0.6.0-x64-v141-20200409.7z
++dav1d-0.7.0-x64-v142-20200529.7z
+ detours-64ec13-x64-v141-20200105.7z
+ dnssd-878.260.1-x64-v141-20200105.7z
+ flatbuffers-1.11.0-20200105.7z
+diff --git a/tools/depends/target/dav1d/DAV1D-VERSION b/tools/depends/target/dav1d/DAV1D-VERSION
+index 8ec556127d42..d8cc5be271ab 100644
+--- a/tools/depends/target/dav1d/DAV1D-VERSION
++++ b/tools/depends/target/dav1d/DAV1D-VERSION
+@@ -1,3 +1,3 @@
+ LIBNAME=dav1d
+-VERSION=0.6.0
++VERSION=0.7.0
+ ARCHIVE=$(LIBNAME)-$(VERSION).tar.gz
