@@ -23,7 +23,7 @@ index 50243a125c..30526d1f8d 100644
 -  if (freqPath.Exists())
 -    m_freqPath = freqStr;
 -
--  const std::array<std::string, 3> modules = {
+-  const std::array<std::string, 4> modules = {
 -      "coretemp",
 -      "k10temp",
 -      "scpi_sensors",
