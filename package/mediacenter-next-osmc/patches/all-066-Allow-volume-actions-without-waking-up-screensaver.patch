@@ -21,11 +21,11 @@ index 1e21e7b..85a7615 100644
      CLog::LogF(LOGDEBUG, "%s pressed, screen saver/dpms woken up", m_Keyboard.GetKeyName((int)key.GetButtonCode()).c_str());
      return true;
 @@ -713,7 +713,10 @@ bool CInputManager::AlwaysProcess(const CAction& action)
-         || builtInFunction == "suspend"
-         || builtInFunction == "hibernate"
-         || builtInFunction == "quit"
--        || builtInFunction == "shutdown")
-+        || builtInFunction == "shutdown"
+     if (builtInFunction == "powerdown" || builtInFunction == "reboot" ||
+         builtInFunction == "restart" || builtInFunction == "restartapp" ||
+         builtInFunction == "suspend" || builtInFunction == "hibernate" ||
+-        builtInFunction == "quit" || builtInFunction == "shutdown")
++        builtInFunction == "quit" || builtInFunction == "shutdown" 
 +        || builtInFunction == "volumeup"
 +        || builtInFunction == "volumedown"
 +        || builtInFunction == "mute")
