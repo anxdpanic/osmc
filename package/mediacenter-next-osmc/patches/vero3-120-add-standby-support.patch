@@ -187,32 +187,32 @@ diff --git a/xbmc/peripherals/devices/Peripheral.h b/xbmc/peripherals/devices/Pe
 index c083ff1..c8f4633 100644
 --- a/xbmc/peripherals/devices/Peripheral.h
 +++ b/xbmc/peripherals/devices/Peripheral.h
-@@ -55,7 +55,8 @@ namespace PERIPHERALS
-   {
-     STATE_SWITCH_TOGGLE,
-     STATE_ACTIVATE_SOURCE,
--    STATE_STANDBY
-+    STATE_STANDBY,
-+    STATE_ACTIVATE_SOURCE_OSMC_WAKEUP
-   } CecStateChange;
- 
-   class CPeripheral : public KODI::JOYSTICK::IInputProvider,
+@@ -55,7 +55,8 @@ typedef enum
+ {
+   STATE_SWITCH_TOGGLE,
+   STATE_ACTIVATE_SOURCE,
+-  STATE_STANDBY
++  STATE_STANDBY,
++  STATE_ACTIVATE_SOURCE_OSMC_WAKEUP
+ } CecStateChange;
+
+ class CPeripheral : public KODI::JOYSTICK::IInputProvider,
 diff --git a/xbmc/peripherals/devices/PeripheralCecAdapter.cpp b/xbmc/peripherals/devices/PeripheralCecAdapter.cpp
 index 1691c0f..1ae6402 100644
 --- a/xbmc/peripherals/devices/PeripheralCecAdapter.cpp
 +++ b/xbmc/peripherals/devices/PeripheralCecAdapter.cpp
-@@ -1736,7 +1736,15 @@ bool CPeripheralCecAdapter::ToggleDeviceState(CecStateChange mode /*= STATE_SWIT
+@@ -1802,8 +1802,14 @@ bool CPeripheralCecAdapter::ToggleDeviceState(CecStateChange mode /*= STATE_SWIT
  {
    if (!IsRunning())
      return false;
 -  if (m_cecAdapter->IsLibCECActiveSource() &&
 -      (mode == STATE_SWITCH_TOGGLE || mode == STATE_STANDBY))
 +  if (mode == STATE_ACTIVATE_SOURCE_OSMC_WAKEUP) {
-+	if (m_configuration.bActivateSource) {
-+		CLog::Log(LOGINFO, "%s - activating CEC device", __FUNCTION__);
-+		ActivateSource();
-+	}
-+	return true;
++       if (m_configuration.bActivateSource) {
++               CLog::Log(LOGINFO, "%s - activating CEC device", __FUNCTION__);
++               ActivateSource();
++       }
++       return true;
 +  }
 +  else if (m_cecAdapter->IsLibCECActiveSource() && (mode == STATE_SWITCH_TOGGLE || mode == STATE_STANDBY))
    {
