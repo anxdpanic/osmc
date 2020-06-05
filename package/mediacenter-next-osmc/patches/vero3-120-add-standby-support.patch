@@ -201,11 +201,12 @@ diff --git a/xbmc/peripherals/devices/PeripheralCecAdapter.cpp b/xbmc/peripheral
 index 1691c0f..1ae6402 100644
 --- a/xbmc/peripherals/devices/PeripheralCecAdapter.cpp
 +++ b/xbmc/peripherals/devices/PeripheralCecAdapter.cpp
-@@ -1736,7 +1736,14 @@ bool CPeripheralCecAdapter::ToggleDeviceState(CecStateChange mode /*= STATE_SWIT
+@@ -1736,7 +1736,15 @@ bool CPeripheralCecAdapter::ToggleDeviceState(CecStateChange mode /*= STATE_SWIT
  {
    if (!IsRunning())
      return false;
--  if (m_cecAdapter->IsLibCECActiveSource() && (mode == STATE_SWITCH_TOGGLE || mode == STATE_STANDBY))
+-  if (m_cecAdapter->IsLibCECActiveSource() &&
+-      (mode == STATE_SWITCH_TOGGLE || mode == STATE_STANDBY))
 +  if (mode == STATE_ACTIVATE_SOURCE_OSMC_WAKEUP) {
 +	if (m_configuration.bActivateSource) {
 +		CLog::Log(LOGINFO, "%s - activating CEC device", __FUNCTION__);
