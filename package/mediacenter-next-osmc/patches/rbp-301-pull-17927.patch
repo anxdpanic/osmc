@@ -1,0 +1,49 @@
+From c969998b9d5239147eafe374259b607434d4f5a3 Mon Sep 17 00:00:00 2001
+From: ronie <ronie@kodi.tv>
+Date: Fri, 22 May 2020 23:23:57 +0200
+Subject: [PATCH] [Estaury] add missing font definitions
+
+---
+ addons/skin.estuary/xml/Font.xml | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/addons/skin.estuary/xml/Font.xml b/addons/skin.estuary/xml/Font.xml
+index c40eb380f9fc..742699e9d44f 100644
+--- a/addons/skin.estuary/xml/Font.xml
++++ b/addons/skin.estuary/xml/Font.xml
+@@ -49,7 +49,7 @@
+ 		<font>
+ 			<name>font27_narrow</name>
+ 			<filename>NotoSans-Regular.ttf</filename>
+-			<size>25</size>
++			<size>27</size>
+ 			<style>lighten</style>
+ 			<linespacing>0.8</linespacing>
+ 		</font>
+@@ -173,6 +173,12 @@
+ 			<filename>arial.ttf</filename>
+ 			<size>27</size>
+ 		</font>
++		<font>
++			<name>font27_narrow</name>
++			<filename>arial.ttf</filename>
++			<size>27</size>
++			<linespacing>0.8</linespacing>
++		</font>
+ 		<font>
+ 			<name>font37</name>
+ 			<filename>arial.ttf</filename>
+@@ -219,6 +225,13 @@
+ 			<size>30</size>
+ 			<style>bold</style>
+ 		</font>
++
++		<font>
++			<name>font32_title</name>
++			<filename>arial.ttf</filename>
++			<size>32</size>
++			<style>bold</style>
++		</font>
+ 		<font>
+ 			<name>font36_title</name>
+ 			<filename>arial.ttf</filename>

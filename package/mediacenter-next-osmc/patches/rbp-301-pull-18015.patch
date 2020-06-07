@@ -1,0 +1,26 @@
+From a0ffb49d9b4ffbef7af7d9f79fd676ade3041e65 Mon Sep 17 00:00:00 2001
+From: emveepee <nospam>
+Date: Sat, 6 Jun 2020 20:07:11 -0400
+Subject: [PATCH] PVR margin change
+
+Margin  values should be visible for EPG based timers.
+---
+ xbmc/pvr/dialogs/GUIDialogPVRTimerSettings.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/pvr/dialogs/GUIDialogPVRTimerSettings.cpp b/xbmc/pvr/dialogs/GUIDialogPVRTimerSettings.cpp
+index c80f50dc203f..be7d9800d9ee 100644
+--- a/xbmc/pvr/dialogs/GUIDialogPVRTimerSettings.cpp
++++ b/xbmc/pvr/dialogs/GUIDialogPVRTimerSettings.cpp
+@@ -1231,9 +1231,9 @@ bool CGUIDialogPVRTimerSettings::TypeSupportsCondition(const std::string& condit
+     else if (cond == SETTING_TMR_NEW_EPISODES)
+       return entry->second->SupportsRecordOnlyNewEpisodes();
+     else if (cond == SETTING_TMR_BEGIN_PRE)
+-      return entry->second->SupportsStartEndMargin() && entry->second->SupportsStartTime();
++      return entry->second->SupportsStartEndMargin();
+     else if (cond == SETTING_TMR_END_POST)
+-      return entry->second->SupportsStartEndMargin() && entry->second->SupportsEndTime();
++      return entry->second->SupportsStartEndMargin();
+     else if (cond == SETTING_TMR_PRIORITY)
+       return entry->second->SupportsPriority();
+     else if (cond == SETTING_TMR_LIFETIME)

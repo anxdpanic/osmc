@@ -1,0 +1,55 @@
+From a4231168f2e872815ed12e7b05a698cc17cae819 Mon Sep 17 00:00:00 2001
+From: enen92 <92enen@gmail.com>
+Date: Sat, 30 May 2020 12:28:42 +0100
+Subject: [PATCH] Infolabels: expose Player.Progress and Player.ProgressCache
+ as a string
+
+---
+ xbmc/GUIInfoManager.cpp               | 10 ++++++++--
+ xbmc/guilib/guiinfo/PlayerGUIInfo.cpp |  6 ++++++
+ 2 files changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/GUIInfoManager.cpp b/xbmc/GUIInfoManager.cpp
+index ded9db98fc02..fde6eabc1c5b 100644
+--- a/xbmc/GUIInfoManager.cpp
++++ b/xbmc/GUIInfoManager.cpp
+@@ -495,14 +495,20 @@ const infomap integer_bools[] =  {{ "isequal",          INTEGER_IS_EQUAL },
+ ///   }
+ ///   \table_row3{   <b>`Player.Progress`</b>,
+ ///                  \anchor Player_Progress
+-///                  _integer_,
++///                  _integer_ / _string_,
+ ///     @return The progress position as percentage.
++///     <p><hr>
++///     @skinning_v19 \link Player_Progress `Player.Progress`\endlink infolabel
++///     also exposed as a string.
+ ///     <p>
+ ///   }
+ ///   \table_row3{   <b>`Player.ProgressCache`</b>,
+ ///                  \anchor Player_ProgressCache
+-///                  _integer_,
++///                  _integer_ / _string_,
+ ///     @return How much of the file is cached above current play percentage
++///     <p><hr>
++///     @skinning_v19 \link Player_ProgressCache `Player.ProgressCache`\endlink
++///     infolabel also exposed as a string.
+ ///     <p>
+ ///   }
+ ///   \table_row3{   <b>`Player.Volume`</b>,
+diff --git a/xbmc/guilib/guiinfo/PlayerGUIInfo.cpp b/xbmc/guilib/guiinfo/PlayerGUIInfo.cpp
+index a06c6f2cb85f..6aa64a5fb478 100644
+--- a/xbmc/guilib/guiinfo/PlayerGUIInfo.cpp
++++ b/xbmc/guilib/guiinfo/PlayerGUIInfo.cpp
+@@ -182,6 +182,12 @@ bool CPlayerGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
+         value = "+" + seekOffset;
+       return true;
+     }
++    case PLAYER_PROGRESS:
++      value = std::to_string(std::lrintf(g_application.GetPercentage()));
++      return true;
++    case PLAYER_PROGRESS_CACHE:
++      value = std::to_string(std::lrintf(g_application.GetCachePercentage()));
++      return true;
+     case PLAYER_VOLUME:
+       value = StringUtils::Format("%2.1f dB", CAEUtil::PercentToGain(g_application.GetVolumeRatio()));
+       return true;

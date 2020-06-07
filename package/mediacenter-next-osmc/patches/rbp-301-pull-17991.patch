@@ -1,0 +1,348 @@
+From 4a42883b66fe07fb60e4569d43b927132f5769d1 Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Sun, 17 May 2020 19:00:49 +0200
+Subject: [PATCH 1/2] [PVR] EPG grid container model: Fix event/block matching.
+
+---
+ xbmc/pvr/guilib/GUIEPGGridContainerModel.cpp | 69 +++++++++++++++-----
+ 1 file changed, 53 insertions(+), 16 deletions(-)
+
+diff --git a/xbmc/pvr/guilib/GUIEPGGridContainerModel.cpp b/xbmc/pvr/guilib/GUIEPGGridContainerModel.cpp
+index 107969a8f6b3..b212dfa65da8 100644
+--- a/xbmc/pvr/guilib/GUIEPGGridContainerModel.cpp
++++ b/xbmc/pvr/guilib/GUIEPGGridContainerModel.cpp
+@@ -148,20 +148,28 @@ std::shared_ptr<CFileItem> CGUIEPGGridContainerModel::CreateEpgTags(int iChannel
+ {
+   std::shared_ptr<CFileItem> result;
+ 
+-  auto it = m_epgItems.insert({iChannel, EpgTags()}).first;
+-  EpgTags& epgTags = (*it).second;
+-
+   const int firstBlock = iBlock < m_firstActiveBlock ? iBlock : m_firstActiveBlock;
+   const int lastBlock = iBlock > m_lastActiveBlock ? iBlock : m_lastActiveBlock;
+ 
+   const auto tags =
+       GetEPGTimeline(iChannel, GetStartTimeForBlock(firstBlock), GetStartTimeForBlock(lastBlock));
+ 
+-  epgTags.firstBlock = GetFirstEventBlock(tags.front());
+-  epgTags.lastBlock = GetLastEventBlock(tags.back());
++  const int firstResultBlock = GetFirstEventBlock(tags.front());
++  const int lastResultBlock = GetLastEventBlock(tags.back());
++  if (firstResultBlock > lastResultBlock)
++    return result;
++
++  auto it = m_epgItems.insert({iChannel, EpgTags()}).first;
++  EpgTags& epgTags = (*it).second;
++
++  epgTags.firstBlock = firstResultBlock;
++  epgTags.lastBlock = lastResultBlock;
+ 
+   for (const auto& tag : tags)
+   {
++    if (GetFirstEventBlock(tag) > GetLastEventBlock(tag))
++      continue;
++
+     const std::shared_ptr<CFileItem> item = std::make_shared<CFileItem>(tag);
+     if (!result && IsEventMemberOfBlock(tag, iBlock))
+       result = item;
+@@ -216,6 +224,11 @@ std::shared_ptr<CFileItem> CGUIEPGGridContainerModel::GetEpgTagsBefore(EpgTags&
+   const auto tags =
+       GetEPGTimeline(iChannel, GetStartTimeForBlock(iBlock), GetStartTimeForBlock(lastBlock));
+ 
++  const int firstResultBlock = GetFirstEventBlock(tags.front());
++  const int lastResultBlock = GetLastEventBlock(tags.back());
++  if (firstResultBlock > lastResultBlock)
++    return result;
++
+   if (epgTags.lastBlock == -1)
+     epgTags.lastBlock = lastBlock;
+ 
+@@ -226,7 +239,7 @@ std::shared_ptr<CFileItem> CGUIEPGGridContainerModel::GetEpgTagsBefore(EpgTags&
+   else
+   {
+     // insert before the existing tags
+-    epgTags.firstBlock = GetFirstEventBlock(tags.front());
++    epgTags.firstBlock = firstResultBlock;
+ 
+     auto it = tags.crbegin();
+     if (!epgTags.tags.empty())
+@@ -246,6 +259,9 @@ std::shared_ptr<CFileItem> CGUIEPGGridContainerModel::GetEpgTagsBefore(EpgTags&
+ 
+     for (; it != tags.crend(); ++it)
+     {
++      if (GetFirstEventBlock(*it) > GetLastEventBlock(*it))
++        continue;
++
+       const std::shared_ptr<CFileItem> item = std::make_shared<CFileItem>(*it);
+       if (!result && IsEventMemberOfBlock(*it, iBlock))
+         result = item;
+@@ -270,6 +286,11 @@ std::shared_ptr<CFileItem> CGUIEPGGridContainerModel::GetEpgTagsAfter(EpgTags& e
+   const auto tags =
+       GetEPGTimeline(iChannel, GetStartTimeForBlock(firstBlock), GetStartTimeForBlock(iBlock));
+ 
++  const int firstResultBlock = GetFirstEventBlock(tags.front());
++  const int lastResultBlock = GetLastEventBlock(tags.back());
++  if (firstResultBlock > lastResultBlock)
++    return result;
++
+   if (epgTags.firstBlock == -1)
+     epgTags.firstBlock = firstBlock;
+ 
+@@ -280,7 +301,7 @@ std::shared_ptr<CFileItem> CGUIEPGGridContainerModel::GetEpgTagsAfter(EpgTags& e
+   else
+   {
+     // append to the existing tags
+-    epgTags.lastBlock = GetLastEventBlock(tags.back());
++    epgTags.lastBlock = lastResultBlock;
+ 
+     auto it = tags.cbegin();
+     if (!epgTags.tags.empty())
+@@ -300,6 +321,9 @@ std::shared_ptr<CFileItem> CGUIEPGGridContainerModel::GetEpgTagsAfter(EpgTags& e
+ 
+     for (; it != tags.cend(); ++it)
+     {
++      if (GetFirstEventBlock(*it) > GetLastEventBlock(*it))
++        continue;
++
+       const std::shared_ptr<CFileItem> item = std::make_shared<CFileItem>(*it);
+       if (!result && IsEventMemberOfBlock(*it, iBlock))
+         result = item;
+@@ -522,11 +546,21 @@ bool CGUIEPGGridContainerModel::FreeProgrammeMemory(int firstChannel,
+         (*it).second.tags.clear();
+ 
+         tags = GetEPGTimeline(i, maxEnd, minStart);
++        const int firstResultBlock = GetFirstEventBlock(tags.front());
++        const int lastResultBlock = GetLastEventBlock(tags.back());
++        if (firstResultBlock > lastResultBlock)
++          continue;
++
++        epgTags.firstBlock = firstResultBlock;
++        epgTags.lastBlock = lastResultBlock;
++
+         for (const auto& tag : tags)
+-          epgTags.tags.emplace_back(std::make_shared<CFileItem>(tag));
++        {
++          if (GetFirstEventBlock(tag) > GetLastEventBlock(tag))
++            continue;
+ 
+-        epgTags.firstBlock = GetFirstEventBlock(tags.front());
+-        epgTags.lastBlock = GetLastEventBlock(tags.back());
++          epgTags.tags.emplace_back(std::make_shared<CFileItem>(tag));
++        }
+       }
+     }
+   }
+@@ -629,17 +663,20 @@ int CGUIEPGGridContainerModel::GetLastEventBlock(const std::shared_ptr<CPVREpgIn
+ bool CGUIEPGGridContainerModel::IsEventMemberOfBlock(const std::shared_ptr<CPVREpgInfoTag>& event,
+                                                      int iBlock) const
+ {
+-  const int iFirstBlock = GetBlock(event->StartAsUTC());
+-  if (iFirstBlock == iBlock)
++  const int iFirstBlock = GetFirstEventBlock(event);
++  const int iLastBlock = GetLastEventBlock(event);
++
++  if (iFirstBlock > iLastBlock)
++  {
++    return false;
++  }
++  else if (iFirstBlock == iBlock)
+   {
+     return true;
+   }
+   else if (iFirstBlock < iBlock)
+   {
+-    if (iBlock <= GetBlock(event->EndAsUTC()))
+-    {
+-      return true;
+-    }
++    return (iBlock <= iLastBlock);
+   }
+   return false;
+ }
+
+From 8d614424d0163533efea6e5a5baafff7220ba645 Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Sun, 17 May 2020 18:34:16 +0200
+Subject: [PATCH 2/2] [PVR] EPG grid model, EPG tags container, EPG tags cache:
+ Unify start/end time handling.
+
+---
+ xbmc/pvr/epg/EpgDatabase.cpp                 |  6 ++---
+ xbmc/pvr/epg/EpgTagsCache.cpp                |  6 ++---
+ xbmc/pvr/epg/EpgTagsContainer.cpp            | 25 ++++++++------------
+ xbmc/pvr/guilib/GUIEPGGridContainerModel.cpp |  2 +-
+ 4 files changed, 17 insertions(+), 22 deletions(-)
+
+diff --git a/xbmc/pvr/epg/EpgDatabase.cpp b/xbmc/pvr/epg/EpgDatabase.cpp
+index 605c1eb29cfc..b0388fe17b1c 100644
+--- a/xbmc/pvr/epg/EpgDatabase.cpp
++++ b/xbmc/pvr/epg/EpgDatabase.cpp
+@@ -762,7 +762,7 @@ std::shared_ptr<CPVREpgInfoTag> CPVREpgDatabase::GetEpgTagByMinStartTime(
+   const std::string strQuery =
+       PrepareSQL("SELECT * "
+                  "FROM epgtags "
+-                 "WHERE idEpg = %u AND iStartTime > %u ORDER BY iStartTime ASC LIMIT 1;",
++                 "WHERE idEpg = %u AND iStartTime >= %u ORDER BY iStartTime ASC LIMIT 1;",
+                  iEpgID, static_cast<unsigned int>(minStart));
+ 
+   if (ResultQuery(strQuery))
+@@ -867,7 +867,7 @@ std::vector<std::shared_ptr<CPVREpgInfoTag>> CPVREpgDatabase::GetEpgTagsByMinEnd
+   const std::string strQuery =
+       PrepareSQL("SELECT * "
+                  "FROM epgtags "
+-                 "WHERE idEpg = %u AND iEndTime > %u AND iStartTime <= %u ORDER BY iStartTime;",
++                 "WHERE idEpg = %u AND iEndTime >= %u AND iStartTime <= %u ORDER BY iStartTime;",
+                  iEpgID, static_cast<unsigned int>(minEnd), static_cast<unsigned int>(maxStart));
+ 
+   if (ResultQuery(strQuery))
+@@ -907,7 +907,7 @@ bool CPVREpgDatabase::DeleteEpgTagsByMinEndMaxStartTime(int iEpgID,
+   Filter filter;
+ 
+   CSingleLock lock(m_critSection);
+-  filter.AppendWhere(PrepareSQL("idEpg = %u AND iEndTime > %u AND iStartTime <= %u", iEpgID,
++  filter.AppendWhere(PrepareSQL("idEpg = %u AND iEndTime >= %u AND iStartTime <= %u", iEpgID,
+                                 static_cast<unsigned int>(minEnd),
+                                 static_cast<unsigned int>(maxStart)));
+   return DeleteValues("epgtags", filter);
+diff --git a/xbmc/pvr/epg/EpgTagsCache.cpp b/xbmc/pvr/epg/EpgTagsCache.cpp
+index c31a35c0489c..712187905f41 100644
+--- a/xbmc/pvr/epg/EpgTagsCache.cpp
++++ b/xbmc/pvr/epg/EpgTagsCache.cpp
+@@ -94,7 +94,7 @@ void CPVREpgTagsCache::Refresh(bool bUpdateIfNeeded)
+     if (!m_nowActiveTag && m_database)
+     {
+       const std::vector<std::shared_ptr<CPVREpgInfoTag>> tags =
+-          m_database->GetEpgTagsByMinEndMaxStartTime(m_iEpgID, activeTime, activeTime);
++          m_database->GetEpgTagsByMinEndMaxStartTime(m_iEpgID, activeTime + ONE_SECOND, activeTime);
+       if (!tags.empty())
+       {
+         if (tags.size() > 1)
+@@ -114,12 +114,12 @@ void CPVREpgTagsCache::Refresh(bool bUpdateIfNeeded)
+     {
+       // we're in a gap. remember start and end time of that gap to avoid unneeded db load.
+       if (m_lastEndedTag)
+-        m_nowActiveStart = m_lastEndedTag->EndAsUTC() + ONE_SECOND;
++        m_nowActiveStart = m_lastEndedTag->EndAsUTC();
+       else
+         m_nowActiveStart = activeTime - CDateTimeSpan(1000, 0, 0, 0); // fake start far in the past
+ 
+       if (m_nextStartingTag)
+-        m_nowActiveEnd = m_nextStartingTag->StartAsUTC() - ONE_SECOND;
++        m_nowActiveEnd = m_nextStartingTag->StartAsUTC();
+       else
+         m_nowActiveEnd = activeTime + CDateTimeSpan(1000, 0, 0, 0); // fake end far in the future
+     }
+diff --git a/xbmc/pvr/epg/EpgTagsContainer.cpp b/xbmc/pvr/epg/EpgTagsContainer.cpp
+index fd607938cebe..8aa9d18bdd26 100644
+--- a/xbmc/pvr/epg/EpgTagsContainer.cpp
++++ b/xbmc/pvr/epg/EpgTagsContainer.cpp
+@@ -96,7 +96,7 @@ bool CPVREpgTagsContainer::UpdateEntries(const CPVREpgTagsContainer& tags)
+ 
+   if (m_database)
+   {
+-    const CDateTime minEventEnd = (*tags.m_changedTags.cbegin()).second->StartAsUTC();
++    const CDateTime minEventEnd = (*tags.m_changedTags.cbegin()).second->StartAsUTC() + ONE_SECOND;
+     const CDateTime maxEventStart = (*tags.m_changedTags.crbegin()).second->EndAsUTC();
+ 
+     std::vector<std::shared_ptr<CPVREpgInfoTag>> existingTags =
+@@ -109,7 +109,7 @@ bool CPVREpgTagsContainer::UpdateEntries(const CPVREpgTagsContainer& tags)
+       {
+         const auto& changedTag = changedTagsEntry.second;
+ 
+-        if (changedTag->EndAsUTC() > minEventEnd && changedTag->StartAsUTC() <= maxEventStart)
++        if (changedTag->EndAsUTC() > minEventEnd && changedTag->StartAsUTC() < maxEventStart)
+         {
+           // tag is in queried range, thus it could cause inconsistencies...
+           ResolveConflictingTags(changedTag, existingTags);
+@@ -210,7 +210,7 @@ void CPVREpgTagsContainer::FixOverlappingEvents(
+                  currentTag->Title().c_str(), currentTag->StartAsUTC().GetAsDBDateTime(),
+                  currentTag->EndAsUTC().GetAsDBDateTime());
+ 
+-      previousTag->SetEndFromUTC(currentTag->StartAsUTC() - ONE_SECOND);
++      previousTag->SetEndFromUTC(currentTag->StartAsUTC());
+       previousTag = currentTag;
+       ++it;
+     }
+@@ -410,7 +410,7 @@ std::vector<std::shared_ptr<CPVREpgInfoTag>> CPVREpgTagsContainer::GetTimeline(
+       // nothing in the db yet. take what we have in memory.
+       for (const auto& tag : m_changedTags)
+       {
+-        if (tag.second->EndAsUTC() > minEventEnd && tag.second->StartAsUTC() <= maxEventStart)
++        if (tag.second->EndAsUTC() > minEventEnd && tag.second->StartAsUTC() < maxEventStart)
+           tags.emplace_back(tag.second);
+       }
+ 
+@@ -428,7 +428,7 @@ std::vector<std::shared_ptr<CPVREpgInfoTag>> CPVREpgTagsContainer::GetTimeline(
+         {
+           const auto& changedTag = changedTagsEntry.second;
+ 
+-          if (changedTag->EndAsUTC() > minEventEnd && changedTag->StartAsUTC() <= maxEventStart)
++          if (changedTag->EndAsUTC() > minEventEnd && changedTag->StartAsUTC() < maxEventStart)
+           {
+             // tag is in queried range, thus it could cause inconsistencies...
+             ResolveConflictingTags(changedTag, tags);
+@@ -447,10 +447,10 @@ std::vector<std::shared_ptr<CPVREpgInfoTag>> CPVREpgTagsContainer::GetTimeline(
+       {
+         const CDateTime currStart = epgTag->StartAsUTC();
+         const CDateTime prevEnd = result.back()->EndAsUTC();
+-        if ((currStart - prevEnd) > ONE_SECOND)
++        if ((currStart - prevEnd) >= ONE_SECOND)
+         {
+           // insert gap tag before current tag
+-          result.emplace_back(CreateGapTag(prevEnd, currStart - ONE_SECOND));
++          result.emplace_back(CreateGapTag(prevEnd, currStart));
+         }
+       }
+ 
+@@ -467,8 +467,6 @@ std::vector<std::shared_ptr<CPVREpgInfoTag>> CPVREpgTagsContainer::GetTimeline(
+       CDateTime minStart = m_database->GetMinStartTime(m_iEpgID, maxEventStart);
+       if (!minStart.IsValid() || minStart > timelineEnd)
+         minStart = timelineEnd;
+-      else
+-        minStart -= ONE_SECOND;
+ 
+       result.emplace_back(CreateGapTag(maxEnd, minStart));
+     }
+@@ -481,18 +479,15 @@ std::vector<std::shared_ptr<CPVREpgInfoTag>> CPVREpgTagsContainer::GetTimeline(
+         if (!maxEnd.IsValid() || maxEnd < timelineStart)
+           maxEnd = timelineStart;
+ 
+-        result.insert(result.begin(),
+-                      CreateGapTag(maxEnd, result.front()->StartAsUTC() - ONE_SECOND));
++        result.insert(result.begin(), CreateGapTag(maxEnd, result.front()->StartAsUTC()));
+       }
+ 
+-      if (result.back()->EndAsUTC() <= maxEventStart)
++      if (result.back()->EndAsUTC() < maxEventStart)
+       {
+         // append gap tag
+         CDateTime minStart = m_database->GetMinStartTime(m_iEpgID, maxEventStart);
+         if (!minStart.IsValid() || minStart > timelineEnd)
+           minStart = timelineEnd;
+-        else
+-          minStart -= ONE_SECOND;
+ 
+         result.emplace_back(CreateGapTag(result.back()->EndAsUTC(), minStart));
+       }
+@@ -594,7 +589,7 @@ void CPVREpgTagsContainer::Persist(bool bCommit)
+     for (const auto& tag : m_changedTags)
+     {
+       // remove any conflicting events from database before persisting the new event
+-      m_database->DeleteEpgTagsByMinEndMaxStartTime(m_iEpgID, tag.second->StartAsUTC(),
++      m_database->DeleteEpgTagsByMinEndMaxStartTime(m_iEpgID, tag.second->StartAsUTC() + ONE_SECOND,
+                                                     tag.second->EndAsUTC() - ONE_SECOND);
+ 
+       tag.second->Persist(m_database, false);
+diff --git a/xbmc/pvr/guilib/GUIEPGGridContainerModel.cpp b/xbmc/pvr/guilib/GUIEPGGridContainerModel.cpp
+index b212dfa65da8..7f917a2840a9 100644
+--- a/xbmc/pvr/guilib/GUIEPGGridContainerModel.cpp
++++ b/xbmc/pvr/guilib/GUIEPGGridContainerModel.cpp
+@@ -47,7 +47,7 @@ std::shared_ptr<CFileItem> CGUIEPGGridContainerModel::CreateGapItem(int iChannel
+ std::vector<std::shared_ptr<CPVREpgInfoTag>> CGUIEPGGridContainerModel::GetEPGTimeline(
+     int iChannel, const CDateTime& minEventEnd, const CDateTime& maxEventStart) const
+ {
+-  CDateTime min = minEventEnd - CDateTimeSpan(0, 0, MINSPERBLOCK, 0);
++  CDateTime min = minEventEnd - CDateTimeSpan(0, 0, MINSPERBLOCK, 0) + CDateTimeSpan(0, 0, 0, 1);
+   CDateTime max = maxEventStart + CDateTimeSpan(0, 0, MINSPERBLOCK, 0);
+ 
+   if (min < m_gridStart)

@@ -1,0 +1,74 @@
+From 55edb3a39c9c6f131c0ebf612b6c103cb5cddc0e Mon Sep 17 00:00:00 2001
+From: Tolriq <tolriq@tolriq.com>
+Date: Tue, 2 Jun 2020 09:47:21 +0200
+Subject: [PATCH] Expose player cache percentage to JSON so remotes can display
+ it.
+
+---
+ xbmc/interfaces/json-rpc/PlayerOperations.cpp | 21 +++++++++++++++++++
+ xbmc/interfaces/json-rpc/schema/types.json    |  5 +++--
+ xbmc/interfaces/json-rpc/schema/version.txt   |  2 +-
+ 3 files changed, 25 insertions(+), 3 deletions(-)
+
+diff --git a/xbmc/interfaces/json-rpc/PlayerOperations.cpp b/xbmc/interfaces/json-rpc/PlayerOperations.cpp
+index e9249ad7c0b5..74922394df01 100644
+--- a/xbmc/interfaces/json-rpc/PlayerOperations.cpp
++++ b/xbmc/interfaces/json-rpc/PlayerOperations.cpp
+@@ -1451,6 +1451,27 @@ JSONRPC_STATUS CPlayerOperations::GetPropertyValue(PlayerType player, const std:
+         return FailedToExecute;
+     }
+   }
++  else if (property == "cachepercentage")
++  {
++    switch (player)
++    {
++      case Video:
++      case Audio:
++      {
++        result = g_application.GetCachePercentage();
++        break;
++      }
++
++      case Picture:
++      {
++        result = 0.0;
++        break;
++      }
++
++      default:
++        return FailedToExecute;
++    }
++  }
+   else if (property == "totaltime")
+   {
+     switch (player)
+diff --git a/xbmc/interfaces/json-rpc/schema/types.json b/xbmc/interfaces/json-rpc/schema/types.json
+index a31f8cc4ff27..5a3899b93f06 100644
+--- a/xbmc/interfaces/json-rpc/schema/types.json
++++ b/xbmc/interfaces/json-rpc/schema/types.json
+@@ -266,7 +266,7 @@
+               "canseek", "canchangespeed", "canmove", "canzoom", "canrotate",
+               "canshuffle", "canrepeat", "currentaudiostream", "audiostreams",
+               "subtitleenabled", "currentsubtitle", "subtitles", "live",
+-              "currentvideostream", "videostreams" ]
++              "currentvideostream", "videostreams", "cachepercentage" ]
+   },
+   "Player.Property.Value": {
+     "type": "object",
+@@ -295,7 +295,8 @@
+       "subtitleenabled": { "type": "boolean" },
+       "currentsubtitle": { "$ref": "Player.Subtitle" },
+       "subtitles": { "type": "array", "items": { "$ref": "Player.Subtitle" } },
+-      "live": { "type": "boolean" }
++      "live": { "type": "boolean" },
++      "cachepercentage": { "$ref": "Player.Position.Percentage" }
+     }
+   },
+   "Notifications.Item.Type": {
+diff --git a/xbmc/interfaces/json-rpc/schema/version.txt b/xbmc/interfaces/json-rpc/schema/version.txt
+index 7de89c902f9c..62a6d0e03544 100644
+--- a/xbmc/interfaces/json-rpc/schema/version.txt
++++ b/xbmc/interfaces/json-rpc/schema/version.txt
+@@ -1 +1 @@
+-JSONRPC_VERSION 11.8.2
++JSONRPC_VERSION 11.9.0

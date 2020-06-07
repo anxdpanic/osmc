@@ -1,0 +1,418 @@
+From 5157d5f01188065d9b03d6ac5675f18bb04d2747 Mon Sep 17 00:00:00 2001
+From: peak3d <pfau@peak3d.de>
+Date: Wed, 3 Jun 2020 17:18:16 +0200
+Subject: [PATCH] Expose VERSION_CODE and GIT SHA to GUI
+
+---
+ cmake/KodiConfig.cmake.in             |   1 +
+ xbmc/CompileInfo.cpp.in               |   5 +
+ xbmc/CompileInfo.h                    |   1 +
+ xbmc/GUIInfoManager.cpp               | 205 ++++++++++++++------------
+ xbmc/guilib/guiinfo/GUIInfoLabels.h   |   2 +
+ xbmc/guilib/guiinfo/SystemGUIInfo.cpp |   6 +
+ xbmc/utils/SystemInfo.cpp             |  13 +-
+ xbmc/utils/SystemInfo.h               |   2 +
+ 8 files changed, 139 insertions(+), 96 deletions(-)
+
+diff --git a/cmake/KodiConfig.cmake.in b/cmake/KodiConfig.cmake.in
+index fde5add9034d..a06d889fca9d 100644
+--- a/cmake/KodiConfig.cmake.in
++++ b/cmake/KodiConfig.cmake.in
+@@ -4,6 +4,7 @@ set(APP_NAME_UC @APP_NAME_UC@)
+ set(APP_PACKAGE @APP_PACKAGE@)
+ set(APP_VERSION_MAJOR @APP_VERSION_MAJOR@)
+ set(APP_VERSION_MINOR @APP_VERSION_MINOR@)
++set(APP_VERSION_CODE @APP_VERSION_CODE@)
+ if(NOT @APP_NAME_UC@_PREFIX)
+   set(@APP_NAME_UC@_PREFIX @APP_PREFIX@)
+ endif()
+diff --git a/xbmc/CompileInfo.cpp.in b/xbmc/CompileInfo.cpp.in
+index c47e6cc594dc..ba4a11c7f6f8 100644
+--- a/xbmc/CompileInfo.cpp.in
++++ b/xbmc/CompileInfo.cpp.in
+@@ -70,3 +70,8 @@ std::string CCompileInfo::GetBuildDate()
+   }
+   return "1970-01-01";
+ }
++
++const char*  CCompileInfo::GetVersionCode()
++{
++  return "@APP_VERSION_CODE@";
++}
+diff --git a/xbmc/CompileInfo.h b/xbmc/CompileInfo.h
+index db3cfbe0f284..8190c950157f 100644
+--- a/xbmc/CompileInfo.h
++++ b/xbmc/CompileInfo.h
+@@ -22,4 +22,5 @@ class CCompileInfo
+   static const char* GetSCMID();   // Git Revision
+   static const char* GetCopyrightYears();
+   static std::string GetBuildDate();
++  static const char* GetVersionCode();
+ };
+diff --git a/xbmc/GUIInfoManager.cpp b/xbmc/GUIInfoManager.cpp
+index fde6eabc1c5b..6c01859eb8b0 100644
+--- a/xbmc/GUIInfoManager.cpp
++++ b/xbmc/GUIInfoManager.cpp
+@@ -1051,10 +1051,11 @@ const infomap weather[] =        {{ "isfetched",        WEATHER_IS_FETCHED },
+ ///   \table_row3{   <b>`System.HasMediaAudioCD`</b>,
+ ///                  \anchor System_HasMediaAudioCD
+ ///                  _boolean_,
+-///     @return **True** if there is an audio CD in the optical drive. **False** if no drive available\, empty drive or other medium.
++///     @return **True** if there is an audio CD in the optical drive. **False** if no drive
++///     available\, empty drive or other medium.
+ ///   <p><hr>
+-///   @skinning_v18 **[New Boolean Condition]** \link System_HasMediaAudioCD `System.HasMediaAudioCD` \endlink
+-///   <p>
++///   @skinning_v18 **[New Boolean Condition]** \link System_HasMediaAudioCD
++///   `System.HasMediaAudioCD` \endlink <p>
+ ///   }
+ ///   \table_row3{   <b>`System.DVDReady`</b>,
+ ///                  \anchor System_DVDReady
+@@ -1129,8 +1130,8 @@ const infomap weather[] =        {{ "isfetched",        WEATHER_IS_FETCHED },
+ ///     @return **True** if at least one pvr client addon is installed and enabled.
+ ///     @param id - addon id of the PVR addon
+ ///     <p><hr>
+-///     @skinning_v17 **[New Boolean Condition]** \link System_HasPVRAddon `System.HasPVRAddon`\endlink
+-///     <p>
++///     @skinning_v17 **[New Boolean Condition]** \link System_HasPVRAddon
++///     `System.HasPVRAddon`\endlink <p>
+ ///   }
+ ///   \table_row3{   <b>`System.HasCMS`</b>,
+ ///                  \anchor System_HasCMS
+@@ -1146,16 +1147,16 @@ const infomap weather[] =        {{ "isfetched",        WEATHER_IS_FETCHED },
+ ///                  _boolean_,
+ ///     @return **True** if a modal dialog is active.
+ ///     <p><hr>
+-///     @skinning_v18 **[New Boolean Condition]** \link System_HasActiveModalDialog `System.HasActiveModalDialog`\endlink
+-///     <p>
++///     @skinning_v18 **[New Boolean Condition]** \link System_HasActiveModalDialog
++///     `System.HasActiveModalDialog`\endlink <p>
+ ///   }
+ ///   \table_row3{   <b>`System.HasVisibleModalDialog`</b>,
+ ///                  \anchor System_HasVisibleModalDialog
+ ///                  _boolean_,
+ ///     @return **True** if a modal dialog is visible.
+ ///     <p><hr>
+-///     @skinning_v18 **[New Boolean Condition]** \link System_HasVisibleModalDialog `System.HasVisibleModalDialog`\endlink
+-///     <p>
++///     @skinning_v18 **[New Boolean Condition]** \link System_HasVisibleModalDialog
++///     `System.HasVisibleModalDialog`\endlink <p>
+ ///   }
+ ///   \table_row3{   <b>`System.Platform.Linux`</b>,
+ ///                  \anchor System_PlatformLinux
+@@ -1168,8 +1169,8 @@ const infomap weather[] =        {{ "isfetched",        WEATHER_IS_FETCHED },
+ ///                  _boolean_,
+ ///     @return **True** if Kodi is running on a Raspberry Pi.
+ ///     <p><hr>
+-///     @skinning_v13 **[New Boolean Condition]** \link System_PlatformLinuxRaspberryPi `System.Platform.Linux.RaspberryPi`\endlink
+-///     <p>
++///     @skinning_v13 **[New Boolean Condition]** \link System_PlatformLinuxRaspberryPi
++///     `System.Platform.Linux.RaspberryPi`\endlink <p>
+ ///   }
+ ///   \table_row3{   <b>`System.Platform.Windows`</b>,
+ ///                  \anchor System_PlatformWindows
+@@ -1182,8 +1183,8 @@ const infomap weather[] =        {{ "isfetched",        WEATHER_IS_FETCHED },
+ ///                  _boolean_,
+ ///     @return **True** if Kodi is running on Universal Windows Platform (UWP).
+ ///     <p><hr>
+-///     @skinning_v18 **[New Boolean Condition]** \link System_PlatformUWP `System.Platform.UWP`\endlink
+-///     <p>
++///     @skinning_v18 **[New Boolean Condition]** \link System_PlatformUWP
++///     `System.Platform.UWP`\endlink <p>
+ ///   }
+ ///   \table_row3{   <b>`System.Platform.OSX`</b>,
+ ///                  \anchor System_PlatformOSX
+@@ -1202,8 +1203,8 @@ const infomap weather[] =        {{ "isfetched",        WEATHER_IS_FETCHED },
+ ///                  _boolean_,
+ ///     @return **True** if Kodi is running on a tvOS device.
+ ///     <p><hr>
+-///     @skinning_v19 **[New Boolean Condition]** \link System_PlatformTVOS `System.Platform.TVOS`\endlink
+-///     <p>
++///     @skinning_v19 **[New Boolean Condition]** \link System_PlatformTVOS
++///     `System.Platform.TVOS`\endlink <p>
+ ///   }
+ ///   \table_row3{   <b>`System.Platform.Darwin`</b>,
+ ///                  \anchor System_PlatformDarwin
+@@ -1241,8 +1242,8 @@ const infomap weather[] =        {{ "isfetched",        WEATHER_IS_FETCHED },
+ ///     @return **True** when to osd keyboard/numeric dialog requests a
+ ///     password/pincode.
+ ///     <p><hr>
+-///     @skinning_v16 **[New Boolean Condition]** \link System_HasHiddenInput `System.HasHiddenInput`\endlink
+-///     <p>
++///     @skinning_v16 **[New Boolean Condition]** \link System_HasHiddenInput
++///     `System.HasHiddenInput`\endlink <p>
+ ///   }
+ ///   \table_row3{   <b>`System.CanReboot`</b>,
+ ///                  \anchor System_CanReboot
+@@ -1414,6 +1415,18 @@ const infomap weather[] =        {{ "isfetched",        WEATHER_IS_FETCHED },
+ ///     @return The date of build.
+ ///     <p>
+ ///   }
++///   \table_row3{   <b>`System.BuildVersionCode`</b>,
++///                  \anchor System_BuildVersionCode
++///                  _string_,
++///     @return The version code of build.
++///     <p>
++///   }
++///   \table_row3{   <b>`System.BuildVersionGit`</b>,
++///                  \anchor System_BuildVersionGit
++///                  _string_,
++///     @return The git version of build.
++///     <p>
++///   }
+ ///   \table_row3{   <b>`System.FriendlyName`</b>,
+ ///                  \anchor System_FriendlyName
+ ///                  _string_,
+@@ -1562,8 +1575,8 @@ const infomap weather[] =        {{ "isfetched",        WEATHER_IS_FETCHED },
+ ///                  _string_,
+ ///     @return The profile Kodi will auto login to.
+ ///     <p><hr>
+-///     @skinning_v13 **[New Infolabel]** \link System_ProfileAutoLogin `System.ProfileAutoLogin`\endlink
+-///     <p>
++///     @skinning_v13 **[New Infolabel]** \link System_ProfileAutoLogin
++///     `System.ProfileAutoLogin`\endlink <p>
+ ///   }
+ ///   \table_row3{   <b>`System.StereoscopicMode`</b>,
+ ///                  \anchor System_StereoscopicMode
+@@ -1571,8 +1584,8 @@ const infomap weather[] =        {{ "isfetched",        WEATHER_IS_FETCHED },
+ ///     @return The prefered stereoscopic mode.
+ ///     @note Configured in settings > video > playback).
+ ///     <p><hr>
+-///     @skinning_v13 **[New Infolabel]** \link System_StereoscopicMode `System.StereoscopicMode`\endlink
+-///     <p>
++///     @skinning_v13 **[New Infolabel]** \link System_StereoscopicMode
++///     `System.StereoscopicMode`\endlink <p>
+ ///   }
+ ///   \table_row3{   <b>`System.TemperatureUnits`</b>,
+ ///                  \anchor System_TemperatureUnits
+@@ -1618,8 +1631,8 @@ const infomap weather[] =        {{ "isfetched",        WEATHER_IS_FETCHED },
+ ///     @return The version of the addon with the given id.
+ ///     @param id - the addon id
+ ///     <p><hr>
+-///     @skinning_v13 **[New Infolabel]** \link System_AddonVersion `System.AddonVersion(id)`\endlink
+-///     <p>
++///     @skinning_v13 **[New Infolabel]** \link System_AddonVersion
++///     `System.AddonVersion(id)`\endlink <p>
+ ///   }
+ ///   \table_row3{   <b>`System.AddonIcon(id)`</b>,
+ ///                  \anchor System_AddonVersion
+@@ -1648,78 +1661,80 @@ const infomap weather[] =        {{ "isfetched",        WEATHER_IS_FETCHED },
+ ///                  _boolean_,
+ ///     @return **True** if the system can provide CPU usage information.
+ ///     <p><hr>
+-///     @skinning_v19 **[New Boolean Condition]** \link  System_SupportsCPUUsage ` System.SupportsCPUUsage`\endlink
+-///     <p>
+-///   }
+-const infomap system_labels[] =  {{ "hasnetwork",       SYSTEM_ETHERNET_LINK_ACTIVE },
+-                                  { "hasmediadvd",      SYSTEM_MEDIA_DVD },
+-                                  { "hasmediaaudiocd",  SYSTEM_MEDIA_AUDIO_CD },
+-                                  { "dvdready",         SYSTEM_DVDREADY },
+-                                  { "trayopen",         SYSTEM_TRAYOPEN },
+-                                  { "haslocks",         SYSTEM_HASLOCKS },
+-                                  { "hashiddeninput",   SYSTEM_HAS_INPUT_HIDDEN },
+-                                  { "hasloginscreen",   SYSTEM_HAS_LOGINSCREEN },
+-                                  { "hasactivemodaldialog",   SYSTEM_HAS_ACTIVE_MODAL_DIALOG },
+-                                  { "hasvisiblemodaldialog",   SYSTEM_HAS_VISIBLE_MODAL_DIALOG },
+-                                  { "ismaster",         SYSTEM_ISMASTER },
+-                                  { "isfullscreen",     SYSTEM_ISFULLSCREEN },
+-                                  { "isstandalone",     SYSTEM_ISSTANDALONE },
+-                                  { "loggedon",         SYSTEM_LOGGEDON },
+-                                  { "showexitbutton",   SYSTEM_SHOW_EXIT_BUTTON },
+-                                  { "canpowerdown",     SYSTEM_CAN_POWERDOWN },
+-                                  { "cansuspend",       SYSTEM_CAN_SUSPEND },
+-                                  { "canhibernate",     SYSTEM_CAN_HIBERNATE },
+-                                  { "canreboot",        SYSTEM_CAN_REBOOT },
+-                                  { "screensaveractive",SYSTEM_SCREENSAVER_ACTIVE },
+-                                  { "dpmsactive",       SYSTEM_DPMS_ACTIVE },
+-                                  { "cputemperature",   SYSTEM_CPU_TEMPERATURE },     // labels from here
+-                                  { "cpuusage",         SYSTEM_CPU_USAGE },
+-                                  { "gputemperature",   SYSTEM_GPU_TEMPERATURE },
+-                                  { "fanspeed",         SYSTEM_FAN_SPEED },
+-                                  { "freespace",        SYSTEM_FREE_SPACE },
+-                                  { "usedspace",        SYSTEM_USED_SPACE },
+-                                  { "totalspace",       SYSTEM_TOTAL_SPACE },
+-                                  { "usedspacepercent", SYSTEM_USED_SPACE_PERCENT },
+-                                  { "freespacepercent", SYSTEM_FREE_SPACE_PERCENT },
+-                                  { "buildversion",     SYSTEM_BUILD_VERSION },
+-                                  { "buildversionshort",SYSTEM_BUILD_VERSION_SHORT },
+-                                  { "builddate",        SYSTEM_BUILD_DATE },
+-                                  { "fps",              SYSTEM_FPS },
+-                                  { "freememory",       SYSTEM_FREE_MEMORY },
+-                                  { "language",         SYSTEM_LANGUAGE },
+-                                  { "temperatureunits", SYSTEM_TEMPERATURE_UNITS },
+-                                  { "screenmode",       SYSTEM_SCREEN_MODE },
+-                                  { "screenwidth",      SYSTEM_SCREEN_WIDTH },
+-                                  { "screenheight",     SYSTEM_SCREEN_HEIGHT },
+-                                  { "currentwindow",    SYSTEM_CURRENT_WINDOW },
+-                                  { "currentcontrol",   SYSTEM_CURRENT_CONTROL },
+-                                  { "currentcontrolid", SYSTEM_CURRENT_CONTROL_ID },
+-                                  { "dvdlabel",         SYSTEM_DVD_LABEL },
+-                                  { "internetstate",    SYSTEM_INTERNET_STATE },
+-                                  { "osversioninfo",    SYSTEM_OS_VERSION_INFO },
+-                                  { "kernelversion",    SYSTEM_OS_VERSION_INFO }, // old, not correct name
+-                                  { "uptime",           SYSTEM_UPTIME },
+-                                  { "totaluptime",      SYSTEM_TOTALUPTIME },
+-                                  { "cpufrequency",     SYSTEM_CPUFREQUENCY },
+-                                  { "screenresolution", SYSTEM_SCREEN_RESOLUTION },
+-                                  { "videoencoderinfo", SYSTEM_VIDEO_ENCODER_INFO },
+-                                  { "profilename",      SYSTEM_PROFILENAME },
+-                                  { "profilethumb",     SYSTEM_PROFILETHUMB },
+-                                  { "profilecount",     SYSTEM_PROFILECOUNT },
+-                                  { "profileautologin", SYSTEM_PROFILEAUTOLOGIN },
+-                                  { "progressbar",      SYSTEM_PROGRESS_BAR },
+-                                  { "batterylevel",     SYSTEM_BATTERY_LEVEL },
+-                                  { "friendlyname",     SYSTEM_FRIENDLY_NAME },
+-                                  { "alarmpos",         SYSTEM_ALARM_POS },
+-                                  { "isinhibit",        SYSTEM_ISINHIBIT },
+-                                  { "hasshutdown",      SYSTEM_HAS_SHUTDOWN },
+-                                  { "haspvr",           SYSTEM_HAS_PVR },
+-                                  { "startupwindow",    SYSTEM_STARTUP_WINDOW },
+-                                  { "stereoscopicmode", SYSTEM_STEREOSCOPIC_MODE },
+-                                  { "hascms",           SYSTEM_HAS_CMS },
+-                                  { "privacypolicy",    SYSTEM_PRIVACY_POLICY },
+-                                  { "haspvraddon",      SYSTEM_HAS_PVR_ADDON },
+-                                  { "supportscpuusage", SYSTEM_SUPPORTS_CPU_USAGE }};
++///     @skinning_v19 **[New Boolean Condition]** \link  System_SupportsCPUUsage `
++///     System.SupportsCPUUsage`\endlink <p>
++///   }
++const infomap system_labels[] = {{"hasnetwork", SYSTEM_ETHERNET_LINK_ACTIVE},
++                                 {"hasmediadvd", SYSTEM_MEDIA_DVD},
++                                 {"hasmediaaudiocd", SYSTEM_MEDIA_AUDIO_CD},
++                                 {"dvdready", SYSTEM_DVDREADY},
++                                 {"trayopen", SYSTEM_TRAYOPEN},
++                                 {"haslocks", SYSTEM_HASLOCKS},
++                                 {"hashiddeninput", SYSTEM_HAS_INPUT_HIDDEN},
++                                 {"hasloginscreen", SYSTEM_HAS_LOGINSCREEN},
++                                 {"hasactivemodaldialog", SYSTEM_HAS_ACTIVE_MODAL_DIALOG},
++                                 {"hasvisiblemodaldialog", SYSTEM_HAS_VISIBLE_MODAL_DIALOG},
++                                 {"ismaster", SYSTEM_ISMASTER},
++                                 {"isfullscreen", SYSTEM_ISFULLSCREEN},
++                                 {"isstandalone", SYSTEM_ISSTANDALONE},
++                                 {"loggedon", SYSTEM_LOGGEDON},
++                                 {"showexitbutton", SYSTEM_SHOW_EXIT_BUTTON},
++                                 {"canpowerdown", SYSTEM_CAN_POWERDOWN},
++                                 {"cansuspend", SYSTEM_CAN_SUSPEND},
++                                 {"canhibernate", SYSTEM_CAN_HIBERNATE},
++                                 {"canreboot", SYSTEM_CAN_REBOOT},
++                                 {"screensaveractive", SYSTEM_SCREENSAVER_ACTIVE},
++                                 {"dpmsactive", SYSTEM_DPMS_ACTIVE},
++                                 {"cputemperature", SYSTEM_CPU_TEMPERATURE}, // labels from here
++                                 {"cpuusage", SYSTEM_CPU_USAGE},
++                                 {"gputemperature", SYSTEM_GPU_TEMPERATURE},
++                                 {"fanspeed", SYSTEM_FAN_SPEED},
++                                 {"freespace", SYSTEM_FREE_SPACE},
++                                 {"usedspace", SYSTEM_USED_SPACE},
++                                 {"totalspace", SYSTEM_TOTAL_SPACE},
++                                 {"usedspacepercent", SYSTEM_USED_SPACE_PERCENT},
++                                 {"freespacepercent", SYSTEM_FREE_SPACE_PERCENT},
++                                 {"buildversion", SYSTEM_BUILD_VERSION},
++                                 {"buildversionshort", SYSTEM_BUILD_VERSION_SHORT},
++                                 {"buildversioncode", SYSTEM_BUILD_VERSION_CODE},
++                                 {"buildversiongit", SYSTEM_BUILD_VERSION_GIT},
++                                 {"builddate", SYSTEM_BUILD_DATE},
++                                 {"fps", SYSTEM_FPS},
++                                 {"freememory", SYSTEM_FREE_MEMORY},
++                                 {"language", SYSTEM_LANGUAGE},
++                                 {"temperatureunits", SYSTEM_TEMPERATURE_UNITS},
++                                 {"screenmode", SYSTEM_SCREEN_MODE},
++                                 {"screenwidth", SYSTEM_SCREEN_WIDTH},
++                                 {"screenheight", SYSTEM_SCREEN_HEIGHT},
++                                 {"currentwindow", SYSTEM_CURRENT_WINDOW},
++                                 {"currentcontrol", SYSTEM_CURRENT_CONTROL},
++                                 {"currentcontrolid", SYSTEM_CURRENT_CONTROL_ID},
++                                 {"dvdlabel", SYSTEM_DVD_LABEL},
++                                 {"internetstate", SYSTEM_INTERNET_STATE},
++                                 {"osversioninfo", SYSTEM_OS_VERSION_INFO},
++                                 {"kernelversion", SYSTEM_OS_VERSION_INFO}, // old, not correct name
++                                 {"uptime", SYSTEM_UPTIME},
++                                 {"totaluptime", SYSTEM_TOTALUPTIME},
++                                 {"cpufrequency", SYSTEM_CPUFREQUENCY},
++                                 {"screenresolution", SYSTEM_SCREEN_RESOLUTION},
++                                 {"videoencoderinfo", SYSTEM_VIDEO_ENCODER_INFO},
++                                 {"profilename", SYSTEM_PROFILENAME},
++                                 {"profilethumb", SYSTEM_PROFILETHUMB},
++                                 {"profilecount", SYSTEM_PROFILECOUNT},
++                                 {"profileautologin", SYSTEM_PROFILEAUTOLOGIN},
++                                 {"progressbar", SYSTEM_PROGRESS_BAR},
++                                 {"batterylevel", SYSTEM_BATTERY_LEVEL},
++                                 {"friendlyname", SYSTEM_FRIENDLY_NAME},
++                                 {"alarmpos", SYSTEM_ALARM_POS},
++                                 {"isinhibit", SYSTEM_ISINHIBIT},
++                                 {"hasshutdown", SYSTEM_HAS_SHUTDOWN},
++                                 {"haspvr", SYSTEM_HAS_PVR},
++                                 {"startupwindow", SYSTEM_STARTUP_WINDOW},
++                                 {"stereoscopicmode", SYSTEM_STEREOSCOPIC_MODE},
++                                 {"hascms", SYSTEM_HAS_CMS},
++                                 {"privacypolicy", SYSTEM_PRIVACY_POLICY},
++                                 {"haspvraddon", SYSTEM_HAS_PVR_ADDON},
++                                 {"supportscpuusage", SYSTEM_SUPPORTS_CPU_USAGE}};
+ 
+ /// \page modules__infolabels_boolean_conditions
+ ///   \table_row3{   <b>`System.HasAddon(id)`</b>,
+diff --git a/xbmc/guilib/guiinfo/GUIInfoLabels.h b/xbmc/guilib/guiinfo/GUIInfoLabels.h
+index 251ab08e324e..d35a61c4b94a 100644
+--- a/xbmc/guilib/guiinfo/GUIInfoLabels.h
++++ b/xbmc/guilib/guiinfo/GUIInfoLabels.h
+@@ -533,6 +533,8 @@
+ #define SYSTEM_PROFILEAUTOLOGIN     1004
+ 
+ #define SYSTEM_HAS_CMS              1006
++#define SYSTEM_BUILD_VERSION_CODE 1007
++#define SYSTEM_BUILD_VERSION_GIT 1008
+ 
+ #define PVR_CONDITIONS_START        1100
+ #define PVR_IS_RECORDING            (PVR_CONDITIONS_START)
+diff --git a/xbmc/guilib/guiinfo/SystemGUIInfo.cpp b/xbmc/guilib/guiinfo/SystemGUIInfo.cpp
+index 47570b99d999..1784ec5ed052 100644
+--- a/xbmc/guilib/guiinfo/SystemGUIInfo.cpp
++++ b/xbmc/guilib/guiinfo/SystemGUIInfo.cpp
+@@ -198,6 +198,12 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
+     case SYSTEM_BUILD_DATE:
+       value = CSysInfo::GetBuildDate();
+       return true;
++    case SYSTEM_BUILD_VERSION_CODE:
++      value = CSysInfo::GetVersionCode();
++      return true;
++    case SYSTEM_BUILD_VERSION_GIT:
++      value = CSysInfo::GetVersionGit();
++      return true;
+     case SYSTEM_FREE_MEMORY:
+     case SYSTEM_FREE_MEMORY_PERCENT:
+     case SYSTEM_USED_MEMORY:
+diff --git a/xbmc/utils/SystemInfo.cpp b/xbmc/utils/SystemInfo.cpp
+index e6317bc81f21..5b1d89ed2011 100644
+--- a/xbmc/utils/SystemInfo.cpp
++++ b/xbmc/utils/SystemInfo.cpp
+@@ -1185,7 +1185,18 @@ std::string CSysInfo::GetVersionShort()
+ 
+ std::string CSysInfo::GetVersion()
+ {
+-  return GetVersionShort() + " Git:" + CCompileInfo::GetSCMID();
++  return GetVersionShort() + " (" + CCompileInfo::GetVersionCode() + ")" +
++         " Git:" + CCompileInfo::GetSCMID();
++}
++
++std::string CSysInfo::GetVersionCode()
++{
++  return CCompileInfo::GetVersionCode();
++}
++
++std::string CSysInfo::GetVersionGit()
++{
++  return CCompileInfo::GetSCMID();
+ }
+ 
+ std::string CSysInfo::GetBuildDate()
+diff --git a/xbmc/utils/SystemInfo.h b/xbmc/utils/SystemInfo.h
+index c02998f11ac2..c8531929ffb5 100644
+--- a/xbmc/utils/SystemInfo.h
++++ b/xbmc/utils/SystemInfo.h
+@@ -108,6 +108,8 @@ class CSysInfo : public CInfoLoader, public ISubSettings
+   static std::string GetDeviceName();
+   static std::string GetVersion();
+   static std::string GetVersionShort();
++  static std::string GetVersionCode();
++  static std::string GetVersionGit();
+   static std::string GetBuildDate();
+ 
+   bool HasInternet();

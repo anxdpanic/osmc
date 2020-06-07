@@ -1,0 +1,44 @@
+From 2f55af4ea055ae5668666afbde4a7e0ac646d410 Mon Sep 17 00:00:00 2001
+From: peak3d <pfau@peak3d.de>
+Date: Tue, 2 Jun 2020 13:04:49 +0200
+Subject: [PATCH] CApplication::IsStopping() implementation
+
+---
+ xbmc/Application.h                         | 3 ++-
+ xbmc/platform/android/activity/XBMCApp.cpp | 9 ++++++---
+ 2 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/xbmc/Application.h b/xbmc/Application.h
+index 09a456461e65..eb98a37f78d5 100644
+--- a/xbmc/Application.h
++++ b/xbmc/Application.h
+@@ -145,7 +145,8 @@ friend class CAppInboundProtocol;
+   bool Create(const CAppParamParser &params);
+   bool Cleanup() override;
+ 
+-  bool IsInitialized() { return !m_bInitializing; }
++  bool IsInitialized() const { return !m_bInitializing; }
++  bool IsStopping() const { return m_bStop; }
+ 
+   bool CreateGUI();
+   bool InitWindow(RESOLUTION res = RES_INVALID);
+diff --git a/xbmc/platform/android/activity/XBMCApp.cpp b/xbmc/platform/android/activity/XBMCApp.cpp
+index 48a26d1f1c42..e1ea8f71f022 100644
+--- a/xbmc/platform/android/activity/XBMCApp.cpp
++++ b/xbmc/platform/android/activity/XBMCApp.cpp
+@@ -277,9 +277,12 @@ void CXBMCApp::onPause()
+   EnableWakeLock(false);
+   m_hasReqVisible = false;
+ 
+-  IPowerSyscall* syscall = CServiceBroker::GetPowerManager().GetPowerSyscall();
+-  if (syscall)
+-    static_cast<CAndroidPowerSyscall*>(syscall)->SetOnPause();
++  if (!g_application.IsStopping())
++  {
++    IPowerSyscall* syscall = CServiceBroker::GetPowerManager().GetPowerSyscall();
++    if (syscall)
++      static_cast<CAndroidPowerSyscall*>(syscall)->SetOnPause();
++  }
+ }
+ 
+ void CXBMCApp::onStop()
