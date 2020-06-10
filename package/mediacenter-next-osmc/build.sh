@@ -6,10 +6,10 @@
 . ../common.sh
 if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ]
 then
-pull_source "https://github.com/popcornmix/xbmc/archive/82a67c6c9100e804764212b5ad01e75d34641b41.tar.gz" "$(pwd)/src"
+pull_source "https://github.com/popcornmix/xbmc/archive/9208b1a317185b55d067f43914206e88527be229.tar.gz" "$(pwd)/src"
 API_VERSION="19"
 else
-pull_source "https://github.com/xbmc/xbmc/archive/86098b990839b9907ff37811a388874ad93b893c.tar.gz" "$(pwd)/src"
+pull_source "https://github.com/xbmc/xbmc/archive/3bc12477f09db3749d2cb376c69a205904db1170.tar.gz" "$(pwd)/src"
 API_VERSION="19"
 
 
