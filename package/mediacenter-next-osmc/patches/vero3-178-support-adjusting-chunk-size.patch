@@ -18,9 +18,9 @@ index 07a6646614..2c89004f6f 100644
 --- a/addons/resource.language.en_gb/resources/strings.po
 +++ b/addons/resource.language.en_gb/resources/strings.po
 @@ -20483,6 +20483,14 @@ msgctxt "#36631"
- msgid "Force weak SMBv1 security for compatibility with the USB sharing features on some WiFi routers and NAS devices."
+ msgid "You must first enter a password before web server authentication can be enabled."
  msgstr ""
- 
+
 +msgctxt "#36632"
 +msgid "Mitigate MTU issues with SMBv2"
 +msgstr ""
@@ -29,8 +29,8 @@ index 07a6646614..2c89004f6f 100644
 +msgid "Enabling this option can resolve some connectivity issues when connecting via SMBv2, however doing so will reduce throughput regardless of SMB version"
 +msgstr ""
 +
- #empty strings from id 36632 to 36898
- 
+ #empty strings from id 36637 to 36898
+
  #. Description of setting with label #729 "Enable SSL"
 diff --git a/system/settings/settings.xml b/system/settings/settings.xml
 index 19cfe2db18..e24f2432cf 100755
