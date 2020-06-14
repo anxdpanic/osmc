@@ -52,20 +52,18 @@ diff --git a/xbmc/platform/posix/filesystem/SMBFile.cpp b/xbmc/platform/posix/fi
 index 71e6ec5a6c..82e1767015 100644
 --- a/xbmc/platform/posix/filesystem/SMBFile.cpp
 +++ b/xbmc/platform/posix/filesystem/SMBFile.cpp
-@@ -510,8 +510,11 @@ int CSMBFile::Truncate(int64_t size)
- 
- ssize_t CSMBFile::Read(void *lpBuf, size_t uiBufSize)
- {
--  if (uiBufSize > SSIZE_MAX)
--    uiBufSize = SSIZE_MAX;
-+
+@@ -515,6 +515,11 @@ ssize_t CSMBFile::Read(void *lpBuf, size_t uiBufSize)
+   if (uiBufSize > SSIZE_MAX)
+     uiBufSize = SSIZE_MAX;
+
 +  const std::shared_ptr<CSettings> settings = CServiceBroker::GetSettingsComponent()->GetSettings();
 +
 +  if (settings->GetBool(CSettings::SETTING_SMB2_FIXMTU))
 +    uiBufSize = 32768;
- 
++
    if (m_fd == -1)
      return -1;
+
 diff --git a/xbmc/settings/Settings.cpp b/xbmc/settings/Settings.cpp
 index 829e7b5af6..f9aab1a1e3 100644
 --- a/xbmc/settings/Settings.cpp
