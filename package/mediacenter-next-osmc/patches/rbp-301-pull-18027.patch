@@ -1,0 +1,163 @@
+From 3945bf5a9703da5d820aa5431377b70ae67b1143 Mon Sep 17 00:00:00 2001
+From: montellese <montellese@kodi.tv>
+Date: Tue, 9 Jun 2020 07:32:32 +0200
+Subject: [PATCH] fix displaying integer / string values with dynamic options
+ (fixes #18010)
+
+---
+ .../json-rpc/SettingsOperations.cpp           | 10 +++-
+ xbmc/interfaces/json-rpc/schema/version.txt   |  2 +-
+ xbmc/settings/windows/GUIControlSettings.cpp  | 52 ++++++++++---------
+ 3 files changed, 37 insertions(+), 27 deletions(-)
+
+diff --git a/xbmc/interfaces/json-rpc/SettingsOperations.cpp b/xbmc/interfaces/json-rpc/SettingsOperations.cpp
+index eed49a064c3d..3fb3da48cbed 100644
+--- a/xbmc/interfaces/json-rpc/SettingsOperations.cpp
++++ b/xbmc/interfaces/json-rpc/SettingsOperations.cpp
+@@ -479,7 +479,6 @@ bool CSettingsOperations::SerializeSettingInt(std::shared_ptr<const CSettingInt>
+   if (setting == NULL)
+     return false;
+ 
+-  obj["value"] = setting->GetValue();
+   obj["default"] = setting->GetDefault();
+ 
+   switch (setting->GetOptionsType())
+@@ -534,6 +533,10 @@ bool CSettingsOperations::SerializeSettingInt(std::shared_ptr<const CSettingInt>
+       break;
+   }
+ 
++  // this must be done after potentially calling CSettingInt::UpdateDynamicOptions() because it can
++  // change the value of the setting
++  obj["value"] = setting->GetValue();
++
+   return true;
+ }
+ 
+@@ -557,7 +560,6 @@ bool CSettingsOperations::SerializeSettingString(std::shared_ptr<const CSettingS
+   if (setting == NULL)
+     return false;
+ 
+-  obj["value"] = setting->GetValue();
+   obj["default"] = setting->GetDefault();
+ 
+   obj["allowempty"] = setting->AllowEmpty();
+@@ -611,6 +613,10 @@ bool CSettingsOperations::SerializeSettingString(std::shared_ptr<const CSettingS
+       break;
+   }
+ 
++  // this must be done after potentially calling CSettingString::UpdateDynamicOptions() because it
++  // can change the value of the setting
++  obj["value"] = setting->GetValue();
++
+   std::shared_ptr<const ISettingControl> control = setting->GetControl();
+   if (control->GetFormat() == "path")
+   {
+diff --git a/xbmc/interfaces/json-rpc/schema/version.txt b/xbmc/interfaces/json-rpc/schema/version.txt
+index e6a8e21338d5..efb7a8d1e8fd 100644
+--- a/xbmc/interfaces/json-rpc/schema/version.txt
++++ b/xbmc/interfaces/json-rpc/schema/version.txt
+@@ -1 +1 @@
+-JSONRPC_VERSION 11.10.1
++JSONRPC_VERSION 11.10.2
+diff --git a/xbmc/settings/windows/GUIControlSettings.cpp b/xbmc/settings/windows/GUIControlSettings.cpp
+index 27cd3d72fff6..1ec90f9f005c 100644
+--- a/xbmc/settings/windows/GUIControlSettings.cpp
++++ b/xbmc/settings/windows/GUIControlSettings.cpp
+@@ -101,10 +101,7 @@ static bool GetIntegerOptions(SettingConstPtr setting,
+ {
+   std::shared_ptr<const CSettingInt> pSettingInt = NULL;
+   if (setting->GetType() == SettingType::Integer)
+-  {
+     pSettingInt = std::static_pointer_cast<const CSettingInt>(setting);
+-    selectedOptions.insert(pSettingInt->GetValue());
+-  }
+   else if (setting->GetType() == SettingType::List)
+   {
+     std::shared_ptr<const CSettingList> settingList =
+@@ -113,16 +110,7 @@ static bool GetIntegerOptions(SettingConstPtr setting,
+       return false;
+ 
+     pSettingInt = std::static_pointer_cast<const CSettingInt>(settingList->GetDefinition());
+-    std::vector<CVariant> list = CSettingUtils::GetList(settingList);
+-    for (const auto& itValue : list)
+-    {
+-      if (!itValue.isInteger())
+-        return false;
+-      selectedOptions.insert((int)itValue.asInteger());
+-    }
+   }
+-  else
+-    return false;
+ 
+   switch (pSettingInt->GetOptionsType())
+   {
+@@ -194,6 +182,20 @@ static bool GetIntegerOptions(SettingConstPtr setting,
+       break;
+   }
+ 
++  // this must be done after potentially calling CSettingInt::UpdateDynamicOptions() because it can
++  // change the value of the setting
++  if (setting->GetType() == SettingType::Integer)
++    selectedOptions.insert(pSettingInt->GetValue());
++  else if (setting->GetType() == SettingType::List)
++  {
++    std::vector<CVariant> list =
++        CSettingUtils::GetList(std::static_pointer_cast<const CSettingList>(setting));
++    for (const auto& itValue : list)
++      selectedOptions.insert((int)itValue.asInteger());
++  }
++  else
++    return false;
++
+   return true;
+ }
+ 
+@@ -205,10 +207,7 @@ static bool GetStringOptions(SettingConstPtr setting,
+ {
+   std::shared_ptr<const CSettingString> pSettingString = NULL;
+   if (setting->GetType() == SettingType::String)
+-  {
+     pSettingString = std::static_pointer_cast<const CSettingString>(setting);
+-    selectedOptions.insert(pSettingString->GetValue());
+-  }
+   else if (setting->GetType() == SettingType::List)
+   {
+     std::shared_ptr<const CSettingList> settingList =
+@@ -217,16 +216,7 @@ static bool GetStringOptions(SettingConstPtr setting,
+       return false;
+ 
+     pSettingString = std::static_pointer_cast<const CSettingString>(settingList->GetDefinition());
+-    std::vector<CVariant> list = CSettingUtils::GetList(settingList);
+-    for (const auto& itValue : list)
+-    {
+-      if (!itValue.isString())
+-        return false;
+-      selectedOptions.insert(itValue.asString());
+-    }
+   }
+-  else
+-    return false;
+ 
+   switch (pSettingString->GetOptionsType())
+   {
+@@ -280,6 +270,20 @@ static bool GetStringOptions(SettingConstPtr setting,
+       break;
+   }
+ 
++  // this must be done after potentially calling CSettingString::UpdateDynamicOptions() because it
++  // can change the value of the setting
++  if (setting->GetType() == SettingType::String)
++    selectedOptions.insert(pSettingString->GetValue());
++  else if (setting->GetType() == SettingType::List)
++  {
++    std::vector<CVariant> list =
++        CSettingUtils::GetList(std::static_pointer_cast<const CSettingList>(setting));
++    for (const auto& itValue : list)
++      selectedOptions.insert(itValue.asString());
++  }
++  else
++    return false;
++
+   return true;
+ }
+ 
