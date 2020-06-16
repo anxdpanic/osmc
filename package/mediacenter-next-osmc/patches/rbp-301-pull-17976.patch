@@ -1,0 +1,557 @@
+From c133fac9ec42c7704a9b27c7d708cda1703cd521 Mon Sep 17 00:00:00 2001
+From: jjd-uk <>
+Date: Sun, 31 May 2020 11:20:19 +0100
+Subject: [PATCH] [Estuary] Improvements to Fullscreen Info/Seekbar for Video &
+ Music
+
+---
+ .../xml/Custom_1109_TopBarOverlay.xml         |   6 +-
+ addons/skin.estuary/xml/DialogSeekBar.xml     | 187 +++++++++---------
+ .../skin.estuary/xml/MusicVisualisation.xml   | 122 ++++++++----
+ addons/skin.estuary/xml/Variables.xml         |  13 +-
+ 4 files changed, 183 insertions(+), 145 deletions(-)
+
+diff --git a/addons/skin.estuary/xml/Custom_1109_TopBarOverlay.xml b/addons/skin.estuary/xml/Custom_1109_TopBarOverlay.xml
+index 25a9b6243f73..c2aede95c907 100644
+--- a/addons/skin.estuary/xml/Custom_1109_TopBarOverlay.xml
++++ b/addons/skin.estuary/xml/Custom_1109_TopBarOverlay.xml
+@@ -40,14 +40,14 @@
+ 				<visible>String.IsEmpty(Player.Art(clearlogo))</visible>
+ 				<visible>String.IsEmpty(Player.Art(tvshow.clearlogo))</visible>
+ 				<animation effect="fade" time="150">VisibleChange</animation>
+-				<left>30</left>
++				<left>20</left>
+ 				<right>400</right>
+ 				<control type="label">
+ 					<label>$VAR[NowPlayingBreadcrumbsVar]</label>
+ 					<font>font45</font>
+ 					<shadowcolor>text_shadow</shadowcolor>
+ 					<top>7</top>
+-					<height>100</height>
++					<height>50</height>
+ 					<left>0</left>
+ 					<right>0</right>
+ 				</control>
+@@ -55,7 +55,7 @@
+ 					<top>60</top>
+ 					<label>$VAR[OSDSubLabelVar]</label>
+ 					<shadowcolor>text_shadow</shadowcolor>
+-					<height>100</height>
++					<height>60</height>
+ 					<left>0</left>
+ 					<right>0</right>
+ 				</control>
+diff --git a/addons/skin.estuary/xml/DialogSeekBar.xml b/addons/skin.estuary/xml/DialogSeekBar.xml
+index 4cd6a99eecfc..fbd889c6e040 100644
+--- a/addons/skin.estuary/xml/DialogSeekBar.xml
++++ b/addons/skin.estuary/xml/DialogSeekBar.xml
+@@ -21,30 +21,37 @@
+ 			<control type="group">
+ 				<visible>!Window.IsVisible(videoosd) + !Window.IsVisible(musicosd)</visible>
+ 				<animation effect="fade" time="200">VisibleChange</animation>
+-				<control type="image">
+-					<left>20</left>
+-					<top>120</top>
+-					<width>264</width>
+-					<height>40</height>
+-					<texture>$INFO[MusicPlayer.UserRating,flags/starrating/,.png]</texture>
+-					<aspectratio>keep</aspectratio>
+-				</control>
+-				<control type="label">
+-					<top>110</top>
++				<control type="grouplist">
++					<visible>[PVR.IsRecordingPlayingChannel + !Player.ChannelPreviewActive] | PVR.IsPlayingActiveRecording</visible>
+ 					<left>20</left>
+-					<width>400</width>
+-					<height>50</height>
+-					<aligny>center</aligny>
+-					<font>font13</font>
+-					<wrapmultiline>true</wrapmultiline>
+-					<label>[COLOR button_focus]$LOCALIZE[21396]:[CR][/COLOR]$INFO[player.chapter]$INFO[player.chaptercount, / ]</label>
+-					<visible>player.chaptercount</visible>
++					<centertop>125</centertop>
++					<height>60</height>
++					<align>left</align>
++					<orientation>horizontal</orientation>
++					<itemgap>-5</itemgap>
++					<control type="image">
++						<top>100</top>
++						<left>20</left>
++						<width>60</width>
++						<height>60</height>
++						<aligny>center</aligny>
++						<texture>osd/fullscreen/buttons/record.png</texture>
++					</control>
++					<control type="label">
++						<top>110</top>
++						<left>90</left>
++						<width>400</width>
++						<height>60</height>
++						<aligny>center</aligny>
++						<font>font25_title</font>
++						<label>[COLOR red][B]$LOCALIZE[19158][/B][/COLOR]</label>
++					</control>
+ 				</control>
+ 				<control type="grouplist">
+ 					<right>20</right>
+-					<top>110</top>
+-					<width>1000</width>
+-					<height>100</height>
++					<centertop>125</centertop>
++					<width>800</width>
++					<height>50</height>
+ 					<align>right</align>
+ 					<include>Animation_BottomSlide</include>
+ 					<orientation>horizontal</orientation>
+@@ -61,17 +68,17 @@
+ 						<param name="texture" value="$INFO[VideoPlayer.VideoAspect,flags/aspectratio/,.png]" />
+ 					</include>
+ 					<include content="MediaFlag">
+-					<param name="texture" value="$INFO[VideoPlayer.AudioCodec,flags/audiocodec/,.png]" />
++						<param name="texture" value="$INFO[VideoPlayer.AudioCodec,flags/audiocodec/,.png]" />
+ 					</include>
+ 					<include content="MediaFlag">
+-					<param name="texture" value="$INFO[VideoPlayer.AudioChannels,flags/audiochannel/,.png]" />
++						<param name="texture" value="$INFO[VideoPlayer.AudioChannels,flags/audiochannel/,.png]" />
+ 					</include>
+ 				</control>
+ 				<control type="grouplist">
+ 					<right>20</right>
+-					<top>110</top>
+-					<width>1000</width>
+-					<height>100</height>
++					<centertop>125</centertop>
++					<width>800</width>
++					<height>50</height>
+ 					<align>right</align>
+ 					<include>Animation_BottomSlide</include>
+ 					<orientation>horizontal</orientation>
+@@ -134,30 +141,11 @@
+ 						</include>
+ 					</control>
+ 				</control>
+-				<control type="group">
+-					<visible>[PVR.IsRecordingPlayingChannel + !Player.ChannelPreviewActive] | PVR.IsPlayingActiveRecording</visible>
+-					<control type="image">
+-						<top>100</top>
+-						<left>20</left>
+-						<width>74</width>
+-						<height>74</height>
+-						<texture>osd/fullscreen/buttons/record.png</texture>
+-					</control>
+-					<control type="label">
+-						<top>110</top>
+-						<left>90</left>
+-						<width>400</width>
+-						<height>50</height>
+-						<aligny>center</aligny>
+-						<font>font25_title</font>
+-						<label>$LOCALIZE[19158]</label>
+-					</control>
+-				</control>
+ 				<control type="label">
+-					<top>110</top>
++					<centertop>145</centertop>
+ 					<right>20</right>
+ 					<width>400</width>
+-					<height>50</height>
++					<height>100</height>
+ 					<align>right</align>
+ 					<aligny>center</aligny>
+ 					<font>font13</font>
+@@ -167,10 +155,10 @@
+ 					<visible>![Player.ShowInfo | Window.IsVisible(playerprocessinfo) | VideoPlayer.HasEpg] + !Window.IsActive(fullscreeninfo)</visible>
+ 				</control>
+ 				<control type="label">
+-					<top>110</top>
++					<centertop>125</centertop>
+ 					<right>20</right>
+ 					<width>400</width>
+-					<height>50</height>
++					<height>100</height>
+ 					<align>right</align>
+ 					<aligny>center</aligny>
+ 					<font>font13</font>
+@@ -182,12 +170,11 @@
+ 			</control>
+ 			<control type="label">
+ 				<centerleft>50%</centerleft>
+-				<top>110</top>
++				<centertop>125</centertop>
+ 				<width>50%</width>
+-				<height>75</height>
++				<height>60</height>
+ 				<align>center</align>
+-				<aligny>bottom</aligny>
+-				<animation delay="0" effect="slide" time="120" start="0,0" end="0,-20" tween="sine" easing="inout" condition="!String.IsEmpty(Control.GetLabel(40000))">Conditional</animation>
++				<aligny>top</aligny>
+ 				<label>$VAR[SeekTimeLabelVar]</label>
+ 				<font>font45</font>
+ 				<shadowcolor>black</shadowcolor>
+@@ -195,12 +182,13 @@
+ 			</control>
+ 			<control type="label" id="40000">
+ 				<centerleft>50%</centerleft>
+-				<top>134</top>
++				<centertop>175</centertop>
+ 				<width>50%</width>
+-				<height>60</height>
++				<height>50</height>
+ 				<align>center</align>
+-				<aligny>center</aligny>
++				<aligny>top</aligny>
+ 				<label>$VAR[SeekLabel]</label>
++				<font>font13</font>
+ 				<shadowcolor>black</shadowcolor>
+ 			</control>
+ 			<control type="group">
+@@ -320,7 +308,7 @@
+ 				<texture>dialogs/dialog-bg-nobo.png</texture>
+ 			</control>
+ 			<control type="image">
+-				<left>30</left>
++				<left>20</left>
+ 				<top>20</top>
+ 				<width>200</width>
+ 				<height>200</height>
+@@ -328,9 +316,9 @@
+ 				<texture>$INFO[Player.Icon]</texture>
+ 			</control>
+ 			<control type="textbox">
+-				<left>260</left>
++				<left>240</left>
+ 				<top>10</top>
+-				<right>30</right>
++				<right>20</right>
+ 				<height>160</height>
+ 				<label fallback="19055">$INFO[VideoPlayer.Plot]</label>
+ 				<align>justify</align>
+@@ -338,9 +326,9 @@
+ 				<visible>String.IsEmpty(PVR.EpgEventIcon)</visible>
+ 			</control>
+ 			<control type="textbox">
+-				<left>260</left>
++				<left>240</left>
+ 				<top>10</top>
+-				<right>260</right>
++				<right>240</right>
+ 				<height>160</height>
+ 				<label fallback="19055">$INFO[VideoPlayer.Plot]</label>
+ 				<align>justify</align>
+@@ -348,7 +336,7 @@
+ 				<visible>!String.IsEmpty(PVR.EpgEventIcon)</visible>
+ 			</control>
+ 			<control type="image">
+-				<right>30</right>
++				<right>20</right>
+ 				<top>20</top>
+ 				<width>200</width>
+ 				<height>200</height>
+@@ -357,14 +345,14 @@
+ 				<visible>!String.IsEmpty(PVR.EpgEventIcon)</visible>
+ 			</control>
+ 			<control type="label">
+-				<left>260</left>
++				<left>240</left>
+ 				<top>180</top>
+ 				<height>25</height>
+-				<label>[COLOR grey]$LOCALIZE[19031]:[/COLOR] $INFO[VideoPlayer.NextStartTime] - $INFO[VideoPlayer.NextEndTime]: $INFO[VideoPlayer.NextTitle]</label>
++				<label>[COLOR button_focus]$LOCALIZE[19031]:[/COLOR] $INFO[VideoPlayer.NextStartTime] - $INFO[VideoPlayer.NextEndTime]: $INFO[VideoPlayer.NextTitle]</label>
+ 				<visible>VideoPlayer.HasEpg + !RDS.HasRadioText</visible>
+ 			</control>
+ 			<control type="label">
+-				<left>260</left>
++				<left>240</left>
+ 				<top>180</top>
+ 				<height>25</height>
+ 				<label>[COLOR grey]$LOCALIZE[14304]: [/COLOR]$INFO[RDS.GetLine(0)]</label>
+@@ -372,44 +360,47 @@
+ 			</control>
+ 		</control>
+ 		<control type="group">
+-			<bottom>0</bottom>
+-			<height>230</height>
+ 			<visible>!Window.IsVisible(playerprocessinfo)</visible>
+ 			<visible>[Player.ShowInfo | Window.IsActive(fullscreeninfo)] + !VideoPlayer.Content(LiveTV) + Window.IsActive(fullscreenvideo)</visible>
+ 			<animation effect="fade" time="200">VisibleChange</animation>
+-			<control type="group">
+-				<control type="image">
+-					<depth>DepthOSD+</depth>
+-					<left>10</left>
+-					<top>-490</top>
+-					<width>400</width>
+-					<height>600</height>
+-					<aspectratio aligny="bottom">keep</aspectratio>
+-					<texture fallback="DefaultVideo.png" background="true">$VAR[NowPlayingPosterVar]</texture>
+-					<bordertexture border="21">overlays/shadow.png</bordertexture>
+-					<bordersize>20</bordersize>
+-					<include>OpenClose_Left</include>
++			<bottom>0</bottom>
++			<height>470</height>
++			<control type="image">
++				<left>0</left>
++				<width>100%</width>
++				<height>330</height>
++				<texture>dialogs/dialog-bg-nobo.png</texture>
++			</control>
++			<control type="image">
++				<depth>DepthOSD+</depth>
++				<left>10</left>
++				<bottom>145</bottom>
++				<width>400</width>
++				<height>600</height>
++				<aspectratio aligny="bottom">keep</aspectratio>
++				<texture fallback="DefaultVideo.png" background="true">$VAR[NowPlayingPosterVar]</texture>
++				<bordertexture border="21">overlays/shadow.png</bordertexture>
++				<bordersize>20</bordersize>
++				<include>OpenClose_Left</include>
++			</control>
++			<control type="grouplist">
++				<left>420</left>
++				<top>10</top>
++				<right>20</right>
++				<height>300</height>
++				<align>left</align>
++				<orientation>vertical</orientation>
++				<itemgap>10</itemgap>
++				<control type="textbox">
++					<height>250</height>
++					<label fallback="10005">$INFO[VideoPlayer.Tagline,[B],[/B][CR]]$INFO[VideoPlayer.Plot]</label>
++					<align>left</align>
++					<autoscroll delay="5000" repeat="7500" time="5000"></autoscroll>
+ 				</control>
+-				<control type="group">
+-					<include>OpenClose_Right</include>
+-					<control type="image">
+-						<left>400</left>
+-						<top>-240</top>
+-						<right>20</right>
+-						<height>350</height>
+-						<texture>dialogs/dialog-bg-nobo.png</texture>
+-						<bordertexture border="21">overlays/shadow.png</bordertexture>
+-						<bordersize>20</bordersize>
+-					</control>
+-					<control type="textbox">
+-						<left>443</left>
+-						<top>-207</top>
+-						<right>80</right>
+-						<height>290</height>
+-						<label fallback="10005">$INFO[VideoPlayer.Tagline,[B],[/B][CR]]$INFO[VideoPlayer.Plot]</label>
+-						<align>left</align>
+-						<autoscroll delay="5000" repeat="7500" time="5000"></autoscroll>
+-					</control>
++				<control type="label">
++					<height>50</height>
++					<label>[COLOR button_focus]$LOCALIZE[19031]: [/COLOR]$INFO[VideoPlayer.offset(1).TVShowtitle, , - ]$INFO[VideoPlayer.offset(1).Season,S,]$INFO[VideoPlayer.offset(1).Episode,E, - ]$INFO[VideoPlayer.offset(1).Title]</label>
++					<visible>Integer.IsGreater(Playlist.Length(video),1)</visible>
+ 				</control>
+ 			</control>
+ 		</control>
+diff --git a/addons/skin.estuary/xml/MusicVisualisation.xml b/addons/skin.estuary/xml/MusicVisualisation.xml
+index 13029148b1af..34ea35c42af0 100644
+--- a/addons/skin.estuary/xml/MusicVisualisation.xml
++++ b/addons/skin.estuary/xml/MusicVisualisation.xml
+@@ -19,7 +19,8 @@
+ 				<fadetime>400</fadetime>
+ 				<animation effect="fade" start="0" end="100" time="400">WindowOpen</animation>
+ 				<animation effect="fade" start="100" end="0" time="300">WindowClose</animation>
+-				<texture background="true" colordiffuse="88FFFFFF">$INFO[Player.Art(fanart)]</texture>
++				<animation effect="fade" start="100" end="50" time="0" condition="Visualisation.Enabled">Conditional</animation>
++				<texture background="true">$INFO[Player.Art(fanart)]</texture>
+ 				<visible>String.IsEmpty(Window(Visualisation).Property(ArtistSlideshow.Image))</visible>
+ 			</control>
+ 			<control type="image">
+@@ -27,34 +28,32 @@
+ 				<fadetime>400</fadetime>
+ 				<animation effect="fade" start="0" end="100" time="400">WindowOpen</animation>
+ 				<animation effect="fade" start="100" end="0" time="300">WindowClose</animation>
+-				<texture background="true" colordiffuse="88FFFFFF">$INFO[Window(Visualisation).Property(ArtistSlideshow.Image)]</texture>
+-				<visible>!String.IsEmpty(Window(Visualisation).Property(ArtistSlideshow.Image))</visible>
+-			</control>
+-			<control type="multiimage">
+-				<aspectratio>scale</aspectratio>
+-				<timeperimage>10000</timeperimage>
+-				<randomize>true</randomize>
+-				<fadetime>600</fadetime>
+-				<loop>yes</loop>
+-				<imagepath background="true">$INFO[Window(Visualisation).Property(ArtistSlideshow)]</imagepath>
+-				<visible>!String.IsEmpty(Window(Visualisation).Property(ArtistSlideshow.ArtworkReady))</visible>
++				<animation effect="fade" start="100" end="50" time="0" condition="Visualisation.Enabled">Conditional</animation>
++				<texture background="true">$INFO[Window(Visualisation).Property(ArtistSlideshow.Image)]</texture>
+ 			</control>
+ 		</control>
+ 		<control type="group">
+-			<animation effect="fade" start="100" end="30" time="0" condition="[!Skin.HasSetting(hide_background_fanart) + [!String.IsEmpty(Player.Art(fanart)) | System.HasAddon(script.artistslideshow)]] | Visualisation.Enabled">Conditional</animation>
++			<visible>!Visualisation.Enabled + [[String.IsEmpty(Player.Art(fanart)) + String.IsEmpty(Window(Visualisation).Property(ArtistSlideshow.Image))] | Skin.HasSetting(hide_background_fanart)]</visible>
+ 			<include>ColoredBackgroundImages</include>
+ 		</control>
+ 		<control type="group">
+-			<bottom>0</bottom>
+-			<height>1080</height>
++			<visible>[Player.ShowInfo | Window.IsActive(musicosd)] + !MusicPlayer.Content(livetv)</visible>
++			<height>460</height>
+ 			<include>OpenClose_Left</include>
++			<bottom>0</bottom>
+ 			<control type="image">
+-				<left>33</left>
+-				<top>200</top>
++				<left>0</left>
++				<width>100%</width>
++				<height>280</height>
++				<texture colordiffuse="80FFFFFF">dialogs/dialog-bg-nobo.png</texture>
++			</control>
++			<control type="image">
++				<left>20</left>
++				<top>-140</top>
+ 				<include>Visible_Left</include>
+ 				<visible>[Player.ShowInfo | Window.IsActive(musicosd)] + !MusicPlayer.Content(livetv)</visible>
+-				<width>500</width>
+-				<height>500</height>
++				<width>400</width>
++				<height>400</height>
+ 				<fadetime>400</fadetime>
+ 				<aspectratio aligny="bottom">keep</aspectratio>
+ 				<texture fallback="DefaultAlbumCover.png" border="2">$INFO[MusicPlayer.Cover]</texture>
+@@ -62,41 +61,86 @@
+ 				<bordersize>4</bordersize>
+ 			</control>
+ 			<control type="group">
+-				<top>-30</top>
+ 				<visible>[Player.ShowInfo | Window.IsActive(musicosd)] + ![Window.IsActive(playerprocessinfo) | MusicPlayer.Content(livetv)]</visible>
+ 				<include>Visible_Left</include>
+-				<control type="group">
+-					<left>30</left>
+-					<top>740</top>
++				<left>440</left>
++				<top>10</top>
++				<control type="label">
++					<top>10</top>
++					<width>1450</width>
++					<height>50</height>
++					<aligny>center</aligny>
++					<label>[B]$INFO[MusicPlayer.TrackNumber,,. ]$INFO[Player.Title][/B]</label>
++					<font>font45</font>
++					<shadowcolor>black</shadowcolor>
++					<scroll>true</scroll>
++				</control>
++				<control type="label">
++					<top>65</top>
++					<width>1450</width>
++					<height>50</height>
++					<aligny>center</aligny>
++					<label>$INFO[MusicPlayer.Artist]</label>
++					<font>font45</font>
++					<shadowcolor>black</shadowcolor>
++					<scroll>true</scroll>
++				</control>
++				<control type="grouplist">
++					<top>120</top>
++					<width>1450</width>
++					<height>40</height>
++					<align>left</align>
++					<orientation>horizontal</orientation>
++					<itemgap>20</itemgap>
+ 					<control type="label">
+-						<top>0</top>
+-						<width>1600</width>
++						<width>90</width>
+ 						<height>40</height>
+-						<label>$INFO[MusicPlayer.Artist]</label>
+-						<font>font60</font>
++						<label>$INFO[MusicPlayer.Year]</label>
++						<font>font37</font>
+ 						<shadowcolor>black</shadowcolor>
+-						<scroll>true</scroll>
++						<aligny>center</aligny>
++						<align>left</align>
++						<visible>!String.IsEmpty(MusicPlayer.Year)</visible>
+ 					</control>
+ 					<control type="label">
+-						<top>80</top>
+-						<width>1600</width>
++						<width min="0" max="1130">auto</width>
+ 						<height>40</height>
+-						<label>$INFO[MusicPlayer.Album]$INFO[MusicPlayer.Year,[COLOR button_focus] [,][/COLOR]]</label>
++						<label>$INFO[MusicPlayer.Genre]</label>
+ 						<font>font37</font>
+ 						<shadowcolor>black</shadowcolor>
++						<aligny>center</aligny>
++						<align>left</align>
+ 						<scroll>true</scroll>
++						<visible>!String.IsEmpty(MusicPlayer.Genre)</visible>
+ 					</control>
+-					<control type="label">
+-						<top>127</top>
+-						<width>1600</width>
++					<control type="image">
++						<width>190</width>
+ 						<height>40</height>
+-						<label>$INFO[MusicPlayer.TrackNumber,,: ][COLOR=white]$INFO[Player.Title][/COLOR]</label>
+-						<font>font45</font>
+-						<shadowcolor>black</shadowcolor>
+-						<textcolor>button_focus</textcolor>
+-						<scroll>true</scroll>
++						<texture fallback="flags/starrating/0.png">$INFO[MusicPlayer.UserRating,flags/starrating/,.png]</texture>
++						<aspectratio>keep</aspectratio>
++						<aligny>center</aligny>
++						<align>left</align>
+ 					</control>
+ 				</control>
++				<control type="label">
++					<top>165</top>
++					<width>1450</width>
++					<height>40</height>
++					<aligny>center</aligny>
++					<label>$INFO[MusicPlayer.Album]$INFO[MusicPlayer.DiscNumber, - $LOCALIZE[427] ]</label>
++					<font>font37</font>
++					<shadowcolor>black</shadowcolor>
++					<scroll>true</scroll>
++				</control>
++				<control type="label">
++					<top>210</top>
++					<width>1450</width>
++					<height>40</height>
++					<aligny>center</aligny>
++					<label>$INFO[MusicPlayer.offset(1).Title,[COLOR button_focus]$LOCALIZE[19031]:[/COLOR] ]$INFO[MusicPlayer.offset(1).Artist, - ]</label>
++					<shadowcolor>black</shadowcolor>
++					<scroll>true</scroll>
++				</control>
+ 			</control>
+ 		</control>
+ 	</controls>
+diff --git a/addons/skin.estuary/xml/Variables.xml b/addons/skin.estuary/xml/Variables.xml
+index 4b09b9968116..eb0c1179abc4 100644
+--- a/addons/skin.estuary/xml/Variables.xml
++++ b/addons/skin.estuary/xml/Variables.xml
+@@ -207,7 +207,8 @@
+ 		<value condition="Player.Forwarding32x | Player.Rewinding32x">32x</value>
+ 	</variable>
+ 	<variable name="SeekLabel">
+-		<value condition="!String.IsEmpty(Player.SeekStepSize)">$LOCALIZE[773][COLOR=grey] $INFO[Player.SeekStepSize][/COLOR]</value>
++		<value condition="!String.IsEmpty(Player.SeekStepSize)">[COLOR button_focus]$LOCALIZE[773][/COLOR] $INFO[Player.SeekStepSize]</value>
++		<value condition="!String.IsEmpty(Player.SeekOffset)">[COLOR button_focus]$LOCALIZE[773][/COLOR] $INFO[Player.SeekOffset]</value>
+ 		<value condition="Player.Paused">$LOCALIZE[112]</value>
+ 		<value condition="Player.Forwarding">$LOCALIZE[31039] $VAR[VideoPlayerForwardRewindVar]</value>
+ 		<value condition="Player.Rewinding">$LOCALIZE[31038] $VAR[VideoPlayerForwardRewindVar]</value>
+@@ -307,15 +308,17 @@
+   		<value condition="MusicPlayer.Content(livetv) + Player.HasAudio">$INFO[MusicPlayer.Title]</value> 
+ 		<value condition="VideoPlayer.Content(livetv)">$INFO[VideoPlayer.Title]</value>
+ 		<value condition="VideoPlayer.Content(episodes) + !String.IsEmpty(Player.Art(tvshow.clearlogo))">$INFO[VideoPlayer.Season,[COLOR button_focus]S,[/COLOR]]$INFO[VideoPlayer.Episode,[COLOR button_focus]E,: [/COLOR]]$INFO[VideoPlayer.Title]</value>
+-		<value condition="VideoPlayer.Content(episodes) + Window.IsActive(fullscreenvideo)">$INFO[VideoPlayer.TVShowTitle]$INFO[VideoPlayer.Year, ([COLOR button_focus],[/COLOR])]</value>
+-		<value condition="!VideoPlayer.Content(episodes) + Window.IsActive(fullscreenvideo)">$INFO[VideoPlayer.Title]$INFO[VideoPlayer.Year, ([COLOR button_focus],[/COLOR])]</value>
++		<value condition="VideoPlayer.Content(episodes) + Window.IsActive(fullscreenvideo)">$INFO[VideoPlayer.TVShowTitle]$INFO[VideoPlayer.Year, (,)]</value>
++		<value condition="!VideoPlayer.Content(episodes) + Window.IsActive(fullscreenvideo)">$INFO[VideoPlayer.Title]$INFO[VideoPlayer.Year, (,)]</value>
+ 		<value condition="MusicPartyMode.Enabled">$LOCALIZE[589]</value>
+ 		<value>$LOCALIZE[31000]...</value>
+ 	</variable>
+ 	<variable name="OSDSubLabelVar">
+-		<value condition="Window.IsActive(visualisation) + Integer.IsGreater(Playlist.Length,1) + Integer.IsGreater(Playlist.Position,0)">$LOCALIZE[554] $INFO[Playlist.Position] / $INFO[Playlist.Length]</value>
++		<value condition="Window.IsActive(visualisation) + Integer.IsGreater(Playlist.Length(music),1) + Integer.IsGreater(Playlist.Position(music),0)">$LOCALIZE[554] $INFO[Playlist.Position] / $INFO[Playlist.Length]</value>
+ 		<value condition="VideoPlayer.Content(musicvideos)">$INFO[VideoPlayer.Artist]$INFO[VideoPlayer.Album, - ]</value>
+-		<value condition="VideoPlayer.Content(episodes)">$INFO[VideoPlayer.Season,[COLOR button_focus]S,[/COLOR]]$INFO[VideoPlayer.Episode,[COLOR button_focus]E,: [/COLOR]]$INFO[VideoPlayer.Title]</value>
++		<value condition="VideoPlayer.Content(episodes) + !player.chaptercount">$INFO[VideoPlayer.Season,S]$INFO[VideoPlayer.Episode,E,: ]$INFO[VideoPlayer.Title]</value>
++		<value condition="VideoPlayer.Content(episodes) + player.chaptercount">$INFO[VideoPlayer.Season,[COLOR button_focus][CAPITALIZE]$LOCALIZE[36906][/CAPITALIZE]:[/COLOR] S]$INFO[VideoPlayer.Episode,E, - ]$INFO[VideoPlayer.Title,,[CR]]$INFO[player.chapter,[COLOR button_focus]$LOCALIZE[21396]:[/COLOR] ]$INFO[Player.ChapterCount,/]$INFO[Player.ChapterName, - ]</value>
++		<value condition="player.chaptercount + [!VideoPlayer.Content(episodes) + !VideoPlayer.Content(LiveTV)]">$INFO[player.chapter,[COLOR button_focus]$LOCALIZE[21396]:[/COLOR] ]$INFO[Player.ChapterCount,/]$INFO[Player.ChapterName, - ]</value>
+ 		<value condition="VideoPlayer.Content(LiveTV) | PVR.IsPlayingRecording | PVR.IsPlayingEpgTag">$INFO[VideoPlayer.ChannelNumberLabel,([COLOR button_focus],[/COLOR]) ]$INFO[VideoPlayer.ChannelName] $INFO[VideoPlayer.EpisodeName, - ]</value>
+ 		<value>$INFO[VideoPlayer.Genre]</value>
+ 	</variable>

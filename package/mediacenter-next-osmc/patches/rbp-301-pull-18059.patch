@@ -1,0 +1,68 @@
+From 27895ccd6bf83cb402e1dc07b408eed7e141489c Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Sun, 14 Jun 2020 21:34:15 +0200
+Subject: [PATCH] [PVR] Reinit binary addon manager when loading a profile;
+ fixes non working pvr addons
+
+---
+ xbmc/addons/binary-addons/BinaryAddonManager.h | 5 +++++
+ xbmc/profiles/ProfileManager.cpp               | 3 +++
+ xbmc/pvr/addons/PVRClients.cpp                 | 1 +
+ 3 files changed, 9 insertions(+)
+
+diff --git a/xbmc/addons/binary-addons/BinaryAddonManager.h b/xbmc/addons/binary-addons/BinaryAddonManager.h
+index d271cae401de..ca8d520b5bca 100644
+--- a/xbmc/addons/binary-addons/BinaryAddonManager.h
++++ b/xbmc/addons/binary-addons/BinaryAddonManager.h
+@@ -32,6 +32,11 @@ namespace ADDON
+     CBinaryAddonManager(const CBinaryAddonManager&) = delete;
+     ~CBinaryAddonManager();
+ 
++    bool ReInit()
++    {
++      DeInit();
++      return Init();
++    }
+     bool Init();
+     void DeInit();
+ 
+diff --git a/xbmc/profiles/ProfileManager.cpp b/xbmc/profiles/ProfileManager.cpp
+index 14fbc3766332..29f6ff37b60d 100644
+--- a/xbmc/profiles/ProfileManager.cpp
++++ b/xbmc/profiles/ProfileManager.cpp
+@@ -19,6 +19,7 @@
+ #include "ServiceBroker.h"
+ #include "Util.h"
+ #include "addons/Skin.h"
++#include "addons/binary-addons/BinaryAddonManager.h"
+ #include "dialogs/GUIDialogKaiToast.h"
+ #include "dialogs/GUIDialogYesNo.h"
+ #include "events/EventLog.h"
+@@ -374,6 +375,7 @@ void CProfileManager::FinalizeLoadProfile()
+   PVR::CPVRManager &pvrManager = CServiceBroker::GetPVRManager();
+   CNetworkBase &networkManager = CServiceBroker::GetNetwork();
+   ADDON::CAddonMgr &addonManager = CServiceBroker::GetAddonMgr();
++  ADDON::CBinaryAddonManager& binAddonManager = CServiceBroker::GetBinaryAddonManager();
+   CWeatherManager &weatherManager = CServiceBroker::GetWeatherManager();
+   CFavouritesService &favouritesManager = CServiceBroker::GetFavouritesService();
+   PLAYLIST::CPlayListPlayer &playlistManager = CServiceBroker::GetPlaylistPlayer();
+@@ -390,6 +392,7 @@ void CProfileManager::FinalizeLoadProfile()
+ 
+   // reload the add-ons, or we will first load all add-ons from the master account without checking disabled status
+   addonManager.ReInit();
++  binAddonManager.ReInit();
+ 
+   // let CApplication know that we are logging into a new profile
+   g_application.SetLoggingIn(true);
+diff --git a/xbmc/pvr/addons/PVRClients.cpp b/xbmc/pvr/addons/PVRClients.cpp
+index 31cf05d859d2..2c0a0ed9cfba 100644
+--- a/xbmc/pvr/addons/PVRClients.cpp
++++ b/xbmc/pvr/addons/PVRClients.cpp
+@@ -10,6 +10,7 @@
+ 
+ #include "ServiceBroker.h"
+ #include "addons/binary-addons/BinaryAddonBase.h"
++#include "addons/binary-addons/BinaryAddonManager.h"
+ #include "guilib/LocalizeStrings.h"
+ #include "messaging/ApplicationMessenger.h"
+ #include "pvr/PVREventLogJob.h"

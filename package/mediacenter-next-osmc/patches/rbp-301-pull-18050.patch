@@ -1,0 +1,164 @@
+From 812a59610bfc4cd4d05dd50f1324e862f4e7ee3d Mon Sep 17 00:00:00 2001
+From: howie-f <rftc@gmx.de>
+Date: Fri, 12 Jun 2020 12:21:43 +0200
+Subject: [PATCH] [gui] cleanup: remove log spam / code improvements
+
+---
+ xbmc/GUIPassword.cpp             | 44 ++++++++++++++------------------
+ xbmc/GUIPassword.h               | 25 +++++++++++-------
+ xbmc/guilib/GUIWindowManager.cpp | 10 +++++---
+ 3 files changed, 42 insertions(+), 37 deletions(-)
+
+diff --git a/xbmc/GUIPassword.cpp b/xbmc/GUIPassword.cpp
+index d3706bd7fbda..b41d0b6ab2e5 100644
+--- a/xbmc/GUIPassword.cpp
++++ b/xbmc/GUIPassword.cpp
+@@ -29,7 +29,6 @@
+ #include "settings/SettingsComponent.h"
+ #include "utils/StringUtils.h"
+ #include "utils/Variant.h"
+-#include "utils/log.h"
+ #include "view/ViewStateSettings.h"
+ 
+ #include <utility>
+@@ -445,13 +444,13 @@ bool CGUIPassword::CheckMenuLock(int iWindowID)
+       break;
+     case WINDOW_MUSIC_NAV:      // Music
+       bCheckPW = profileManager->GetCurrentProfile().musicLocked();
+-      if (!bCheckPW && strMediasourcePath != "") // check mediasource by path
+-        return g_passwordManager.IsMediaPathUnlocked(strMediasourcePath, "music");
++      if (!bCheckPW && !m_strMediaSourcePath.empty()) // check mediasource by path
++        return g_passwordManager.IsMediaPathUnlocked(profileManager, "music");
+       break;
+     case WINDOW_VIDEO_NAV:      // Video
+       bCheckPW = profileManager->GetCurrentProfile().videoLocked();
+-      if (!bCheckPW && strMediasourcePath != "") // check mediasource by path
+-        return g_passwordManager.IsMediaPathUnlocked(strMediasourcePath, "video");
++      if (!bCheckPW && !m_strMediaSourcePath.empty()) // check mediasource by path
++        return g_passwordManager.IsMediaPathUnlocked(profileManager, "video");
+       break;
+     case WINDOW_PICTURES:       // Pictures
+       bCheckPW = profileManager->GetCurrentProfile().picturesLocked();
+@@ -549,30 +548,25 @@ bool CGUIPassword::IsDatabasePathUnlocked(const std::string& strPath, VECSOURCES
+   return false;
+ }
+ 
+-bool CGUIPassword::IsMediaPathUnlocked(const std::string& strPath, const std::string& strType)
++bool CGUIPassword::IsMediaPathUnlocked(const std::shared_ptr<CProfileManager>& profileManager,
++                                       const std::string& strType)
+ {
+-  if (StringUtils::StartsWithNoCase(strPath, "root") ||
+-      StringUtils::StartsWithNoCase(strPath, "library://"))
++  if (!StringUtils::StartsWithNoCase(m_strMediaSourcePath, "root") &&
++      !StringUtils::StartsWithNoCase(m_strMediaSourcePath, "library://"))
+   {
+-    // no mediasource-lookup needed
+-    CLog::Log(LOGDEBUG, "CGUIPassword::IsMediaPathUnlocked - entering from {}", strPath);
+-    return true;
++    if (!g_passwordManager.bMasterUser &&
++        profileManager->GetMasterProfile().getLockMode() != LOCK_MODE_EVERYONE)
++    {
++      VECSOURCES& vecSources = *CMediaSourceSettings::GetInstance().GetSources(strType);
++      bool bName = false;
++      int iIndex = CUtil::GetMatchingSource(m_strMediaSourcePath, vecSources, bName);
++      if (iIndex > -1 && iIndex < static_cast<int>(vecSources.size()))
++      {
++        return g_passwordManager.IsItemUnlocked(&vecSources[iIndex], strType);
++      }
++    }
+   }
+ 
+-  const std::shared_ptr<CProfileManager> profileManager =
+-      CServiceBroker::GetSettingsComponent()->GetProfileManager();
+-  if (g_passwordManager.bMasterUser ||
+-      profileManager->GetMasterProfile().getLockMode() == LOCK_MODE_EVERYONE)
+-    return true;
+-
+-  VECSOURCES& vecSources = *CMediaSourceSettings::GetInstance().GetSources(strType);
+-  bool bName = false;
+-  int iIndex = CUtil::GetMatchingSource(strPath, vecSources, bName);
+-  if (iIndex > -1 && iIndex < static_cast<int>(vecSources.size()))
+-    return g_passwordManager.IsItemUnlocked(&vecSources[iIndex], strType);
+-
+-  // need to add a missing filter (root/library.. etc.)
+-  CLog::Log(LOGERROR, "CGUIPassword::IsMediaPathUnlocked - missing filter: {}", strPath);
+   return true;
+ }
+ 
+diff --git a/xbmc/GUIPassword.h b/xbmc/GUIPassword.h
+index 9e165afa5721..36736482d723 100644
+--- a/xbmc/GUIPassword.h
++++ b/xbmc/GUIPassword.h
+@@ -17,6 +17,7 @@
+ 
+ class CFileItem;
+ class CMediaSource;
++class CProfileManager;
+ 
+ typedef std::vector<CMediaSource> VECSOURCES;
+ 
+@@ -64,23 +65,29 @@ class CGUIPassword : public ISettingCallback
+   void LockSources(bool lock);
+   void RemoveSourceLocks();
+   bool IsDatabasePathUnlocked(const std::string& strPath, VECSOURCES& vecSources);
+-  /*! \brief Tests if the user is allowed to access the path by looking up the matching Mediasource
+-   \param strPath The folder path to access
+-   \param strType The type of share being accessed, e.g. "music", "video", etc. See CSettings::UpdateSources()
+-   \return If access is granted, returns \e true
+-   */
+-  bool IsMediaPathUnlocked(const std::string& strPath, const std::string& strType);
++
++  void SetMediaSourcePath(const std::string& strMediaSourcePath)
++  {
++    m_strMediaSourcePath = strMediaSourcePath;
++  }
+ 
+   void OnSettingAction(std::shared_ptr<const CSetting> setting) override;
+ 
+   bool bMasterUser;
+   int iMasterLockRetriesLeft;
+-  std::string strMediasourcePath;
+ 
+ private:
++  /*! \brief Helper function to test if the user is allowed to access the path
++   by looking up the matching Mediasource. Used internally by CheckMenuLock.
++   \param profileManager instance passed by ref. see CGUIPassword::CheckMenuLock
++   \param strType The type of share being accessed, e.g. "music", "video", etc.
++   \return If access is granted, returns \e true
++   */
++  bool IsMediaPathUnlocked(const std::shared_ptr<CProfileManager>& profileManager,
++                           const std::string& strType);
++
++  std::string m_strMediaSourcePath;
+   int VerifyPassword(LockType btnType, const std::string& strPassword, const std::string& strHeading);
+ };
+ 
+ extern CGUIPassword g_passwordManager;
+-
+-
+diff --git a/xbmc/guilib/GUIWindowManager.cpp b/xbmc/guilib/GUIWindowManager.cpp
+index 7e94d0715953..350fbdd089f0 100644
+--- a/xbmc/guilib/GUIWindowManager.cpp
++++ b/xbmc/guilib/GUIWindowManager.cpp
+@@ -773,14 +773,18 @@ void CGUIWindowManager::ActivateWindow_Internal(int iWindowID, const std::vector
+ 
+   // make sure we check mediasources from home
+   if (GetActiveWindow() == WINDOW_HOME)
+-    g_passwordManager.strMediasourcePath = !params.empty() ? params[0] : "";
++  {
++    g_passwordManager.SetMediaSourcePath(!params.empty() ? params[0] : "");
++  }
+   else
+-    g_passwordManager.strMediasourcePath = "";
++  {
++    g_passwordManager.SetMediaSourcePath("");
++  }
+ 
+   if (!g_passwordManager.CheckMenuLock(iWindowID))
+   {
+     CLog::Log(LOGERROR,
+-              "MasterCode or Mediasource-code is wrong: Window with id {} will not be loaded! "
++              "MasterCode or MediaSource-code is wrong: Window with id {} will not be loaded! "
+               "Enter a correct code!",
+               iWindowID);
+     if (GetActiveWindow() == WINDOW_INVALID && iWindowID != WINDOW_HOME)
