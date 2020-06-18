@@ -1,0 +1,45 @@
+From a76a07ebe9c8b291bda41456a26eabde1fd4fa10 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Mon, 15 Jun 2020 21:29:10 +0200
+Subject: [PATCH] [cmake] remove very old no more needed part of addons
+
+There was still a part where was since years no more needed and
+from the time where the binary addons has a shared lib between.
+
+This was some years ago removed but his cmake build function
+still exists.
+---
+ cmake/scripts/common/Macros.cmake | 20 --------------------
+ 1 file changed, 20 deletions(-)
+
+diff --git a/cmake/scripts/common/Macros.cmake b/cmake/scripts/common/Macros.cmake
+index 1b658f050434..f7327e366b43 100644
+--- a/cmake/scripts/common/Macros.cmake
++++ b/cmake/scripts/common/Macros.cmake
+@@ -111,26 +111,6 @@ function(core_add_test_library name)
+   endforeach()
+ endfunction()
+ 
+-# Add an addon callback library
+-# Arguments:
+-#   name name of the library to add
+-# Implicit arguments:
+-#   SOURCES the sources of the library
+-#   HEADERS the headers of the library (only for IDE support)
+-#   OTHERS  other library related files (only for IDE support)
+-# On return:
+-#   Library target is defined and added to LIBRARY_FILES
+-function(core_add_addon_library name)
+-  get_filename_component(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+-  list(APPEND SOURCES lib${name}.cpp)
+-  core_add_shared_library(${name} OUTPUT_DIRECTORY addons/${DIRECTORY})
+-  set_target_properties(${name} PROPERTIES FOLDER addons)
+-  target_include_directories(${name} PRIVATE
+-                             ${CMAKE_CURRENT_SOURCE_DIR}
+-                             ${CMAKE_SOURCE_DIR}/xbmc/addons/kodi-addon-dev-kit/include/kodi
+-                             ${CMAKE_SOURCE_DIR}/xbmc)
+-endfunction()
+-
+ # Add an dl-loaded shared library
+ # Arguments:
+ #   name name of the library to add
