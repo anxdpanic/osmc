@@ -4,7 +4,7 @@
 #!/bin/bash
 
 . ../common.sh
-if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ]
+if [ "$1" == "rbp2" ]
 then
 pull_source "https://github.com/popcornmix/xbmc/archive/9208b1a317185b55d067f43914206e88527be229.tar.gz" "$(pwd)/src"
 API_VERSION="19"
@@ -18,7 +18,7 @@ if [ $? != 0 ]; then echo -e "Error fetching Kodi source" && exit 1; fi
 # Build in native environment
 BUILD_OPTS=$BUILD_OPTION_DEFAULTS
 BUILD_OPTS=$(($BUILD_OPTS - $BUILD_OPTION_USE_CCACHE))
-if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ] || [ "$1" == "vero2" ] || [ "$1" == "vero3" ]
+if [ "$1" == "rbp2" ] || [ "$1" == "vero2" ] || [ "$1" == "vero3" ]
 then
     BUILD_OPTS=$(($BUILD_OPTS + $BUILD_OPTION_NEEDS_SWAP))
 fi
@@ -104,23 +104,9 @@ then
 	handle_dep "cmake"
 	handle_dep "rapidjson-dev"
         handle_dep "libgcrypt11-dev"
-	if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ]
-	then
-		handle_dep "rbp-userland-dev-osmc"
-	fi
-	if [ "$1" == "rbp1" ]
-	then
-		handle_dep "rbp1-libcec-dev-osmc"
-		handle_dep "armv6l-libshairplay-dev-osmc"
-		handle_dep "armv6l-librtmp-dev-osmc"
-		handle_dep "armv6l-libnfs-dev-osmc"
-		handle_dep "armv6l-libplatform-dev-osmc"
-		handle_dep "armv6l-libbluray-dev-osmc"
-		handle_dep "armv6l-libsqlite-dev-osmc"
-		handle_dep "armv6l-libass-dev-osmc"
-	fi
 	if [ "$1" == "rbp2" ]
 	then
+		handle_dep "rbp-userland-dev-osmc"
 		handle_dep "rbp2-libcec-dev-osmc"
 		handle_dep "armv7-libshairplay-dev-osmc"
 		handle_dep "armv7-librtmp-dev-osmc"
@@ -187,22 +173,22 @@ then
 
 	
 	#Temp hack to revert rbp patches before everything else.
-	if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ]
+	if [ "$1" == "rbp2" ]
 	then 
 		install_patch "../../patches" "rrev"
 	fi
 	if [ "$1" == "vero2" ] || [ "$1" == "vero3" ]; then install_patch "../../patches" "vrev"; fi     #Revert vero patches
 
 
-	if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ] || [ "$1" == "vero2" ] || [ "$1" == "vero3" ]; then install_patch "../../patches" "arev"; fi
+	if [ "$1" == "rbp2" ] || [ "$1" == "vero2" ] || [ "$1" == "vero3" ]; then install_patch "../../patches" "arev"; fi
 
 	install_patch "../../patches" "all"
 	test "$1" == pc && install_patch "../../patches" "pc"
-	if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ]
+	if [ "$1" == "rbp2" ]
 	then
 		install_patch "../../patches" "rbp"
 	fi
-	if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ] || [ "$1" == "vero2" ] || [ "$1" == "vero3" ]; then install_patch "../../patches" "arm"; fi
+	if [ "$1" == "rbp2" ] || [ "$1" == "vero2" ] || [ "$1" == "vero3" ]; then install_patch "../../patches" "arm"; fi
 	test "$1" == vero2 && install_patch "../../patches" "vero2"
 	test "$1" == vero3 && install_patch "../../patches" "vero3"
 
@@ -227,16 +213,11 @@ then
          .
 	fi
 	# Raspberry Pi Configuration
-	if [ "$1" == "rbp1" ]
-	then
-		CPU="arm1176jzf-s"
-		COMPFLAGS="-O3 -fomit-frame-pointer -mfpu=vfp "
-	fi
 	if [ "$1" == "rbp2" ]
 	then
 		COMPFLAGS="-march=armv7-a -mfloat-abi=hard -O3 -mfpu=neon-vfpv4 -fomit-frame-pointer "
 	fi
-	if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ]; then
+	if [ "$1" == "rbp2" ]; then
 	LIBRARY_PATH+=/opt/vc/lib && \
 	COMPFLAGS+="-I/opt/vc/include -I/opt/vc/include/interface -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux -Wl,-rpath=/usr/osmc/lib -L/usr/osmc/lib " && \
 	export CFLAGS+=${COMPFLAGS} && \
@@ -363,7 +344,7 @@ then
         #ADDONS_VISUALIZATIONS="visualization.fishbmc visualization.goom visualization.projectm visualization.shadertoy visualization.spectrum visualization.vsxu visualization.waveform"
 	ADDONS_GAME="game.libretro.mame2000 game.libretro.mame2003 game.libretro.scummvm game.libretro game.libretro.2048 game.libretro.beetle-gba game.libretro.fceumm game.libretro.gw game.libretro.beetle-pce-fast game.libretro.bnes game.libretro.nestopia game.libretro.bsnes-mercury-balanced game.libretro.bluemsx game.libretro.vecx game.libretro.gambatte game.libretro.beetle-bsnes game.libretro.meteor game.libretro.mgba game.libretro.vba-next game.libretro.quicknes game.libretro.stella game.libretro.dosbox game.libretro.vbam game.libretro.genplus game.libretro.operax game.libretro.snes9x"
 	ADDONS_IMAGE_DECODERS="imagedecoder.mpo" # imagedecoder.heif imagedecoder.raw
-	if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ]
+	if [ "$1" == "rbp2" ]
 	then
 	    ADDONS_TO_BUILD="${ADDONS_AUDIO_DECODERS} ${ADDONS_AUDIO_ENCODERS} ${ADDONS_INPUTSTREAM} ${ADDONS_PERIPHERAL} ${ADDONS_PVR} ${ADDONS_SCREENSAVERS} ${ADDONS_VFS} ${ADDONS_VISUALIZATIONS} ${ADDONS_GAME} ${ADDONS_IMAGE_DECODERS}"
 	    PLATFORM="-DCMAKE_INCLUDE_PATH=/opt/vc/include:/opt/vc/include/interface:/opt/vc/include/interface/vcos/pthreads:/opt/vc/include/interface/vmcs_host/linux -DCMAKE_LIBRARY_PATH=/opt/vc/lib"
@@ -423,7 +404,6 @@ then
 	strip -s ${out}/usr/lib/kodi/kodi.bin
 	COMMON_DEPENDS="niceprioritypolicy-osmc, mediacenter-send-osmc, libssh-4, libavahi-client3, python3, libpython3.5, python-imaging, python-unidecode, libsmbclient, libjpeg62-turbo, libsqlite3-0, libtinyxml2.6.2v5, libmad0, libmicrohttpd12, libyajl2, libmariadbclient18, libasound2, libxml2, liblzo2-2, libxslt1.1, libpng16-16, libsamplerate0, libtag1v5-vanilla, libfribidi0, libgif7, libcdio13, libpcrecpp0v5, libfreetype6, libvorbis0a, libvorbisenc2, libcurl3, libssl1.1, libplist3, avahi-daemon, policykit-1, mediacenter-addon-osmc (>= 3.0.39), mediacenter-skin-osmc, libcrossguid0, libcap2-bin, libfstrcmp0, libxkbcommon0, libinput10, xz-utils, libiso9660-8, libnss3, libnspr4"
 	test "$1" == pc && echo "Depends: ${COMMON_DEPENDS}, amd64-libnfs-osmc, amd64-librtmp-osmc, amd64-libshairplay-osmc, amd64-libbluray-osmc, amd64-libsqlite-osmc, libxrandr2, libglew1.10, libglu1-mesa, xserver-xorg-core, xserver-xorg, xinit, xfonts-base, x11-xserver-utils, xauth, alsa-utils, xserver-xorg-video-intel, amd64-libass-osmc" >> files/DEBIAN/control
-	test "$1" == rbp1 && echo "Depends: ${COMMON_DEPENDS}, rbp1-libcec-osmc, armv6l-libnfs-osmc, armv6l-librtmp-osmc, armv6l-libshairplay-osmc, armv6l-libbluray-osmc, armv6l-libsqlite-osmc, rbp-userland-osmc, armv6l-splash-osmc, armv6l-libass-osmc" >> files/DEBIAN/control
 	test "$1" == rbp2 && echo "Depends: ${COMMON_DEPENDS}, rbp2-libcec-osmc, armv7-libnfs-osmc, armv7-librtmp-osmc, armv7-libshairplay-osmc, armv7-libbluray-osmc, armv7-libsqlite-osmc, rbp-userland-osmc, armv7-splash-osmc, armv7-libass-osmc" >> files/DEBIAN/control
 	test "$1" == vero2 && echo "Depends: ${COMMON_DEPENDS}, vero2-libcec-osmc, armv7-libnfs-osmc, armv7-librtmp-osmc, armv7-libshairplay-osmc, armv7-libbluray-osmc, armv7-libsqlite-osmc, vero2-userland-osmc, armv7-splash-osmc, vero2-libamcodec-osmc, armv7-libass-osmc" >> files/DEBIAN/control
 	test "$1" == vero3 && echo "Depends: ${COMMON_DEPENDS}, vero3-libcec-osmc, armv7-libnfs-osmc, armv7-librtmp-osmc, armv7-libshairplay-osmc, armv7-libbluray-osmc, armv7-libsqlite-osmc, vero3-userland-osmc, armv7-splash-osmc, vero3-libamcodec-osmc, armv7-libass-osmc" >> files/DEBIAN/control
