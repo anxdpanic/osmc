@@ -1,0 +1,25 @@
+From 075fe4e41c9a1e3c7babd59276cc666001b4b209 Mon Sep 17 00:00:00 2001
+From: DaveTBlake <oak99sky@yahoo.co.uk>
+Date: Sat, 20 Jun 2020 13:31:25 +0100
+Subject: [PATCH] Fix MySQL syntax for trigger tgrInsertGenre
+
+---
+ xbmc/music/MusicDatabase.cpp | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/xbmc/music/MusicDatabase.cpp b/xbmc/music/MusicDatabase.cpp
+index fdeba2915f69..ac8266c30511 100644
+--- a/xbmc/music/MusicDatabase.cpp
++++ b/xbmc/music/MusicDatabase.cpp
+@@ -370,9 +370,8 @@ void CMusicDatabase::CreateAnalytics()
+     m_pDS->exec("CREATE TRIGGER tgrUpdateArtist BEFORE UPDATE ON artist FOR EACH ROW"
+                 " SET NEW.dateModified = now()");
+ 
+-    m_pDS->exec("CREATE TRIGGER tgrInsertGenre AFTER INSERT ON genre"
+-                " BEGIN UPDATE versiontagscan SET genresupdated = now();" 
+-                " END");
++    m_pDS->exec("CREATE TRIGGER tgrInsertGenre AFTER INSERT ON genre FOR EACH ROW"
++                " UPDATE versiontagscan SET genresupdated = now()");
+   }
+ 
+     // Triggers to maintain recent changes to album and song artist links in removed_link table

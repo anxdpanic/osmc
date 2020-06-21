@@ -1,0 +1,50 @@
+From ab73f7fa7e42e3816330eb9ca9bf6666993cf3cc Mon Sep 17 00:00:00 2001
+From: ronie <ronie@kodi.tv>
+Date: Tue, 9 Jun 2020 18:27:24 +0200
+Subject: [PATCH 1/2] fix manual album refresh
+
+---
+ xbmc/music/infoscanner/MusicInfoScanner.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/music/infoscanner/MusicInfoScanner.cpp b/xbmc/music/infoscanner/MusicInfoScanner.cpp
+index 4a6d57625189..aefb6cc463d1 100644
+--- a/xbmc/music/infoscanner/MusicInfoScanner.cpp
++++ b/xbmc/music/infoscanner/MusicInfoScanner.cpp
+@@ -1587,11 +1587,11 @@ CMusicInfoScanner::DownloadAlbumInfo(const CAlbum& album,
+             item.m_idepth = i; // use this to hold the index of the album in the scraper
+             pDlg->Add(item);
+           }
+-          if (relevance > .99f) // we're so close, no reason to search further
++          if (!pDialog && relevance > .99f) // we're so close, no reason to search further
+             break;
+         }
+ 
+-        if (pDialog && bestRelevance < THRESHOLD)
++        if (pDialog)
+         {
+           pDlg->Sort(false);
+           pDlg->Open();
+
+From c07fe7bad68344aa8e48eb0d9072b81fbf450c7c Mon Sep 17 00:00:00 2001
+From: ronie <ronie@kodi.tv>
+Date: Wed, 10 Jun 2020 13:14:14 +0200
+Subject: [PATCH 2/2] show selection dialog even if 1 result
+
+---
+ xbmc/music/infoscanner/MusicInfoScanner.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/music/infoscanner/MusicInfoScanner.cpp b/xbmc/music/infoscanner/MusicInfoScanner.cpp
+index aefb6cc463d1..caab7cd21e4e 100644
+--- a/xbmc/music/infoscanner/MusicInfoScanner.cpp
++++ b/xbmc/music/infoscanner/MusicInfoScanner.cpp
+@@ -1552,7 +1552,7 @@ CMusicInfoScanner::DownloadAlbumInfo(const CAlbum& album,
+     {
+       double bestRelevance = 0;
+       double minRelevance = THRESHOLD;
+-      if (scraper.GetAlbumCount() > 1) // score the matches
++      if (pDialog || scraper.GetAlbumCount() > 1) // score the matches
+       {
+         //show dialog with all albums found
+         if (pDialog)

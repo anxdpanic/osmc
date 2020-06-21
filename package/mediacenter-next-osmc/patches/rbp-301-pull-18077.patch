@@ -1,0 +1,35 @@
+From 98479c6f87ce47fda9f3560750fea5e6523f0464 Mon Sep 17 00:00:00 2001
+From: peak3d <pfau@peak3d.de>
+Date: Fri, 19 Jun 2020 10:42:04 +0200
+Subject: [PATCH] [Android] Fix drain in flushed state
+
+---
+ .../DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp    | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp
+index 9f1a1566ef7b..761a70470da6 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp
+@@ -999,11 +999,6 @@ void CDVDVideoCodecAndroidMediaCodec::Reset()
+ 
+   if (m_codec)
+   {
+-    // flush all outputbuffers inflight, they will
+-    // become invalid on m_codec->flush and generate
+-    // a spew of java exceptions if used
+-    FlushInternal();
+-
+     // now we can flush the actual MediaCodec object
+     CLog::Log(LOGDEBUG, "CDVDVideoCodecAndroidMediaCodec::Reset Current state (%d)", m_state);
+     m_codec->flush();
+@@ -1127,6 +1122,9 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecAndroidMediaCodec::GetPicture(VideoPictur
+     SignalEndOfStream();
+     m_state = MEDIACODEC_STATE_WAIT_ENDOFSTREAM;
+   }
++  else if (m_state == MEDIACODEC_STATE_FLUSHED)
++    return VC_EOF;
++
+   return VC_NONE;
+ }
+ 

@@ -1,0 +1,22 @@
+From e297510df63bbd41e64801b8d4ca053423849e57 Mon Sep 17 00:00:00 2001
+From: ronie <ronie@kodi.tv>
+Date: Tue, 9 Jun 2020 23:08:09 +0200
+Subject: [PATCH] Albumscraper: allow fine-grained relevance values
+
+---
+ xbmc/music/infoscanner/MusicInfoScanner.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/music/infoscanner/MusicInfoScanner.cpp b/xbmc/music/infoscanner/MusicInfoScanner.cpp
+index 787b311a62e0..ede63814c1a9 100644
+--- a/xbmc/music/infoscanner/MusicInfoScanner.cpp
++++ b/xbmc/music/infoscanner/MusicInfoScanner.cpp
+@@ -1606,7 +1606,7 @@ CMusicInfoScanner::DownloadAlbumInfo(const CAlbum& album,
+ 
+             items.Add(item);
+           }
+-          if (!pDialog && relevance > .99f) // we're so close, no reason to search further
++          if (!pDialog && relevance > .999f) // we're so close, no reason to search further
+             break;
+         }
+ 
