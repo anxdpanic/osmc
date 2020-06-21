@@ -1,0 +1,2542 @@
+From 2bae11004f5e952bb7e9ec21a35be013f8b5f80e Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Sun, 14 Jun 2020 11:06:17 +0200
+Subject: [PATCH 1/8] [addons] use for PVR disable/enable the normal addon
+ manager
+
+Also remove the no more used IsAddonEnabled from CBinaryAddonManager.
+---
+ xbmc/addons/binary-addons/BinaryAddonManager.cpp | 8 +-------
+ xbmc/addons/binary-addons/BinaryAddonManager.h   | 9 ---------
+ xbmc/pvr/addons/PVRClients.cpp                   | 2 +-
+ 3 files changed, 2 insertions(+), 17 deletions(-)
+
+diff --git a/xbmc/addons/binary-addons/BinaryAddonManager.cpp b/xbmc/addons/binary-addons/BinaryAddonManager.cpp
+index 24360a4b1380..a1f274c01078 100644
+--- a/xbmc/addons/binary-addons/BinaryAddonManager.cpp
++++ b/xbmc/addons/binary-addons/BinaryAddonManager.cpp
+@@ -78,12 +78,6 @@ bool CBinaryAddonManager::IsAddonInstalled(const std::string& addonId, const TYP
+   return (m_installedAddons.find(addonId) != m_installedAddons.end());
+ }
+ 
+-bool CBinaryAddonManager::IsAddonEnabled(const std::string& addonId, const TYPE &type/* = ADDON_UNKNOWN*/)
+-{
+-  CSingleLock lock(m_critSection);
+-  return (m_enabledAddons.find(addonId) != m_enabledAddons.end());
+-}
+-
+ void CBinaryAddonManager::GetAddonInfos(BinaryAddonBaseList& addonInfos, bool enabledOnly, const TYPE &type) const
+ {
+   CSingleLock lock(m_critSection);
+@@ -111,7 +105,7 @@ void CBinaryAddonManager::GetDisabledAddonInfos(BinaryAddonBaseList& addonInfos,
+   {
+     if (type == ADDON_UNKNOWN || info.second->HasType(type))
+     {
+-      if (!IsAddonEnabled(info.second->ID(), type))
++      if (CServiceBroker::GetAddonMgr().IsAddonDisabled(info.second->ID()))
+         addonInfos.push_back(info.second);
+     }
+   }
+diff --git a/xbmc/addons/binary-addons/BinaryAddonManager.h b/xbmc/addons/binary-addons/BinaryAddonManager.h
+index ca8d520b5bca..d35f6616d4e6 100644
+--- a/xbmc/addons/binary-addons/BinaryAddonManager.h
++++ b/xbmc/addons/binary-addons/BinaryAddonManager.h
+@@ -67,15 +67,6 @@ namespace ADDON
+      */
+     bool IsAddonInstalled(const std::string& addonId, const TYPE &type = ADDON_UNKNOWN);
+ 
+-    /*!
+-     * @brief Check whether an addon has been enabled.
+-     *
+-     * @param[in] addonId id of the addon
+-     * @param[in] type Add-on type to check installed and enabled
+-     * @return true if enabled
+-     */
+-    bool IsAddonEnabled(const std::string& addonId, const TYPE &type = ADDON_UNKNOWN);
+-
+     /*!
+      * @brief Get a list of add-on's with info's for the on system available
+      * ones.
+diff --git a/xbmc/pvr/addons/PVRClients.cpp b/xbmc/pvr/addons/PVRClients.cpp
+index 2c0a0ed9cfba..9831280373de 100644
+--- a/xbmc/pvr/addons/PVRClients.cpp
++++ b/xbmc/pvr/addons/PVRClients.cpp
+@@ -96,7 +96,7 @@ void CPVRClients::UpdateAddons(const std::string& changedAddonId /*= ""*/)
+   std::vector<std::pair<BinaryAddonBasePtr, bool>> addonsWithStatus;
+   for (const auto& addon : addons)
+   {
+-    bool bEnabled = CServiceBroker::GetBinaryAddonManager().IsAddonEnabled(addon->ID());
++    bool bEnabled = !CServiceBroker::GetAddonMgr().IsAddonDisabled(addon->ID());
+     addonsWithStatus.emplace_back(std::make_pair(addon, bEnabled));
+ 
+     if (!bFoundChangedAddon && addon->ID() == changedAddonId)
+
+From 433aca3d1e0d21ca47ae75251d722300c59cceba Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Sun, 14 Jun 2020 11:22:34 +0200
+Subject: [PATCH 2/8] [addons] remove no more needed/used functions from binary
+ addon manager
+
+On SettingConditions was one part used, but replaced to normal manager.
+The rest was not needed and now removed.
+---
+ .../binary-addons/BinaryAddonManager.cpp      | 28 -------------------
+ .../addons/binary-addons/BinaryAddonManager.h | 27 ------------------
+ xbmc/settings/SettingConditions.cpp           |  2 +-
+ 3 files changed, 1 insertion(+), 56 deletions(-)
+
+diff --git a/xbmc/addons/binary-addons/BinaryAddonManager.cpp b/xbmc/addons/binary-addons/BinaryAddonManager.cpp
+index a1f274c01078..8672c3ff6cc3 100644
+--- a/xbmc/addons/binary-addons/BinaryAddonManager.cpp
++++ b/xbmc/addons/binary-addons/BinaryAddonManager.cpp
+@@ -50,34 +50,6 @@ void CBinaryAddonManager::DeInit()
+   CServiceBroker::GetAddonMgr().Events().Unsubscribe(this);
+ }
+ 
+-bool CBinaryAddonManager::HasInstalledAddons(const TYPE &type) const
+-{
+-  CSingleLock lock(m_critSection);
+-  for (auto info : m_installedAddons)
+-  {
+-    if (info.second->HasType(type))
+-      return true;
+-  }
+-  return false;
+-}
+-
+-bool CBinaryAddonManager::HasEnabledAddons(const TYPE &type) const
+-{
+-  CSingleLock lock(m_critSection);
+-  for (auto info : m_enabledAddons)
+-  {
+-    if (info.second->HasType(type))
+-      return true;
+-  }
+-  return false;
+-}
+-
+-bool CBinaryAddonManager::IsAddonInstalled(const std::string& addonId, const TYPE &type/* = ADDON_UNKNOWN*/)
+-{
+-  CSingleLock lock(m_critSection);
+-  return (m_installedAddons.find(addonId) != m_installedAddons.end());
+-}
+-
+ void CBinaryAddonManager::GetAddonInfos(BinaryAddonBaseList& addonInfos, bool enabledOnly, const TYPE &type) const
+ {
+   CSingleLock lock(m_critSection);
+diff --git a/xbmc/addons/binary-addons/BinaryAddonManager.h b/xbmc/addons/binary-addons/BinaryAddonManager.h
+index d35f6616d4e6..178a1d583788 100644
+--- a/xbmc/addons/binary-addons/BinaryAddonManager.h
++++ b/xbmc/addons/binary-addons/BinaryAddonManager.h
+@@ -40,33 +40,6 @@ namespace ADDON
+     bool Init();
+     void DeInit();
+ 
+-    /*!
+-     * @brief Checks system about given type to know related add-on's are
+-     * installed.
+-     *
+-     * @param[in] type Add-on type to check installed
+-     * @return true if given type is installed
+-     */
+-    bool HasInstalledAddons(const TYPE &type) const;
+-
+-    /*!
+-     * @brief Checks system about given type to know related add-on's are
+-     * installed and also minimum one enabled.
+-     *
+-     * @param[in] type Add-on type to check enabled
+-     * @return true if given type is enabled
+-     */
+-    bool HasEnabledAddons(const TYPE &type) const;
+-
+-    /*!
+-     * @brief Checks whether an addon is installed.
+-     *
+-     * @param[in] addonId id of the addon
+-     * @param[in] type Add-on type to check installed
+-     * @return true if installed
+-     */
+-    bool IsAddonInstalled(const std::string& addonId, const TYPE &type = ADDON_UNKNOWN);
+-
+     /*!
+      * @brief Get a list of add-on's with info's for the on system available
+      * ones.
+diff --git a/xbmc/settings/SettingConditions.cpp b/xbmc/settings/SettingConditions.cpp
+index 856990e75dde..73817ec9d3b8 100644
+--- a/xbmc/settings/SettingConditions.cpp
++++ b/xbmc/settings/SettingConditions.cpp
+@@ -60,7 +60,7 @@ bool HasPeripherals(const std::string &condition, const std::string &value, Sett
+ 
+ bool HasPeripheralLibraries(const std::string &condition, const std::string &value, SettingConstPtr setting, void *data)
+ {
+-  return CServiceBroker::GetBinaryAddonManager().HasInstalledAddons(ADDON::ADDON_PERIPHERALDLL);
++  return CServiceBroker::GetAddonMgr().HasInstalledAddons(ADDON::ADDON_PERIPHERALDLL);
+ }
+ 
+ bool HasRumbleFeature(const std::string &condition, const std::string &value, SettingConstPtr setting, void *data)
+
+From 9f0aec4ca022aa5dbf664cffbf95a896c71168c0 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Tue, 16 Jun 2020 21:31:08 +0200
+Subject: [PATCH 3/8] [addons] use GetAddonInfo from normal manager where
+ possible
+
+This replace GetAddonInfo call to binary addon manager where possible.
+On following changes it becomes also done on others, but here the smaller
+changes about.
+---
+ xbmc/ServiceManager.cpp              |  6 ++----
+ xbmc/addons/AddonManager.cpp         |  5 ++++-
+ xbmc/addons/AddonManager.h           | 16 +++++++++++++++-
+ xbmc/pvr/addons/PVRClients.cpp       |  4 ++--
+ xbmc/utils/FileExtensionProvider.cpp | 13 +++++--------
+ xbmc/utils/FileExtensionProvider.h   |  5 +----
+ 6 files changed, 29 insertions(+), 20 deletions(-)
+
+diff --git a/xbmc/ServiceManager.cpp b/xbmc/ServiceManager.cpp
+index dd01f1d23334..025dc9c9e9d7 100644
+--- a/xbmc/ServiceManager.cpp
++++ b/xbmc/ServiceManager.cpp
+@@ -68,8 +68,7 @@ bool CServiceManager::InitForTesting()
+     return false;
+   }
+ 
+-  m_fileExtensionProvider.reset(new CFileExtensionProvider(*m_addonMgr,
+-                                                           *m_binaryAddonManager));
++  m_fileExtensionProvider.reset(new CFileExtensionProvider(*m_addonMgr));
+ 
+   init_level = 1;
+   return true;
+@@ -149,8 +148,7 @@ bool CServiceManager::InitStageTwo(const CAppParamParser &params, const std::str
+ 
+   m_gameRenderManager.reset(new RETRO::CGUIGameRenderManager);
+ 
+-  m_fileExtensionProvider.reset(new CFileExtensionProvider(*m_addonMgr,
+-                                                           *m_binaryAddonManager));
++  m_fileExtensionProvider.reset(new CFileExtensionProvider(*m_addonMgr));
+ 
+   m_powerManager.reset(new CPowerManager());
+   m_powerManager->Initialize();
+diff --git a/xbmc/addons/AddonManager.cpp b/xbmc/addons/AddonManager.cpp
+index b4a9499bfb43..09fca28ed892 100644
+--- a/xbmc/addons/AddonManager.cpp
++++ b/xbmc/addons/AddonManager.cpp
+@@ -912,13 +912,16 @@ std::vector<DependencyInfo> CAddonMgr::GetDepsRecursive(const std::string& id)
+   return added;
+ }
+ 
+-bool CAddonMgr::GetAddonInfos(AddonInfos& addonInfos, TYPE type) const
++bool CAddonMgr::GetAddonInfos(AddonInfos& addonInfos, bool enabledOnly, TYPE type) const
+ {
+   CSingleLock lock(m_critSection);
+ 
+   bool forUnknown = type == ADDON_UNKNOWN;
+   for (auto& info : m_installedAddons)
+   {
++    if (enabledOnly && m_disabled.find(info.first) != m_disabled.end())
++      continue;
++
+     if (info.second->MainType() != ADDON_UNKNOWN && (forUnknown || info.second->HasType(type)))
+       addonInfos.push_back(info.second);
+   }
+diff --git a/xbmc/addons/AddonManager.h b/xbmc/addons/AddonManager.h
+index 3bca19ae3e42..93d0452533e0 100644
+--- a/xbmc/addons/AddonManager.h
++++ b/xbmc/addons/AddonManager.h
+@@ -261,7 +261,21 @@ namespace ADDON
+      */
+     std::vector<DependencyInfo> GetDepsRecursive(const std::string& id);
+ 
+-    bool GetAddonInfos(AddonInfos& addonInfos, TYPE type) const;
++    /*!
++     * @brief Get a list of add-on's with info's for the on system available
++     * ones.
++     *
++     * @param[out] addonInfos list where finded addon information becomes stored
++     * @param[in] enabledOnly If true are only enabled ones given back,
++     *                        if false all on system available. Default is true.
++     * @param[in] type The requested type, with "ADDON_UNKNOWN" are all add-on
++     *                 types given back who match the case with value before.
++     *                 If a type id becomes added are only add-ons returned who
++     *                 match them. Default is for all types.
++     * @return true if the list contains entries
++     */
++    bool GetAddonInfos(AddonInfos& addonInfos, bool enabledOnly, TYPE type) const;
++
+     const AddonInfoPtr GetAddonInfo(const std::string& id, TYPE type = ADDON_UNKNOWN) const;
+ 
+     /*!
+diff --git a/xbmc/pvr/addons/PVRClients.cpp b/xbmc/pvr/addons/PVRClients.cpp
+index 9831280373de..9f2f3faa8189 100644
+--- a/xbmc/pvr/addons/PVRClients.cpp
++++ b/xbmc/pvr/addons/PVRClients.cpp
+@@ -364,8 +364,8 @@ PVR_ERROR CPVRClients::GetCreatedClients(CPVRClientMap& clientsReady, std::vecto
+ {
+   clientsNotReady.clear();
+ 
+-  BinaryAddonBaseList addons;
+-  CServiceBroker::GetBinaryAddonManager().GetAddonInfos(addons, true, ADDON::ADDON_PVRDLL);
++  std::vector<AddonInfoPtr> addons;
++  CServiceBroker::GetAddonMgr().GetAddonInfos(addons, true, ADDON::ADDON_PVRDLL);
+ 
+   for (const auto& addon : addons)
+   {
+diff --git a/xbmc/utils/FileExtensionProvider.cpp b/xbmc/utils/FileExtensionProvider.cpp
+index 146607c2d265..001629e9c41b 100644
+--- a/xbmc/utils/FileExtensionProvider.cpp
++++ b/xbmc/utils/FileExtensionProvider.cpp
+@@ -10,7 +10,6 @@
+ 
+ #include "ServiceBroker.h"
+ #include "addons/AddonManager.h"
+-#include "addons/binary-addons/BinaryAddonBase.h"
+ #include "settings/AdvancedSettings.h"
+ #include "settings/SettingsComponent.h"
+ 
+@@ -25,11 +24,9 @@ const std::vector<TYPE> ADDON_TYPES = {
+   ADDON_AUDIODECODER
+ };
+ 
+-CFileExtensionProvider::CFileExtensionProvider(ADDON::CAddonMgr &addonManager,
+-                                               ADDON::CBinaryAddonManager &binaryAddonManager) :
+-  m_advancedSettings(CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()),
+-  m_addonManager(addonManager),
+-  m_binaryAddonManager(binaryAddonManager)
++CFileExtensionProvider::CFileExtensionProvider(ADDON::CAddonMgr& addonManager)
++  : m_advancedSettings(CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()),
++    m_addonManager(addonManager)
+ {
+   SetAddonExtensions();
+ 
+@@ -125,8 +122,8 @@ void CFileExtensionProvider::SetAddonExtensions(const TYPE& type)
+ {
+   std::vector<std::string> extensions;
+   std::vector<std::string> fileFolderExtensions;
+-  BinaryAddonBaseList addonInfos;
+-  m_binaryAddonManager.GetAddonInfos(addonInfos, true, type);
++  std::vector<AddonInfoPtr> addonInfos;
++  m_addonManager.GetAddonInfos(addonInfos, true, type);
+   for (const auto& addonInfo : addonInfos)
+   {
+     std::string info = ADDON_VFS == type ? "@extensions" : "@extension";
+diff --git a/xbmc/utils/FileExtensionProvider.h b/xbmc/utils/FileExtensionProvider.h
+index 05e159ed48e8..fce384adf47a 100644
+--- a/xbmc/utils/FileExtensionProvider.h
++++ b/xbmc/utils/FileExtensionProvider.h
+@@ -15,14 +15,12 @@
+ namespace ADDON
+ {
+   class CAddonMgr;
+-  class CBinaryAddonManager;
+ }
+ 
+ class CFileExtensionProvider
+ {
+ public:
+-  CFileExtensionProvider(ADDON::CAddonMgr &addonManager,
+-                         ADDON::CBinaryAddonManager &binaryAddonManager);
++  CFileExtensionProvider(ADDON::CAddonMgr& addonManager);
+   ~CFileExtensionProvider();
+ 
+   /*!
+@@ -71,7 +69,6 @@ class CFileExtensionProvider
+   // Construction properties
+   std::shared_ptr<CAdvancedSettings> m_advancedSettings;
+   ADDON::CAddonMgr &m_addonManager;
+-  ADDON::CBinaryAddonManager &m_binaryAddonManager;
+ 
+   // File extension properties
+   std::map<ADDON::TYPE, std::string> m_addonExtensions;
+
+From b638101b0e1aa7c3f275f8766134914ba1954c4f Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Sun, 14 Jun 2020 13:59:22 +0200
+Subject: [PATCH 4/8] [addons] remove GetInstalledAddonInfo call where possible
+
+This was on binary addon manager, this change remove it where easily possible
+to change to normal addon manager.
+
+On following changes the other parts becomes on bigger reworked ways
+also changed (currently them need stil the BinaryAddonBasePtr where makes
+harder).
+---
+ xbmc/cdrip/CDDARipper.cpp | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/cdrip/CDDARipper.cpp b/xbmc/cdrip/CDDARipper.cpp
+index 30df47405f06..757401626649 100644
+--- a/xbmc/cdrip/CDDARipper.cpp
++++ b/xbmc/cdrip/CDDARipper.cpp
+@@ -273,7 +273,10 @@ std::string CCDDARipper::GetTrackName(CFileItem *item)
+   if (track.empty())
+     track = StringUtils::Format("%s%02i", "Track-", trackNumber);
+ 
+- const BinaryAddonBasePtr addonInfo = CServiceBroker::GetBinaryAddonManager().GetInstalledAddonInfo(CServiceBroker::GetSettingsComponent()->GetSettings()->GetString(CSettings::SETTING_AUDIOCDS_ENCODER), ADDON_AUDIOENCODER);
++  const std::string encoder = CServiceBroker::GetSettingsComponent()->GetSettings()->GetString(
++      CSettings::SETTING_AUDIOCDS_ENCODER);
++  const AddonInfoPtr addonInfo =
++      CServiceBroker::GetAddonMgr().GetAddonInfo(encoder, ADDON_AUDIOENCODER);
+   if (addonInfo)
+     track += addonInfo->Type(ADDON_AUDIOENCODER)->GetValue("@extension").asString();
+ 
+
+From 19cd8b623b6c43962a4cd3037af72427b2ac2c97 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Tue, 16 Jun 2020 22:35:43 +0200
+Subject: [PATCH 5/8] [addons] use CAddonInfo everywhere and prevent
+ CBinaryAddonBase
+
+Majorly is the handling changed, as CBinaryAddonBase becomes
+created on background and register his now in binary addon manager.
+On last destruct it becomes removed from there.
+
+This thought to fix problems with to late or missing report on binary addon
+manager and remove obsolete parts (them was mostly thought before with cpluff).
+---
+ xbmc/addons/AddonManager.cpp                  | 17 ++++++
+ xbmc/addons/AddonManager.h                    | 14 +++++
+ xbmc/addons/AddonProvider.h                   | 28 +++++-----
+ xbmc/addons/AudioDecoder.cpp                  |  2 +-
+ xbmc/addons/AudioDecoder.h                    | 11 ++--
+ xbmc/addons/AudioEncoder.cpp                  |  2 +-
+ xbmc/addons/AudioEncoder.h                    |  2 +-
+ xbmc/addons/ImageDecoder.cpp                  |  4 +-
+ xbmc/addons/ImageDecoder.h                    |  2 +-
+ xbmc/addons/ScreenSaver.cpp                   |  4 +-
+ xbmc/addons/ScreenSaver.h                     |  2 +-
+ xbmc/addons/VFSEntry.cpp                      | 10 ++--
+ xbmc/addons/VFSEntry.h                        |  5 +-
+ xbmc/addons/Visualization.cpp                 |  4 +-
+ xbmc/addons/Visualization.h                   |  2 +-
+ .../binary-addons/AddonInstanceHandler.cpp    | 19 +++----
+ .../binary-addons/AddonInstanceHandler.h      |  8 ++-
+ xbmc/addons/binary-addons/BinaryAddonBase.cpp |  6 +++
+ xbmc/addons/binary-addons/BinaryAddonBase.h   |  3 +-
+ .../binary-addons/BinaryAddonManager.cpp      | 52 ++++++++++++++++++-
+ .../addons/binary-addons/BinaryAddonManager.h |  6 +++
+ xbmc/addons/interfaces/General.cpp            |  1 -
+ xbmc/cdrip/CDDARipJob.cpp                     |  3 +-
+ xbmc/cdrip/CDDARipper.cpp                     |  2 +-
+ .../VideoPlayer/DVDCodecs/DVDFactoryCodec.cpp |  2 +-
+ .../DVDCodecs/Video/AddonVideoCodec.cpp       |  3 +-
+ .../DVDCodecs/Video/AddonVideoCodec.h         |  2 +-
+ .../DVDInputStreams/DVDFactoryInputStream.cpp |  5 +-
+ .../DVDInputStreams/InputStreamAddon.cpp      | 33 ++++++------
+ .../DVDInputStreams/InputStreamAddon.h        | 10 ++--
+ xbmc/cores/paplayer/CodecFactory.cpp          |  9 ++--
+ xbmc/filesystem/FileDirectoryFactory.cpp      |  5 +-
+ xbmc/guilib/GUIVisualisationControl.cpp       |  5 +-
+ xbmc/guilib/imagefactory.cpp                  |  6 +--
+ xbmc/music/tags/MusicInfoTagLoaderFactory.cpp |  5 +-
+ xbmc/network/GUIDialogNetworkSetup.cpp        |  1 -
+ xbmc/peripherals/addons/PeripheralAddon.cpp   |  3 +-
+ xbmc/peripherals/addons/PeripheralAddon.h     |  7 ++-
+ .../bus/virtual/PeripheralBusAddon.cpp        | 26 +++++-----
+ .../bus/virtual/PeripheralBusAddon.h          |  3 +-
+ xbmc/pvr/addons/PVRClient.cpp                 |  4 +-
+ xbmc/pvr/addons/PVRClient.h                   |  2 +-
+ xbmc/pvr/addons/PVRClients.cpp                | 14 +++--
+ xbmc/settings/SettingConditions.cpp           |  1 -
+ xbmc/windows/GUIWindowScreensaver.cpp         |  5 +-
+ xbmc/windows/GUIWindowScreensaverDim.cpp      |  2 +-
+ 46 files changed, 221 insertions(+), 141 deletions(-)
+
+diff --git a/xbmc/addons/AddonManager.cpp b/xbmc/addons/AddonManager.cpp
+index 09fca28ed892..007205d52ea3 100644
+--- a/xbmc/addons/AddonManager.cpp
++++ b/xbmc/addons/AddonManager.cpp
+@@ -929,6 +929,23 @@ bool CAddonMgr::GetAddonInfos(AddonInfos& addonInfos, bool enabledOnly, TYPE typ
+   return !addonInfos.empty();
+ }
+ 
++bool CAddonMgr::GetDisabledAddonInfos(std::vector<AddonInfoPtr>& addonInfos, TYPE type)
++{
++  CSingleLock lock(m_critSection);
++
++  bool forUnknown = type == ADDON_UNKNOWN;
++  for (const auto& info : m_installedAddons)
++  {
++    if (m_disabled.find(info.first) == m_disabled.end())
++      continue;
++
++    if (info.second->MainType() != ADDON_UNKNOWN && (forUnknown || info.second->HasType(type)))
++      addonInfos.emplace_back(info.second);
++  }
++
++  return !addonInfos.empty();
++}
++
+ const AddonInfoPtr CAddonMgr::GetAddonInfo(const std::string& id,
+                                            TYPE type /*= ADDON_UNKNOWN*/) const
+ {
+diff --git a/xbmc/addons/AddonManager.h b/xbmc/addons/AddonManager.h
+index 93d0452533e0..a97956d6a7b4 100644
+--- a/xbmc/addons/AddonManager.h
++++ b/xbmc/addons/AddonManager.h
+@@ -276,6 +276,20 @@ namespace ADDON
+      */
+     bool GetAddonInfos(AddonInfos& addonInfos, bool enabledOnly, TYPE type) const;
+ 
++    /*!
++     * @brief Get a list of disabled add-on's with info's for the on system
++     * available ones.
++     *
++     * @param[out] addonInfos list where finded addon information becomes stored
++     * @param[in] type        The requested type, with "ADDON_UNKNOWN"
++     *                        are all add-on types given back who match the case
++     *                        with value before.
++     *                        If a type id becomes added are only add-ons
++     *                        returned who match them. Default is for all types.
++     * @return true if the list contains entries
++     */
++    bool GetDisabledAddonInfos(std::vector<AddonInfoPtr>& addonInfos, TYPE type);
++
+     const AddonInfoPtr GetAddonInfo(const std::string& id, TYPE type = ADDON_UNKNOWN) const;
+ 
+     /*!
+diff --git a/xbmc/addons/AddonProvider.h b/xbmc/addons/AddonProvider.h
+index c80cc3c56227..16ba23d0e19c 100644
+--- a/xbmc/addons/AddonProvider.h
++++ b/xbmc/addons/AddonProvider.h
+@@ -20,21 +20,21 @@
+ 
+ namespace ADDON
+ {
+-  class CBinaryAddonBase;
+-  typedef std::shared_ptr<CBinaryAddonBase> BinaryAddonBasePtr;
++class CAddonInfo;
++typedef std::shared_ptr<CAddonInfo> AddonInfoPtr;
+ 
+-  class IAddonProvider
++class IAddonProvider
++{
++public:
++  virtual ~IAddonProvider() = default;
++  enum INSTANCE_TYPE
+   {
+-  public:
+-    virtual ~IAddonProvider() = default;
+-    enum INSTANCE_TYPE
+-    {
+-      INSTANCE_INPUTSTREAM,
+-      INSTANCE_VIDEOCODEC
+-    };
+-    virtual void getAddonInstance(INSTANCE_TYPE instance_type,
+-                                  ADDON::BinaryAddonBasePtr& addonBase,
+-                                  KODI_HANDLE& parentInstance) = 0;
++    INSTANCE_INPUTSTREAM,
++    INSTANCE_VIDEOCODEC
+   };
++  virtual void getAddonInstance(INSTANCE_TYPE instance_type,
++                                ADDON::AddonInfoPtr& addonInfo,
++                                KODI_HANDLE& parentInstance) = 0;
++};
+ 
+-  } //Namespace
++} // namespace ADDON
+diff --git a/xbmc/addons/AudioDecoder.cpp b/xbmc/addons/AudioDecoder.cpp
+index 8a3f953dd427..900b9259beee 100644
+--- a/xbmc/addons/AudioDecoder.cpp
++++ b/xbmc/addons/AudioDecoder.cpp
+@@ -14,7 +14,7 @@
+ namespace ADDON
+ {
+ 
+-CAudioDecoder::CAudioDecoder(const BinaryAddonBasePtr& addonInfo)
++CAudioDecoder::CAudioDecoder(const AddonInfoPtr& addonInfo)
+   : IAddonInstanceHandler(ADDON_INSTANCE_AUDIODECODER, addonInfo)
+ {
+   m_CodecName = addonInfo->Type(ADDON_AUDIODECODER)->GetValue("@name").asString();
+diff --git a/xbmc/addons/AudioDecoder.h b/xbmc/addons/AudioDecoder.h
+index 5ae964c09b30..a561aeb0d743 100644
+--- a/xbmc/addons/AudioDecoder.h
++++ b/xbmc/addons/AudioDecoder.h
+@@ -8,7 +8,6 @@
+ #pragma once
+ 
+ #include "addons/binary-addons/AddonInstanceHandler.h"
+-#include "addons/binary-addons/BinaryAddonBase.h"
+ #include "addons/kodi-addon-dev-kit/include/kodi/addon-instance/AudioDecoder.h"
+ #include "cores/paplayer/ICodec.h"
+ #include "filesystem/MusicFileDirectory.h"
+@@ -29,7 +28,7 @@ namespace ADDON
+                         public XFILE::CMusicFileDirectory
+   {
+   public:
+-    explicit CAudioDecoder(const BinaryAddonBasePtr& addonInfo);
++    explicit CAudioDecoder(const AddonInfoPtr& addonInfo);
+     ~CAudioDecoder() override;
+ 
+     // Things that MUST be supplied by the child classes
+@@ -43,22 +42,22 @@ namespace ADDON
+                       EmbeddedArt *art = nullptr) override;
+     int GetTrackCount(const std::string& strPath) override;
+ 
+-    static inline std::string GetExtensions(const BinaryAddonBasePtr& addonInfo)
++    static inline std::string GetExtensions(const AddonInfoPtr& addonInfo)
+     {
+       return addonInfo->Type(ADDON_AUDIODECODER)->GetValue("@extension").asString();
+     }
+ 
+-    static inline std::string GetMimetypes(const BinaryAddonBasePtr& addonInfo)
++    static inline std::string GetMimetypes(const AddonInfoPtr& addonInfo)
+     {
+       return addonInfo->Type(ADDON_AUDIODECODER)->GetValue("@mimetype").asString();
+     }
+ 
+-    static inline bool HasTags(const BinaryAddonBasePtr& addonInfo)
++    static inline bool HasTags(const AddonInfoPtr& addonInfo)
+     {
+       return addonInfo->Type(ADDON_AUDIODECODER)->GetValue("@tags").asBoolean();
+     }
+ 
+-    static inline bool HasTracks(const BinaryAddonBasePtr& addonInfo)
++    static inline bool HasTracks(const AddonInfoPtr& addonInfo)
+     {
+       return addonInfo->Type(ADDON_AUDIODECODER)->GetValue("@tracks").asBoolean();
+     }
+diff --git a/xbmc/addons/AudioEncoder.cpp b/xbmc/addons/AudioEncoder.cpp
+index 6eff6fb9729f..8d0f263ecece 100644
+--- a/xbmc/addons/AudioEncoder.cpp
++++ b/xbmc/addons/AudioEncoder.cpp
+@@ -10,7 +10,7 @@
+ namespace ADDON
+ {
+ 
+-CAudioEncoder::CAudioEncoder(BinaryAddonBasePtr addonInfo)
++CAudioEncoder::CAudioEncoder(const AddonInfoPtr& addonInfo)
+   : IAddonInstanceHandler(ADDON_INSTANCE_AUDIOENCODER, addonInfo)
+ {
+   m_struct = {{ 0 }};
+diff --git a/xbmc/addons/AudioEncoder.h b/xbmc/addons/AudioEncoder.h
+index b25397fab6d8..caae93597ba1 100644
+--- a/xbmc/addons/AudioEncoder.h
++++ b/xbmc/addons/AudioEncoder.h
+@@ -16,7 +16,7 @@ namespace ADDON
+   class CAudioEncoder : public IEncoder, public IAddonInstanceHandler
+   {
+   public:
+-    explicit CAudioEncoder(BinaryAddonBasePtr addonBase);
++    explicit CAudioEncoder(const AddonInfoPtr& addonInfo);
+ 
+     // Child functions related to IEncoder
+     bool Init(AddonToKodiFuncTable_AudioEncoder& callbacks) override;
+diff --git a/xbmc/addons/ImageDecoder.cpp b/xbmc/addons/ImageDecoder.cpp
+index 64968e2c9df4..770b7a534557 100644
+--- a/xbmc/addons/ImageDecoder.cpp
++++ b/xbmc/addons/ImageDecoder.cpp
+@@ -18,8 +18,8 @@ static const std::map<int, ImageFormat> KodiToAddonFormat = {
+ namespace ADDON
+ {
+ 
+-CImageDecoder::CImageDecoder(BinaryAddonBasePtr addonBase)
+-  : IAddonInstanceHandler(ADDON_INSTANCE_IMAGEDECODER, addonBase)
++CImageDecoder::CImageDecoder(const AddonInfoPtr& addonInfo)
++  : IAddonInstanceHandler(ADDON_INSTANCE_IMAGEDECODER, addonInfo)
+ {
+   // Create all interface parts independent to make API changes easier if
+   // something is added
+diff --git a/xbmc/addons/ImageDecoder.h b/xbmc/addons/ImageDecoder.h
+index 650dc38195a8..22a1271b6fec 100644
+--- a/xbmc/addons/ImageDecoder.h
++++ b/xbmc/addons/ImageDecoder.h
+@@ -17,7 +17,7 @@ namespace ADDON
+                         public IImage
+   {
+   public:
+-    explicit CImageDecoder(ADDON::BinaryAddonBasePtr addonBase);
++    explicit CImageDecoder(const AddonInfoPtr& addonInfo);
+     ~CImageDecoder() override;
+ 
+     bool Create(const std::string& mimetype);
+diff --git a/xbmc/addons/ScreenSaver.cpp b/xbmc/addons/ScreenSaver.cpp
+index 5530b870f1b5..6d00b97f3e70 100644
+--- a/xbmc/addons/ScreenSaver.cpp
++++ b/xbmc/addons/ScreenSaver.cpp
+@@ -16,8 +16,8 @@
+ namespace ADDON
+ {
+ 
+-CScreenSaver::CScreenSaver(BinaryAddonBasePtr addonBase)
+- : IAddonInstanceHandler(ADDON_INSTANCE_SCREENSAVER, addonBase)
++CScreenSaver::CScreenSaver(const AddonInfoPtr& addonInfo)
++  : IAddonInstanceHandler(ADDON_INSTANCE_SCREENSAVER, addonInfo)
+ {
+   m_name = Name();
+   m_presets = CSpecialProtocol::TranslatePath(Path());
+diff --git a/xbmc/addons/ScreenSaver.h b/xbmc/addons/ScreenSaver.h
+index 729180523f32..c137685633dd 100644
+--- a/xbmc/addons/ScreenSaver.h
++++ b/xbmc/addons/ScreenSaver.h
+@@ -17,7 +17,7 @@ namespace ADDON
+ class CScreenSaver : public IAddonInstanceHandler
+ {
+ public:
+-  explicit CScreenSaver(BinaryAddonBasePtr addonBase);
++  explicit CScreenSaver(const AddonInfoPtr& addonInfo);
+   ~CScreenSaver() override;
+ 
+   bool Start();
+diff --git a/xbmc/addons/VFSEntry.cpp b/xbmc/addons/VFSEntry.cpp
+index 590bfe80d346..25692d3ae067 100644
+--- a/xbmc/addons/VFSEntry.cpp
++++ b/xbmc/addons/VFSEntry.cpp
+@@ -9,8 +9,6 @@
+ 
+ #include "ServiceBroker.h"
+ #include "URL.h"
+-#include "addons/binary-addons/BinaryAddonBase.h"
+-#include "addons/binary-addons/BinaryAddonManager.h"
+ #include "addons/interfaces/Filesystem.h"
+ #include "network/ZeroconfBrowser.h"
+ #include "utils/StringUtils.h"
+@@ -87,8 +85,8 @@ void CVFSAddonCache::Update()
+ {
+   std::vector<VFSEntryPtr> addonmap;
+ 
+-  BinaryAddonBaseList addonInfos;
+-  CServiceBroker::GetBinaryAddonManager().GetAddonInfos(addonInfos, true, ADDON_VFS);
++  std::vector<AddonInfoPtr> addonInfos;
++  CServiceBroker::GetAddonMgr().GetAddonInfos(addonInfos, true, ADDON_VFS);
+   for (const auto& addonInfo : addonInfos)
+   {
+     VFSEntryPtr vfs = std::make_shared<CVFSEntry>(addonInfo);
+@@ -137,7 +135,7 @@ class CVFSURLWrapper
+     std::vector<std::string> m_strings;
+ };
+ 
+-CVFSEntry::ProtocolInfo::ProtocolInfo(BinaryAddonBasePtr addonInfo)
++CVFSEntry::ProtocolInfo::ProtocolInfo(const AddonInfoPtr& addonInfo)
+   : supportPath(addonInfo->Type(ADDON_VFS)->GetValue("@supportPath").asBoolean()),
+     supportUsername(addonInfo->Type(ADDON_VFS)->GetValue("@supportUsername").asBoolean()),
+     supportPassword(addonInfo->Type(ADDON_VFS)->GetValue("@supportPassword").asBoolean()),
+@@ -150,7 +148,7 @@ CVFSEntry::ProtocolInfo::ProtocolInfo(BinaryAddonBasePtr addonInfo)
+ {
+ }
+ 
+-CVFSEntry::CVFSEntry(BinaryAddonBasePtr addonInfo)
++CVFSEntry::CVFSEntry(const AddonInfoPtr& addonInfo)
+   : IAddonInstanceHandler(ADDON_INSTANCE_VFS, addonInfo),
+     m_protocols(addonInfo->Type(ADDON_VFS)->GetValue("@protocols").asString()),
+     m_extensions(addonInfo->Type(ADDON_VFS)->GetValue("@extensions").asString()),
+diff --git a/xbmc/addons/VFSEntry.h b/xbmc/addons/VFSEntry.h
+index 9b2f7359f858..5651f0aa2e75 100644
+--- a/xbmc/addons/VFSEntry.h
++++ b/xbmc/addons/VFSEntry.h
+@@ -7,7 +7,6 @@
+ 
+ #pragma once
+ 
+-#include "addons/binary-addons/AddonDll.h"
+ #include "addons/binary-addons/AddonInstanceHandler.h"
+ #include "addons/kodi-addon-dev-kit/include/kodi/addon-instance/VFS.h"
+ #include "filesystem/IDirectory.h"
+@@ -55,12 +54,12 @@ namespace ADDON
+       int label;             //!< String ID to use as label in dialog
+ 
+       //! \brief The constructor reads the info from an add-on info structure.
+-      ProtocolInfo(BinaryAddonBasePtr addonInfo);
++      ProtocolInfo(const AddonInfoPtr& addonInfo);
+     };
+ 
+     //! \brief Construct from add-on properties.
+     //! \param addonInfo General addon properties
+-    explicit CVFSEntry(BinaryAddonBasePtr addonInfo);
++    explicit CVFSEntry(const AddonInfoPtr& addonInfo);
+     ~CVFSEntry() override;
+ 
+     // Things that MUST be supplied by the child classes
+diff --git a/xbmc/addons/Visualization.cpp b/xbmc/addons/Visualization.cpp
+index 4b76848b19d2..d2a251ff8ddd 100644
+--- a/xbmc/addons/Visualization.cpp
++++ b/xbmc/addons/Visualization.cpp
+@@ -15,8 +15,8 @@
+ namespace ADDON
+ {
+ 
+-CVisualization::CVisualization(ADDON::BinaryAddonBasePtr addonBase, float x, float y, float w, float h)
+-  : IAddonInstanceHandler(ADDON_INSTANCE_VISUALIZATION, addonBase)
++CVisualization::CVisualization(const AddonInfoPtr& addonInfo, float x, float y, float w, float h)
++  : IAddonInstanceHandler(ADDON_INSTANCE_VISUALIZATION, addonInfo)
+ {
+   // Setup new Visualization instance
+   m_name = Name();
+diff --git a/xbmc/addons/Visualization.h b/xbmc/addons/Visualization.h
+index e0ded9274b0f..7661335df300 100644
+--- a/xbmc/addons/Visualization.h
++++ b/xbmc/addons/Visualization.h
+@@ -17,7 +17,7 @@ namespace ADDON
+ class CVisualization : public IAddonInstanceHandler
+ {
+ public:
+-  CVisualization(ADDON::BinaryAddonBasePtr addonBase, float x, float y, float w, float h);
++  CVisualization(const AddonInfoPtr& addonInfo, float x, float y, float w, float h);
+   ~CVisualization() override;
+ 
+   bool Start(int channels, int samplesPerSec, int bitsPerSample, const std::string& songName);
+diff --git a/xbmc/addons/binary-addons/AddonInstanceHandler.cpp b/xbmc/addons/binary-addons/AddonInstanceHandler.cpp
+index f2ef6d15d690..7f6945b9deaf 100644
+--- a/xbmc/addons/binary-addons/AddonInstanceHandler.cpp
++++ b/xbmc/addons/binary-addons/AddonInstanceHandler.cpp
+@@ -9,6 +9,7 @@
+ #include "AddonInstanceHandler.h"
+ 
+ #include "BinaryAddonBase.h"
++#include "ServiceBroker.h"
+ #include "utils/StringUtils.h"
+ #include "utils/log.h"
+ 
+@@ -17,25 +18,21 @@ namespace ADDON
+ 
+ CCriticalSection IAddonInstanceHandler::m_cdSec;
+ 
+-IAddonInstanceHandler::IAddonInstanceHandler(ADDON_TYPE type, const BinaryAddonBasePtr& addonBase, KODI_HANDLE parentInstance/* = nullptr*/, const std::string& instanceID/* = ""*/)
+-  : m_type(type),
+-    m_parentInstance(parentInstance),
+-    m_addonBase(addonBase)
++IAddonInstanceHandler::IAddonInstanceHandler(ADDON_TYPE type,
++                                             const AddonInfoPtr& addonInfo,
++                                             KODI_HANDLE parentInstance /* = nullptr*/,
++                                             const std::string& instanceID /* = ""*/)
++  : m_type(type), m_parentInstance(parentInstance), m_addonInfo(addonInfo)
+ {
+   // if no special instance ID is given generate one from class pointer (is
+   // faster as unique id and also safe enough for them).
+   m_instanceId = !instanceID.empty() ? instanceID : StringUtils::Format("%p", static_cast<void*>(this));
+-
+-  m_addon = m_addonBase->GetAddon(this);
+-  if (!m_addon)
+-    CLog::Log(LOGFATAL, "IAddonInstanceHandler::%s: Tried to get add-on '%s' who not available!",
+-                __FUNCTION__,
+-                m_addonBase->ID().c_str());
++  m_addonBase = CServiceBroker::GetBinaryAddonManager().GetAddonBase(addonInfo, this, m_addon);
+ }
+ 
+ IAddonInstanceHandler::~IAddonInstanceHandler()
+ {
+-  m_addonBase->ReleaseAddon(this);
++  CServiceBroker::GetBinaryAddonManager().ReleaseAddonBase(m_addonBase, this);
+ }
+ 
+ std::string IAddonInstanceHandler::ID() const
+diff --git a/xbmc/addons/binary-addons/AddonInstanceHandler.h b/xbmc/addons/binary-addons/AddonInstanceHandler.h
+index 561ed22a17ad..1cd1ec0d7f71 100644
+--- a/xbmc/addons/binary-addons/AddonInstanceHandler.h
++++ b/xbmc/addons/binary-addons/AddonInstanceHandler.h
+@@ -20,7 +20,10 @@ namespace ADDON
+   class IAddonInstanceHandler
+   {
+   public:
+-    IAddonInstanceHandler(ADDON_TYPE type, const BinaryAddonBasePtr& addonBase, KODI_HANDLE parentInstance = nullptr, const std::string& instanceID = "");
++    IAddonInstanceHandler(ADDON_TYPE type,
++                          const AddonInfoPtr& addonInfo,
++                          KODI_HANDLE parentInstance = nullptr,
++                          const std::string& instanceID = "");
+     virtual ~IAddonInstanceHandler();
+ 
+     ADDON_TYPE UsedType() const { return m_type; }
+@@ -37,7 +40,7 @@ namespace ADDON
+     ADDON_STATUS CreateInstance(KODI_HANDLE instance);
+     void DestroyInstance();
+     const AddonDllPtr& Addon() const { return m_addon; }
+-    BinaryAddonBasePtr GetAddonBase() const { return m_addonBase; };
++    AddonInfoPtr GetAddonInfo() const { return m_addonInfo; };
+ 
+     virtual void OnPreInstall() {}
+     virtual void OnPostInstall(bool update, bool modal) {}
+@@ -48,6 +51,7 @@ namespace ADDON
+     ADDON_TYPE m_type;
+     std::string m_instanceId;
+     KODI_HANDLE m_parentInstance;
++    AddonInfoPtr m_addonInfo;
+     BinaryAddonBasePtr m_addonBase;
+     AddonDllPtr m_addon;
+     static CCriticalSection m_cdSec;
+diff --git a/xbmc/addons/binary-addons/BinaryAddonBase.cpp b/xbmc/addons/binary-addons/BinaryAddonBase.cpp
+index b34ecac5de32..e166545176df 100644
+--- a/xbmc/addons/binary-addons/BinaryAddonBase.cpp
++++ b/xbmc/addons/binary-addons/BinaryAddonBase.cpp
+@@ -156,6 +156,12 @@ void CBinaryAddonBase::ReleaseAddon(IAddonInstanceHandler* handler)
+   }
+ }
+ 
++size_t CBinaryAddonBase::UsedInstanceCount() const
++{
++  CSingleLock lock(m_critSection);
++  return m_activeAddonHandlers.size();
++}
++
+ AddonDllPtr CBinaryAddonBase::GetActiveAddon()
+ {
+   CSingleLock lock(m_critSection);
+diff --git a/xbmc/addons/binary-addons/BinaryAddonBase.h b/xbmc/addons/binary-addons/BinaryAddonBase.h
+index e86d43c2ee13..cce27c56ed7f 100644
+--- a/xbmc/addons/binary-addons/BinaryAddonBase.h
++++ b/xbmc/addons/binary-addons/BinaryAddonBase.h
+@@ -55,6 +55,7 @@ namespace ADDON
+ 
+     AddonDllPtr GetAddon(IAddonInstanceHandler* handler);
+     void ReleaseAddon(IAddonInstanceHandler* handler);
++    size_t UsedInstanceCount() const;
+ 
+     AddonDllPtr GetActiveAddon();
+ 
+@@ -66,7 +67,7 @@ namespace ADDON
+   private:
+     AddonInfoPtr m_addonInfo;
+ 
+-    CCriticalSection m_critSection;
++    mutable CCriticalSection m_critSection;
+     AddonDllPtr m_activeAddon;
+     std::unordered_set<IAddonInstanceHandler*> m_activeAddonHandlers;
+   };
+diff --git a/xbmc/addons/binary-addons/BinaryAddonManager.cpp b/xbmc/addons/binary-addons/BinaryAddonManager.cpp
+index 8672c3ff6cc3..2c6bea48842c 100644
+--- a/xbmc/addons/binary-addons/BinaryAddonManager.cpp
++++ b/xbmc/addons/binary-addons/BinaryAddonManager.cpp
+@@ -95,12 +95,60 @@ const BinaryAddonBasePtr CBinaryAddonManager::GetInstalledAddonInfo(const std::s
+   return nullptr;
+ }
+ 
++BinaryAddonBasePtr CBinaryAddonManager::GetAddonBase(const AddonInfoPtr& addonInfo,
++                                                     IAddonInstanceHandler* handler,
++                                                     AddonDllPtr& addon)
++{
++  CSingleLock lock(m_critSection);
++
++  BinaryAddonBasePtr addonBase;
++
++  const auto& addonInstances = m_runningAddons.find(addonInfo->ID());
++  if (addonInstances != m_runningAddons.end())
++  {
++    addonBase = addonInstances->second;
++  }
++  else
++  {
++    addonBase = std::make_shared<CBinaryAddonBase>(addonInfo);
++
++    m_runningAddons.emplace(addonInfo->ID(), addonBase);
++  }
++
++  if (addonBase)
++  {
++    addon = addonBase->GetAddon(handler);
++  }
++  if (!addon)
++  {
++    CLog::Log(LOGFATAL, "CBinaryAddonManager::%s: Tried to get add-on '%s' who not available!",
++              __func__, addonInfo->ID().c_str());
++  }
++
++  return addonBase;
++}
++
++void CBinaryAddonManager::ReleaseAddonBase(const BinaryAddonBasePtr& addonBase,
++                                           IAddonInstanceHandler* handler)
++{
++  const auto& addon = m_runningAddons.find(addonBase->ID());
++  if (addon == m_runningAddons.end())
++    return;
++
++  addonBase->ReleaseAddon(handler);
++
++  if (addonBase->UsedInstanceCount() > 0)
++    return;
++
++  m_runningAddons.erase(addon);
++}
++
+ AddonPtr CBinaryAddonManager::GetRunningAddon(const std::string& addonId) const
+ {
+   CSingleLock lock(m_critSection);
+ 
+-  auto addon = m_installedAddons.find(addonId);
+-  if (addon != m_installedAddons.end())
++  auto addon = m_runningAddons.find(addonId);
++  if (addon != m_runningAddons.end())
+     return addon->second->GetActiveAddon();
+ 
+   return nullptr;
+diff --git a/xbmc/addons/binary-addons/BinaryAddonManager.h b/xbmc/addons/binary-addons/BinaryAddonManager.h
+index 178a1d583788..b876b13d15b7 100644
+--- a/xbmc/addons/binary-addons/BinaryAddonManager.h
++++ b/xbmc/addons/binary-addons/BinaryAddonManager.h
+@@ -78,6 +78,11 @@ namespace ADDON
+      */
+     const BinaryAddonBasePtr GetInstalledAddonInfo(const std::string& addonId, const TYPE &type = ADDON_UNKNOWN) const;
+ 
++    BinaryAddonBasePtr GetAddonBase(const AddonInfoPtr& addonInfo,
++                                    IAddonInstanceHandler* handler,
++                                    AddonDllPtr& addon);
++    void ReleaseAddonBase(const BinaryAddonBasePtr& addonBase, IAddonInstanceHandler* handler);
++
+     /*!
+      * @brief Used from other addon manager to get active addon over a from him
+      * created CAddonDll.
+@@ -101,6 +106,7 @@ namespace ADDON
+     typedef std::map<std::string, BinaryAddonBasePtr> BinaryAddonMgrBaseList;
+     BinaryAddonMgrBaseList m_installedAddons;
+     BinaryAddonMgrBaseList m_enabledAddons;
++    std::map<std::string, BinaryAddonBasePtr> m_runningAddons;
+   };
+ 
+ } /* namespace ADDON */
+diff --git a/xbmc/addons/interfaces/General.cpp b/xbmc/addons/interfaces/General.cpp
+index 6f83093afa7c..b82d68e1b12b 100644
+--- a/xbmc/addons/interfaces/General.cpp
++++ b/xbmc/addons/interfaces/General.cpp
+@@ -13,7 +13,6 @@
+ #include "LangInfo.h"
+ #include "ServiceBroker.h"
+ #include "addons/binary-addons/AddonDll.h"
+-#include "addons/binary-addons/BinaryAddonManager.h"
+ #include "addons/kodi-addon-dev-kit/include/kodi/General.h"
+ #include "addons/settings/GUIDialogAddonSettings.h"
+ #include "dialogs/GUIDialogKaiToast.h"
+diff --git a/xbmc/cdrip/CDDARipJob.cpp b/xbmc/cdrip/CDDARipJob.cpp
+index 6c915dba4c14..f221e6881d50 100644
+--- a/xbmc/cdrip/CDDARipJob.cpp
++++ b/xbmc/cdrip/CDDARipJob.cpp
+@@ -181,7 +181,8 @@ CEncoder* CCDDARipJob::SetupEncoder(CFile& reader)
+   }
+   else
+   {
+-    const BinaryAddonBasePtr addonInfo = CServiceBroker::GetBinaryAddonManager().GetInstalledAddonInfo(audioEncoder, ADDON_AUDIOENCODER);
++    const AddonInfoPtr addonInfo =
++        CServiceBroker::GetAddonMgr().GetAddonInfo(audioEncoder, ADDON_AUDIOENCODER);
+     if (addonInfo)
+     {
+       std::shared_ptr<IEncoder> enc = std::make_shared<CAudioEncoder>(addonInfo);
+diff --git a/xbmc/cdrip/CDDARipper.cpp b/xbmc/cdrip/CDDARipper.cpp
+index 757401626649..8141a02404aa 100644
+--- a/xbmc/cdrip/CDDARipper.cpp
++++ b/xbmc/cdrip/CDDARipper.cpp
+@@ -13,7 +13,7 @@
+ #include "FileItem.h"
+ #include "ServiceBroker.h"
+ #include "Util.h"
+-#include "addons/binary-addons/BinaryAddonBase.h"
++#include "addons/AddonManager.h"
+ #include "filesystem/CDDADirectory.h"
+ #include "guilib/GUIWindowManager.h"
+ #include "guilib/LocalizeStrings.h"
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/DVDFactoryCodec.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/DVDFactoryCodec.cpp
+index 3a93ddb76c4b..b952d5171058 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/DVDFactoryCodec.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/DVDFactoryCodec.cpp
+@@ -49,7 +49,7 @@ CDVDVideoCodec* CDVDFactoryCodec::CreateVideoCodec(CDVDStreamInfo &hint, CProces
+ 
+   if (hint.externalInterfaces)
+   {
+-    ADDON::BinaryAddonBasePtr addonInfo;
++    ADDON::AddonInfoPtr addonInfo;
+     KODI_HANDLE parentInstance;
+     hint.externalInterfaces->getAddonInstance(ADDON::IAddonProvider::INSTANCE_VIDEOCODEC, addonInfo, parentInstance);
+     if (addonInfo && parentInstance)
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/AddonVideoCodec.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/AddonVideoCodec.cpp
+index c062daeb78c0..e1b0862ece3d 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/AddonVideoCodec.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/AddonVideoCodec.cpp
+@@ -8,7 +8,6 @@
+ 
+ #include "AddonVideoCodec.h"
+ 
+-#include "addons/binary-addons/BinaryAddonBase.h"
+ #include "cores/VideoPlayer/Buffers/VideoBuffer.h"
+ #include "cores/VideoPlayer/DVDCodecs/DVDCodecs.h"
+ #include "cores/VideoPlayer/DVDStreamInfo.h"
+@@ -19,7 +18,7 @@
+ using namespace kodi::addon;
+ 
+ CAddonVideoCodec::CAddonVideoCodec(CProcessInfo& processInfo,
+-                                   ADDON::BinaryAddonBasePtr& addonInfo,
++                                   ADDON::AddonInfoPtr& addonInfo,
+                                    KODI_HANDLE parentInstance)
+   : CDVDVideoCodec(processInfo),
+     IAddonInstanceHandler(ADDON_INSTANCE_VIDEOCODEC, addonInfo, parentInstance),
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/AddonVideoCodec.h b/xbmc/cores/VideoPlayer/DVDCodecs/Video/AddonVideoCodec.h
+index a4349855eae5..77e51e20d742 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/AddonVideoCodec.h
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/AddonVideoCodec.h
+@@ -21,7 +21,7 @@ class CAddonVideoCodec
+ {
+ public:
+   CAddonVideoCodec(CProcessInfo& processInfo,
+-                   ADDON::BinaryAddonBasePtr& addonInfo,
++                   ADDON::AddonInfoPtr& addonInfo,
+                    KODI_HANDLE parentInstance);
+   ~CAddonVideoCodec() override;
+ 
+diff --git a/xbmc/cores/VideoPlayer/DVDInputStreams/DVDFactoryInputStream.cpp b/xbmc/cores/VideoPlayer/DVDInputStreams/DVDFactoryInputStream.cpp
+index 2c3fdb89425f..c94a6150515e 100644
+--- a/xbmc/cores/VideoPlayer/DVDInputStreams/DVDFactoryInputStream.cpp
++++ b/xbmc/cores/VideoPlayer/DVDInputStreams/DVDFactoryInputStream.cpp
+@@ -24,7 +24,6 @@
+ #include "ServiceBroker.h"
+ #include "URL.h"
+ #include "Util.h"
+-#include "addons/binary-addons/BinaryAddonManager.h"
+ #include "cores/VideoPlayer/Interface/Addon/InputStreamConstants.h"
+ #include "filesystem/CurlFile.h"
+ #include "filesystem/File.h"
+@@ -51,8 +50,8 @@ std::shared_ptr<CDVDInputStream> CDVDFactoryInputStream::CreateInputStream(IVide
+     }
+   }
+ 
+-  BinaryAddonBaseList addonInfos;
+-  CServiceBroker::GetBinaryAddonManager().GetAddonInfos(addonInfos, true /*enabled only*/, ADDON_INPUTSTREAM);
++  std::vector<AddonInfoPtr> addonInfos;
++  CServiceBroker::GetAddonMgr().GetAddonInfos(addonInfos, true /*enabled only*/, ADDON_INPUTSTREAM);
+   for (auto addonInfo : addonInfos)
+   {
+     if (CInputStreamAddon::Supports(addonInfo, fileitem))
+diff --git a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.cpp b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.cpp
+index 0f3d3d267e63..473ca47a8e30 100644
+--- a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.cpp
++++ b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.cpp
+@@ -8,8 +8,6 @@
+ 
+ #include "InputStreamAddon.h"
+ 
+-#include "addons/binary-addons/AddonDll.h"
+-#include "addons/binary-addons/BinaryAddonBase.h"
+ #include "addons/kodi-addon-dev-kit/include/kodi/addon-instance/VideoCodec.h"
+ #include "cores/VideoPlayer/DVDDemuxers/DVDDemux.h"
+ #include "cores/VideoPlayer/DVDDemuxers/DVDDemuxUtils.h"
+@@ -21,19 +19,19 @@
+ #include "utils/URIUtils.h"
+ #include "utils/log.h"
+ 
+-CInputStreamProvider::CInputStreamProvider(ADDON::BinaryAddonBasePtr addonBase,
++CInputStreamProvider::CInputStreamProvider(const ADDON::AddonInfoPtr& addonInfo,
+                                            KODI_HANDLE parentInstance)
+-  : m_addonBase(addonBase), m_parentInstance(parentInstance)
++  : m_addonInfo(addonInfo), m_parentInstance(parentInstance)
+ {
+ }
+ 
+ void CInputStreamProvider::getAddonInstance(INSTANCE_TYPE instance_type,
+-                                            ADDON::BinaryAddonBasePtr& addonBase,
++                                            ADDON::AddonInfoPtr& addonInfo,
+                                             KODI_HANDLE& parentInstance)
+ {
+   if (instance_type == ADDON::IAddonProvider::INSTANCE_VIDEOCODEC)
+   {
+-    addonBase = m_addonBase;
++    addonInfo = m_addonInfo;
+     parentInstance = m_parentInstance;
+   }
+ }
+@@ -43,16 +41,17 @@ void CInputStreamProvider::getAddonInstance(INSTANCE_TYPE instance_type,
+ using namespace ADDON;
+ using namespace kodi::addon;
+ 
+-CInputStreamAddon::CInputStreamAddon(BinaryAddonBasePtr& addonBase,
++CInputStreamAddon::CInputStreamAddon(const AddonInfoPtr& addonInfo,
+                                      IVideoPlayer* player,
+                                      const CFileItem& fileitem,
+                                      const std::string& instanceId)
+-  : IAddonInstanceHandler(ADDON_INSTANCE_INPUTSTREAM, addonBase, nullptr, instanceId),
++  : IAddonInstanceHandler(ADDON_INSTANCE_INPUTSTREAM, addonInfo, nullptr, instanceId),
+     CDVDInputStream(DVDSTREAM_TYPE_ADDON, fileitem),
+     m_player(player)
+ {
+-  std::string listitemprops = addonBase->Type(ADDON_INPUTSTREAM)->GetValue("@listitemprops").asString();
+-  std::string name(addonBase->ID());
++  std::string listitemprops =
++      addonInfo->Type(ADDON_INPUTSTREAM)->GetValue("@listitemprops").asString();
++  std::string name(addonInfo->ID());
+ 
+   m_fileItemProps = StringUtils::Tokenize(listitemprops, "|");
+   for (auto &key : m_fileItemProps)
+@@ -69,7 +68,7 @@ CInputStreamAddon::~CInputStreamAddon()
+   Close();
+ }
+ 
+-bool CInputStreamAddon::Supports(BinaryAddonBasePtr& addonBase, const CFileItem &fileitem)
++bool CInputStreamAddon::Supports(const AddonInfoPtr& addonInfo, const CFileItem& fileitem)
+ {
+   /// @todo Error for users to show deprecation, can be removed in Kodi 20
+   CVariant oldAddonProp = fileitem.GetProperty("inputstreamaddon");
+@@ -83,13 +82,13 @@ bool CInputStreamAddon::Supports(BinaryAddonBasePtr& addonBase, const CFileItem
+   // check if a specific inputstream addon is requested
+   CVariant addon = fileitem.GetProperty(STREAM_PROPERTY_INPUTSTREAM);
+   if (!addon.isNull())
+-    return (addon.asString() == addonBase->ID());
++    return (addon.asString() == addonInfo->ID());
+ 
+   // check protocols
+   std::string protocol = CURL(fileitem.GetDynPath()).GetProtocol();
+   if (!protocol.empty())
+   {
+-    std::string protocols = addonBase->Type(ADDON_INPUTSTREAM)->GetValue("@protocols").asString();
++    std::string protocols = addonInfo->Type(ADDON_INPUTSTREAM)->GetValue("@protocols").asString();
+     if (!protocols.empty())
+     {
+       std::vector<std::string> protocolsList = StringUtils::Tokenize(protocols, "|");
+@@ -105,7 +104,7 @@ bool CInputStreamAddon::Supports(BinaryAddonBasePtr& addonBase, const CFileItem
+   std::string filetype = fileitem.GetURL().GetFileType();
+   if (!filetype.empty())
+   {
+-    std::string extensions = addonBase->Type(ADDON_INPUTSTREAM)->GetValue("@extension").asString();
++    std::string extensions = addonInfo->Type(ADDON_INPUTSTREAM)->GetValue("@extension").asString();
+     if (!extensions.empty())
+     {
+       std::vector<std::string> extensionsList = StringUtils::Tokenize(extensions, "|");
+@@ -178,7 +177,8 @@ bool CInputStreamAddon::Open()
+     m_caps = { 0 };
+     m_struct.toAddon.get_capabilities(&m_struct, &m_caps);
+ 
+-    m_subAddonProvider = std::shared_ptr<CInputStreamProvider>(new CInputStreamProvider(GetAddonBase(), m_struct.toAddon.addonInstance));
++    m_subAddonProvider = std::shared_ptr<CInputStreamProvider>(
++        new CInputStreamProvider(GetAddonInfo(), m_struct.toAddon.addonInstance));
+   }
+   return ret;
+ }
+@@ -453,7 +453,8 @@ CDemuxStream* CInputStreamAddon::GetStream(int streamId) const
+   demuxStream->flags = static_cast<StreamFlags>(stream.m_flags);
+   demuxStream->language = stream.m_language;
+ 
+-  if (GetAddonBase()->DependencyVersion(ADDON_INSTANCE_VERSION_INPUTSTREAM_XML_ID) >= AddonVersion("2.0.8"))
++  if (GetAddonInfo()->DependencyVersion(ADDON_INSTANCE_VERSION_INPUTSTREAM_XML_ID) >=
++      AddonVersion("2.0.8"))
+   {
+     demuxStream->codec_fourcc = stream.m_codecFourCC;
+   }
+diff --git a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.h b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.h
+index 4bf9d53fd5ce..b7aca348ed34 100644
+--- a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.h
++++ b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.h
+@@ -21,14 +21,14 @@ class CInputStreamProvider
+   : public ADDON::IAddonProvider
+ {
+ public:
+-  CInputStreamProvider(ADDON::BinaryAddonBasePtr addonBase, KODI_HANDLE parentInstance);
++  CInputStreamProvider(const ADDON::AddonInfoPtr& addonInfo, KODI_HANDLE parentInstance);
+ 
+   void getAddonInstance(INSTANCE_TYPE instance_type,
+-                        ADDON::BinaryAddonBasePtr& addonBase,
++                        ADDON::AddonInfoPtr& addonInfo,
+                         KODI_HANDLE& parentInstance) override;
+ 
+ private:
+-  ADDON::BinaryAddonBasePtr m_addonBase;
++  ADDON::AddonInfoPtr m_addonInfo;
+   KODI_HANDLE m_parentInstance;
+ };
+ 
+@@ -43,13 +43,13 @@ class CInputStreamAddon
+   , public CDVDInputStream::IChapter
+ {
+ public:
+-  CInputStreamAddon(ADDON::BinaryAddonBasePtr& addonBase,
++  CInputStreamAddon(const ADDON::AddonInfoPtr& addonInfo,
+                     IVideoPlayer* player,
+                     const CFileItem& fileitem,
+                     const std::string& instanceId);
+   ~CInputStreamAddon() override;
+ 
+-  static bool Supports(ADDON::BinaryAddonBasePtr& addonBase, const CFileItem& fileitem);
++  static bool Supports(const ADDON::AddonInfoPtr& addonInfo, const CFileItem& fileitem);
+ 
+   // CDVDInputStream
+   bool Open() override;
+diff --git a/xbmc/cores/paplayer/CodecFactory.cpp b/xbmc/cores/paplayer/CodecFactory.cpp
+index 15a1b20a9ecd..5f4f3d5eede0 100644
+--- a/xbmc/cores/paplayer/CodecFactory.cpp
++++ b/xbmc/cores/paplayer/CodecFactory.cpp
+@@ -12,7 +12,6 @@
+ #include "URL.h"
+ #include "VideoPlayerCodec.h"
+ #include "addons/AudioDecoder.h"
+-#include "addons/binary-addons/BinaryAddonBase.h"
+ #include "utils/StringUtils.h"
+ 
+ using namespace ADDON;
+@@ -22,8 +21,8 @@ ICodec* CodecFactory::CreateCodec(const std::string &strFileType)
+   std::string fileType = strFileType;
+   StringUtils::ToLower(fileType);
+ 
+-  BinaryAddonBaseList addonInfos;
+-  CServiceBroker::GetBinaryAddonManager().GetAddonInfos(addonInfos, true, ADDON_AUDIODECODER);
++  std::vector<AddonInfoPtr> addonInfos;
++  CServiceBroker::GetAddonMgr().GetAddonInfos(addonInfos, true, ADDON_AUDIODECODER);
+   for (const auto& addonInfo : addonInfos)
+   {
+     auto exts = StringUtils::Split(CAudioDecoder::GetExtensions(addonInfo), "|");
+@@ -50,8 +49,8 @@ ICodec* CodecFactory::CreateCodecDemux(const CFileItem& file, unsigned int filec
+   StringUtils::ToLower(content);
+   if (!content.empty())
+   {
+-    BinaryAddonBaseList addonInfos;
+-    CServiceBroker::GetBinaryAddonManager().GetAddonInfos(addonInfos, true, ADDON_AUDIODECODER);
++    std::vector<AddonInfoPtr> addonInfos;
++    CServiceBroker::GetAddonMgr().GetAddonInfos(addonInfos, true, ADDON_AUDIODECODER);
+     for (const auto& addonInfo : addonInfos)
+     {
+       auto types = StringUtils::Split(CAudioDecoder::GetMimetypes(addonInfo), "|");
+diff --git a/xbmc/filesystem/FileDirectoryFactory.cpp b/xbmc/filesystem/FileDirectoryFactory.cpp
+index 4a6e17ad9ce8..7c7996fa2b12 100644
+--- a/xbmc/filesystem/FileDirectoryFactory.cpp
++++ b/xbmc/filesystem/FileDirectoryFactory.cpp
+@@ -33,7 +33,6 @@
+ #include "ServiceBroker.h"
+ #include "addons/AudioDecoder.h"
+ #include "addons/VFSEntry.h"
+-#include "addons/binary-addons/BinaryAddonBase.h"
+ #include "AudioBookFileDirectory.h"
+ 
+ using namespace ADDON;
+@@ -54,8 +53,8 @@ IFileDirectory* CFileDirectoryFactory::Create(const CURL& url, CFileItem* pItem,
+   StringUtils::ToLower(strExtension);
+   if (!strExtension.empty() && CServiceBroker::IsBinaryAddonCacheUp())
+   {
+-    BinaryAddonBaseList addonInfos;
+-    CServiceBroker::GetBinaryAddonManager().GetAddonInfos(addonInfos, true, ADDON_AUDIODECODER);
++    std::vector<AddonInfoPtr> addonInfos;
++    CServiceBroker::GetAddonMgr().GetAddonInfos(addonInfos, true, ADDON_AUDIODECODER);
+     for (const auto& addonInfo : addonInfos)
+     {
+       if (CAudioDecoder::HasTracks(addonInfo))
+diff --git a/xbmc/guilib/GUIVisualisationControl.cpp b/xbmc/guilib/GUIVisualisationControl.cpp
+index 3a4bddf94623..6c58ac8371ed 100644
+--- a/xbmc/guilib/GUIVisualisationControl.cpp
++++ b/xbmc/guilib/GUIVisualisationControl.cpp
+@@ -363,7 +363,10 @@ bool CGUIVisualisationControl::GetPresetList(std::vector<std::string> &vecpreset
+ 
+ bool CGUIVisualisationControl::InitVisualization()
+ {
+-  const ADDON::BinaryAddonBasePtr addonBase = CServiceBroker::GetBinaryAddonManager().GetInstalledAddonInfo(CServiceBroker::GetSettingsComponent()->GetSettings()->GetString(CSettings::SETTING_MUSICPLAYER_VISUALISATION), ADDON::ADDON_VIZ);
++  const std::string addon = CServiceBroker::GetSettingsComponent()->GetSettings()->GetString(
++      CSettings::SETTING_MUSICPLAYER_VISUALISATION);
++  const ADDON::AddonInfoPtr addonBase =
++      CServiceBroker::GetAddonMgr().GetAddonInfo(addon, ADDON::ADDON_VIZ);
+   if (!addonBase)
+     return false;
+ 
+diff --git a/xbmc/guilib/imagefactory.cpp b/xbmc/guilib/imagefactory.cpp
+index b17af7d97c8e..1234369b3c9a 100644
+--- a/xbmc/guilib/imagefactory.cpp
++++ b/xbmc/guilib/imagefactory.cpp
+@@ -10,7 +10,6 @@
+ 
+ #include "ServiceBroker.h"
+ #include "addons/ImageDecoder.h"
+-#include "addons/binary-addons/BinaryAddonBase.h"
+ #include "guilib/FFmpegImage.h"
+ #include "utils/Mime.h"
+ #include "utils/StringUtils.h"
+@@ -37,9 +36,8 @@ IImage* ImageFactory::CreateLoader(const CURL& url)
+ 
+ IImage* ImageFactory::CreateLoaderFromMimeType(const std::string& strMimeType)
+ {
+-  BinaryAddonBaseList addonInfos;
+-
+-  CServiceBroker::GetBinaryAddonManager().GetAddonInfos(addonInfos, true, ADDON_IMAGEDECODER);
++  std::vector<AddonInfoPtr> addonInfos;
++  CServiceBroker::GetAddonMgr().GetAddonInfos(addonInfos, true, ADDON_IMAGEDECODER);
+   for (auto addonInfo : addonInfos)
+   {
+     std::vector<std::string> mime = StringUtils::Split(addonInfo->Type(ADDON_IMAGEDECODER)->GetValue("@mimetype").asString(), "|");
+diff --git a/xbmc/music/tags/MusicInfoTagLoaderFactory.cpp b/xbmc/music/tags/MusicInfoTagLoaderFactory.cpp
+index e117ce8ce81a..b5d8a0ce5fe1 100644
+--- a/xbmc/music/tags/MusicInfoTagLoaderFactory.cpp
++++ b/xbmc/music/tags/MusicInfoTagLoaderFactory.cpp
+@@ -16,7 +16,6 @@
+ #include "ServiceBroker.h"
+ #include "TagLoaderTagLib.h"
+ #include "addons/AudioDecoder.h"
+-#include "addons/binary-addons/BinaryAddonBase.h"
+ #include "utils/StringUtils.h"
+ #include "utils/URIUtils.h"
+ 
+@@ -44,8 +43,8 @@ IMusicInfoTagLoader* CMusicInfoTagLoaderFactory::CreateLoader(const CFileItem& i
+   if (strExtension.empty())
+     return NULL;
+ 
+-  BinaryAddonBaseList addonInfos;
+-  CServiceBroker::GetBinaryAddonManager().GetAddonInfos(addonInfos, true, ADDON_AUDIODECODER);
++  std::vector<AddonInfoPtr> addonInfos;
++  CServiceBroker::GetAddonMgr().GetAddonInfos(addonInfos, true, ADDON_AUDIODECODER);
+   for (const auto& addonInfo : addonInfos)
+   {
+     if (CAudioDecoder::HasTags(addonInfo))
+diff --git a/xbmc/network/GUIDialogNetworkSetup.cpp b/xbmc/network/GUIDialogNetworkSetup.cpp
+index febed6fa34da..768caf7de9e1 100644
+--- a/xbmc/network/GUIDialogNetworkSetup.cpp
++++ b/xbmc/network/GUIDialogNetworkSetup.cpp
+@@ -12,7 +12,6 @@
+ #include "URL.h"
+ #include "addons/AddonManager.h"
+ #include "addons/VFSEntry.h"
+-#include "addons/binary-addons/BinaryAddonBase.h"
+ #include "dialogs/GUIDialogFileBrowser.h"
+ #include "guilib/GUIComponent.h"
+ #include "guilib/GUIEditControl.h"
+diff --git a/xbmc/peripherals/addons/PeripheralAddon.cpp b/xbmc/peripherals/addons/PeripheralAddon.cpp
+index 3e43b174334b..9a4a33aca37d 100644
+--- a/xbmc/peripherals/addons/PeripheralAddon.cpp
++++ b/xbmc/peripherals/addons/PeripheralAddon.cpp
+@@ -47,8 +47,7 @@ using namespace XFILE;
+   } while (0)
+ #endif
+ 
+-CPeripheralAddon::CPeripheralAddon(const ADDON::BinaryAddonBasePtr& addonInfo,
+-                                   CPeripherals& manager)
++CPeripheralAddon::CPeripheralAddon(const ADDON::AddonInfoPtr& addonInfo, CPeripherals& manager)
+   : IAddonInstanceHandler(ADDON_INSTANCE_PERIPHERAL, addonInfo),
+     m_manager(manager),
+     m_bSupportsJoystickRumble(false),
+diff --git a/xbmc/peripherals/addons/PeripheralAddon.h b/xbmc/peripherals/addons/PeripheralAddon.h
+index 4eaafcfb9be2..5468bac330b6 100644
+--- a/xbmc/peripherals/addons/PeripheralAddon.h
++++ b/xbmc/peripherals/addons/PeripheralAddon.h
+@@ -9,7 +9,6 @@
+ #pragma once
+ 
+ #include "addons/binary-addons/AddonInstanceHandler.h"
+-#include "addons/binary-addons/BinaryAddonBase.h"
+ #include "addons/kodi-addon-dev-kit/include/kodi/addon-instance/Peripheral.h"
+ #include "addons/kodi-addon-dev-kit/include/kodi/addon-instance/PeripheralUtils.h"
+ #include "input/joysticks/JoystickTypes.h"
+@@ -42,7 +41,7 @@ typedef std::map<KODI::JOYSTICK::FeatureName, kodi::addon::JoystickFeature> Feat
+ class CPeripheralAddon : public ADDON::IAddonInstanceHandler
+ {
+ public:
+-  explicit CPeripheralAddon(const ADDON::BinaryAddonBasePtr& addonInfo, CPeripherals& manager);
++  explicit CPeripheralAddon(const ADDON::AddonInfoPtr& addonInfo, CPeripherals& manager);
+   ~CPeripheralAddon(void) override;
+ 
+   /*!
+@@ -97,12 +96,12 @@ class CPeripheralAddon : public ADDON::IAddonInstanceHandler
+   void RegisterButtonMap(CPeripheral* device, KODI::JOYSTICK::IButtonMap* buttonMap);
+   void UnregisterButtonMap(KODI::JOYSTICK::IButtonMap* buttonMap);
+ 
+-  static inline bool ProvidesJoysticks(const ADDON::BinaryAddonBasePtr& addonInfo)
++  static inline bool ProvidesJoysticks(const ADDON::AddonInfoPtr& addonInfo)
+   {
+     return addonInfo->Type(ADDON::ADDON_PERIPHERALDLL)->GetValue("@provides_joysticks").asBoolean();
+   }
+ 
+-  static inline bool ProvidesButtonMaps(const ADDON::BinaryAddonBasePtr& addonInfo)
++  static inline bool ProvidesButtonMaps(const ADDON::AddonInfoPtr& addonInfo)
+   {
+     return addonInfo->Type(ADDON::ADDON_PERIPHERALDLL)
+         ->GetValue("@provides_buttonmaps")
+diff --git a/xbmc/peripherals/bus/virtual/PeripheralBusAddon.cpp b/xbmc/peripherals/bus/virtual/PeripheralBusAddon.cpp
+index 13536023240f..77c526f84010 100644
+--- a/xbmc/peripherals/bus/virtual/PeripheralBusAddon.cpp
++++ b/xbmc/peripherals/bus/virtual/PeripheralBusAddon.cpp
+@@ -10,7 +10,6 @@
+ 
+ #include "ServiceBroker.h"
+ #include "addons/AddonManager.h"
+-#include "addons/binary-addons/BinaryAddonManager.h"
+ #include "messaging/helpers/DialogHelper.h"
+ #include "peripherals/Peripherals.h"
+ #include "peripherals/addons/PeripheralAddon.h"
+@@ -178,9 +177,8 @@ void CPeripheralBusAddon::EnableButtonMapping()
+ 
+   if (!GetAddonWithButtonMap(dummy))
+   {
+-    BinaryAddonBaseList disabledAddons;
+-    CServiceBroker::GetBinaryAddonManager().GetDisabledAddonInfos(disabledAddons,
+-                                                                  ADDON_PERIPHERALDLL);
++    std::vector<AddonInfoPtr> disabledAddons;
++    CServiceBroker::GetAddonMgr().GetDisabledAddonInfos(disabledAddons, ADDON_PERIPHERALDLL);
+     if (!disabledAddons.empty())
+       PromptEnableAddons(disabledAddons);
+   }
+@@ -377,7 +375,7 @@ void CPeripheralBusAddon::UpdateAddons(void)
+   using namespace ADDON;
+ 
+   auto GetPeripheralAddonID = [](const PeripheralAddonPtr& addon) { return addon->ID(); };
+-  auto GetAddonID = [](const BinaryAddonBasePtr& addon) { return addon->ID(); };
++  auto GetAddonID = [](const AddonInfoPtr& addon) { return addon->ID(); };
+ 
+   std::set<std::string> currentIds;
+   std::set<std::string> newIds;
+@@ -386,8 +384,8 @@ void CPeripheralBusAddon::UpdateAddons(void)
+   std::set<std::string> removed;
+ 
+   // Get new add-ons
+-  BinaryAddonBaseList newAddons;
+-  CServiceBroker::GetBinaryAddonManager().GetAddonInfos(newAddons, true, ADDON_PERIPHERALDLL);
++  std::vector<AddonInfoPtr> newAddons;
++  CServiceBroker::GetAddonMgr().GetAddonInfos(newAddons, true, ADDON_PERIPHERALDLL);
+   std::transform(newAddons.begin(), newAddons.end(), std::inserter(newIds, newIds.end()),
+                  GetAddonID);
+ 
+@@ -410,9 +408,9 @@ void CPeripheralBusAddon::UpdateAddons(void)
+   {
+     CLog::Log(LOGDEBUG, "Add-on bus: Registering add-on %s", addonId.c_str());
+ 
+-    auto GetAddon = [&addonId](const BinaryAddonBasePtr& addon) { return addon->ID() == addonId; };
++    auto GetAddon = [&addonId](const AddonInfoPtr& addon) { return addon->ID() == addonId; };
+ 
+-    BinaryAddonBaseList::iterator it = std::find_if(newAddons.begin(), newAddons.end(), GetAddon);
++    auto it = std::find_if(newAddons.begin(), newAddons.end(), GetAddon);
+     if (it != newAddons.end())
+     {
+       PeripheralAddonPtr newAddon = std::make_shared<CPeripheralAddon>(*it, m_manager);
+@@ -467,7 +465,7 @@ void CPeripheralBusAddon::UnRegisterAddon(const std::string& addonId)
+   }
+ }
+ 
+-void CPeripheralBusAddon::PromptEnableAddons(const ADDON::BinaryAddonBaseList& disabledAddons)
++void CPeripheralBusAddon::PromptEnableAddons(const std::vector<ADDON::AddonInfoPtr>& disabledAddons)
+ {
+   using namespace ADDON;
+   using namespace MESSAGING::HELPERS;
+@@ -475,10 +473,10 @@ void CPeripheralBusAddon::PromptEnableAddons(const ADDON::BinaryAddonBaseList& d
+   // True if the user confirms enabling the disabled peripheral add-on
+   bool bAccepted = false;
+ 
+-  auto itAddon = std::find_if(disabledAddons.begin(), disabledAddons.end(),
+-                              [](const BinaryAddonBasePtr& addonInfo) {
+-                                return CPeripheralAddon::ProvidesJoysticks(addonInfo);
+-                              });
++  auto itAddon =
++      std::find_if(disabledAddons.begin(), disabledAddons.end(), [](const AddonInfoPtr& addonInfo) {
++        return CPeripheralAddon::ProvidesJoysticks(addonInfo);
++      });
+ 
+   if (itAddon != disabledAddons.end())
+   {
+diff --git a/xbmc/peripherals/bus/virtual/PeripheralBusAddon.h b/xbmc/peripherals/bus/virtual/PeripheralBusAddon.h
+index a01b4c9ae3e4..0d5d1ee53ac9 100644
+--- a/xbmc/peripherals/bus/virtual/PeripheralBusAddon.h
++++ b/xbmc/peripherals/bus/virtual/PeripheralBusAddon.h
+@@ -9,7 +9,6 @@
+ #pragma once
+ 
+ #include "addons/AddonManager.h"
+-#include "addons/binary-addons/BinaryAddonBase.h"
+ #include "peripherals/PeripheralTypes.h"
+ #include "peripherals/bus/PeripheralBus.h"
+ 
+@@ -81,7 +80,7 @@ class CPeripheralBusAddon : public CPeripheralBus
+   void OnEvent(const ADDON::AddonEvent& event);
+   void UnRegisterAddon(const std::string& addonId);
+ 
+-  void PromptEnableAddons(const ADDON::BinaryAddonBaseList& disabledAddons);
++  void PromptEnableAddons(const std::vector<ADDON::AddonInfoPtr>& disabledAddons);
+ 
+   PeripheralAddonVector m_addons;
+   PeripheralAddonVector m_failedAddons;
+diff --git a/xbmc/pvr/addons/PVRClient.cpp b/xbmc/pvr/addons/PVRClient.cpp
+index 16ee83d2877c..af149a5b1f39 100644
+--- a/xbmc/pvr/addons/PVRClient.cpp
++++ b/xbmc/pvr/addons/PVRClient.cpp
+@@ -57,8 +57,8 @@ namespace PVR
+ 
+ #define DEFAULT_INFO_STRING_VALUE "unknown"
+ 
+-CPVRClient::CPVRClient(ADDON::BinaryAddonBasePtr addonBase)
+-  : IAddonInstanceHandler(ADDON_INSTANCE_PVR, addonBase)
++CPVRClient::CPVRClient(const ADDON::AddonInfoPtr& addonInfo)
++  : IAddonInstanceHandler(ADDON_INSTANCE_PVR, addonInfo)
+ {
+   // Create all interface parts independent to make API changes easier if
+   // something is added
+diff --git a/xbmc/pvr/addons/PVRClient.h b/xbmc/pvr/addons/PVRClient.h
+index a7f844b4786e..733c9f014af7 100644
+--- a/xbmc/pvr/addons/PVRClient.h
++++ b/xbmc/pvr/addons/PVRClient.h
+@@ -281,7 +281,7 @@ class CPVRClientCapabilities
+ class CPVRClient : public ADDON::IAddonInstanceHandler
+ {
+ public:
+-  explicit CPVRClient(ADDON::BinaryAddonBasePtr addonBase);
++  explicit CPVRClient(const ADDON::AddonInfoPtr& addonInfo);
+   ~CPVRClient() override;
+ 
+   void OnPreInstall() override;
+diff --git a/xbmc/pvr/addons/PVRClients.cpp b/xbmc/pvr/addons/PVRClients.cpp
+index 9f2f3faa8189..ceebbf8ec95c 100644
+--- a/xbmc/pvr/addons/PVRClients.cpp
++++ b/xbmc/pvr/addons/PVRClients.cpp
+@@ -9,8 +9,6 @@
+ #include "PVRClients.h"
+ 
+ #include "ServiceBroker.h"
+-#include "addons/binary-addons/BinaryAddonBase.h"
+-#include "addons/binary-addons/BinaryAddonManager.h"
+ #include "guilib/LocalizeStrings.h"
+ #include "messaging/ApplicationMessenger.h"
+ #include "pvr/PVREventLogJob.h"
+@@ -86,14 +84,14 @@ void CPVRClients::Continue()
+ 
+ void CPVRClients::UpdateAddons(const std::string& changedAddonId /*= ""*/)
+ {
+-  BinaryAddonBaseList addons;
+-  CServiceBroker::GetBinaryAddonManager().GetAddonInfos(addons, false, ADDON_PVRDLL);
++  std::vector<AddonInfoPtr> addons;
++  CServiceBroker::GetAddonMgr().GetAddonInfos(addons, false, ADDON_PVRDLL);
+ 
+   if (addons.empty())
+     return;
+ 
+   bool bFoundChangedAddon = changedAddonId.empty();
+-  std::vector<std::pair<BinaryAddonBasePtr, bool>> addonsWithStatus;
++  std::vector<std::pair<AddonInfoPtr, bool>> addonsWithStatus;
+   for (const auto& addon : addons)
+   {
+     bool bEnabled = !CServiceBroker::GetAddonMgr().IsAddonDisabled(addon->ID());
+@@ -109,14 +107,14 @@ void CPVRClients::UpdateAddons(const std::string& changedAddonId /*= ""*/)
+   addons.clear();
+ 
+   std::vector<std::pair<std::shared_ptr<CPVRClient>, int>> addonsToCreate;
+-  std::vector<BinaryAddonBasePtr> addonsToReCreate;
+-  std::vector<BinaryAddonBasePtr> addonsToDestroy;
++  std::vector<AddonInfoPtr> addonsToReCreate;
++  std::vector<AddonInfoPtr> addonsToDestroy;
+ 
+   {
+     CSingleLock lock(m_critSection);
+     for (const auto& addonWithStatus : addonsWithStatus)
+     {
+-      BinaryAddonBasePtr addon = addonWithStatus.first;
++      AddonInfoPtr addon = addonWithStatus.first;
+       bool bEnabled = addonWithStatus.second;
+ 
+       if (bEnabled && (!IsKnownClient(addon->ID()) || !IsCreatedClient(addon->ID())))
+diff --git a/xbmc/settings/SettingConditions.cpp b/xbmc/settings/SettingConditions.cpp
+index 73817ec9d3b8..ebf331810795 100644
+--- a/xbmc/settings/SettingConditions.cpp
++++ b/xbmc/settings/SettingConditions.cpp
+@@ -11,7 +11,6 @@
+ #include "LockType.h"
+ #include "Util.h"
+ #include "addons/AddonManager.h"
+-#include "addons/binary-addons/BinaryAddonManager.h"
+ #include "addons/Skin.h"
+ #if defined(TARGET_ANDROID)
+ #include "platform/android/activity/AndroidFeatures.h"
+diff --git a/xbmc/windows/GUIWindowScreensaver.cpp b/xbmc/windows/GUIWindowScreensaver.cpp
+index 2cacf1d8c9df..ed383e03f2d3 100644
+--- a/xbmc/windows/GUIWindowScreensaver.cpp
++++ b/xbmc/windows/GUIWindowScreensaver.cpp
+@@ -73,7 +73,10 @@ bool CGUIWindowScreensaver::OnMessage(CGUIMessage& message)
+ 
+       CServiceBroker::GetWinSystem()->GetGfxContext().CaptureStateBlock();
+ 
+-      const ADDON::BinaryAddonBasePtr addonBase = CServiceBroker::GetBinaryAddonManager().GetInstalledAddonInfo(CServiceBroker::GetSettingsComponent()->GetSettings()->GetString(CSettings::SETTING_SCREENSAVER_MODE), ADDON::ADDON_SCREENSAVER);
++      const std::string addon = CServiceBroker::GetSettingsComponent()->GetSettings()->GetString(
++          CSettings::SETTING_SCREENSAVER_MODE);
++      const ADDON::AddonInfoPtr addonBase =
++          CServiceBroker::GetAddonMgr().GetAddonInfo(addon, ADDON::ADDON_SCREENSAVER);
+       if (!addonBase)
+         return false;
+       m_addon = new ADDON::CScreenSaver(addonBase);
+diff --git a/xbmc/windows/GUIWindowScreensaverDim.cpp b/xbmc/windows/GUIWindowScreensaverDim.cpp
+index dad22d8aad5e..fb357a24e484 100644
+--- a/xbmc/windows/GUIWindowScreensaverDim.cpp
++++ b/xbmc/windows/GUIWindowScreensaverDim.cpp
+@@ -10,7 +10,7 @@
+ 
+ #include "Application.h"
+ #include "ServiceBroker.h"
+-#include "addons/binary-addons/AddonDll.h"
++#include "addons/AddonManager.h"
+ #include "guilib/GUITexture.h"
+ #include "utils/Color.h"
+ #include "windowing/GraphicContext.h"
+
+From 6683a347f3e4e4fb23b5bd0db1c5416072b6502c Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Sun, 14 Jun 2020 22:11:43 +0200
+Subject: [PATCH 6/8] [addons] cleanup binary addon manager
+
+This add docs about the two new functions and remove all no more needed
+parts.
+---
+ xbmc/ServiceManager.cpp                       |  12 --
+ xbmc/addons/AddonManager.cpp                  |  30 ---
+ xbmc/addons/AddonManager.h                    |  34 ----
+ xbmc/addons/binary-addons/AddonDll.cpp        |   2 +-
+ .../binary-addons/AddonInstanceHandler.cpp    |   1 -
+ xbmc/addons/binary-addons/BinaryAddonBase.cpp |  95 ----------
+ xbmc/addons/binary-addons/BinaryAddonBase.h   |  22 ---
+ .../binary-addons/BinaryAddonManager.cpp      | 171 ------------------
+ .../addons/binary-addons/BinaryAddonManager.h |  74 +++-----
+ xbmc/profiles/ProfileManager.cpp              |   3 -
+ 10 files changed, 22 insertions(+), 422 deletions(-)
+
+diff --git a/xbmc/ServiceManager.cpp b/xbmc/ServiceManager.cpp
+index 025dc9c9e9d7..5fae97bea3e8 100644
+--- a/xbmc/ServiceManager.cpp
++++ b/xbmc/ServiceManager.cpp
+@@ -62,12 +62,6 @@ bool CServiceManager::InitForTesting()
+     return false;
+   }
+ 
+-  if (!m_binaryAddonManager->Init())
+-  {
+-    CLog::Log(LOGFATAL, "CServiceManager::%s: Unable to initialize CBinaryAddonManager", __FUNCTION__);
+-    return false;
+-  }
+-
+   m_fileExtensionProvider.reset(new CFileExtensionProvider(*m_addonMgr));
+ 
+   init_level = 1;
+@@ -115,12 +109,6 @@ bool CServiceManager::InitStageTwo(const CAppParamParser &params, const std::str
+     return false;
+   }
+ 
+-  if (!m_binaryAddonManager->Init())
+-  {
+-    CLog::Log(LOGFATAL, "CServiceManager::%s: Unable to initialize CBinaryAddonManager", __FUNCTION__);
+-    return false;
+-  }
+-
+   m_repositoryUpdater.reset(new ADDON::CRepositoryUpdater(*m_addonMgr));
+ 
+   m_vfsAddonCache.reset(new ADDON::CVFSAddonCache());
+diff --git a/xbmc/addons/AddonManager.cpp b/xbmc/addons/AddonManager.cpp
+index 007205d52ea3..8cc74b5b7ca2 100644
+--- a/xbmc/addons/AddonManager.cpp
++++ b/xbmc/addons/AddonManager.cpp
+@@ -323,36 +323,6 @@ bool CAddonMgr::FindInstallableById(const std::string& addonId, AddonPtr& result
+   return true;
+ }
+ 
+-bool CAddonMgr::GetInstalledBinaryAddons(BINARY_ADDON_LIST& binaryAddonList)
+-{
+-  CSingleLock lock(m_critSection);
+-
+-  for (auto addon : m_installedAddons)
+-  {
+-    BINARY_ADDON_LIST_ENTRY binaryAddon;
+-    if (GetInstalledBinaryAddon(addon.first, binaryAddon))
+-      binaryAddonList.push_back(std::move(binaryAddon));
+-  }
+-
+-  return !binaryAddonList.empty();
+-}
+-
+-bool CAddonMgr::GetInstalledBinaryAddon(const std::string& addonId, BINARY_ADDON_LIST_ENTRY& binaryAddon)
+-{
+-  bool ret = false;
+-
+-  CSingleLock lock(m_critSection);
+-
+-  AddonInfoPtr addon = GetAddonInfo(addonId);
+-  if (addon)
+-  {
+-    binaryAddon = BINARY_ADDON_LIST_ENTRY(!IsAddonDisabled(addonId), addon);
+-    ret = true;
+-  }
+-
+-  return ret;
+-}
+-
+ bool CAddonMgr::GetAddonsInternal(const TYPE& type, VECADDONS& addons, bool enabledOnly) const
+ {
+   CSingleLock lock(m_critSection);
+diff --git a/xbmc/addons/AddonManager.h b/xbmc/addons/AddonManager.h
+index a97956d6a7b4..7fd5030ad71d 100644
+--- a/xbmc/addons/AddonManager.h
++++ b/xbmc/addons/AddonManager.h
+@@ -22,16 +22,6 @@ namespace ADDON
+   typedef std::map<TYPE, VECADDONS>::iterator IMAPADDONS;
+   typedef std::map<std::string, AddonInfoPtr> ADDON_INFO_LIST;
+ 
+-  /*!
+-   * @brief The value binaryAddonList use a tuple in following construct:
+-   * | Number | Type        | Description
+-   * |:------:|------------:|:------------------------------------------------
+-   * | first  | boolean     | If true addon is enabled, otherwise disabled
+-   * | second | CAddonInfo  | Information data of addon
+-   */
+-  typedef std::pair<bool, AddonInfoPtr> BINARY_ADDON_LIST_ENTRY;
+-  typedef std::vector<BINARY_ADDON_LIST_ENTRY> BINARY_ADDON_LIST;
+-
+   const std::string ADDON_PYTHON_EXT           = "*.py";
+ 
+   /**
+@@ -110,30 +100,6 @@ namespace ADDON
+ 
+     bool GetInstallableAddons(VECADDONS& addons, const TYPE &type);
+ 
+-    /*!
+-     * @brief To get all installed binary addon on Kodi
+-     *
+-     * This function becomes used from ADDON::CBinaryAddonManager to get his
+-     * related addons (whether enabled or disabled).
+-     *
+-     * @param[out] binaryAddonList The list where from here the binary addons
+-     *                             becomes stored.
+-     * @return                     If list is not empty becomes true returned
+-     */
+-    bool GetInstalledBinaryAddons(BINARY_ADDON_LIST& binaryAddonList);
+-
+-    /*!
+-     * @brief To get requested installed binary addon on Kodi
+-     *
+-     * This function is used by ADDON::CBinaryAddonManager to obtain the add-on
+-     * with the given id, regardless the add-on is disabled or enabled.
+-     *
+-     * @param[in] addonId          Id to get
+-     * @param[out] binaryAddon     Addon info returned
+-     * @return                     True, if the requested add-on was found, false otherwise
+-     */
+-    bool GetInstalledBinaryAddon(const std::string& addonId, BINARY_ADDON_LIST_ENTRY& binaryAddon);
+-
+     /*! Get the installable addon with the highest version. */
+     bool FindInstallableById(const std::string& addonId, AddonPtr& addon);
+ 
+diff --git a/xbmc/addons/binary-addons/AddonDll.cpp b/xbmc/addons/binary-addons/AddonDll.cpp
+index e1ed9e94108d..c0c5bf1316a0 100644
+--- a/xbmc/addons/binary-addons/AddonDll.cpp
++++ b/xbmc/addons/binary-addons/AddonDll.cpp
+@@ -27,7 +27,7 @@ namespace ADDON
+ {
+ 
+ CAddonDll::CAddonDll(const AddonInfoPtr& addonInfo, BinaryAddonBasePtr addonBase)
+-  : CAddon(addonInfo, addonBase->MainType()), m_binaryAddonBase(addonBase)
++  : CAddon(addonInfo, addonInfo->MainType()), m_binaryAddonBase(addonBase)
+ {
+ }
+ 
+diff --git a/xbmc/addons/binary-addons/AddonInstanceHandler.cpp b/xbmc/addons/binary-addons/AddonInstanceHandler.cpp
+index 7f6945b9deaf..e4ba3e464aa0 100644
+--- a/xbmc/addons/binary-addons/AddonInstanceHandler.cpp
++++ b/xbmc/addons/binary-addons/AddonInstanceHandler.cpp
+@@ -8,7 +8,6 @@
+ 
+ #include "AddonInstanceHandler.h"
+ 
+-#include "BinaryAddonBase.h"
+ #include "ServiceBroker.h"
+ #include "utils/StringUtils.h"
+ #include "utils/log.h"
+diff --git a/xbmc/addons/binary-addons/BinaryAddonBase.cpp b/xbmc/addons/binary-addons/BinaryAddonBase.cpp
+index e166545176df..c3fbd21f0e21 100644
+--- a/xbmc/addons/binary-addons/BinaryAddonBase.cpp
++++ b/xbmc/addons/binary-addons/BinaryAddonBase.cpp
+@@ -8,11 +8,7 @@
+ 
+ #include "BinaryAddonBase.h"
+ 
+-#include "AddonDll.h"
+-#include "filesystem/SpecialProtocol.h"
+ #include "threads/SingleLock.h"
+-#include "utils/URIUtils.h"
+-#include "utils/XMLUtils.h"
+ #include "utils/log.h"
+ 
+ using namespace ADDON;
+@@ -22,97 +18,6 @@ const std::string& CBinaryAddonBase::ID() const
+   return m_addonInfo->ID();
+ }
+ 
+-const std::string& CBinaryAddonBase::Path() const
+-{
+-  return m_addonInfo->Path();
+-}
+-
+-TYPE CBinaryAddonBase::MainType() const
+-{
+-  return m_addonInfo->MainType();
+-}
+-
+-const std::string& CBinaryAddonBase::MainLibName() const
+-{
+-  return m_addonInfo->LibName();
+-}
+-
+-bool CBinaryAddonBase::HasType(TYPE type) const
+-{
+-  return m_addonInfo->HasType(type);
+-}
+-
+-const std::vector<CAddonType>& CBinaryAddonBase::Types() const
+-{
+-  return m_addonInfo->Types();
+-}
+-
+-const CAddonType* CBinaryAddonBase::Type(TYPE type) const
+-{
+-  return m_addonInfo->Type(type);
+-}
+-
+-const AddonVersion& CBinaryAddonBase::Version() const
+-{
+-  return m_addonInfo->Version();
+-}
+-
+-const AddonVersion& CBinaryAddonBase::MinVersion() const
+-{
+-  return m_addonInfo->MinVersion();
+-}
+-
+-const AddonVersion& CBinaryAddonBase::DependencyVersion(const std::string& dependencyID) const
+-{
+-  return m_addonInfo->DependencyVersion(dependencyID);
+-}
+-
+-const std::string& CBinaryAddonBase::Name() const
+-{
+-  return m_addonInfo->Name();
+-}
+-
+-const std::string& CBinaryAddonBase::Summary() const
+-{
+-  return m_addonInfo->Summary();
+-}
+-
+-const std::string& CBinaryAddonBase::Description() const
+-{
+-  return m_addonInfo->Description();
+-}
+-
+-const std::string& CBinaryAddonBase::Author() const
+-{
+-  return m_addonInfo->Author();
+-}
+-
+-const std::string& CBinaryAddonBase::ChangeLog() const
+-{
+-  return m_addonInfo->ChangeLog();
+-}
+-
+-const std::string& CBinaryAddonBase::Icon() const
+-{
+-  return m_addonInfo->Icon();
+-}
+-
+-const ArtMap& CBinaryAddonBase::Art() const
+-{
+-  return m_addonInfo->Art();
+-}
+-
+-const std::string& CBinaryAddonBase::Disclaimer() const
+-{
+-  return m_addonInfo->Disclaimer();
+-}
+-
+-bool CBinaryAddonBase::MeetsVersion(const AddonVersion& versionMin,
+-                                    const AddonVersion& version) const
+-{
+-  return m_addonInfo->MeetsVersion(versionMin, version);
+-}
+-
+ AddonDllPtr CBinaryAddonBase::GetAddon(IAddonInstanceHandler* handler)
+ {
+   if (handler == nullptr)
+diff --git a/xbmc/addons/binary-addons/BinaryAddonBase.h b/xbmc/addons/binary-addons/BinaryAddonBase.h
+index cce27c56ed7f..4027f9d71d15 100644
+--- a/xbmc/addons/binary-addons/BinaryAddonBase.h
++++ b/xbmc/addons/binary-addons/BinaryAddonBase.h
+@@ -30,28 +30,6 @@ namespace ADDON
+     explicit CBinaryAddonBase(const AddonInfoPtr& addonInfo) : m_addonInfo(addonInfo) { }
+ 
+     const std::string& ID() const;
+-    const std::string& Path() const;
+-
+-    TYPE MainType() const;
+-    const std::string& MainLibName() const;
+-
+-    bool HasType(TYPE type) const;
+-    const std::vector<CAddonType>& Types() const;
+-    const CAddonType* Type(TYPE type) const;
+-
+-    const AddonVersion& Version() const;
+-    const AddonVersion& MinVersion() const;
+-    const AddonVersion& DependencyVersion(const std::string& dependencyID) const;
+-    const std::string& Name() const;
+-    const std::string& Summary() const;
+-    const std::string& Description() const;
+-    const std::string& Author() const;
+-    const std::string& ChangeLog() const;
+-    const std::string& Icon() const;
+-    const ArtMap& Art() const;
+-    const std::string& Disclaimer() const;
+-
+-    bool MeetsVersion(const AddonVersion& versionMin, const AddonVersion& version) const;
+ 
+     AddonDllPtr GetAddon(IAddonInstanceHandler* handler);
+     void ReleaseAddon(IAddonInstanceHandler* handler);
+diff --git a/xbmc/addons/binary-addons/BinaryAddonManager.cpp b/xbmc/addons/binary-addons/BinaryAddonManager.cpp
+index 2c6bea48842c..7c8caca42707 100644
+--- a/xbmc/addons/binary-addons/BinaryAddonManager.cpp
++++ b/xbmc/addons/binary-addons/BinaryAddonManager.cpp
+@@ -9,92 +9,11 @@
+ #include "BinaryAddonManager.h"
+ 
+ #include "BinaryAddonBase.h"
+-#include "ServiceBroker.h"
+-#include "addons/AddonManager.h"
+-#include "filesystem/Directory.h"
+-#include "filesystem/SpecialProtocol.h"
+ #include "threads/SingleLock.h"
+ #include "utils/log.h"
+ 
+ using namespace ADDON;
+ 
+-CBinaryAddonManager::~CBinaryAddonManager()
+-{
+-  DeInit();
+-}
+-
+-bool CBinaryAddonManager::Init()
+-{
+-  CServiceBroker::GetAddonMgr().Events().Subscribe(this, &CBinaryAddonManager::OnEvent);
+-
+-  BINARY_ADDON_LIST binaryAddonList;
+-  if (!CServiceBroker::GetAddonMgr().GetInstalledBinaryAddons(binaryAddonList))
+-  {
+-    CLog::Log(
+-        LOGINFO,
+-        "CBinaryAddonManager::%s: No binary addons present and related manager, init not necessary",
+-        __FUNCTION__);
+-    return true;
+-  }
+-
+-  CSingleLock lock(m_critSection);
+-
+-  for (auto addon : binaryAddonList)
+-    AddAddonBaseEntry(addon);
+-
+-  return true;
+-}
+-
+-void CBinaryAddonManager::DeInit()
+-{
+-  CServiceBroker::GetAddonMgr().Events().Unsubscribe(this);
+-}
+-
+-void CBinaryAddonManager::GetAddonInfos(BinaryAddonBaseList& addonInfos, bool enabledOnly, const TYPE &type) const
+-{
+-  CSingleLock lock(m_critSection);
+-
+-  const BinaryAddonMgrBaseList* addons;
+-  if (enabledOnly)
+-    addons = &m_enabledAddons;
+-  else
+-    addons = &m_installedAddons;
+-
+-  for (auto info : *addons)
+-  {
+-    if (type == ADDON_UNKNOWN || info.second->HasType(type))
+-    {
+-      addonInfos.push_back(info.second);
+-    }
+-  }
+-}
+-
+-void CBinaryAddonManager::GetDisabledAddonInfos(BinaryAddonBaseList& addonInfos, const TYPE& type)
+-{
+-  CSingleLock lock(m_critSection);
+-
+-  for (auto info : m_installedAddons)
+-  {
+-    if (type == ADDON_UNKNOWN || info.second->HasType(type))
+-    {
+-      if (CServiceBroker::GetAddonMgr().IsAddonDisabled(info.second->ID()))
+-        addonInfos.push_back(info.second);
+-    }
+-  }
+-}
+-
+-const BinaryAddonBasePtr CBinaryAddonManager::GetInstalledAddonInfo(const std::string& addonId, const TYPE &type/* = ADDON_UNKNOWN*/) const
+-{
+-  CSingleLock lock(m_critSection);
+-
+-  auto addon = m_installedAddons.find(addonId);
+-  if (addon != m_installedAddons.end() && (type == ADDON_UNKNOWN || addon->second->HasType(type)))
+-    return addon->second;
+-
+-  CLog::Log(LOGERROR, "CBinaryAddonManager::%s: Requested addon '%s' unknown as binary", __FUNCTION__, addonId.c_str());
+-  return nullptr;
+-}
+-
+ BinaryAddonBasePtr CBinaryAddonManager::GetAddonBase(const AddonInfoPtr& addonInfo,
+                                                      IAddonInstanceHandler* handler,
+                                                      AddonDllPtr& addon)
+@@ -153,93 +72,3 @@ AddonPtr CBinaryAddonManager::GetRunningAddon(const std::string& addonId) const
+ 
+   return nullptr;
+ }
+-
+-bool CBinaryAddonManager::AddAddonBaseEntry(BINARY_ADDON_LIST_ENTRY& entry)
+-{
+-  BinaryAddonBasePtr base = std::make_shared<CBinaryAddonBase>(entry.second);
+-  m_installedAddons[base->ID()] = base;
+-  if (entry.first)
+-    m_enabledAddons[base->ID()] = base;
+-  return true;
+-}
+-
+-void CBinaryAddonManager::OnEvent(const AddonEvent& event)
+-{
+-  if (typeid(event) == typeid(AddonEvents::Enabled)) // also called on install
+-  {
+-    InstalledChangeEvent();
+-    EnableEvent(event.id);
+-  }
+-  else if (typeid(event) == typeid(AddonEvents::Disabled)) // not called on uninstall
+-  {
+-    DisableEvent(event.id);
+-  }
+-  else if (typeid(event) == typeid(AddonEvents::ReInstalled) ||
+-           typeid(event) == typeid(AddonEvents::UnInstalled))
+-  {
+-    InstalledChangeEvent();
+-  }
+-}
+-
+-void CBinaryAddonManager::EnableEvent(const std::string& addonId)
+-{
+-  CSingleLock lock(m_critSection);
+-
+-  BinaryAddonBasePtr base;
+-  auto addon = m_installedAddons.find(addonId);
+-  if (addon != m_installedAddons.end())
+-    base = addon->second;
+-  else
+-    return;
+-
+-  CLog::Log(LOGDEBUG, "CBinaryAddonManager::%s: Enable addon '%s' on binary addon manager", __FUNCTION__, base->ID().c_str());
+-  m_enabledAddons[base->ID()] = base;
+-}
+-
+-void CBinaryAddonManager::DisableEvent(const std::string& addonId)
+-{
+-  CSingleLock lock(m_critSection);
+-
+-  BinaryAddonBasePtr base;
+-  auto addon = m_installedAddons.find(addonId);
+-  if (addon != m_installedAddons.end())
+-    base = addon->second;
+-  else
+-    return;
+-
+-  CLog::Log(LOGDEBUG, "CBinaryAddonManager::%s: Disable addon '%s' on binary addon manager", __FUNCTION__, base->ID().c_str());
+-  m_enabledAddons.erase(base->ID());
+-}
+-
+-void CBinaryAddonManager::InstalledChangeEvent()
+-{
+-  BINARY_ADDON_LIST binaryAddonList;
+-  CServiceBroker::GetAddonMgr().GetInstalledBinaryAddons(binaryAddonList);
+-
+-  CSingleLock lock(m_critSection);
+-
+-  BinaryAddonMgrBaseList deletedAddons = m_installedAddons;
+-  for (auto addon : binaryAddonList)
+-  {
+-    auto knownAddon = m_installedAddons.find(addon.second->ID());
+-    if (knownAddon == m_installedAddons.end())
+-    {
+-      CLog::Log(LOGDEBUG, "CBinaryAddonManager::%s: Adding new binary addon '%s'", __FUNCTION__, addon.second->ID().c_str());
+-
+-      if (!AddAddonBaseEntry(addon))
+-        continue;
+-    }
+-    else
+-    {
+-      deletedAddons.erase(addon.second->ID());
+-    }
+-  }
+-
+-  for (auto addon : deletedAddons)
+-  {
+-    CLog::Log(LOGDEBUG, "CBinaryAddonManager::%s: Removing binary addon '%s'", __FUNCTION__, addon.first.c_str());
+-
+-    m_installedAddons.erase(addon.first);
+-    m_enabledAddons.erase(addon.first);
+-  }
+-}
+diff --git a/xbmc/addons/binary-addons/BinaryAddonManager.h b/xbmc/addons/binary-addons/BinaryAddonManager.h
+index b876b13d15b7..65d5ce4f90fd 100644
+--- a/xbmc/addons/binary-addons/BinaryAddonManager.h
++++ b/xbmc/addons/binary-addons/BinaryAddonManager.h
+@@ -23,64 +23,42 @@ namespace ADDON
+ 
+   class CBinaryAddonBase;
+   typedef std::shared_ptr<CBinaryAddonBase> BinaryAddonBasePtr;
+-  typedef std::vector<BinaryAddonBasePtr> BinaryAddonBaseList;
+ 
+   class CBinaryAddonManager
+   {
+   public:
+     CBinaryAddonManager() = default;
+     CBinaryAddonManager(const CBinaryAddonManager&) = delete;
+-    ~CBinaryAddonManager();
+-
+-    bool ReInit()
+-    {
+-      DeInit();
+-      return Init();
+-    }
+-    bool Init();
+-    void DeInit();
++    ~CBinaryAddonManager() = default;
+ 
+     /*!
+-     * @brief Get a list of add-on's with info's for the on system available
+-     * ones.
++     * @brief Create or get available addon instance handle base.
+      *
+-     * @param[out] addonInfos list where finded addon information becomes stored
+-     * @param[in] enabledOnly If true are only enabled ones given back,
+-     *                        if false all on system available. Default is true.
+-     * @param[in] type        The requested type, with "ADDON_UNKNOWN"
+-     *                        are all add-on types given back who match the case
+-     *                        with value before.
+-     *                        If a type id becomes added are only add-ons
+-     *                        returned who match them. Default is for all types.
+-     */
+-    void GetAddonInfos(BinaryAddonBaseList& addonInfos, bool enabledOnly, const TYPE &type) const;
+-
+-    /*!
+-     * @brief Get a list of disabled add-on's with info's for the on system
+-     * available ones.
++     * On first call the binary addon base class becomes created, on every next
++     * call of addon id, this becomes given again and a counter about in
++     * @ref CBinaryAddonBase increased.
+      *
+-     * @param[out] addonInfos list where finded addon information becomes stored
+-     * @param[in] type        The requested type, with "ADDON_UNKNOWN"
+-     *                        are all add-on types given back who match the case
+-     *                        with value before.
+-     *                        If a type id becomes added are only add-ons
+-     *                        returned who match them. Default is for all types.
+-     */
+-    void GetDisabledAddonInfos(BinaryAddonBaseList& addonInfos, const TYPE& type);
+-
+-    /*!
+-     * @brief To get information from a installed add-on
++     * @param[in] addonBase related addon base to release
++     * @param[in] handler related instance handle class
++     *
++     * @warning This and @ref ReleaseAddonBase are only be called from
++     * @ref IAddonInstanceHandler, use nowhere else allowed!
+      *
+-     * @param[in] addonId the add-on id to get the info for
+-     * @param[in] type if used becomes used type confirmed and is supported, if
+-     *                 not a nullptr is returned
+-     * @return add-on information pointer of installed add-on
+      */
+-    const BinaryAddonBasePtr GetInstalledAddonInfo(const std::string& addonId, const TYPE &type = ADDON_UNKNOWN) const;
+-
+     BinaryAddonBasePtr GetAddonBase(const AddonInfoPtr& addonInfo,
+                                     IAddonInstanceHandler* handler,
+                                     AddonDllPtr& addon);
++
++    /*!
++     * @brief Release a running addon instance handle base.
++     *
++     * On last release call the here on map stored entry becomes
++     * removed and the dll unloaded.
++     *
++     * @param[in] addonBase related addon base to release
++     * @param[in] handler related instance handle class
++     *
++     */
+     void ReleaseAddonBase(const BinaryAddonBasePtr& addonBase, IAddonInstanceHandler* handler);
+ 
+     /*!
+@@ -94,18 +72,8 @@ namespace ADDON
+     AddonPtr GetRunningAddon(const std::string& addonId) const;
+ 
+   private:
+-    bool AddAddonBaseEntry(BINARY_ADDON_LIST_ENTRY& entry);
+-
+-    void OnEvent(const AddonEvent& event);
+-    void EnableEvent(const std::string& addonId);
+-    void DisableEvent(const std::string& addonId);
+-    void InstalledChangeEvent();
+-
+     mutable CCriticalSection m_critSection;
+ 
+-    typedef std::map<std::string, BinaryAddonBasePtr> BinaryAddonMgrBaseList;
+-    BinaryAddonMgrBaseList m_installedAddons;
+-    BinaryAddonMgrBaseList m_enabledAddons;
+     std::map<std::string, BinaryAddonBasePtr> m_runningAddons;
+   };
+ 
+diff --git a/xbmc/profiles/ProfileManager.cpp b/xbmc/profiles/ProfileManager.cpp
+index 29f6ff37b60d..14fbc3766332 100644
+--- a/xbmc/profiles/ProfileManager.cpp
++++ b/xbmc/profiles/ProfileManager.cpp
+@@ -19,7 +19,6 @@
+ #include "ServiceBroker.h"
+ #include "Util.h"
+ #include "addons/Skin.h"
+-#include "addons/binary-addons/BinaryAddonManager.h"
+ #include "dialogs/GUIDialogKaiToast.h"
+ #include "dialogs/GUIDialogYesNo.h"
+ #include "events/EventLog.h"
+@@ -375,7 +374,6 @@ void CProfileManager::FinalizeLoadProfile()
+   PVR::CPVRManager &pvrManager = CServiceBroker::GetPVRManager();
+   CNetworkBase &networkManager = CServiceBroker::GetNetwork();
+   ADDON::CAddonMgr &addonManager = CServiceBroker::GetAddonMgr();
+-  ADDON::CBinaryAddonManager& binAddonManager = CServiceBroker::GetBinaryAddonManager();
+   CWeatherManager &weatherManager = CServiceBroker::GetWeatherManager();
+   CFavouritesService &favouritesManager = CServiceBroker::GetFavouritesService();
+   PLAYLIST::CPlayListPlayer &playlistManager = CServiceBroker::GetPlaylistPlayer();
+@@ -392,7 +390,6 @@ void CProfileManager::FinalizeLoadProfile()
+ 
+   // reload the add-ons, or we will first load all add-ons from the master account without checking disabled status
+   addonManager.ReInit();
+-  binAddonManager.ReInit();
+ 
+   // let CApplication know that we are logging into a new profile
+   g_application.SetLoggingIn(true);
+
+From b22839f084b09a015a128468aa17bfe097bba4e1 Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Tue, 16 Jun 2020 20:28:35 +0200
+Subject: [PATCH 7/8] [addons] check incompatible addons always by start
+
+Before was them only done if "Auto update" was enabled in settings.
+Now in case this is disabled it checks the system installed addons
+and disable by incompatibility.
+---
+ xbmc/Application.cpp                |  8 ++++++-
+ xbmc/addons/AddonManager.cpp        | 36 +++++++++++++++++++++++++----
+ xbmc/addons/AddonManager.h          | 27 ++++++++++++++++++++--
+ xbmc/addons/AddonSystemSettings.cpp |  4 ++--
+ xbmc/addons/AddonSystemSettings.h   |  2 +-
+ 5 files changed, 66 insertions(+), 11 deletions(-)
+
+diff --git a/xbmc/Application.cpp b/xbmc/Application.cpp
+index 8e34553ecbc1..b0c31db9eabf 100644
+--- a/xbmc/Application.cpp
++++ b/xbmc/Application.cpp
+@@ -784,7 +784,7 @@ bool CApplication::Initialize()
+     event.Reset();
+ 
+     // Addon migration
+-    ADDON::VECADDONS incompatible;
++    std::vector<AddonInfoPtr> incompatible;
+     if (CServiceBroker::GetAddonMgr().GetIncompatibleAddons(incompatible))
+     {
+       if (CAddonSystemSettings::GetInstance().GetAddonAutoUpdateMode() == AUTO_UPDATES_ON)
+@@ -811,6 +811,12 @@ bool CApplication::Initialize()
+         }
+         m_incompatibleAddons = incompatibleAddons;
+       }
++      else
++      {
++        // If no update is active disable all incompatible addons during start
++        m_incompatibleAddons =
++            CServiceBroker::GetAddonMgr().DisableIncompatibleAddons(incompatible);
++      }
+     }
+ 
+     // Start splashscreen and load skin
+diff --git a/xbmc/addons/AddonManager.cpp b/xbmc/addons/AddonManager.cpp
+index 8cc74b5b7ca2..ad3a89075b21 100644
+--- a/xbmc/addons/AddonManager.cpp
++++ b/xbmc/addons/AddonManager.cpp
+@@ -353,11 +353,11 @@ bool CAddonMgr::GetAddonsInternal(const TYPE& type, VECADDONS& addons, bool enab
+   return addons.size() > 0;
+ }
+ 
+-bool CAddonMgr::GetIncompatibleAddons(VECADDONS& incompatible) const
++bool CAddonMgr::GetIncompatibleAddons(std::vector<AddonInfoPtr>& incompatible) const
+ {
+-  GetAddons(incompatible);
++  GetAddonInfos(incompatible, true, ADDON_UNKNOWN);
+   incompatible.erase(std::remove_if(incompatible.begin(), incompatible.end(),
+-                                    [this](const AddonPtr a) { return IsCompatible(*a); }),
++                                    [this](const AddonInfoPtr& a) { return IsCompatible(a); }),
+                      incompatible.end());
+   return !incompatible.empty();
+ }
+@@ -372,10 +372,16 @@ std::vector<std::string> CAddonMgr::MigrateAddons()
+   InstallAddonUpdates(updates, true);
+ 
+   // get addons that became incompatible and disable them
+-  VECADDONS incompatible;
++  std::vector<AddonInfoPtr> incompatible;
+   GetIncompatibleAddons(incompatible);
+-  std::vector<std::string> changed;
+ 
++  return DisableIncompatibleAddons(incompatible);
++}
++
++std::vector<std::string> CAddonMgr::DisableIncompatibleAddons(
++    const std::vector<AddonInfoPtr>& incompatible)
++{
++  std::vector<std::string> changed;
+   for (const auto& addon : incompatible)
+   {
+     CLog::Log(LOGINFO, "ADDON: {} version {} is incompatible", addon->ID(),
+@@ -837,6 +843,26 @@ bool CAddonMgr::IsCompatible(const IAddon& addon) const
+   return true;
+ }
+ 
++bool CAddonMgr::IsCompatible(const AddonInfoPtr& addonInfo) const
++{
++  for (const auto& dependency : addonInfo->GetDependencies())
++  {
++    if (!dependency.optional)
++    {
++      // Intentionally only check the xbmc.* and kodi.* magic dependencies. Everything else will
++      // not be missing anyway, unless addon was installed in an unsupported way.
++      if (StringUtils::StartsWith(dependency.id, "xbmc.") ||
++          StringUtils::StartsWith(dependency.id, "kodi."))
++      {
++        AddonInfoPtr addonInfo = GetAddonInfo(dependency.id);
++        if (!addonInfo || !addonInfo->MeetsVersion(dependency.versionMin, dependency.version))
++          return false;
++      }
++    }
++  }
++  return true;
++}
++
+ std::vector<DependencyInfo> CAddonMgr::GetDepsRecursive(const std::string& id)
+ {
+   std::vector<DependencyInfo> added;
+diff --git a/xbmc/addons/AddonManager.h b/xbmc/addons/AddonManager.h
+index 7fd5030ad71d..bfb6e3c7901c 100644
+--- a/xbmc/addons/AddonManager.h
++++ b/xbmc/addons/AddonManager.h
+@@ -121,11 +121,22 @@ namespace ADDON
+     bool FindAddons();
+ 
+     /*!
+-     * Fills the the provided vector with the list of incompatible addons and returns if there's any.
++     * @brief Fills the the provided vector with the list of incompatible
++     * addons and returns if there's any.
+      *
++     * @param[out] incompatible List of incompatible addons
+      * @return true if there are incompatible addons
+      */
+-    bool GetIncompatibleAddons(VECADDONS& incompatible) const;
++    bool GetIncompatibleAddons(std::vector<AddonInfoPtr>& incompatible) const;
++
++    /*!
++     * @brief Disable addons in given list.
++     *
++     * @param[in] incompatible List of incompatible addons
++     * @return list of all addon **names** that were disabled
++     */
++    std::vector<std::string> DisableIncompatibleAddons(
++        const std::vector<AddonInfoPtr>& incompatible);
+ 
+     /*!
+      * Migrate all the addons (updates all addons that have an update pending and disables those
+@@ -221,8 +232,20 @@ namespace ADDON
+ 
+     bool ServicesHasStarted() const;
+ 
++    /*!
++     * @deprecated This addon function should no more used and becomes replaced
++     * in future with the other below by his callers.
++     */
+     bool IsCompatible(const IAddon& addon) const;
+ 
++    /*!
++     * @brief Check given addon information is compatible with Kodi.
++     *
++     * @param[in] addonInfo Addon information to check
++     * @return true if compatible, false if not
++     */
++    bool IsCompatible(const AddonInfoPtr& addonInfo) const;
++
+     /*! \brief Recursively get dependencies for an add-on
+      */
+     std::vector<DependencyInfo> GetDepsRecursive(const std::string& id);
+diff --git a/xbmc/addons/AddonSystemSettings.cpp b/xbmc/addons/AddonSystemSettings.cpp
+index 8443e5635728..7581180dd909 100644
+--- a/xbmc/addons/AddonSystemSettings.cpp
++++ b/xbmc/addons/AddonSystemSettings.cpp
+@@ -99,9 +99,9 @@ bool CAddonSystemSettings::IsActive(const IAddon& addon)
+   return GetActive(addon.Type(), active) && active->ID() == addon.ID();
+ }
+ 
+-bool CAddonSystemSettings::UnsetActive(const AddonPtr& addon)
++bool CAddonSystemSettings::UnsetActive(const AddonInfoPtr& addon)
+ {
+-  auto it = m_activeSettings.find(addon->Type());
++  auto it = m_activeSettings.find(addon->MainType());
+   if (it == m_activeSettings.end())
+     return true;
+ 
+diff --git a/xbmc/addons/AddonSystemSettings.h b/xbmc/addons/AddonSystemSettings.h
+index 2db382c904a5..4ffbbd8d3fe8 100644
+--- a/xbmc/addons/AddonSystemSettings.h
++++ b/xbmc/addons/AddonSystemSettings.h
+@@ -43,7 +43,7 @@ class CAddonSystemSettings : public ISettingCallback
+    * Attempt to unset addon as active. Returns true if addon is no longer active,
+    * false if it could not be unset (e.g. if the addon is the default)
+    */
+-  bool UnsetActive(const AddonPtr& addon);
++  bool UnsetActive(const AddonInfoPtr& addon);
+ 
+ private:
+   CAddonSystemSettings();
+
+From 518ccf91c2362e257db6f9ea84916fbac6d9633c Mon Sep 17 00:00:00 2001
+From: Alwin Esch <alwin.esch@web.de>
+Date: Tue, 16 Jun 2020 22:28:02 +0200
+Subject: [PATCH 8/8] [addons] rename getAddonInstance with a capital letter
+
+Before was the first character lowercase where not match the code style.
+---
+ xbmc/addons/AddonProvider.h                                 | 2 +-
+ xbmc/cores/VideoPlayer/DVDCodecs/DVDFactoryCodec.cpp        | 2 +-
+ xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.cpp | 2 +-
+ xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.h   | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/xbmc/addons/AddonProvider.h b/xbmc/addons/AddonProvider.h
+index 16ba23d0e19c..88f4f47de784 100644
+--- a/xbmc/addons/AddonProvider.h
++++ b/xbmc/addons/AddonProvider.h
+@@ -32,7 +32,7 @@ class IAddonProvider
+     INSTANCE_INPUTSTREAM,
+     INSTANCE_VIDEOCODEC
+   };
+-  virtual void getAddonInstance(INSTANCE_TYPE instance_type,
++  virtual void GetAddonInstance(INSTANCE_TYPE instance_type,
+                                 ADDON::AddonInfoPtr& addonInfo,
+                                 KODI_HANDLE& parentInstance) = 0;
+ };
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/DVDFactoryCodec.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/DVDFactoryCodec.cpp
+index b952d5171058..4c7e1e040d8f 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/DVDFactoryCodec.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/DVDFactoryCodec.cpp
+@@ -51,7 +51,7 @@ CDVDVideoCodec* CDVDFactoryCodec::CreateVideoCodec(CDVDStreamInfo &hint, CProces
+   {
+     ADDON::AddonInfoPtr addonInfo;
+     KODI_HANDLE parentInstance;
+-    hint.externalInterfaces->getAddonInstance(ADDON::IAddonProvider::INSTANCE_VIDEOCODEC, addonInfo, parentInstance);
++    hint.externalInterfaces->GetAddonInstance(ADDON::IAddonProvider::INSTANCE_VIDEOCODEC, addonInfo, parentInstance);
+     if (addonInfo && parentInstance)
+     {
+       pCodec.reset(new CAddonVideoCodec(processInfo, addonInfo, parentInstance));
+diff --git a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.cpp b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.cpp
+index 473ca47a8e30..ad6c05cccec4 100644
+--- a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.cpp
++++ b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.cpp
+@@ -25,7 +25,7 @@ CInputStreamProvider::CInputStreamProvider(const ADDON::AddonInfoPtr& addonInfo,
+ {
+ }
+ 
+-void CInputStreamProvider::getAddonInstance(INSTANCE_TYPE instance_type,
++void CInputStreamProvider::GetAddonInstance(INSTANCE_TYPE instance_type,
+                                             ADDON::AddonInfoPtr& addonInfo,
+                                             KODI_HANDLE& parentInstance)
+ {
+diff --git a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.h b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.h
+index b7aca348ed34..e09f8b7cf56c 100644
+--- a/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.h
++++ b/xbmc/cores/VideoPlayer/DVDInputStreams/InputStreamAddon.h
+@@ -23,7 +23,7 @@ class CInputStreamProvider
+ public:
+   CInputStreamProvider(const ADDON::AddonInfoPtr& addonInfo, KODI_HANDLE parentInstance);
+ 
+-  void getAddonInstance(INSTANCE_TYPE instance_type,
++  void GetAddonInstance(INSTANCE_TYPE instance_type,
+                         ADDON::AddonInfoPtr& addonInfo,
+                         KODI_HANDLE& parentInstance) override;
+ 

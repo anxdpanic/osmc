@@ -1,0 +1,48 @@
+From 66432ac7c67b20488334fc19b62db4f89f00b374 Mon Sep 17 00:00:00 2001
+From: mediaminister <mediaminister@gmail.com>
+Date: Wed, 17 Jun 2020 23:22:01 +0200
+Subject: [PATCH] Don't touch plugin:// urls
+
+---
+ xbmc/windows/GUIMediaWindow.cpp | 20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/xbmc/windows/GUIMediaWindow.cpp b/xbmc/windows/GUIMediaWindow.cpp
+index e8db8aba65f1..9c760ddf4964 100644
+--- a/xbmc/windows/GUIMediaWindow.cpp
++++ b/xbmc/windows/GUIMediaWindow.cpp
+@@ -523,12 +523,7 @@ bool CGUIMediaWindow::OnMessage(CGUIMessage& message)
+     {
+       if (m_vecItems->GetPath() == "?")
+         m_vecItems->SetPath("");
+-      std::string path, fileName;
+       std::string dir = message.GetStringParam(0);
+-      URIUtils::Split(dir, path, fileName);
+-      URIUtils::RemoveExtension(fileName);
+-      if (StringUtils::IsInteger(fileName))
+-        dir = path;
+       const std::string &ret = message.GetStringParam(1);
+       bool returning = StringUtils::EqualsNoCase(ret, "return");
+       if (!dir.empty())
+@@ -2175,6 +2170,21 @@ std::string CGUIMediaWindow::GetStartFolder(const std::string &dir)
+       StringUtils::EqualsNoCase(dir, "root"))
+     return "";
+ 
++  // Let plugins handle their own urls themselves
++  if (StringUtils::StartsWith(dir, "plugin://"))
++    return dir;
++
++//! @todo This ifdef block probably belongs somewhere else. Move it to a better place!
++#if defined(TARGET_ANDROID)
++  // Hack for Android items (numbered id's) on the leanback screen
++  std::string path;
++  std::string fileName;
++  URIUtils::Split(dir, path, fileName);
++  URIUtils::RemoveExtension(fileName);
++  if (StringUtils::IsInteger(fileName))
++    return path;
++#endif
++
+   return dir;
+ }
+ 

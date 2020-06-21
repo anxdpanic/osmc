@@ -1,0 +1,22 @@
+From 07e7ac5ddeed73d6713194b5f676b08cecee2dbf Mon Sep 17 00:00:00 2001
+From: Sebastian S <su4lfred@gmail.com>
+Date: Mon, 15 Jun 2020 18:20:48 +0200
+Subject: [PATCH] [docs][python] fixed typo
+
+---
+ xbmc/interfaces/legacy/File.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/interfaces/legacy/File.h b/xbmc/interfaces/legacy/File.h
+index 15032af98490..be2a5bbf00cc 100644
+--- a/xbmc/interfaces/legacy/File.h
++++ b/xbmc/interfaces/legacy/File.h
+@@ -173,7 +173,7 @@ namespace XBMCAddon
+       /// **Example (v19 and up):**
+       /// ~~~~~~~~~~~~~{.py}
+       /// ..
+-      /// whith xbmcvfs.File(file, 'w') as f:
++      /// with xbmcvfs.File(file, 'w') as f:
+       ///   result = f.write(buffer)
+       /// ..
+       /// ~~~~~~~~~~~~~

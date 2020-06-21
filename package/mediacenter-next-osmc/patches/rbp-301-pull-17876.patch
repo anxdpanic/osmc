@@ -1,0 +1,25 @@
+From 8b8a22871b9fc90842ef447535d9e1a91b184da6 Mon Sep 17 00:00:00 2001
+From: Matt Huisman <me@matthuisman.nz>
+Date: Sat, 16 May 2020 08:06:01 +1200
+Subject: [PATCH] Support dvh1 codec on Android
+
+---
+ .../DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp       | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp
+index 18dfc6fe10a1..e6279d86316d 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecAndroidMediaCodec.cpp
+@@ -487,6 +487,11 @@ bool CDVDVideoCodecAndroidMediaCodec::Open(CDVDStreamInfo &hints, CDVDCodecOptio
+         m_mime = "video/dolby-vision";
+         m_formatname = "amc-dvhe";
+       }
++      else if (m_hints.codec_tag == MKTAG('d', 'v', 'h', '1'))
++      {
++        m_mime = "video/dolby-vision";
++        m_formatname = "amc-dvh1";
++      }
+       else
+       {
+         m_mime = "video/hevc";

@@ -1,0 +1,22 @@
+From e8cbed46a8caa73bee43f26d5dc306f0d3513cf0 Mon Sep 17 00:00:00 2001
+From: ronie <ronie@kodi.tv>
+Date: Thu, 18 Jun 2020 17:11:57 +0200
+Subject: [PATCH] fix addon label2
+
+---
+ addons/skin.estuary/xml/Variables.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/addons/skin.estuary/xml/Variables.xml b/addons/skin.estuary/xml/Variables.xml
+index eb0c1179abc4..748282ecd0cb 100644
+--- a/addons/skin.estuary/xml/Variables.xml
++++ b/addons/skin.estuary/xml/Variables.xml
+@@ -146,7 +146,7 @@
+ 	</variable>
+ 	<variable name="AddonsLabel2Var">
+ 		<value condition="ListItem.Property(addon.downloading)">$INFO[ListItem.Property(addon.status)]</value>
+-		<value condition="Container.SortMethod(1)">$INFO[ListItem.Label2]</value>
++		<value condition="!Container.SortMethod(1)">$INFO[ListItem.Label2]</value>
+ 		<value>$INFO[ListItem.AddonCreator,, - ]$INFO[ListItem.AddonVersion]</value>
+ 	</variable>
+ 	<variable name="RatingSettingLabel2Var">
