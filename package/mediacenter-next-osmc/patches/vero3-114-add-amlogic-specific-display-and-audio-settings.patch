@@ -47,9 +47,9 @@ index 1e81362..c6a6d5d 100644
  
  #: xbmc/network/NetworkServices.cpp
 @@ -21638,3 +21658,24 @@ msgstr ""
- msgctxt "#39119"
  msgid "Last modified"
  msgstr ""
+
 +
 +#: Description of display setting with label # 13133
 +msgctxt "#39120"
