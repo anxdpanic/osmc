@@ -6,7 +6,7 @@
 . ../common.sh
 if [ "$1" == "rbp2" ]
 then
-pull_source "https://github.com/popcornmix/xbmc/archive/9208b1a317185b55d067f43914206e88527be229.tar.gz" "$(pwd)/src"
+pull_source "https://github.com/popcornmix/xbmc/archive/e6a1163dd04d587d5bdcbff0292bab71b2b6cbd3.tar.gz" "$(pwd)/src"
 API_VERSION="19"
 else
 pull_source "https://github.com/xbmc/xbmc/archive/43ae8da078d7e003fa94836267bd2f1d86ecc187.tar.gz" "$(pwd)/src"
