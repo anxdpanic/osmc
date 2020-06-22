@@ -1,0 +1,30 @@
+From 3a93e97041b20075d7d2122df856e119c7112d71 Mon Sep 17 00:00:00 2001
+From: Bernd Kuhls <bernd.kuhls@t-online.de>
+Date: Sun, 19 Apr 2020 15:04:50 +0200
+Subject: [PATCH] Fix build with x11/gles
+
+Build is on Linux broken with the following configure options:
+-DCORE_PLATFORM_NAME=x11 -DX11_RENDER_SYSTEM=gles
+
+xbmc/windowing/X11/GLContextEGL.cpp:15:10: fatal error: GL/gl.h:
+ No such file or directory
+ #include <GL/gl.h>
+---
+ xbmc/windowing/X11/GLContextEGL.cpp | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/xbmc/windowing/X11/GLContextEGL.cpp b/xbmc/windowing/X11/GLContextEGL.cpp
+index 2a0cba5f3c6c..67ccd681351e 100644
+--- a/xbmc/windowing/X11/GLContextEGL.cpp
++++ b/xbmc/windowing/X11/GLContextEGL.cpp
+@@ -12,9 +12,7 @@
+ #endif
+ 
+ #include <clocale>
+-#include <GL/gl.h>
+-#include <GL/glu.h>
+-#include <GL/glext.h>
++#include "system_gl.h"
+ #include "GLContextEGL.h"
+ #include "utils/log.h"
+ #include <EGL/eglext.h>

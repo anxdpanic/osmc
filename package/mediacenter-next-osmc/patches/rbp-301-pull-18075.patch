@@ -1,0 +1,111 @@
+From a5f9b16af32b4257e63a8f6f220847d3679308b3 Mon Sep 17 00:00:00 2001
+From: peak3d <pfau@peak3d.de>
+Date: Fri, 19 Jun 2020 12:02:54 +0200
+Subject: [PATCH] [Android] Invoke PowerManager OnStart / OnStop
+
+---
+ xbmc/platform/android/activity/XBMCApp.cpp | 42 ++++++++++++++--------
+ xbmc/platform/android/activity/XBMCApp.h   |  1 +
+ 2 files changed, 29 insertions(+), 14 deletions(-)
+
+diff --git a/xbmc/platform/android/activity/XBMCApp.cpp b/xbmc/platform/android/activity/XBMCApp.cpp
+index 58a50811984b..123fa06e5275 100644
+--- a/xbmc/platform/android/activity/XBMCApp.cpp
++++ b/xbmc/platform/android/activity/XBMCApp.cpp
+@@ -228,6 +228,12 @@ void CXBMCApp::onStart()
+     registerReceiver(*this, intentFilter);
+     m_mediaSession.reset(new CJNIXBMCMediaSession());
+   }
++  if (g_application.IsInitialized())
++  {
++    IPowerSyscall* syscall = CServiceBroker::GetPowerManager().GetPowerSyscall();
++    if (syscall)
++      static_cast<CAndroidPowerSyscall*>(syscall)->SetOnResume();
++  }
+ }
+ 
+ void CXBMCApp::onResume()
+@@ -246,28 +252,36 @@ void CXBMCApp::onResume()
+     m_applications.clear();
+   }
+ 
++  if (m_bResumePlayback && g_application.GetAppPlayer().IsPlaying())
++  {
++    if (g_application.GetAppPlayer().HasVideo())
++    {
++      if (g_application.GetAppPlayer().IsPaused())
++        CApplicationMessenger::GetInstance().SendMsg(
++            TMSG_GUI_ACTION, WINDOW_INVALID, -1,
++            static_cast<void*>(new CAction(ACTION_PLAYER_PLAY)));
++    }
++  }
++
+   // Re-request Visible Behind
+   if ((m_playback_state & PLAYBACK_STATE_PLAYING) && (m_playback_state & PLAYBACK_STATE_VIDEO))
+     RequestVisibleBehind(true);
+-
+-  if (g_application.IsInitialized())
+-  {
+-    IPowerSyscall* syscall = CServiceBroker::GetPowerManager().GetPowerSyscall();
+-    if (syscall)
+-      static_cast<CAndroidPowerSyscall*>(syscall)->SetOnResume();
+-  }
+ }
+ 
+ void CXBMCApp::onPause()
+ {
+   android_printf("%s: ", __PRETTY_FUNCTION__);
++  m_bResumePlayback = false;
+ 
+   if (g_application.GetAppPlayer().IsPlaying())
+   {
+     if (g_application.GetAppPlayer().HasVideo())
+     {
+       if (!g_application.GetAppPlayer().IsPaused() && !m_hasReqVisible)
++      {
+         CApplicationMessenger::GetInstance().SendMsg(TMSG_GUI_ACTION, WINDOW_INVALID, -1, static_cast<void*>(new CAction(ACTION_PAUSE)));
++        m_bResumePlayback = true;
++      }
+     }
+   }
+ 
+@@ -276,13 +290,6 @@ void CXBMCApp::onPause()
+ 
+   EnableWakeLock(false);
+   m_hasReqVisible = false;
+-
+-  if (!g_application.IsStopping())
+-  {
+-    IPowerSyscall* syscall = CServiceBroker::GetPowerManager().GetPowerSyscall();
+-    if (syscall)
+-      static_cast<CAndroidPowerSyscall*>(syscall)->SetOnPause();
+-  }
+ }
+ 
+ void CXBMCApp::onStop()
+@@ -296,6 +303,13 @@ void CXBMCApp::onStop()
+     else if (m_playback_state & PLAYBACK_STATE_VIDEO)
+       CApplicationMessenger::GetInstance().SendMsg(TMSG_GUI_ACTION, WINDOW_INVALID, -1, static_cast<void*>(new CAction(ACTION_PAUSE)));
+   }
++
++  if (!g_application.IsStopping())
++  {
++    IPowerSyscall* syscall = CServiceBroker::GetPowerManager().GetPowerSyscall();
++    if (syscall)
++      static_cast<CAndroidPowerSyscall*>(syscall)->SetOnPause();
++  }
+ }
+ 
+ void CXBMCApp::onDestroy()
+diff --git a/xbmc/platform/android/activity/XBMCApp.h b/xbmc/platform/android/activity/XBMCApp.h
+index a68acce23eb6..4fe96592db5e 100644
+--- a/xbmc/platform/android/activity/XBMCApp.h
++++ b/xbmc/platform/android/activity/XBMCApp.h
+@@ -238,6 +238,7 @@ class CXBMCApp
+   bool m_videosurfaceInUse;
+   bool m_firstrun;
+   bool m_exiting;
++  bool m_bResumePlayback = false;
+   pthread_t m_thread;
+   static CCriticalSection m_applicationsMutex;
+   static CCriticalSection m_activityResultMutex;
