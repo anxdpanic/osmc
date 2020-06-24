@@ -1,0 +1,259 @@
+From 84bb46f393dde388031daef78724a0ed2d6f8c4e Mon Sep 17 00:00:00 2001
+From: Lukas Rusak <lorusak@gmail.com>
+Date: Wed, 17 Jun 2020 12:14:12 -0700
+Subject: [PATCH] FFmpeg: Bump to 4.3-Matrix-Alpha1
+
+---
+ cmake/modules/FindFFMPEG.cmake                | 16 ++--
+ cmake/scripts/windows/ArchSetup.cmake         |  2 +-
+ cmake/scripts/windowsstore/ArchSetup.cmake    |  3 +-
+ .../patches/0001-ffmpeg-detect-openssl.patch  |  4 +-
+ .../0002-ffmpeg-zlib-config-conflict.patch    |  9 +-
+ .../windows/patches/0003-ffmpeg-static.patch  | 11 ++-
+ .../patches/0004-ffmpeg-w32pthreads.patch     | 93 -------------------
+ .../patches/0005-ffmpeg-detect-dav1d.patch    |  6 +-
+ tools/depends/target/ffmpeg/FFMPEG-VERSION    |  2 +-
+ 9 files changed, 28 insertions(+), 118 deletions(-)
+ delete mode 100644 tools/buildsteps/windows/patches/0004-ffmpeg-w32pthreads.patch
+
+diff --git a/cmake/modules/FindFFMPEG.cmake b/cmake/modules/FindFFMPEG.cmake
+index 387b3f926f02..7597ba76e201 100644
+--- a/cmake/modules/FindFFMPEG.cmake
++++ b/cmake/modules/FindFFMPEG.cmake
+@@ -33,14 +33,14 @@
+ #
+ 
+ # required ffmpeg library versions
+-set(REQUIRED_FFMPEG_VERSION 4.2)
+-set(_avcodec_ver ">=58.54.100")
+-set(_avfilter_ver ">=7.57.100")
+-set(_avformat_ver ">=58.29.100")
+-set(_avutil_ver ">=56.31.100")
+-set(_swscale_ver ">=5.5.100")
+-set(_swresample_ver ">=3.5.100")
+-set(_postproc_ver ">=55.5.100")
++set(REQUIRED_FFMPEG_VERSION 4.3)
++set(_avcodec_ver ">=58.91.100")
++set(_avfilter_ver ">=7.85.100")
++set(_avformat_ver ">=58.45.100")
++set(_avutil_ver ">=56.51.100")
++set(_swscale_ver ">=5.7.100")
++set(_swresample_ver ">=3.7.100")
++set(_postproc_ver ">=55.7.100")
+ 
+ 
+ # Allows building with external ffmpeg not found in system paths,
+diff --git a/cmake/scripts/windows/ArchSetup.cmake b/cmake/scripts/windows/ArchSetup.cmake
+index 00f92836d8fe..f3628f29daf2 100644
+--- a/cmake/scripts/windows/ArchSetup.cmake
++++ b/cmake/scripts/windows/ArchSetup.cmake
+@@ -71,7 +71,7 @@ link_directories(${DEPENDENCIES_DIR}/lib)
+ # Additional libraries
+ list(APPEND DEPLIBS bcrypt.lib d3d11.lib DInput8.lib DSound.lib winmm.lib Mpr.lib Iphlpapi.lib WS2_32.lib
+                     PowrProf.lib setupapi.lib Shlwapi.lib dwmapi.lib dxguid.lib DelayImp.lib version.lib
+-                    crypt32.lib)
++                    crypt32.lib Mfplat.lib Mfuuid.lib Strmiids.lib)
+ 
+ # NODEFAULTLIB option
+ set(_nodefaultlibs_RELEASE libcmt)
+diff --git a/cmake/scripts/windowsstore/ArchSetup.cmake b/cmake/scripts/windowsstore/ArchSetup.cmake
+index fdc04a4417c1..ad55a01ac870 100644
+--- a/cmake/scripts/windowsstore/ArchSetup.cmake
++++ b/cmake/scripts/windowsstore/ArchSetup.cmake
+@@ -91,7 +91,8 @@ set(gtest_force_shared_crt ON CACHE STRING "" FORCE)
+ link_directories(${MINGW_LIBS_DIR}/lib
+                  ${DEPENDENCIES_DIR}/lib)
+ 
+-list(APPEND DEPLIBS bcrypt.lib d3d11.lib WS2_32.lib dxguid.lib dloadhelper.lib WindowsApp.lib)
++list(APPEND DEPLIBS bcrypt.lib d3d11.lib WS2_32.lib dxguid.lib dloadhelper.lib WindowsApp.lib
++                    Mfplat.lib Mfuuid.lib Strmiids.lib)
+ 
+ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /WINMD:NO")
+ set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /NODEFAULTLIB:msvcrt /DEBUG:FASTLINK /OPT:NOREF /OPT:NOICF")
+diff --git a/tools/buildsteps/windows/patches/0001-ffmpeg-detect-openssl.patch b/tools/buildsteps/windows/patches/0001-ffmpeg-detect-openssl.patch
+index aec54109d78e..7e48887a6be9 100644
+--- a/tools/buildsteps/windows/patches/0001-ffmpeg-detect-openssl.patch
++++ b/tools/buildsteps/windows/patches/0001-ffmpeg-detect-openssl.patch
+@@ -1,8 +1,8 @@
+ diff --git a/configure b/configure
+-index 34c2adb4a4..160884d8f9 100755
++index 8569a60bf8..42f5a3ada4 100755
+ --- a/configure
+ +++ b/configure
+-@@ -6358,6 +6358,8 @@ enabled openssl           && { check_pkg_config openssl openssl openssl/ssl.h OP
++@@ -6468,6 +6468,8 @@ enabled openssl           && { check_pkg_config openssl openssl openssl/ssl.h OP
+                                 check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto ||
+                                 check_lib openssl openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
+                                 check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
+diff --git a/tools/buildsteps/windows/patches/0002-ffmpeg-zlib-config-conflict.patch b/tools/buildsteps/windows/patches/0002-ffmpeg-zlib-config-conflict.patch
+index ccca50f6f9d3..55b0b8ba43c3 100644
+--- a/tools/buildsteps/windows/patches/0002-ffmpeg-zlib-config-conflict.patch
++++ b/tools/buildsteps/windows/patches/0002-ffmpeg-zlib-config-conflict.patch
+@@ -1,7 +1,8 @@
+-diff -ur ffmpeg/configure ffmpeg-patch/configure
+---- ffmpeg/configure	2020-01-31 13:06:00.000000000 +0000
+-+++ ffmpeg-patch/configure	2020-01-31 13:06:40.000000000 +0000
+-@@ -7439,6 +7439,9 @@
++diff --git a/configure b/configure
++index 8569a60bf8..2091cea243 100755
++--- a/configure
+++++ b/configure
++@@ -7553,6 +7553,9 @@ print_config CONFIG_ "$config_files" $CONFIG_LIST       \
+                                       $CONFIG_EXTRA      \
+                                       $ALL_COMPONENTS    \
+  
+diff --git a/tools/buildsteps/windows/patches/0003-ffmpeg-static.patch b/tools/buildsteps/windows/patches/0003-ffmpeg-static.patch
+index b502afc2875f..ae6e8a9f48c4 100644
+--- a/tools/buildsteps/windows/patches/0003-ffmpeg-static.patch
++++ b/tools/buildsteps/windows/patches/0003-ffmpeg-static.patch
+@@ -1,7 +1,8 @@
+-diff -ur ffmpeg/configure ffmpeg-patch/configure
+---- ffmpeg/configure	2020-01-31 13:07:30.000000000 +0000
+-+++ ffmpeg-patch/configure	2020-01-31 13:08:30.000000000 +0000
+-@@ -5312,6 +5312,8 @@
++diff --git a/configure b/configure
++index 8569a60bf8..afca15141e 100755
++--- a/configure
+++++ b/configure
++@@ -5401,6 +5401,8 @@ case $target_os in
+          enabled shared && ! enabled small && test_cmd $windres --version && enable gnu_windres
+          enabled x86_32 && check_ldflags -Wl,--large-address-aware
+          shlibdir_default="$bindir_default"
+@@ -10,7 +11,7 @@ diff -ur ffmpeg/configure ffmpeg-patch/configure
+          SLIBPREF=""
+          SLIBSUF=".dll"
+          SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
+-@@ -5361,6 +5363,8 @@
++@@ -5450,6 +5452,8 @@ case $target_os in
+          fi
+          enabled x86_32 && check_ldflags -LARGEADDRESSAWARE
+          shlibdir_default="$bindir_default"
+diff --git a/tools/buildsteps/windows/patches/0004-ffmpeg-w32pthreads.patch b/tools/buildsteps/windows/patches/0004-ffmpeg-w32pthreads.patch
+deleted file mode 100644
+index da0e6a415730..000000000000
+--- a/tools/buildsteps/windows/patches/0004-ffmpeg-w32pthreads.patch
++++ /dev/null
+@@ -1,93 +0,0 @@
+-diff --git a/compat/w32pthreads.h b/compat/w32pthreads.h
+-index 21acfd2ba1..62e22bd7c6 100644
+---- a/compat/w32pthreads.h
+-+++ b/compat/w32pthreads.h
+-@@ -38,6 +38,7 @@
+- #define WIN32_LEAN_AND_MEAN
+- #include <windows.h>
+- #include <process.h>
+-+#include <time.h>
+- 
+- #include "libavutil/attributes.h"
+- #include "libavutil/common.h"
+-@@ -61,6 +62,9 @@ typedef CONDITION_VARIABLE pthread_cond_t;
+- #define InitializeCriticalSection(x) InitializeCriticalSectionEx(x, 0, 0)
+- #define WaitForSingleObject(a, b) WaitForSingleObjectEx(a, b, FALSE)
+- 
+-+#define PTHREAD_CANCEL_ENABLE 1
+-+#define PTHREAD_CANCEL_DISABLE 0
+-+
+- static av_unused unsigned __stdcall attribute_align_arg win32thread_worker(void *arg)
+- {
+-     pthread_t *h = (pthread_t*)arg;
+-@@ -156,10 +160,22 @@ static inline int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex
+-     return 0;
+- }
+- 
+-+static inline int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
+-+const struct timespec *abstime)
+-+{
+-+    const int milliseconds =  abstime->tv_sec * 1000 + abstime->tv_nsec / 1000 / 1000;
+-+    SleepConditionVariableSRW(cond, mutex, milliseconds, 0);
+-+}
+-+
+- static inline int pthread_cond_signal(pthread_cond_t *cond)
+- {
+-     WakeConditionVariable(cond);
+-     return 0;
+- }
+- 
+-+static inline int pthread_setcancelstate (int state, int *oldstate)
+-+{
+-+    return 0;
+-+}
+-+
+- #endif /* COMPAT_W32PTHREADS_H */
+-diff --git a/libavformat/udp.c b/libavformat/udp.c
+-index cf73d331e0..479b8d630f 100644
+---- a/libavformat/udp.c
+-+++ b/libavformat/udp.c
+-@@ -61,10 +61,16 @@
+- #define IPPROTO_UDPLITE                                  136
+- #endif
+- 
+--#if HAVE_PTHREAD_CANCEL
+-+#if HAVE_PTHREAD_CANCEL && !defined(HAVE_W32THREADS)
+- #include <pthread.h>
+- #endif
+- 
+-+#if HAVE_W32THREADS 
+-+#include "compat/w32pthreads.h"
+-+#undef HAVE_PTHREAD_CANCEL 
+-+#define HAVE_PTHREAD_CANCEL 1
+-+#endif
+-+
+- #ifndef IPV6_ADD_MEMBERSHIP
+- #define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
+- #define IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP
+-@@ -473,6 +479,10 @@ static void *circular_buffer_task_rx( void *_URLContext)
+-         socklen_t addr_len = sizeof(addr);
+- 
+-         pthread_mutex_unlock(&s->mutex);
+-+
+-+        if (s->close_req)
+-+            goto end;
+-+
+-         /* Blocking operations are always cancellation points;
+-            see "General Information" / "Thread Cancelation Overview"
+-            in Single Unix. */
+-@@ -1071,8 +1081,12 @@ static int udp_close(URLContext *h)
+-     if (s->thread_started) {
+-         int ret;
+-         // Cancel only read, as write has been signaled as success to the user
+--        if (h->flags & AVIO_FLAG_READ)
+--            pthread_cancel(s->circular_buffer_thread);
+-+        if (h->flags & AVIO_FLAG_READ) {
+-+            pthread_mutex_lock(&s->mutex);
+-+            s->close_req = 1;
+-+            pthread_cond_signal(&s->cond);
+-+            pthread_mutex_unlock(&s->mutex);
+-+        }
+-         ret = pthread_join(s->circular_buffer_thread, NULL);
+-         if (ret != 0)
+-             av_log(h, AV_LOG_ERROR, "pthread_join(): %s\n", strerror(ret));
+diff --git a/tools/buildsteps/windows/patches/0005-ffmpeg-detect-dav1d.patch b/tools/buildsteps/windows/patches/0005-ffmpeg-detect-dav1d.patch
+index 716465ff0f81..883ec7e0d6ed 100644
+--- a/tools/buildsteps/windows/patches/0005-ffmpeg-detect-dav1d.patch
++++ b/tools/buildsteps/windows/patches/0005-ffmpeg-detect-dav1d.patch
+@@ -1,12 +1,12 @@
+ diff --git a/configure b/configure
+-index 34c2adb4a4..d66d4e8483 100755
++index 8569a60bf8..a368cc65b6 100755
+ --- a/configure
+ +++ b/configure
+-@@ -6196,7 +6196,7 @@ enabled libcelt           && require libcelt celt/celt.h celt_decode -lcelt0 &&
++@@ -6295,7 +6295,7 @@ enabled libcelt           && require libcelt celt/celt.h celt_decode -lcelt0 &&
+                                 die "ERROR: libcelt must be installed and version must be >= 0.11.0."; }
+  enabled libcaca           && require_pkg_config libcaca caca caca.h caca_create_canvas
+  enabled libcodec2         && require libcodec2 codec2/codec2.h codec2_create -lcodec2
+--enabled libdav1d          && require_pkg_config libdav1d "dav1d >= 0.2.1" "dav1d/dav1d.h" dav1d_version
++-enabled libdav1d          && require_pkg_config libdav1d "dav1d >= 0.4.0" "dav1d/dav1d.h" dav1d_version
+ +enabled libdav1d          && require libdav1d dav1d/dav1d.h dav1d_version -llibdav1d
+  enabled libdavs2          && require_pkg_config libdavs2 "davs2 >= 1.6.0" davs2.h davs2_decoder_open
+  enabled libdc1394         && require_pkg_config libdc1394 libdc1394-2 dc1394/dc1394.h dc1394_new
+diff --git a/tools/depends/target/ffmpeg/FFMPEG-VERSION b/tools/depends/target/ffmpeg/FFMPEG-VERSION
+index d105be356ec5..95c44362ea87 100644
+--- a/tools/depends/target/ffmpeg/FFMPEG-VERSION
++++ b/tools/depends/target/ffmpeg/FFMPEG-VERSION
+@@ -1,4 +1,4 @@
+ LIBNAME=ffmpeg
+ BASE_URL=https://github.com/xbmc/FFmpeg
+-VERSION=4.2.2-Matrix-Alpha1
++VERSION=4.3-Matrix-Alpha1
+ ARCHIVE=$(LIBNAME)-$(VERSION).tar.gz

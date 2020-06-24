@@ -1,0 +1,39 @@
+From 205fd2884b3b9d1c399ee6789acd5c76ca2dd546 Mon Sep 17 00:00:00 2001
+From: peak3d <pfau@peak3d.de>
+Date: Mon, 22 Jun 2020 23:43:20 +0200
+Subject: [PATCH] [Android] Move PYTHON into cache folder
+
+---
+ tools/android/packaging/xbmc/src/Splash.java.in | 2 --
+ xbmc/platform/android/activity/XBMCApp.cpp      | 5 ++---
+ 2 files changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/tools/android/packaging/xbmc/src/Splash.java.in b/tools/android/packaging/xbmc/src/Splash.java.in
+index 6b0ec1a4967f..4cbe9ca6a7c7 100644
+--- a/tools/android/packaging/xbmc/src/Splash.java.in
++++ b/tools/android/packaging/xbmc/src/Splash.java.in
+@@ -416,8 +416,6 @@ public class Splash extends Activity
+ 
+           if (!(sName.startsWith("assets/") || (mInstallLibs && sName.startsWith("lib/"))))
+             continue;
+-          if (sName.startsWith("assets/python"))
+-            continue;
+ 
+           String sFullPath = null;
+           if (sName.startsWith("lib/"))
+diff --git a/xbmc/platform/android/activity/XBMCApp.cpp b/xbmc/platform/android/activity/XBMCApp.cpp
+index 123fa06e5275..755254fb221b 100644
+--- a/xbmc/platform/android/activity/XBMCApp.cpp
++++ b/xbmc/platform/android/activity/XBMCApp.cpp
+@@ -1360,9 +1360,8 @@ void CXBMCApp::SetupEnv()
+   else
+     setenv("HOME", getenv("KODI_TEMP"), 0);
+ 
+-  std::string apkPath = getenv("KODI_ANDROID_APK");
+-  apkPath += "/assets/python3.7";
+-  setenv("PYTHONHOME", apkPath.c_str(), 1);
++  std::string pythonPath = cacheDir + "/apk/assets/python3.7";
++  setenv("PYTHONHOME", pythonPath.c_str(), 1);
+   setenv("PYTHONPATH", "", 1);
+   setenv("PYTHONOPTIMIZE","", 1);
+   setenv("PYTHONNOUSERSITE", "1", 1);

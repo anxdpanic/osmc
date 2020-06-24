@@ -1,0 +1,39 @@
+From cdbc12608b947d4afefc5bba48dc82e1f3514e52 Mon Sep 17 00:00:00 2001
+From: wsnipex <w.schupp@a1.net>
+Date: Tue, 23 Jun 2020 15:03:29 +0200
+Subject: [PATCH] [cmake] allow passing additional flag to internal ffmpeg
+
+---
+ cmake/modules/FindFFMPEG.cmake             | 3 ++-
+ tools/depends/target/ffmpeg/CMakeLists.txt | 4 ++++
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/cmake/modules/FindFFMPEG.cmake b/cmake/modules/FindFFMPEG.cmake
+index 7597ba76e201..81d26979e3d1 100644
+--- a/cmake/modules/FindFFMPEG.cmake
++++ b/cmake/modules/FindFFMPEG.cmake
+@@ -237,7 +237,8 @@ if(NOT FFMPEG_FOUND)
+                      -DCCACHE_PROGRAM=${CCACHE_PROGRAM}
+                      -DENABLE_VAAPI=${ENABLE_VAAPI}
+                      -DENABLE_VDPAU=${ENABLE_VDPAU}
+-                     -DENABLE_DAV1D=${DAV1D_FOUND})
++                     -DENABLE_DAV1D=${DAV1D_FOUND}
++                     -DEXTRA_FLAGS=${FFMPEG_EXTRA_FLAGS})
+ 
+   if(KODI_DEPENDSBUILD)
+     set(CROSS_ARGS -DDEPENDS_PATH=${DEPENDS_PATH}
+diff --git a/tools/depends/target/ffmpeg/CMakeLists.txt b/tools/depends/target/ffmpeg/CMakeLists.txt
+index cc3086e15ab4..3ebd65cf131d 100644
+--- a/tools/depends/target/ffmpeg/CMakeLists.txt
++++ b/tools/depends/target/ffmpeg/CMakeLists.txt
+@@ -93,6 +93,10 @@ else()
+   list(APPEND ffmpeg_conf --disable-libdav1d)
+ endif()
+ 
++if(EXTRA_FLAGS)
++  list(APPEND ffmpeg_conf ${EXTRA_FLAGS})
++endif()
++
+ message(STATUS "FFMPEG_CONF: ${ffmpeg_conf}")
+ 
+ include(ExternalProject)
