@@ -7,5 +7,5 @@ Description: Media Center debug package for OSMC
 Architecture: armhf
 Installed-Size: 32203
 Package: rbp1-mediacenter-debug-osmc
-Version: 18.8-155
+Version: 18.8-156
 Depends: rbp1-mediacenter-osmc (=16.8-144)
