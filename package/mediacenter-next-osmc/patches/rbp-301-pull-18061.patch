@@ -1,0 +1,225 @@
+From 4075bce41dcdb27357a503c0c8368fb29bcb53b6 Mon Sep 17 00:00:00 2001
+From: ronie <ronie@kodi.tv>
+Date: Sun, 14 Jun 2020 23:32:44 +0200
+Subject: [PATCH] [Estuary] add missing back buttons for touchscreen users
+
+---
+ .../xml/Custom_1109_TopBarOverlay.xml         | 77 ++++++++++---------
+ addons/skin.estuary/xml/MusicOSD.xml          | 23 +++++-
+ addons/skin.estuary/xml/SlideShow.xml         | 19 +++++
+ addons/skin.estuary/xml/VideoOSD.xml          | 22 +++++-
+ 4 files changed, 102 insertions(+), 39 deletions(-)
+
+diff --git a/addons/skin.estuary/xml/Custom_1109_TopBarOverlay.xml b/addons/skin.estuary/xml/Custom_1109_TopBarOverlay.xml
+index c2aede95c907..a21bafefbab9 100644
+--- a/addons/skin.estuary/xml/Custom_1109_TopBarOverlay.xml
++++ b/addons/skin.estuary/xml/Custom_1109_TopBarOverlay.xml
+@@ -16,48 +16,51 @@
+ 				<height>170</height>
+ 				<texture>frame/osdfade.png</texture>
+ 			</control>
+-			<control type="image">
+-				<left>15</left>
+-				<top>10</top>
+-				<width>300</width>
+-				<height>140</height>
+-				<texture>$VAR[PlayerClearLogoVar]</texture>
+-				<aspectratio aligny="center" align="center">keep</aspectratio>
+-			</control>
+-			<control type="textbox">
+-				<label>$VAR[NowPlayingBreadcrumbsVar]</label>
+-				<font>font45</font>
+-				<shadowcolor>text_shadow</shadowcolor>
+-				<top>0</top>
+-				<height>150</height>
+-				<left>330</left>
+-				<right>400</right>
+-				<aligny>center</aligny>
+-				<visible>!String.IsEmpty(Player.Art(tvshow.clearlogo))</visible>
+-			</control>
+ 			<control type="group">
+-				<visible>!Window.IsActive(pvrosdchannels) + !Window.IsActive(pvrchannelguide)</visible>
+-				<visible>String.IsEmpty(Player.Art(clearlogo))</visible>
+-				<visible>String.IsEmpty(Player.Art(tvshow.clearlogo))</visible>
+-				<animation effect="fade" time="150">VisibleChange</animation>
+-				<left>20</left>
+-				<right>400</right>
+-				<control type="label">
++				<animation effect="slide" end="90,0" time="0" condition="Skin.HasSetting(touchmode)">conditional</animation>
++				<control type="image">
++					<left>15</left>
++					<top>10</top>
++					<width>300</width>
++					<height>140</height>
++					<texture>$VAR[PlayerClearLogoVar]</texture>
++					<aspectratio aligny="center" align="center">keep</aspectratio>
++				</control>
++				<control type="textbox">
+ 					<label>$VAR[NowPlayingBreadcrumbsVar]</label>
+ 					<font>font45</font>
+ 					<shadowcolor>text_shadow</shadowcolor>
+-					<top>7</top>
+-					<height>50</height>
+-					<left>0</left>
+-					<right>0</right>
++					<top>0</top>
++					<height>150</height>
++					<left>330</left>
++					<right>400</right>
++					<aligny>center</aligny>
++					<visible>!String.IsEmpty(Player.Art(tvshow.clearlogo))</visible>
+ 				</control>
+-				<control type="label">
+-					<top>60</top>
+-					<label>$VAR[OSDSubLabelVar]</label>
+-					<shadowcolor>text_shadow</shadowcolor>
+-					<height>60</height>
+-					<left>0</left>
+-					<right>0</right>
++				<control type="group">
++					<visible>!Window.IsActive(pvrosdchannels) + !Window.IsActive(pvrchannelguide)</visible>
++					<visible>String.IsEmpty(Player.Art(clearlogo))</visible>
++					<visible>String.IsEmpty(Player.Art(tvshow.clearlogo))</visible>
++					<animation effect="fade" time="150">VisibleChange</animation>
++					<left>20</left>
++					<right>400</right>
++					<control type="label">
++						<label>$VAR[NowPlayingBreadcrumbsVar]</label>
++						<font>font45</font>
++						<shadowcolor>text_shadow</shadowcolor>
++						<top>7</top>
++						<height>50</height>
++						<left>0</left>
++						<right>0</right>
++					</control>
++					<control type="label">
++						<top>60</top>
++						<label>$VAR[OSDSubLabelVar]</label>
++						<shadowcolor>text_shadow</shadowcolor>
++						<height>60</height>
++						<left>0</left>
++						<right>0</right>
++					</control>
+ 				</control>
+ 			</control>
+ 			<control type="group">
+diff --git a/addons/skin.estuary/xml/MusicOSD.xml b/addons/skin.estuary/xml/MusicOSD.xml
+index 8f32b08625eb..844e47bb4899 100644
+--- a/addons/skin.estuary/xml/MusicOSD.xml
++++ b/addons/skin.estuary/xml/MusicOSD.xml
+@@ -2,7 +2,6 @@
+ <window>
+ 	<onload condition="!Player.PauseEnabled">SetFocus(603)</onload>
+ 	<defaultcontrol always="true">602</defaultcontrol>
+-	<include>Animation_BottomSlide</include>
+ 	<depth>DepthOSD</depth>
+ 	<controls>
+ 		<control type="button">
+@@ -15,7 +14,28 @@
+ 			<texturenofocus />
+ 			<onclick>Action(close)</onclick>
+ 		</control>
++		<control type="radiobutton" id="799">
++			<left>-10</left>
++			<top>-10</top>
++			<width>120</width>
++			<height>120</height>
++			<align>center</align>
++			<aligny>center</aligny>
++			<onclick>Dialog.Close(all,true)</onclick>
++			<onclick>Action(FullScreen)</onclick>
++			<texturefocus colordiffuse="button_focus">buttons/roundbutton-fo.png</texturefocus>
++			<texturenofocus />
++			<radioposx>30</radioposx>
++			<radiowidth>60</radiowidth>
++			<radioheight>60</radioheight>
++			<textureradioonfocus>icons/back.png</textureradioonfocus>
++			<textureradioonnofocus colordiffuse="grey">icons/back.png</textureradioonnofocus>
++			<textureradioofffocus>icons/back.png</textureradioofffocus>
++			<textureradiooffnofocus colordiffuse="grey">icons/back.png</textureradiooffnofocus>
++			<include>Animation_TopSlide</include>
++		</control>
+ 		<control type="group" id="200">
++			<include>Animation_BottomSlide</include>
+ 			<bottom>0</bottom>
+ 			<height>120</height>
+ 			<visible>!Window.IsActive(osdaudiosettings) + !Window.IsActive(osdvideosettings) + !Window.IsActive(playerprocessinfo)</visible>
+@@ -232,6 +252,7 @@
+ 			<height>120</height>
+ 			<animation effect="fade" start="0" end="100" time="250">WindowOpen</animation>
+ 			<animation effect="fade" start="100" end="0" time="250">WindowClose</animation>
++			<include>Animation_BottomSlide</include>
+ 			<control type="button" id="87">
+ 				<include>HiddenObject</include>
+ 				<onup condition="Player.Forwarding | Player.Rewinding">PlayerControl(Play)</onup>
+diff --git a/addons/skin.estuary/xml/SlideShow.xml b/addons/skin.estuary/xml/SlideShow.xml
+index 6cc32f41cdf8..97a5deb778e3 100644
+--- a/addons/skin.estuary/xml/SlideShow.xml
++++ b/addons/skin.estuary/xml/SlideShow.xml
+@@ -1,6 +1,25 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <window>
+ 	<controls>
++		<control type="radiobutton" id="13">
++			<left>-10</left>
++			<top>-10</top>
++			<width>120</width>
++			<height>120</height>
++			<align>center</align>
++			<aligny>center</aligny>
++			<onfocus>Action(Back)</onfocus>
++			<texturefocus colordiffuse="button_focus">buttons/roundbutton-fo.png</texturefocus>
++			<texturenofocus />
++			<radioposx>30</radioposx>
++			<radiowidth>60</radiowidth>
++			<radioheight>60</radioheight>
++			<textureradioonfocus>icons/back.png</textureradioonfocus>
++			<textureradioonnofocus colordiffuse="grey">icons/back.png</textureradioonnofocus>
++			<textureradioofffocus>icons/back.png</textureradioofffocus>
++			<textureradiooffnofocus colordiffuse="grey">icons/back.png</textureradiooffnofocus>
++			<visible>!Window.IsVisible(PictureInfo)</visible>
++		</control>
+ 		<control type="image">
+ 			<centerleft>50%</centerleft>
+ 			<centertop>50%</centertop>
+diff --git a/addons/skin.estuary/xml/VideoOSD.xml b/addons/skin.estuary/xml/VideoOSD.xml
+index c024a5c1aa8e..f8200b19f1bc 100644
+--- a/addons/skin.estuary/xml/VideoOSD.xml
++++ b/addons/skin.estuary/xml/VideoOSD.xml
+@@ -2,7 +2,6 @@
+ <window>
+ 	<onload condition="!Player.PauseEnabled">SetFocus(603)</onload>
+ 	<defaultcontrol always="true">602</defaultcontrol>
+-	<include>Animation_BottomSlide</include>
+ 	<depth>DepthOSD</depth>
+ 	<controls>
+ 		<control type="button">
+@@ -15,7 +14,28 @@
+ 			<texturenofocus />
+ 			<onclick>Action(close)</onclick>
+ 		</control>
++		<control type="radiobutton" id="799">
++			<left>-10</left>
++			<top>-10</top>
++			<width>120</width>
++			<height>120</height>
++			<align>center</align>
++			<aligny>center</aligny>
++			<onclick>Dialog.Close(all,true)</onclick>
++			<onclick>Action(FullScreen)</onclick>
++			<texturefocus colordiffuse="button_focus">buttons/roundbutton-fo.png</texturefocus>
++			<texturenofocus />
++			<radioposx>30</radioposx>
++			<radiowidth>60</radiowidth>
++			<radioheight>60</radioheight>
++			<textureradioonfocus>icons/back.png</textureradioonfocus>
++			<textureradioonnofocus colordiffuse="grey">icons/back.png</textureradioonnofocus>
++			<textureradioofffocus>icons/back.png</textureradioofffocus>
++			<textureradiooffnofocus colordiffuse="grey">icons/back.png</textureradiooffnofocus>
++			<include>Animation_TopSlide</include>
++		</control>
+ 		<control type="group">
++			<include>Animation_BottomSlide</include>
+ 			<bottom>0</bottom>
+ 			<height>180</height>
+ 			<visible>![Window.IsVisible(SliderDialog) | Window.IsVisible(osdaudiosettings) | Window.IsVisible(osdvideosettings) | Window.IsVisible(VideoBookmarks) | Window.IsVisible(playerprocessinfo) | Window.IsVisible(osdcmssettings) | Window.IsVisible(PVROSDChannels) | Window.IsVisible(pvrchannelguide)]</visible>

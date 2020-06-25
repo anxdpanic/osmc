@@ -1,0 +1,519 @@
+From e014bd89f077d33c508666529aae16e80cd62cf4 Mon Sep 17 00:00:00 2001
+From: Kai Sommerfeld <kai.sommerfeld@gmx.com>
+Date: Tue, 23 Jun 2020 21:37:52 +0200
+Subject: [PATCH] [addons] Fix data encapsulation violation for C++ PVR Addon
+ API classes.
+
+---
+ .../kodi/addon-instance/pvr/ChannelGroups.h   | 16 +++++++++---
+ .../kodi/addon-instance/pvr/Channels.h        | 24 ++++++++++++-----
+ .../include/kodi/addon-instance/pvr/EDL.h     |  8 ++++--
+ .../include/kodi/addon-instance/pvr/EPG.h     |  8 +++---
+ .../include/kodi/addon-instance/pvr/General.h | 23 +++++++++++-----
+ .../kodi/addon-instance/pvr/MenuHook.h        |  9 ++++---
+ .../kodi/addon-instance/pvr/Recordings.h      |  8 ++++--
+ .../include/kodi/addon-instance/pvr/Stream.h  | 26 ++++++++++++++-----
+ .../include/kodi/addon-instance/pvr/Timers.h  | 16 +++++++++---
+ 9 files changed, 100 insertions(+), 38 deletions(-)
+
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/ChannelGroups.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/ChannelGroups.h
+index 3464909f6995..f2924135cee7 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/ChannelGroups.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/ChannelGroups.h
+@@ -36,12 +36,12 @@ namespace addon
+ ///@{
+ class PVRChannelGroup : public CStructHdl<PVRChannelGroup, PVR_CHANNEL_GROUP>
+ {
++  friend class CInstancePVRClient;
++
+ public:
+   /*! \cond PRIVATE */
+   PVRChannelGroup() { memset(m_cStructure, 0, sizeof(PVR_CHANNEL_GROUP)); }
+   PVRChannelGroup(const PVRChannelGroup& channel) : CStructHdl(channel) {}
+-  PVRChannelGroup(const PVR_CHANNEL_GROUP* channel) : CStructHdl(channel) {}
+-  PVRChannelGroup(PVR_CHANNEL_GROUP* channel) : CStructHdl(channel) {}
+   /*! \endcond */
+ 
+   /// @defgroup cpp_kodi_addon_pvr_Defs_ChannelGroup_PVRChannelGroup_Help Value Help
+@@ -84,6 +84,10 @@ class PVRChannelGroup : public CStructHdl<PVRChannelGroup, PVR_CHANNEL_GROUP>
+   unsigned int GetPosition() const { return m_cStructure->iPosition; }
+ 
+   ///@}
++
++private:
++  PVRChannelGroup(const PVR_CHANNEL_GROUP* channel) : CStructHdl(channel) {}
++  PVRChannelGroup(PVR_CHANNEL_GROUP* channel) : CStructHdl(channel) {}
+ };
+ ///@}
+ //------------------------------------------------------------------------------
+@@ -143,12 +147,12 @@ class PVRChannelGroupsResultSet
+ ///@{
+ class PVRChannelGroupMember : public CStructHdl<PVRChannelGroupMember, PVR_CHANNEL_GROUP_MEMBER>
+ {
++  friend class CInstancePVRClient;
++
+ public:
+   /*! \cond PRIVATE */
+   PVRChannelGroupMember() { memset(m_cStructure, 0, sizeof(PVR_CHANNEL_GROUP_MEMBER)); }
+   PVRChannelGroupMember(const PVRChannelGroupMember& channel) : CStructHdl(channel) {}
+-  PVRChannelGroupMember(const PVR_CHANNEL_GROUP_MEMBER* channel) : CStructHdl(channel) {}
+-  PVRChannelGroupMember(PVR_CHANNEL_GROUP_MEMBER* channel) : CStructHdl(channel) {}
+   /*! \endcond */
+ 
+   /// @defgroup cpp_kodi_addon_pvr_Defs_ChannelGroup_PVRChannelGroupMember_Help Value Help
+@@ -215,6 +219,10 @@ class PVRChannelGroupMember : public CStructHdl<PVRChannelGroupMember, PVR_CHANN
+   bool GetOrder() const { return m_cStructure->iOrder; }
+ 
+   ///@}
++
++private:
++  PVRChannelGroupMember(const PVR_CHANNEL_GROUP_MEMBER* channel) : CStructHdl(channel) {}
++  PVRChannelGroupMember(PVR_CHANNEL_GROUP_MEMBER* channel) : CStructHdl(channel) {}
+ };
+ ///@}
+ //------------------------------------------------------------------------------
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/Channels.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/Channels.h
+index 454cd2887513..33ed0d2a219f 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/Channels.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/Channels.h
+@@ -37,12 +37,12 @@ namespace addon
+ ///@{
+ class PVRChannel : public CStructHdl<PVRChannel, PVR_CHANNEL>
+ {
++  friend class CInstancePVRClient;
++
+ public:
+   /*! \cond PRIVATE */
+   PVRChannel() { memset(m_cStructure, 0, sizeof(PVR_CHANNEL)); }
+   PVRChannel(const PVRChannel& channel) : CStructHdl(channel) {}
+-  PVRChannel(const PVR_CHANNEL* channel) : CStructHdl(channel) {}
+-  PVRChannel(PVR_CHANNEL* channel) : CStructHdl(channel) {}
+   /*! \endcond */
+ 
+   /// @defgroup cpp_kodi_addon_pvr_Defs_Channel_PVRChannel_Help Value Help
+@@ -172,6 +172,10 @@ class PVRChannel : public CStructHdl<PVRChannel, PVR_CHANNEL>
+   /// @brief To get with @ref SetOrder changed values.
+   bool GetOrder() const { return m_cStructure->iOrder; }
+   ///@}
++
++private:
++  PVRChannel(const PVR_CHANNEL* channel) : CStructHdl(channel) {}
++  PVRChannel(PVR_CHANNEL* channel) : CStructHdl(channel) {}
+ };
+ ///@}
+ //------------------------------------------------------------------------------
+@@ -230,12 +234,12 @@ class PVRChannelsResultSet
+ ///@{
+ class PVRSignalStatus : public CStructHdl<PVRSignalStatus, PVR_SIGNAL_STATUS>
+ {
++  friend class CInstancePVRClient;
++
+ public:
+   /*! \cond PRIVATE */
+   PVRSignalStatus() = default;
+   PVRSignalStatus(const PVRSignalStatus& type) : CStructHdl(type) {}
+-  PVRSignalStatus(const PVR_SIGNAL_STATUS* type) : CStructHdl(type) {}
+-  PVRSignalStatus(PVR_SIGNAL_STATUS* type) : CStructHdl(type) {}
+   /*! \endcond */
+ 
+ 
+@@ -345,6 +349,10 @@ class PVRSignalStatus : public CStructHdl<PVRSignalStatus, PVR_SIGNAL_STATUS>
+   /// @brief To get with @ref SetBER changed values.
+   long GetUNC() const { return m_cStructure->iUNC; }
+   ///@}
++
++private:
++  PVRSignalStatus(const PVR_SIGNAL_STATUS* type) : CStructHdl(type) {}
++  PVRSignalStatus(PVR_SIGNAL_STATUS* type) : CStructHdl(type) {}
+ };
+ ///@}
+ //------------------------------------------------------------------------------
+@@ -366,6 +374,8 @@ class PVRSignalStatus : public CStructHdl<PVRSignalStatus, PVR_SIGNAL_STATUS>
+ ///@{
+ class PVRDescrambleInfo : public CStructHdl<PVRDescrambleInfo, PVR_DESCRAMBLE_INFO>
+ {
++  friend class CInstancePVRClient;
++
+ public:
+   /*! \cond PRIVATE */
+   PVRDescrambleInfo()
+@@ -377,8 +387,6 @@ class PVRDescrambleInfo : public CStructHdl<PVRDescrambleInfo, PVR_DESCRAMBLE_IN
+     m_cStructure->iHops = PVR_DESCRAMBLE_INFO_NOT_AVAILABLE;
+   }
+   PVRDescrambleInfo(const PVRDescrambleInfo& type) : CStructHdl(type) {}
+-  PVRDescrambleInfo(const PVR_DESCRAMBLE_INFO* type) : CStructHdl(type) {}
+-  PVRDescrambleInfo(PVR_DESCRAMBLE_INFO* type) : CStructHdl(type) {}
+   /*! \endcond */
+ 
+   /// @defgroup cpp_kodi_addon_pvr_Defs_Channel_PVRDescrambleInfo_Help Value Help
+@@ -496,6 +504,10 @@ class PVRDescrambleInfo : public CStructHdl<PVRDescrambleInfo, PVR_DESCRAMBLE_IN
+   /// @brief To get with @ref SetProtocol changed values.
+   std::string GetProtocol() const { return m_cStructure->strProtocol; }
+   ///@}
++
++private:
++  PVRDescrambleInfo(const PVR_DESCRAMBLE_INFO* type) : CStructHdl(type) {}
++  PVRDescrambleInfo(PVR_DESCRAMBLE_INFO* type) : CStructHdl(type) {}
+ };
+ ///@}
+ //------------------------------------------------------------------------------
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/EDL.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/EDL.h
+index 0fb31527237a..34c7c413bf93 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/EDL.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/EDL.h
+@@ -36,12 +36,12 @@ namespace addon
+ ///@{
+ class PVREDLEntry : public CStructHdl<PVREDLEntry, PVR_EDL_ENTRY>
+ {
++  friend class CInstancePVRClient;
++
+ public:
+   /*! \cond PRIVATE */
+   PVREDLEntry() { memset(m_cStructure, 0, sizeof(PVR_EDL_ENTRY)); }
+   PVREDLEntry(const PVREDLEntry& type) : CStructHdl(type) {}
+-  PVREDLEntry(const PVR_EDL_ENTRY* type) : CStructHdl(type) {}
+-  PVREDLEntry(PVR_EDL_ENTRY* type) : CStructHdl(type) {}
+   /*! \endcond */
+ 
+   /// @defgroup cpp_kodi_addon_pvr_Defs_EDLEntry_PVREDLEntry_Help Value Help
+@@ -76,6 +76,10 @@ class PVREDLEntry : public CStructHdl<PVREDLEntry, PVR_EDL_ENTRY>
+   /// @brief To get with @ref SetType() changed values.
+   PVR_EDL_TYPE GetType() const { return m_cStructure->type; }
+   ///@}
++
++private:
++  PVREDLEntry(const PVR_EDL_ENTRY* type) : CStructHdl(type) {}
++  PVREDLEntry(PVR_EDL_ENTRY* type) : CStructHdl(type) {}
+ };
+ ///@}
+ //------------------------------------------------------------------------------
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/EPG.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/EPG.h
+index cdfb304a8e2b..441e72d27a13 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/EPG.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/EPG.h
+@@ -38,6 +38,8 @@ namespace addon
+ ///@{
+ class PVREPGTag : public CStructHdl<PVREPGTag, EPG_TAG>
+ {
++  friend class CInstancePVRClient;
++
+ public:
+   /*! \cond PRIVATE */
+   PVREPGTag()
+@@ -63,8 +65,6 @@ class PVREPGTag : public CStructHdl<PVREPGTag, EPG_TAG>
+     m_seriesLink = epg.m_seriesLink;
+     m_firstAired = epg.m_firstAired;
+   }
+-  PVREPGTag(const EPG_TAG* epg) : CStructHdl(epg) { SetData(epg); }
+-  PVREPGTag(EPG_TAG* epg) : CStructHdl(epg) { SetData(epg); }
+   /*! \endcond */
+ 
+ 
+@@ -413,7 +413,9 @@ class PVREPGTag : public CStructHdl<PVREPGTag, EPG_TAG>
+   }
+ 
+ private:
+-  // prevent the use of them
++  PVREPGTag(const EPG_TAG* epg) : CStructHdl(epg) { SetData(epg); }
++  PVREPGTag(EPG_TAG* epg) : CStructHdl(epg) { SetData(epg); }
++
+   const PVREPGTag& operator=(const PVREPGTag& right);
+   const PVREPGTag& operator=(const EPG_TAG& right);
+   operator EPG_TAG*();
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/General.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/General.h
+index 3b0eec2bad1e..c7977c2786be 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/General.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/General.h
+@@ -33,11 +33,11 @@ namespace addon
+ ///@{
+ class PVRTypeIntValue : public CStructHdl<PVRTypeIntValue, PVR_ATTRIBUTE_INT_VALUE>
+ {
++  friend class CInstancePVRClient;
++
+ public:
+   /*! \cond PRIVATE */
+   PVRTypeIntValue(const PVRTypeIntValue& data) : CStructHdl(data) {}
+-  PVRTypeIntValue(const PVR_ATTRIBUTE_INT_VALUE* data) : CStructHdl(data) {}
+-  PVRTypeIntValue(PVR_ATTRIBUTE_INT_VALUE* data) : CStructHdl(data) {}
+   /*! \endcond */
+ 
+   /// @defgroup cpp_kodi_addon_pvr_Defs_PVRTypeIntValue_Help Value Help
+@@ -84,8 +84,11 @@ class PVRTypeIntValue : public CStructHdl<PVRTypeIntValue, PVR_ATTRIBUTE_INT_VAL
+ 
+   /// @brief To get with the description text of the value.
+   std::string GetDescription() const { return m_cStructure->strDescription; }
+-
+   ///@}
++
++private:
++  PVRTypeIntValue(const PVR_ATTRIBUTE_INT_VALUE* data) : CStructHdl(data) {}
++  PVRTypeIntValue(PVR_ATTRIBUTE_INT_VALUE* data) : CStructHdl(data) {}
+ };
+ ///@}
+ //------------------------------------------------------------------------------
+@@ -111,10 +114,11 @@ class PVRTypeIntValue : public CStructHdl<PVRTypeIntValue, PVR_ATTRIBUTE_INT_VAL
+ ///@{
+ class PVRCapabilities
+ {
++  friend class CInstancePVRClient;
++
+ public:
+   /*! \cond PRIVATE */
+   explicit PVRCapabilities() = delete;
+-  PVRCapabilities(PVR_ADDON_CAPABILITIES* capabilities) : m_capabilities(capabilities) {}
+   /*! \endcond */
+ 
+   /// @defgroup cpp_kodi_addon_pvr_Defs_PVRCapabilities_Help Value Help
+@@ -383,6 +387,8 @@ class PVRCapabilities
+   ///@}
+ 
+ private:
++  PVRCapabilities(PVR_ADDON_CAPABILITIES* capabilities) : m_capabilities(capabilities) {}
++
+   PVR_ADDON_CAPABILITIES* m_capabilities;
+ };
+ ///@}
+@@ -437,11 +443,11 @@ class PVRCapabilities
+ ///@{
+ class PVRStreamProperty : public CStructHdl<PVRStreamProperty, PVR_NAMED_VALUE>
+ {
++  friend class CInstancePVRClient;
++
+ public:
+   /*! \cond PRIVATE */
+   PVRStreamProperty(const PVRStreamProperty& data) : CStructHdl(data) {}
+-  PVRStreamProperty(const PVR_NAMED_VALUE* data) : CStructHdl(data) {}
+-  PVRStreamProperty(PVR_NAMED_VALUE* data) : CStructHdl(data) {}
+   /*! \endcond */
+ 
+   /// @defgroup cpp_kodi_addon_pvr_Defs_General_Inputstream_PVRStreamProperty_Help Value Help
+@@ -490,8 +496,11 @@ class PVRStreamProperty : public CStructHdl<PVRStreamProperty, PVR_NAMED_VALUE>
+ 
+   /// @brief To get with the used property value.
+   std::string GetValue() const { return m_cStructure->strValue; }
+-
+   ///@}
++
++private:
++  PVRStreamProperty(const PVR_NAMED_VALUE* data) : CStructHdl(data) {}
++  PVRStreamProperty(PVR_NAMED_VALUE* data) : CStructHdl(data) {}
+ };
+ ///@}
+ //------------------------------------------------------------------------------
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/MenuHook.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/MenuHook.h
+index b3f65f119911..053a4d5cf126 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/MenuHook.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/MenuHook.h
+@@ -44,6 +44,8 @@ namespace addon
+ ///@{
+ class PVRMenuhook : public CStructHdl<PVRMenuhook, PVR_MENUHOOK>
+ {
++  friend class CInstancePVRClient;
++
+ public:
+   /// @addtogroup cpp_kodi_addon_pvr_Defs_Menuhook_PVRMenuhook
+   /// @brief Optional class constructor with value set.
+@@ -75,8 +77,6 @@ class PVRMenuhook : public CStructHdl<PVRMenuhook, PVR_MENUHOOK>
+     m_cStructure->category = PVR_MENUHOOK_UNKNOWN;
+   }
+   PVRMenuhook(const PVRMenuhook& data) : CStructHdl(data) {}
+-  PVRMenuhook(const PVR_MENUHOOK* data) : CStructHdl(data) {}
+-  PVRMenuhook(PVR_MENUHOOK* data) : CStructHdl(data) {}
+   /*! \endcond */
+ 
+   /// @defgroup cpp_kodi_addon_pvr_Defs_Menuhook_PVRMenuhook_Help Value Help
+@@ -115,8 +115,11 @@ class PVRMenuhook : public CStructHdl<PVRMenuhook, PVR_MENUHOOK>
+ 
+   /// @brief To get with @ref SetCategory() changed values.
+   PVR_MENUHOOK_CAT GetCategory() const { return m_cStructure->category; }
+-
+   ///@}
++
++private:
++  PVRMenuhook(const PVR_MENUHOOK* data) : CStructHdl(data) {}
++  PVRMenuhook(PVR_MENUHOOK* data) : CStructHdl(data) {}
+ };
+ ///@}
+ //------------------------------------------------------------------------------
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/Recordings.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/Recordings.h
+index 56feb899d740..293f927dc822 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/Recordings.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/Recordings.h
+@@ -37,6 +37,8 @@ namespace addon
+ ///@{
+ class PVRRecording : public CStructHdl<PVRRecording, PVR_RECORDING>
+ {
++  friend class CInstancePVRClient;
++
+ public:
+   /*! \cond PRIVATE */
+   PVRRecording()
+@@ -59,8 +61,6 @@ class PVRRecording : public CStructHdl<PVRRecording, PVR_RECORDING>
+     m_cStructure->sizeInBytes = PVR_RECORDING_VALUE_NOT_AVAILABLE;
+   }
+   PVRRecording(const PVRRecording& recording) : CStructHdl(recording) {}
+-  PVRRecording(const PVR_RECORDING* recording) : CStructHdl(recording) {}
+-  PVRRecording(PVR_RECORDING* recording) : CStructHdl(recording) {}
+   /*! \endcond */
+ 
+   /// @defgroup cpp_kodi_addon_pvr_Defs_Recording_PVRRecording_Help Value Help
+@@ -466,6 +466,10 @@ class PVRRecording : public CStructHdl<PVRRecording, PVR_RECORDING>
+   /// @brief To get with @ref SetSizeInBytes changed values.
+   int64_t GetSizeInBytes() const { return m_cStructure->sizeInBytes; }
+   ///@}
++
++private:
++  PVRRecording(const PVR_RECORDING* recording) : CStructHdl(recording) {}
++  PVRRecording(PVR_RECORDING* recording) : CStructHdl(recording) {}
+ };
+ ///@}
+ //------------------------------------------------------------------------------
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/Stream.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/Stream.h
+index e0de1e810b48..5613947059b6 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/Stream.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/Stream.h
+@@ -37,6 +37,8 @@ namespace addon
+ ///@{
+ class PVRCodec : public CStructHdl<PVRCodec, PVR_CODEC>
+ {
++  friend class CInstancePVRClient;
++
+ public:
+   /*! \cond PRIVATE */
+   PVRCodec()
+@@ -45,9 +47,6 @@ class PVRCodec : public CStructHdl<PVRCodec, PVR_CODEC>
+     m_cStructure->codec_id = PVR_INVALID_CODEC_ID;
+   }
+   PVRCodec(const PVRCodec& type) : CStructHdl(type) {}
+-  PVRCodec(const PVR_CODEC& type) : CStructHdl(&type) {}
+-  PVRCodec(const PVR_CODEC* type) : CStructHdl(type) {}
+-  PVRCodec(PVR_CODEC* type) : CStructHdl(type) {}
+   /*! \endcond */
+ 
+   /// @defgroup cpp_kodi_addon_pvr_Defs_Stream_PVRCodec_Help Value Help
+@@ -77,6 +76,11 @@ class PVRCodec : public CStructHdl<PVRCodec, PVR_CODEC>
+   /// @brief To get with @ref SetCodecId() changed values.
+   unsigned int GetCodecId() const { return m_cStructure->codec_id; }
+   ///@}
++
++private:
++  PVRCodec(const PVR_CODEC& type) : CStructHdl(&type) {}
++  PVRCodec(const PVR_CODEC* type) : CStructHdl(type) {}
++  PVRCodec(PVR_CODEC* type) : CStructHdl(type) {}
+ };
+ ///@}
+ //------------------------------------------------------------------------------
+@@ -96,12 +100,12 @@ class PVRCodec : public CStructHdl<PVRCodec, PVR_CODEC>
+ class PVRStreamProperties
+   : public CStructHdl<PVRStreamProperties, PVR_STREAM_PROPERTIES::PVR_STREAM>
+ {
++  friend class CInstancePVRClient;
++
+ public:
+   /*! \cond PRIVATE */
+   PVRStreamProperties() { memset(m_cStructure, 0, sizeof(PVR_STREAM_PROPERTIES::PVR_STREAM)); }
+   PVRStreamProperties(const PVRStreamProperties& type) : CStructHdl(type) {}
+-  PVRStreamProperties(const PVR_STREAM_PROPERTIES::PVR_STREAM* type) : CStructHdl(type) {}
+-  PVRStreamProperties(PVR_STREAM_PROPERTIES::PVR_STREAM* type) : CStructHdl(type) {}
+   /*! \endcond */
+ 
+   /// @defgroup cpp_kodi_addon_pvr_Defs_Stream_PVRStreamProperties_Help Value Help
+@@ -234,6 +238,10 @@ class PVRStreamProperties
+   /// @brief To get with @ref SetBitsPerSample() changed values.
+   int GetBitsPerSample() const { return m_cStructure->iBitsPerSample; }
+   ///@}
++
++private:
++  PVRStreamProperties(const PVR_STREAM_PROPERTIES::PVR_STREAM* type) : CStructHdl(type) {}
++  PVRStreamProperties(PVR_STREAM_PROPERTIES::PVR_STREAM* type) : CStructHdl(type) {}
+ };
+ ///@}
+ //------------------------------------------------------------------------------
+@@ -252,12 +260,12 @@ class PVRStreamProperties
+ ///@{
+ class PVRStreamTimes : public CStructHdl<PVRStreamTimes, PVR_STREAM_TIMES>
+ {
++  friend class CInstancePVRClient;
++
+ public:
+   /*! \cond PRIVATE */
+   PVRStreamTimes() { memset(m_cStructure, 0, sizeof(PVR_STREAM_TIMES)); }
+   PVRStreamTimes(const PVRStreamTimes& type) : CStructHdl(type) {}
+-  PVRStreamTimes(const PVR_STREAM_TIMES* type) : CStructHdl(type) {}
+-  PVRStreamTimes(PVR_STREAM_TIMES* type) : CStructHdl(type) {}
+   /*! \endcond */
+ 
+   /// @defgroup cpp_kodi_addon_pvr_Defs_Stream_PVRStreamTimes_Help Value Help
+@@ -308,6 +316,10 @@ class PVRStreamTimes : public CStructHdl<PVRStreamTimes, PVR_STREAM_TIMES>
+   /// @brief To get with @ref SetPTSEnd() changed values.
+   int64_t GetPTSEnd() const { return m_cStructure->ptsEnd; }
+   ///@}
++
++private:
++  PVRStreamTimes(const PVR_STREAM_TIMES* type) : CStructHdl(type) {}
++  PVRStreamTimes(PVR_STREAM_TIMES* type) : CStructHdl(type) {}
+ };
+ ///@}
+ //------------------------------------------------------------------------------
+diff --git a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/Timers.h b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/Timers.h
+index b838f1c08d99..c3c438a40242 100644
+--- a/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/Timers.h
++++ b/xbmc/addons/kodi-addon-dev-kit/include/kodi/addon-instance/pvr/Timers.h
+@@ -37,6 +37,8 @@ namespace addon
+ ///@{
+ class PVRTimer : public CStructHdl<PVRTimer, PVR_TIMER>
+ {
++  friend class CInstancePVRClient;
++
+ public:
+   /*! \cond PRIVATE */
+   PVRTimer()
+@@ -65,8 +67,6 @@ class PVRTimer : public CStructHdl<PVRTimer, PVR_TIMER>
+     m_cStructure->iGenreSubType = PVR_TIMER_VALUE_NOT_AVAILABLE;
+   }
+   PVRTimer(const PVRTimer& data) : CStructHdl(data) {}
+-  PVRTimer(const PVR_TIMER* data) : CStructHdl(data) {}
+-  PVRTimer(PVR_TIMER* data) : CStructHdl(data) {}
+   /*! \endcond */
+ 
+   /// @defgroup cpp_kodi_addon_pvr_Defs_Timer_PVRTimer_Help Value Help
+@@ -465,6 +465,10 @@ class PVRTimer : public CStructHdl<PVRTimer, PVR_TIMER>
+   /// @brief To get with @ref SetSeriesLink changed values.
+   std::string GetSeriesLink() const { return m_cStructure->strSeriesLink; }
+   ///@}
++
++private:
++  PVRTimer(const PVR_TIMER* data) : CStructHdl(data) {}
++  PVRTimer(PVR_TIMER* data) : CStructHdl(data) {}
+ };
+ 
+ ///@}
+@@ -524,6 +528,8 @@ class PVRTimersResultSet
+ ///@{
+ class PVRTimerType : public CStructHdl<PVRTimerType, PVR_TIMER_TYPE>
+ {
++  friend class CInstancePVRClient;
++
+ public:
+   /*! \cond PRIVATE */
+   PVRTimerType()
+@@ -536,8 +542,6 @@ class PVRTimerType : public CStructHdl<PVRTimerType, PVR_TIMER_TYPE>
+     m_cStructure->iMaxRecordingsDefault = -1;
+   }
+   PVRTimerType(const PVRTimerType& type) : CStructHdl(type) {}
+-  PVRTimerType(const PVR_TIMER_TYPE* type) : CStructHdl(type) {}
+-  PVRTimerType(PVR_TIMER_TYPE* type) : CStructHdl(type) {}
+   /*! \endcond */
+ 
+   /// @defgroup cpp_kodi_addon_pvr_Defs_Timer_PVRTimerType_Help Value Help
+@@ -877,6 +881,10 @@ class PVRTimerType : public CStructHdl<PVRTimerType, PVR_TIMER_TYPE>
+   /// @brief To get with @ref SetMaxRecordingsDefault changed values
+   int GetMaxRecordingsDefault() const { return m_cStructure->iMaxRecordingsDefault; }
+   ///@}
++
++private:
++  PVRTimerType(const PVR_TIMER_TYPE* type) : CStructHdl(type) {}
++  PVRTimerType(PVR_TIMER_TYPE* type) : CStructHdl(type) {}
+ };
+ ///@}
+ //------------------------------------------------------------------------------
