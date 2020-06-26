@@ -4,8 +4,7 @@
         <import addon="xbmc.python" version="2.26.0"/>
     </requires>
 
-    <!-- <extension point="xbmc.python.script" library="default.py"/> -->
-    <extension point="xbmc.python.module" library="lib"/>
+    <extension point="xbmc.python.module" library="resources/lib"/>
 
     <extension point="xbmc.addon.metadata">
         <summary lang="en_GB">osmcsetting.networking</summary>
