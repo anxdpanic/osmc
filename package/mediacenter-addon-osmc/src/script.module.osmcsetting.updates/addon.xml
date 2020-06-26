@@ -1,22 +1,21 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<addon id="script.module.osmcsetting.updates"
-       name="Updates"
-       version="0.0.3"
-       provider-name="OSMC (KodeKarnage)">
+<addon id="script.module.osmcsetting.updates" name="Updates" version="0.0.3" provider-name="OSMC (KodeKarnage)">
     <requires>
         <import addon="script.module.osmccommon" version="0.0.1"/>
-        <import addon="xbmc.python" version="2.1.0"/>
+        <import addon="xbmc.python" version="2.26.0"/>
     </requires>
-<extension point="xbmc.service" library="service.py" start="login"></extension>
+    <extension point="xbmc.service" library="service.py"/>
 
     <extension point="xbmc.addon.metadata">
-        <summary lang="en">osmcsetting.updates</summary>
-        <description lang="en"></description>
+        <summary lang="en_GB">osmcsetting.updates</summary>
         <language>en</language>
         <platform>all</platform>
-        <license>GNU GPLv2</license>
+        <license>GPL-2.0-only</license>
         <email>karnage@osmc.tv</email>
-        <forum></forum>
-        <source></source>
+        <source>https://osmc.tv</source>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.png</fanart>
+        </assets>
     </extension>
 </addon>
