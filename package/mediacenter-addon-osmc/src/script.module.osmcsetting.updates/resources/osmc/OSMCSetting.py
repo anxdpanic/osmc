@@ -1,4 +1,4 @@
-'''
+"""
 
     The settings for OSMC are handled by the OSMC Settings Addon (OSA).
 
@@ -81,7 +81,7 @@
     settings window closes by editing the open_settings_window. The method apply_settings will still be called by OSG, so
     keep that in mind.
 
-'''
+"""
 
 
 # XBMC Modules
@@ -105,18 +105,18 @@ def log(message):
 
 class OSMCSettingClass(threading.Thread):
 
-    '''
+    """
         A OSMCSettingClass is way to substantiate the settings of an OSMC settings module, and make them available to the
         OSMC Settings Addon (OSA).
 
-    '''
+    """
 
     def __init__(self):
 
-        '''
+        """
             The setting_data_method contains all the settings in the settings group, as well as the methods to call when a
             setting_value has changed and the existing setting_value.
-        '''
+        """
 
         super(OSMCSettingClass, self).__init__()
 
@@ -162,9 +162,9 @@ class OSMCSettingClass(threading.Thread):
 
     def populate_setting_data_method(self):
 
-        '''
+        """
             Populates the setting_value in the setting_data_method.
-        '''
+        """
 
         # this is the method to use if you are populating the dict from the settings.xml
         latest_settings = self.settings_retriever_xml()
@@ -187,12 +187,12 @@ class OSMCSettingClass(threading.Thread):
 
     def run(self):
 
-        '''
+        """
             The method that determines what happens when the item is clicked in the settings GUI.
             Usually this would be __addon__.OpenSettings(), but it could be any other script.
             This allows the creation of action buttons in the GUI, as well as allowing developers to script and skin their
             own user interfaces.
-        '''
+        """
 
         # check if kodi_reset file is present, if it is then set the bool as true, else set as false
 
@@ -220,10 +220,10 @@ class OSMCSettingClass(threading.Thread):
 
     def settings_retriever_xml(self):
 
-        '''
+        """
             Reads the stored settings (in settings.xml) and returns a dictionary with the setting_name: setting_value. This
             method cannot be overwritten.
-        '''
+        """
 
         latest_settings = {}
 
@@ -238,36 +238,36 @@ class OSMCSettingClass(threading.Thread):
     #                                                                                                                            #
     def first_method(self):
 
-        '''
+        """
             The method to call before all the other setting methods are called.
 
             For example, this could be a call to stop a service. The final method could then restart the service again.
             This can be used to apply the setting changes.
 
-        '''
+        """
 
         pass
 
 
     def final_method(self):
 
-        '''
+        """
             The method to call after all the other setting methods have been called.
 
             For example, in the case of the Raspberry Pi's settings module, the final writing to the config.txt can be delayed
             until all the settings have been updated in the setting_data_method.
 
-        '''
+        """
 
         pass
 
 
     def boot_method(self):
 
-        '''
+        """
             The method to call when the OSA is first activated (on reboot)
 
-        '''
+        """
 
         pass
 
@@ -278,28 +278,28 @@ class OSMCSettingClass(threading.Thread):
     ##############################################################################################################################
     #                                                                                                                            #
 
-    '''
+    """
         Methods beyond this point are for specific settings.
-    '''
+    """
 
     # SETTING METHOD
     def method_to_apply_changes_X(self, data):
 
-        '''
+        """
             Method for implementing changes to setting x.
 
-        '''
+        """
 
         log('hells yeah!')
 
     def translate_on_populate_X(self, data, reverse=False):
 
-        '''
+        """
             Method to translate the data before adding to the setting_data_method dict.
 
             This is useful if you are getting the populating from an external source like the Pi's config.txt.
             This method could end with a call to another method to populate the settings.xml from that same source.
-        '''
+        """
 
         # this is how you would negate the translateing of the data when the settings window closes.
         if reverse:

@@ -18,22 +18,8 @@
 #  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 #  http://www.gnu.org/copyleft/gpl.html
 
-# Standard Modules
-import sys
-import os
-
-# Kodi Modules
-import xbmc
-import xbmcaddon
-
-# Custom modules
-__libpath__ = xbmc.translatePath(os.path.join(xbmcaddon.Addon().getAddonInfo('path'), 'resources','lib'))
-sys.path.append(__libpath__)
-
-import update_service
-
+from package import update_service
 
 if __name__ == "__main__":
-
-	m = update_service.Main()
-	del m
+    m = update_service.Main()
+    del m
