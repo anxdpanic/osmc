@@ -1,6 +1,6 @@
 import datetime
 
-from .simple_scheduler import SimpleScheduler
+from osmccommon.osmc_scheduler import SimpleScheduler
 
 """
     settings = {

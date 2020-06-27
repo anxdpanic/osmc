@@ -5,7 +5,6 @@ import math
 import os
 import re
 import subprocess
-import sys
 import tarfile
 import traceback
 
@@ -15,10 +14,12 @@ import xbmcgui
 import xbmcaddon
 import xbmcvfs
 
-__addonid__ = 'OSMC Backup'
-__addon__ = xbmcaddon.Addon('script.module.osmcsetting.updates')
+from osmccommon.osmc_logging import StandardLogger
+from osmccommon.osmc_language import LangRetriever
 
-PY2 = sys.version_info.major == 2
+addonid = 'script.module.osmcsetting.updates'
+__addon__ = xbmcaddon.Addon(addonid)
+
 DIALOG = xbmcgui.Dialog()
 
 TIME_PATTERN = '%Y_%m_%d_%H_%M_%S'
@@ -75,26 +76,8 @@ LABELS = {
 
 }
 
-
-def lang(string_id):
-    if PY2:
-        return __addon__.getLocalizedString(string_id).encode('utf-8', 'ignore')
-    return __addon__.getLocalizedString(string_id)
-
-
-def log(message, label=''):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
-
-    try:
-        label = str(label)
-    except UnicodeEncodeError:
-        label = label.encode('utf-8', 'ignore')
-
-    logmsg = '%s : %s - %s ' % ('OSMC BACKUP: ', str(label), str(message))
-    xbmc.log(msg=logmsg, level=xbmc.LOGDEBUG)
+log = StandardLogger(addonid, os.path.basename(__file__)).log
+lang = LangRetriever(__addon__).lang
 
 
 class osmc_backup(object):

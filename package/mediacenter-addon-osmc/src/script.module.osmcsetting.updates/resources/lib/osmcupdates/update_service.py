@@ -16,9 +16,12 @@ import xbmc
 import xbmcaddon
 import xbmcgui
 
+from osmccommon.osmc_logging import StandardLogger
+from osmccommon.osmc_language import LangRetriever
+from osmccommon import osmc_scheduler as sched
+from osmccommon import osmc_comms as comms
+
 # Custom modules
-from . import comms
-from . import simple_scheduler as sched
 from . import OSMC_Backups
 
 __addon__ = xbmcaddon.Addon()
@@ -30,29 +33,10 @@ __libpath__ = xbmc.translatePath(os.path.join(xbmcaddon.Addon().getAddonInfo('pa
 
 DIALOG = xbmcgui.Dialog()
 
-PY2 = sys.version_info.major == 2
 PY3 = sys.version_info.major == 3
 
-
-def lang(string_id):
-    if PY2:
-        return __addon__.getLocalizedString(string_id).encode('utf-8', 'ignore')
-    return __addon__.getLocalizedString(string_id)
-
-
-def log(message, label=''):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
-
-    try:
-        label = str(label)
-    except UnicodeEncodeError:
-        label = label.encode('utf-8', 'ignore')
-
-    logmsg = '%s : %s - %s ' % (__addonid__, str(label), str(message))
-    xbmc.log(msg=logmsg, level=xbmc.LOGDEBUG)
+log = StandardLogger('script.module.osmcsetting.updates', os.path.basename(__file__)).log
+lang = LangRetriever(__addon__).lang
 
 
 # @clog(log)

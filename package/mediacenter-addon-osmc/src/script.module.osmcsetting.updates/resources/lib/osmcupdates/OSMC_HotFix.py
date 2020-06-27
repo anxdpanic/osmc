@@ -3,43 +3,24 @@ import os
 import requests
 import shlex
 import subprocess
-import sys
 import traceback
 
 # Kodi Modules
-import xbmc
 import xbmcaddon
 import xbmcgui
 
-__addon__ = xbmcaddon.Addon('script.module.osmcsetting.updates')
+from osmccommon.osmc_logging import StandardLogger
+from osmccommon.osmc_language import LangRetriever
+
+__addon__ = xbmcaddon.Addon()
 __addonid__ = __addon__.getAddonInfo('id')
 __scriptPath__ = __addon__.getAddonInfo('path')
 __setting__ = __addon__.getSetting
 
 DIALOG = xbmcgui.Dialog()
 
-PY2 = sys.version_info.major == 2
-
-
-def lang(string_id):
-    if PY2:
-        return __addon__.getLocalizedString(string_id).encode('utf-8', 'ignore')
-    return __addon__.getLocalizedString(string_id)
-
-
-def log(message, label=''):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
-
-    try:
-        label = str(label)
-    except UnicodeEncodeError:
-        label = label.encode('utf-8', 'ignore')
-
-    logmsg = '%s : %s - %s ' % (__addonid__, str(label), str(message))
-    xbmc.log(msg=logmsg, level=xbmc.LOGWARNING)
+log = StandardLogger('script.module.osmcsetting.updates', os.path.basename(__file__)).log
+lang = LangRetriever(__addon__).lang
 
 
 class HotFix(object):
