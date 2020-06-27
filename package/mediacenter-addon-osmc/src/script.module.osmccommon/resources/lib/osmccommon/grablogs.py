@@ -32,7 +32,6 @@ except ImportError:
 
 log = StandardLogger(addonid, os.path.basename(__file__)).log
 lang = LangRetriever(__addon__).lang
-PY2 = sys.version_info.major == 2
 
 SECTION_START = '\n====================== %s =================== %s\n'
 SECTION_END = '\n---------------------- %s END --------------- %s\n\n'
@@ -83,6 +82,23 @@ SETS = {
                 'key': 'Ul2H1CLu',
                 'ltyp': 'file_log',
                 'actn': '/boot/config.txt',
+            },
+        ],
+    },
+
+    'guisettings_ab': {
+        'order': 2.25,
+        'active': False,
+        'help': 'GUI Settings (abridged)',
+        'dest': 'guisettings_ab',
+        'action': 'store_true',
+        'flags': ['-G', '--guisetab'],
+        'logs': [
+            {
+                'name': 'GUI Settings (abridged)',
+                'key': 'z9Z12KgS',
+                'ltyp': 'cl_log',
+                'actn': '/usr/bin/readgui'
             },
         ],
     },
@@ -176,7 +192,7 @@ SETS = {
     'fstabmounts': {
         'order': 7,
         'active': False,
-        'help': 'fstab file',
+        'help': 'fstab file & mounts',
         'dest': 'fstabmounts',
         'action': 'store_true',
         'flags': ['-f', '--fstab'],
