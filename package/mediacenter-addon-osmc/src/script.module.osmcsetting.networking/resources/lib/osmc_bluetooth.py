@@ -1,9 +1,10 @@
-import connman
-import bluetooth
-import osmc_systemd
 import sys
 import pexpect
 import json
+
+from . import connman
+from . import bluetooth
+from . import osmc_systemd
 
 RUNNING_IN_KODI = True
 
@@ -15,8 +16,9 @@ try:
 except:
     RUNNING_IN_KODI = False
 
+PY2 = sys.version_info.major == 2
 
-DEVICE_PATH = 'org.bluez.Device1' 
+DEVICE_PATH = 'org.bluez.Device1'
 PAIRING_AGENT = 'osmc_bluetooth_agent.py'
 
 BLUETOOTH_SERVICE = 'bluetooth.service'
@@ -24,15 +26,16 @@ BLUETOOTH_SERVICE = 'bluetooth.service'
 PEXPECT_SOL = 'SOL@'
 PEXPECT_EOL = '@EOL'
 
+__addon__ = xbmcaddon.Addon('script.module.osmcsetting.networking')
+
 
 def log(message):
-
     try:
         message = str(message)
     except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore' )
+        message = message.encode('utf-8', 'ignore')
 
-    msg_str='OSMC_BLUETOOTH -  ' + str(message)
+    msg_str = 'OSMC_BLUETOOTH -  ' + str(message)
     if RUNNING_IN_KODI:
         xbmc.log(msg_str, level=xbmc.LOGDEBUG)
     else:
@@ -56,7 +59,7 @@ def is_bluetooth_active():
         try:
             bluetooth.get_adapter()
             adapterFound = True
-        except: #  catch issue where connman reports BT but Bluez can't find an adapter
+        except:  # catch issue where connman reports BT but Bluez can't find an adapter
             adapterFound = False
     return connman_status and service_status and adapterFound
 
@@ -92,6 +95,7 @@ def list_paired_devices():
 def list_trusted_devices():
     return list_devices('Trusted', True)
 
+
 def list_discovered_devices():
     # assuming discovered device are non Trusted
     # (e.g. ps3 controller is never paired)
@@ -119,7 +123,7 @@ def is_device_trusted(deviceAddress):
 
 
 def set_device_trusted(deviceAddress, value):
-    set_device_property(deviceAddress,'Trusted', value)
+    set_device_property(deviceAddress, 'Trusted', value)
 
 
 def is_device_connected(deviceAddress):
@@ -134,6 +138,7 @@ def connect_device(deviceAddress):
         return False
     return True
 
+
 def disconnect_device(deviceAddress):
     bluetooth.disconnect_device(deviceAddress)
 
@@ -141,29 +146,33 @@ def disconnect_device(deviceAddress):
 '''
  returns a dictionary with the key being the device address
    and value being a dictionary of device information
-'''    
+'''
+
+
 def list_devices(filterkey=None, expectedvalue=None):
     devices = {}
     managed_objects = bluetooth.get_managed_objects()
     for path in managed_objects.keys():
         if path.startswith('/org/bluez/hci') and DEVICE_PATH in managed_objects[path].keys():
-                dbus_dict = managed_objects[path][DEVICE_PATH]
-                device_dict = {}
-                # remove dbus.String from the key
-                for key in dbus_dict:
-                    device_dict[str(key)] = dbus_dict[key]
-                if filterkey == None or device_dict[filterkey] == expectedvalue:
-                    devices[str(device_dict['Address'])] = device_dict
+            dbus_dict = managed_objects[path][DEVICE_PATH]
+            device_dict = {}
+            # remove dbus.String from the key
+            for key in dbus_dict:
+                device_dict[str(key)] = dbus_dict[key]
+            if filterkey == None or device_dict[filterkey] == expectedvalue:
+                devices[str(device_dict['Address'])] = device_dict
     return devices
 
 
 def encode_return(result, messages):
-    return_value = {result : messages}
-    return PEXPECT_SOL+ json.dumps(return_value) + PEXPECT_EOL
+    return_value = {
+        result: messages
+    }
+    return PEXPECT_SOL + json.dumps(return_value) + PEXPECT_EOL
 
 
-def pair_device(deviceAddress, scriptBasePath = ''):
-    print 'Attempting to pair with ' + deviceAddress
+def pair_device(deviceAddress, scriptBasePath=''):
+    print('Attempting to pair with ' + deviceAddress)
     paired = False
     paired = pair_using_agent(deviceAddress, scriptBasePath)
     if not paired:
@@ -175,22 +184,22 @@ def pair_device(deviceAddress, scriptBasePath = ''):
     return paired
 
 
-def pair_using_agent(deviceAddress, scriptBasePath = ''):
+def pair_using_agent(deviceAddress, scriptBasePath=''):
     script_path = scriptBasePath + PAIRING_AGENT
-    script = str.join(' ', [sys.executable, script_path,deviceAddress])
+    script = str.join(' ', [sys.executable, script_path, deviceAddress])
     paired = False
-    print 'calling agent "' + script + '"'
+    print('calling agent "' + script + '"')
     child = pexpect.spawn(script)
     while True:
         try:
             index = child.expect(['@EOL'], timeout=None)
             split = child.before.split('SOL@')
-            if len(split[0]) >0:
+            if len(split[0]) > 0:
                 log('Output From Pairing Agent ' + split[0])
             d = json.loads(split[1])
             return_value = d.keys()[0]
             messages = d.values()[0]
-            log(['return_value = '+ return_value, 'Messages = ' + str(messages)])
+            log(['return_value = ' + return_value, 'Messages = ' + str(messages)])
             if return_value == 'PAIRING_OK':
                 paired = True
                 break
@@ -198,24 +207,25 @@ def pair_using_agent(deviceAddress, scriptBasePath = ''):
                 return False  # return early no need to call remove_device()
             if RUNNING_IN_KODI:
                 deviceAlias = get_device_property(deviceAddress, 'Alias')
-                returnValue = handleAgentInteraction(deviceAlias, return_value , messages)
+                returnValue = handleAgentInteraction(deviceAlias, return_value, messages)
                 if returnValue:
                     if returnValue == 'NO_PIN_ENTERED':
                         return False
-                    sendStr = encode_return('RETURN_VALUE', [ returnValue ])
+                    sendStr = encode_return('RETURN_VALUE', [returnValue])
                     child.sendline(sendStr)
         except pexpect.EOF:
             break
     return paired
 
 
-def handleAgentInteraction(deviceAlias, command , messages):
+def handleAgentInteraction(deviceAlias, command, messages):
     supported_commands = ['NOTIFICATION', 'YESNO_INPUT', 'NUMERIC_INPUT']
     if not command in supported_commands:
         return None
-    
+
     # This method is only called when we are running in Kodi 
     dialog = xbmcgui.Dialog()
+    message = ''
     #         'Bluetooth Pairing'
     heading = lang(32026)
     if messages[0] == 'ENTER_PIN':
@@ -228,11 +238,11 @@ def handleAgentInteraction(deviceAlias, command , messages):
         #         'Enter PIN to Pair with'
         message = lang(32030) + ' ' + deviceAlias
     if messages[0] == 'CONFIRM_PASSKEY':
-       #           'Confirm passkey'                      'for'
-        message = lang(32031)+ ' ' + str(messages[1]) + ' ' + lang(32032) + ' ' + deviceAlias
+        #           'Confirm passkey'                      'for'
+        message = lang(32031) + ' ' + str(messages[1]) + ' ' + lang(32032) + ' ' + deviceAlias
 
     if command == 'NOTIFICATION':
-        xbmc.executebuiltin("XBMC.Notification(%s,%s,%s)" % (heading, message, "10000"))
+        dialog.notification(heading, message, time=10000, sound=False)
     if command == 'YESNO_INPUT':
         if dialog.yesno(heading, message):
             return 'YES'
@@ -242,12 +252,11 @@ def handleAgentInteraction(deviceAlias, command , messages):
         if len(value) == 0:
             value = 'NO_PIN_ENTERED'
         return value
-                    
+
     return None
 
 
-def lang(id):
-    addon = xbmcaddon.Addon('script.module.osmcsetting.networking')
-    san =addon.getLocalizedString(id).encode( 'utf-8', 'ignore' )
-    return san 
-
+def lang(string_id):
+    if PY2:
+        return __addon__.getLocalizedString(string_id).encode('utf-8', 'ignore')
+    return __addon__.getLocalizedString(string_id)

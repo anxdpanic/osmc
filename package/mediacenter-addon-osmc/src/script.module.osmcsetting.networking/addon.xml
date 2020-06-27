@@ -2,6 +2,7 @@
 <addon id="script.module.osmcsetting.networking" name="Networking" version="0.0.3" provider-name="OSMC (KodeKarnage)">
     <requires>
         <import addon="xbmc.python" version="2.26.0"/>
+        <import addon="script.module.xmltodict" version="0.11.0"/>
     </requires>
 
     <extension point="xbmc.python.module" library="resources/lib"/>

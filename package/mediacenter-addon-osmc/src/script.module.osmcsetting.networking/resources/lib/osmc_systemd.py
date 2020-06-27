@@ -2,6 +2,7 @@ import subprocess
 import time
 import os
 
+
 def is_service_running(service_name):
     enabled = is_service_enabled(service_name)
     active = is_service_active(service_name)
@@ -40,6 +41,7 @@ def update_service(service_name, service_status):
     subprocess.call(['sudo', '/bin/systemctl', service_status, service_name], stderr=fnull, stdout=fnull)
     fnull.close()
     time.sleep(1)
+
 
 def is_service_running(service_name):
     fnull = open(os.devnull, 'w')

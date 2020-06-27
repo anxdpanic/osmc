@@ -1,16 +1,23 @@
 #!usr/bin/python
 
+import json
 from optparse import OptionParser
-import traceback
+
 import dbus
 import dbus.service
 import dbus.mainloop.glib
+
 try:
     from gi.repository import GObject
 except ImportError:
     import gobject as GObject
-import bluezutils
-import json
+
+try:
+    input = raw_input
+except NameError:
+    pass
+
+from . import bluezutils
 
 PEXPECT_SOL = 'SOL@'
 PEXPECT_EOL = '@EOL'
@@ -23,23 +30,29 @@ bus = None
 device_obj = None
 dev_path = None
 
+
 def return_status(result, messages):
-    return_dict = {result : messages}
-    print PEXPECT_SOL+ json.dumps(return_dict) + PEXPECT_EOL
+    return_dict = {
+        result: messages
+    }
+    print(PEXPECT_SOL + json.dumps(return_dict) + PEXPECT_EOL)
+
 
 def decode_response(message):
     if message.startswith(PEXPECT_SOL):
-        jsonStr = message.replace(PEXPECT_SOL,'').replace(PEXPECT_EOL,'')
+        jsonStr = message.replace(PEXPECT_SOL, '').replace(PEXPECT_EOL, '')
         returnValue = json.loads(jsonStr)
         if returnValue.keys()[0] == 'RETURN_VALUE':
             return str(returnValue.values()[0][0])
         return None
     return message
-    
+
+
 def set_trusted(path, boolean):
     props = dbus.Interface(bus.get_object("org.bluez", path),
                            "org.freedesktop.DBus.Properties")
     props.Set("org.bluez.Device1", "Trusted", boolean)
+
 
 class Rejected(dbus.DBusException):
     _dbus_error_name = "org.bluez.Error.Rejected"
@@ -49,6 +62,7 @@ class Agent(dbus.service.Object):
     exit_on_release = True
     return_code = 9
     error_message = None
+
     def set_return(self, return_code, error_message):
         self.return_code = return_code
         self.error_message = error_message
@@ -67,33 +81,33 @@ class Agent(dbus.service.Object):
     def AuthorizeService(self, device, uuid):
         message_list = ['AUTHORIZE_SERVICE', device, uuid]
         return_status('YESNO_INPUT', message_list)
-        returnStr = raw_input('Confirm Passkey:')
+        returnStr = input('Confirm Passkey:')
         returnValue = decode_response(returnStr)
         if returnValue == 'YES':
-                return
+            return
         raise Rejected("Connection rejected by user")
 
     @dbus.service.method(AGENT_INTERFACE,
                          in_signature="o", out_signature="s")
     def RequestPinCode(self, device):
-        message_list = [ 'REQUEST_PIN', device ]
+        message_list = ['REQUEST_PIN', device]
         return_status('NUMERIC_INPUT', message_list)
-        returnStr = raw_input('Enter Pin: ')
+        returnStr = input('Enter Pin: ')
         returnValue = decode_response(returnStr)
         pin = '0000'
         if not returnValue == None:
-            pin = returnValue;
+            pin = returnValue
         message_list = ['ENTER_PIN', str(pin)]
         return_status('NOTIFICATION', message_list)
         set_trusted(device, True)
         return pin
-        
+
     @dbus.service.method(AGENT_INTERFACE,
                          in_signature="o", out_signature="u")
     def RequestPasskey(self, device):
-        message_list = [ 'REQUEST_PIN', device ]
+        message_list = ['REQUEST_PIN', device]
         return_status('NUMERIC_INPUT', message_list)
-        returnStr = raw_input('Enter Pin: ')
+        returnStr = input('Enter Pin: ')
         returnValue = decode_response(returnStr)
         pin = '0000'
         if not returnValue == None:
@@ -105,13 +119,13 @@ class Agent(dbus.service.Object):
     @dbus.service.method(AGENT_INTERFACE,
                          in_signature="ouq", out_signature="")
     def DisplayPasskey(self, device, passkey, entered):
-        message_list = ['ENTER_PIN', str(passkey) ]
+        message_list = ['ENTER_PIN', str(passkey)]
         return_status('NOTIFICATION', message_list)
 
     @dbus.service.method(AGENT_INTERFACE,
                          in_signature="os", out_signature="")
     def DisplayPinCode(self, device, pincode):
-        message_list = ['ENTER_PIN', str(pincode) ]
+        message_list = ['ENTER_PIN', str(pincode)]
         return_status('NOTIFICATION', message_list)
 
     @dbus.service.method(AGENT_INTERFACE,
@@ -119,31 +133,30 @@ class Agent(dbus.service.Object):
     def RequestConfirmation(self, device, passkey):
         message_list = ['CONFIRM_PASSKEY', passkey]
         return_status('YESNO_INPUT', message_list)
-        returnStr = raw_input('Confirm Passkey:')
+        returnStr = input('Confirm Passkey:')
         returnValue = decode_response(returnStr)
         if returnValue == 'YES':
-                return
+            return
         raise Rejected("Passkey doesn't match")
-
 
     @dbus.service.method(AGENT_INTERFACE,
                          in_signature="o", out_signature="")
     def RequestAuthorization(self, device):
         message_list = ['AUTHORIZE_DEVICE', device]
         return_status('YESNO_INPUT', message_list)
-        returnStr = raw_input('AUTHORIZE Device:')
+        returnStr = input('AUTHORIZE Device:')
         returnValue = decode_response(returnStr)
         if returnValue.keys()[0] == 'RETURN_VALUE':
             if returnValue == 'YES':
                 return
             raise Rejected("Passkey doesn't match")
-        
 
 
 def pair_successful():
     set_trusted(dev_path, True)
     agent.set_return(0, None)
     mainloop.quit()
+
 
 def pair_error(error):
     set_trusted(dev_path, False)
@@ -176,7 +189,6 @@ if __name__ == '__main__':
                       default=60000)
     (options, args) = parser.parse_args()
 
-
     agent = Agent(bus, AGENT_PATH)
     mainloop = GObject.MainLoop()
     obj = bus.get_object(BUS_NAME, "/org/bluez")
@@ -188,7 +200,7 @@ if __name__ == '__main__':
             device = bluezutils.find_device(args[0],
                                             options.adapter_pattern)
         except:
-            return_status('DEVICE_NOT_FOUND' , ['Device not Found' ])
+            return_status('DEVICE_NOT_FOUND', ['Device not Found'])
             exit(1)
         dev_path = device.object_path
         agent.set_exit_on_release(False)
@@ -200,7 +212,6 @@ if __name__ == '__main__':
     manager.UnregisterAgent(AGENT_PATH)
 
     if agent.error_message is not None:
-        return_status('PAIRING_FAILED', [agent.error_message ])
+        return_status('PAIRING_FAILED', [agent.error_message])
     else:
         return_status('PAIRING_OK', [])
-    

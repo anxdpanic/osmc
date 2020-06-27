@@ -1,4 +1,3 @@
-import connman
 import dbus
 import time
 import subprocess
@@ -8,7 +7,9 @@ import os
 import os.path
 import requests
 import socket
-import osmc_systemd
+
+from . import connman
+from . import osmc_systemd
 
 WIRELESS_AGENT = 'osmc_wireless_agent.py'
 
@@ -23,6 +24,7 @@ PREESEED_TEMP_LOCATION = '/tmp/preseed.tmp'
 PREESEED_LOCATION = '/boot/preseed.cfg'
 
 WAIT_FOR_NETWORK_SERVICE = 'connman-wait-for-network.service'
+
 
 def is_ethernet_enabled():
     return connman.is_technology_enabled('ethernet') or not get_nfs_ip_cmdline_value() == None
@@ -41,7 +43,9 @@ def get_ethernet_settings():
         if path.startswith(ETHERNET_PATH):
             settings = extract_network_properties(dbus_properties)
             if settings:
-                eth_settings = {'path': path }
+                eth_settings = {
+                    'path': path
+                }
                 eth_settings.update(settings)
             return eth_settings
 
@@ -90,7 +94,7 @@ def extract_network_properties(dbus_properties):
     # get IPv4 Data
     ipv4_settings = {}
     ipv4_props = dbus_properties['IPv4']
-    for key in {'Method', 'Address', 'Netmask','Gateway'}:
+    for key in {'Method', 'Address', 'Netmask', 'Gateway'}:
         if key in ipv4_props:
             ipv4_settings[key] = str(ipv4_props[key])
         else:
@@ -98,7 +102,7 @@ def extract_network_properties(dbus_properties):
     # get IPv6 Data
     ipv6_settings = {}
     ipv6_props = dbus_properties['IPv6']
-    for key in {'Method', 'Address', 'PrefixLength','Gateway', 'Privacy'}:
+    for key in {'Method', 'Address', 'PrefixLength', 'Gateway', 'Privacy'}:
         if key in ipv6_props:
             ipv6_settings[key] = str(ipv6_props[key])
         else:
@@ -110,12 +114,16 @@ def extract_network_properties(dbus_properties):
     for nameserver in nameservers:
         DNS_settings['DNS_' + str(count)] = str(nameserver)
         count += 1
-    for count in range(1,3):
+    for count in range(1, 3):
         if 'DNS_' + str(count) not in DNS_settings:
             DNS_settings['DNS_' + str(count)] = None
     eth_props = dbus_properties['Ethernet']
-    settings = {'IPV4': ipv4_settings, 'Nameservers': DNS_settings,
-                 'State' : str(dbus_properties['State']),  'Interface' : str(eth_props['Interface'])}
+    settings = {
+        'IPV4': ipv4_settings,
+        'Nameservers': DNS_settings,
+        'State': str(dbus_properties['State']),
+        'Interface': str(eth_props['Interface'])
+    }
     return settings
 
 
@@ -123,9 +131,11 @@ def apply_network_changes(settings_dict, internet_protocol):
     if settings_dict[internet_protocol]['Method'] in ['manual', 'dhcp']:  # non NFS setup
         path = settings_dict['path']
         service = connman.get_service_interface(path)
-        ipv4_configuration = {'Method': make_variant(settings_dict[internet_protocol]['Method']),
-                              'Address': make_variant(settings_dict[internet_protocol]['Address']),
-                              'Netmask': make_variant(settings_dict[internet_protocol]['Netmask'])}
+        ipv4_configuration = {
+            'Method': make_variant(settings_dict[internet_protocol]['Method']),
+            'Address': make_variant(settings_dict[internet_protocol]['Address']),
+            'Netmask': make_variant(settings_dict[internet_protocol]['Netmask'])
+        }
         if settings_dict[internet_protocol]['Gateway']:
             ipv4_configuration['Gateway'] = make_variant(settings_dict[internet_protocol]['Gateway'])
         service.SetProperty('IPv4.Configuration', ipv4_configuration)
@@ -137,7 +147,7 @@ def apply_network_changes(settings_dict, internet_protocol):
             dns = []
             if 'DNS_1' in namesevers and namesevers['DNS_1']:
                 dns.append(namesevers['DNS_1'])
-            if 'DNS_2' in namesevers  and namesevers['DNS_2']:
+            if 'DNS_2' in namesevers and namesevers['DNS_2']:
                 dns.append(namesevers['DNS_2'])
         # duplicate SetProperty message works around connman dns forwarder bug
         service.SetProperty('Nameservers.Configuration', dbus.Array(dns, signature=dbus.Signature('s')))
@@ -181,7 +191,11 @@ def update_cmdline_file(file_path, key, value):
 def split_nfs_static_cmdlline(value):
     nfs_static = None
     connection_details = value.split(':')
-    ip_settings = {'Address': connection_details[0], 'Gateway': connection_details[2], 'Netmask': connection_details[3]}
+    ip_settings = {
+        'Address': connection_details[0],
+        'Gateway': connection_details[2],
+        'Netmask': connection_details[3]
+    }
     nameservers_settings = {}
     if len(connection_details) > 7:
         nameservers_settings['DNS_1'] = connection_details[7]
@@ -192,9 +206,15 @@ def split_nfs_static_cmdlline(value):
     else:
         nameservers_settings['DNS_2'] = None
     if is_valid_ipv6_address(ip_settings['Address']):
-        nfs_static = {'IPV6': ip_settings, 'Nameservers' : nameservers_settings}
+        nfs_static = {
+            'IPV6': ip_settings,
+            'Nameservers': nameservers_settings
+        }
     if is_valid_ipv4_address(ip_settings['Address']):
-        nfs_static = {'IPV4': ip_settings, 'Nameservers' : nameservers_settings}
+        nfs_static = {
+            'IPV4': ip_settings,
+            'Nameservers': nameservers_settings
+        }
     return nfs_static
 
 
@@ -203,9 +223,9 @@ def create_cmdline_nfs_manual_string(settings_dict, internet_protocol):
                  '::' + settings_dict[internet_protocol]['Gateway'] + ':' + \
                  settings_dict[internet_protocol]['Netmask']
     cmd_string += ':osmc:eth0:off'
-    for int in range(1,3):
+    for int in range(1, 3):
         count = str(int)
-        if 'DNS_'+count in settings_dict['Nameservers'] and settings_dict['Nameservers']['DNS_' + count]:
+        if 'DNS_' + count in settings_dict['Nameservers'] and settings_dict['Nameservers']['DNS_' + count]:
             cmd_string = cmd_string + ':' + settings_dict['Nameservers']['DNS_' + count]
     return cmd_string
 
@@ -219,7 +239,12 @@ def get_non_connman_connection_details():
     # parse ifconfig using re
     data = re.findall(r'^(\S+).*?inet addr:(\S+).*?Mask:(\S+)', ifconfig_data, re.S | re.M)
     (name, address, netmask) = data[0]
-    device_settings = {'IPV4': {'Address': address, 'Netmask': netmask} }
+    device_settings = {
+        'IPV4': {
+            'Address': address,
+            'Netmask': netmask
+        }
+    }
     # parse resolve.conf for DNS
     resolve_conf_file = open('/etc/resolv.conf', 'r')
     resolve_conf_data = resolve_conf_file.read()
@@ -231,15 +256,17 @@ def get_non_connman_connection_details():
             ip = line.replace('nameserver ', '').strip()
             if is_valid_ip_address(ip):  # IPV4 address
                 device_settings['Nameservers']['DNS_' + str(count)] = str(ip)
-    for count in range(1,3):
+    for count in range(1, 3):
         if 'DNS_' + str(count) not in device_settings['Nameservers']:
             device_settings['Nameservers']['DNS_' + str(count)] = None
     # get default gateway
     proc = subprocess.Popen(['/sbin/route', '-n'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (route_data, stderr) = proc.communicate()
     proc.wait()
+    if isinstance(route_data, bytes):
+        route_data = route_data.decode('utf-8', 'ignore')
     for line in route_data.split('\n'):
-        if line.startswith('0.0.0.0'):# IPv4
+        if line.startswith('0.0.0.0'):  # IPv4
             split = [value.strip() for value in line.split('    ')]
             device_settings['IPV4']['Gateway'] = split[2]
     return device_settings
@@ -280,8 +307,11 @@ def get_wifi_networks():
         path = str(entry[0])
         dbus_properties = entry[1]
         if path.startswith(WIFI_PATH):
-            wifi_settings = {'path': str(path), 'Strength': int(dbus_properties['Strength']),
-                             'State' : str(dbus_properties['State'])}
+            wifi_settings = {
+                'path': str(path),
+                'Strength': int(dbus_properties['Strength']),
+                'State': str(dbus_properties['State'])
+            }
             security_props = dbus_properties['Security']
             if len(security_props) > 0:
                 wifi_settings['Security'] = str(security_props[0])
@@ -304,8 +334,7 @@ def get_wifi_networks():
     return interfaces
 
 
-
-def wifi_connect(path, password=None, ssid=None, script_base_path = None):
+def wifi_connect(path, password=None, ssid=None, script_base_path=None):
     agentNeeded = False
     if password or ssid:
         agentNeeded = True
@@ -321,23 +350,23 @@ def wifi_connect(path, password=None, ssid=None, script_base_path = None):
         keyfile.close()
         agent_script = script_base_path + WIRELESS_AGENT
         process = subprocess.Popen([sys.executable, agent_script, 'fromfile'])
-    print ('Attempting connection to ' + path )
+    print('Attempting connection to ' + path)
     service = connman.get_service_interface(path)
     connected = 1
     connectionAttempts = 20
     while connected != 0 and connected < (connectionAttempts + 1):
         try:
-             service.Connect(timeout=15000)
-             connected = 0
-        except dbus.DBusException, e:
+            service.Connect(timeout=15000)
+            connected = 0
+        except dbus.DBusException as e:
             if len(e.args) > 0 and e.args[0] == 'Not registered' and agentNeeded:
                 connected += 1
                 time.sleep(1)
-                print 'Connection agent not started yet, waiting a second'
-            else: # another type of exception jump out of the loop
-                connected = (connectionAttempts+1)
-                print 'DBusException Raised: ' +  str(e)
-    print ('Connection to ' + path + ' : ' + str(connected == 0))
+                print('Connection agent not started yet, waiting a second')
+            else:  # another type of exception jump out of the loop
+                connected = (connectionAttempts + 1)
+                print('DBusException Raised: ' + str(e))
+    print('Connection to ' + path + ' : ' + str(connected == 0))
     if agentNeeded:
         process.kill()
         os.remove('/tmp/preseed_data')
@@ -348,8 +377,8 @@ def wifi_disconnect(path):
     service = connman.get_service_interface(path)
     try:
         service.Disconnect()
-    except dbus.DBusException, e:
-        print ('DBusException disconnecting')
+    except dbus.DBusException as e:
+        print('DBusException disconnecting')
         connected = False
 
 
@@ -357,17 +386,18 @@ def wifi_remove(path):
     service = connman.get_service_interface(path)
     try:
         service.Remove()
-    except dbus.DBusException, e:
-        print ('DBusException removing')
+    except dbus.DBusException as e:
+        print('DBusException removing')
         connected = False
 
 
 def get_connected_wifi():
-    for address, wifis in get_wifi_networks().iteritems():
-        for ssid, value in wifis.iteritems():
+    for address, wifis in get_wifi_networks().items():
+        for ssid, value in wifis.items():
             if value['State'] in ('online', 'ready'):
                 return value
     return {}
+
 
 def has_network_connection(online):
     ethernet_settings = get_ethernet_settings()
@@ -378,16 +408,16 @@ def has_network_connection(online):
                     return True
             else:
                 if ethernet_settings['State'] in ('ready', 'online'):
-                    return True                    
+                    return True
         for internet_protocol in ['IPV4', 'IPV6']:
             if internet_protocol in ethernet_settings:
                 if 'Method' in ethernet_settings[internet_protocol]:
                     if ethernet_settings[internet_protocol]['Method'].startswith('nfs_'):
                         if online:
                             return check_MS_NCSI_response()
-                        else: # if we on NFS we have network
+                        else:  # if we on NFS we have network
                             True
-    for address, wifis in get_wifi_networks().iteritems():
+    for address, wifis in get_wifi_networks().items():
         for ssid in wifis.keys():
             info = wifis[ssid]
             if online:
@@ -420,12 +450,14 @@ def parse_preseed():
             if entry.startswith('d-i network/') and len(entry.strip()) > 0:
                 string = entry.replace('d-i network/', '')
                 key = string[:string.find(' ')]
-                string = string[string.find(' ')+1:]
+                string = string[string.find(' ') + 1:]
                 type = string[:string.find(' ')]
-                value = string[string.find(' ')+1:]
+                value = string[string.find(' ') + 1:]
                 preseed_info[key] = value
         # convert preseed format into the same format we are using in the rest of the code
-        network_settings = {'Interface': preseed_info['interface']}
+        network_settings = {
+            'Interface': preseed_info['interface']
+        }
         if 'wlan' in preseed_info['interface']:
             network_settings['SSID'] = preseed_info['ssid']
             if 'wlan_key' in preseed_info:
@@ -446,7 +478,7 @@ def parse_preseed():
 
 
 def is_connman_wait_for_network_enabled():
-    return osmc_systemd.is_service_enabled(WAIT_FOR_NETWORK_SERVICE);
+    return osmc_systemd.is_service_enabled(WAIT_FOR_NETWORK_SERVICE)
 
 
 def toggle_wait_for_network(state):
