@@ -372,6 +372,9 @@ class APF_STORE(object):
 
                 fnull.close()
 
+                if isinstance(output, bytes):
+                    output = output.decode('utf-8')
+
                 if "ok installed" in output:
                     log('%s IS Installed' % apf.name)
 
