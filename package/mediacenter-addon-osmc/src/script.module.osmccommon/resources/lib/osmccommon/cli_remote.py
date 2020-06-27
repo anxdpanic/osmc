@@ -2,10 +2,11 @@
 
 import curses
 import json
-import requests
 import sys
 
-settings = {
+import requests
+
+_settings = {
     'ip': '127.0.0.1',
     'port': '80',
     'user': '',
@@ -13,7 +14,7 @@ settings = {
 
 }
 
-keymap = {
+_keymap = {
 
     'i': 'ip',
     'p': 'port',
@@ -24,9 +25,9 @@ keymap = {
 try:
     with open('/home/osmc/cli_remote.conf', 'r') as f:
         lines = f.readlines()
-        single = ''.join(lines)
-        raw_sets = json.loads(single)
-        settings.update(raw_sets)
+    single = ''.join(lines)
+    raw_sets = json.loads(single)
+    _settings.update(raw_sets)
 except:
 
     print('USAGE     : cli-remote i=Your_ip_address p=your_port u=your_username w=your_password')
@@ -48,9 +49,9 @@ except:
     for arg in sys.argv[1:]:
         try:
             k, v = arg.split('=')
-            key = keymap.get(k, None)
+            key = _keymap.get(k, None)
             if key is not None:
-                settings[key] = v
+                _settings[key] = v
 
         except:
             continue
@@ -74,10 +75,10 @@ def call(settings, action, params=None):
 
     data = data.replace('"true"', 'true').replace('"false"', 'false')
 
-    r = requests.post(url, data=data, headers=headers, auth=(settings['user'], settings['pssw']))
+    _ = requests.post(url, data=data, headers=headers, auth=(settings['user'], settings['pssw']))
 
 
-def call_keyboard(settings, text, params=None):
+def call_keyboard(settings, text):
     url = 'http://%s:%s/jsonrpc' % (settings['ip'], settings['port'])
     headers = {
         'Content-Type': 'application/json'
@@ -91,7 +92,7 @@ def call_keyboard(settings, text, params=None):
         "id": 1
     }
     data = json.dumps(command)
-    r = requests.post(url, data=data, headers=headers, auth=(settings['user'], settings['pssw']))
+    _ = requests.post(url, data=data, headers=headers, auth=(settings['user'], settings['pssw']))
 
 
 def test(settings):
@@ -104,7 +105,7 @@ def test(settings):
                           "method": "JSONRPC.Ping",
                           "id": 1
                       })
-    r = requests.post(url, data=data, headers=headers, auth=(settings['user'], settings['pssw']))
+    _ = requests.post(url, data=data, headers=headers, auth=(settings['user'], settings['pssw']))
     data = json.dumps({
                           "jsonrpc": "2.0",
                           "method": "GUI.ShowNotification",
@@ -114,7 +115,7 @@ def test(settings):
                           },
                           "id": 1
                       })
-    r = requests.post(url, data=data, headers=headers, auth=(settings['user'], settings['pssw']))
+    _ = requests.post(url, data=data, headers=headers, auth=(settings['user'], settings['pssw']))
 
 
 def redraw(stdscr):
@@ -239,7 +240,7 @@ key_map = {
 }
 
 try:
-    test(settings)
+    test(_settings)
 except requests.ConnectionError:
     print('Failed to connect.')
     print('Ensure that Kodi is able to be controlled via HTTP')
@@ -249,7 +250,7 @@ except requests.ConnectionError:
 stdscr = curses.initscr()
 curses.cbreak()
 curses.nonl()
-stdscr.keypad(1)
+stdscr.keypad(True)
 
 redraw(stdscr)
 curses.noecho()
@@ -266,21 +267,21 @@ while key != ord('q'):
     key = stdscr.getch()
     stdscr.refresh()
 
-    action = key_map.get(key, {}).get('action', None)
-    params = key_map.get(key, {}).get('params', None)
-    name = key_map.get(key, {}).get('name', None)
+    _action = key_map.get(key, {}).get('action', None)
+    _params = key_map.get(key, {}).get('params', None)
+    _name = key_map.get(key, {}).get('name', None)
 
-    if action is not None:
+    if _action is not None:
         curses.setsyx(0, 0)
-        call(settings, action, params)
+        call(_settings, _action, _params)
         continue
 
     if key == ord('k'):
         curses.echo()
         redraw(stdscr)
         stdscr.addstr(0, 0, "<<< KEYBOARD MODE >>>")
-        text = stdscr.getstr(0, 23)
-        call_keyboard(settings, text)
+        _text = stdscr.getstr(0, 23)
+        call_keyboard(_settings, _text)
         curses.noecho()
         redraw(stdscr)
 

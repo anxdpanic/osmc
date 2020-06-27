@@ -14,12 +14,14 @@ class LangRetriever(object):
 
         """
 
-    def __init__(self, addon):
+    def __init__(self, addon=None):
 
         self.__addon__ = addon
         self._py2 = sys.version_info.major == 2
 
     def lang(self, string_id):
+        if self.__addon__ is None:
+            return str(string_id)
 
         if self.__addon__ is not None:
 

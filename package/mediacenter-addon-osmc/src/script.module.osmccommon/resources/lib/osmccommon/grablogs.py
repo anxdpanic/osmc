@@ -10,23 +10,28 @@ import traceback
 
 from datetime import datetime
 
+from .osmc_language import LangRetriever
+from .osmc_logging import StandardLogger
+
+addonid = "script.module.osmccommon"
 try:
 
     import xbmc
     import xbmcgui
     import xbmcaddon
 
-    addonid = "script.module.osmccommon"
     __addon__ = xbmcaddon.Addon(addonid)
-
     DIALOG = xbmcgui.Dialog()
-
-    CALLER = 'kodi'
-
 except ImportError:
+    xbmc = None
+    xbmcgui = None
+    xbmcaddon = None
 
-    CALLER = 'user'
+    __addon__ = None
+    DIALOG = None
 
+log = StandardLogger(addonid, os.path.basename(__file__)).log
+lang = LangRetriever(__addon__).lang
 PY2 = sys.version_info.major == 2
 
 SECTION_START = '\n====================== %s =================== %s\n'
@@ -521,24 +526,6 @@ SETS = {
 }
 
 
-def lang(string_id):
-    if PY2:
-        return __addon__.getLocalizedString(string_id).encode('utf-8', 'ignore')
-    return __addon__.getLocalizedString(string_id)
-
-
-def log(message):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
-
-    try:
-        xbmc.log('OSMC LOGGING ' + message, level=xbmc.LOGDEBUG)
-    except:
-        print('OSMC LOGGING ' + message)
-
-
 class CommandLine(object):
 
     def __init__(self, command_list):
@@ -794,7 +781,7 @@ class Main(object):
 
             os.popen('sudo cp -rf %s /boot/' % TEMP_LOG_FILE)
 
-            if CALLER == 'kodi':
+            if xbmc:
                 _ = DIALOG.ok(lang(32013), lang(32040))
 
             else:
@@ -821,7 +808,7 @@ class Main(object):
 
                         key = line.replace('{"key":"', '').replace('"}', '').replace('\n', '')
 
-                        if CALLER != 'user':
+                        if xbmc:
                             log('pastio line: %s' % repr(line))
 
                     if not key:
@@ -846,7 +833,7 @@ class Main(object):
                     log('Exception Details:\n')
                     log(upload_exception)
 
-                if CALLER == 'kodi':
+                if xbmc:
 
                     self.copy_to_boot = DIALOG.yesno(lang(32013), '[CR]'.join([lang(32023), lang(32039)]))
 
@@ -863,7 +850,7 @@ class Main(object):
 
                 self.url = UPLOAD_LOC + '/ %s' % key
 
-                if CALLER == 'kodi':
+                if xbmc:
 
                     _ = DIALOG.ok(lang(32013), lang(32014) % self.url)
 
@@ -875,7 +862,7 @@ class Main(object):
 
 if __name__ == "__main__":
 
-    if CALLER == 'user':
+    if not xbmc:
         copy, termprint = parse_arguments()
     else:
         copy, termprint = retrieve_settings()

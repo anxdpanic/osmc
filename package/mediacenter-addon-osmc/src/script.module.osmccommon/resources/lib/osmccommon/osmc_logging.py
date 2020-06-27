@@ -1,9 +1,14 @@
+import sys
 import time
 from functools import wraps
 
-import xbmc
+try:
+    import xbmc
+except:
+    xbmc = None
 
 TEST_LOG_BOOL = True
+PY2 = sys.version_info.major == 2
 
 
 def test_logger(msg):
@@ -19,23 +24,37 @@ class StandardLogger(object):
 
         """
 
-    def __init__(self, addonid):
+    def __init__(self, addonid='osmc', module=''):
         self.addonid = addonid
+        self.module = module
 
     def log(self, message, label=''):
 
-        try:
-            message = str(message)
-        except UnicodeEncodeError:
-            message = message.encode('utf-8', 'ignore')
+        if isinstance(message, bytes):
+            message = message.decode('utf-8', 'ignore')
 
-        try:
-            label = str(label)
-        except UnicodeEncodeError:
-            label = label.encode('utf-8', 'ignore')
+        if PY2 and isinstance(message, unicode):
+            message = message.encode('utf-8')
 
-        logmsg = '%s : %s - %s ' % (self.addonid, str(label), str(message))
-        xbmc.log(msg=logmsg, level=xbmc.LOGDEBUG)
+        if isinstance(label, bytes):
+            label = label.decode('utf-8', 'ignore')
+
+        if PY2 and isinstance(label, unicode):
+            label = label.encode('utf-8')
+
+        if label and self.module:
+            logmsg = '%s[%s] : %s - %s ' % (self.addonid, self.module, label, message)
+        elif label:
+            logmsg = '%s : %s - %s ' % (self.addonid, label, message)
+        elif self.module:
+            logmsg = '%s[%s] : %s ' % (self.addonid, self.module, message)
+        else:
+            logmsg = '%s : %s ' % (self.addonid, message)
+
+        if xbmc:
+            xbmc.log(msg=logmsg, level=xbmc.LOGDEBUG)
+        else:
+            print(logmsg)
 
 
 def ComprehensiveLogger(logger=None, logging=True, maxlength=250, nowait=False):
@@ -48,10 +67,10 @@ def ComprehensiveLogger(logger=None, logging=True, maxlength=250, nowait=False):
         maxlength:	[opt] integer, sets the maximum length an argument or returned variable cant take, default 25
         nowait:		[opt] boolean, instructs the logger not to wait for the function to finish, default is False
     """
+    standard_logger = StandardLogger()
 
     def default_logger(msg):
-
-        print(msg)
+        standard_logger.log(msg)
 
     if logger is None:
         logger = default_logger
@@ -107,16 +126,3 @@ def ComprehensiveLogger(logger=None, logging=True, maxlength=250, nowait=False):
 
 
 clog = ComprehensiveLogger
-
-
-@clog(logging=TEST_LOG_BOOL)
-def arg_tester(a, b, cdef):
-    print('a: ' + str(a))
-
-    print('b: ' + str(b))
-
-    print('cdef: ' + str(cdef))
-
-
-if __name__ == "__main__":
-    arg_tester('han', ['chewie', 'luke'], cdef='123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890')
