@@ -1,1 +1,1 @@
-__all__ = ['CompLogger', 'remote_gui', 'remote_remotes']
+__all__ = ['remote_gui', 'remote_remotes']

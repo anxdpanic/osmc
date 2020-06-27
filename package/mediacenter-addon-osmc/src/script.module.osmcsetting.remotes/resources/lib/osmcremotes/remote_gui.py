@@ -4,19 +4,17 @@ import xbmcaddon
 import xbmcgui
 
 # Standard modules
-import sys
 import os
 import subprocess
 import threading
 
 # OSMC SETTING Modules
-from .CompLogger import comprehensive_logger as clog
+from osmccommon.osmc_logging import StandardLogger
+from osmccommon.osmc_language import LangRetriever
 
 addonid = "script.module.osmcsetting.remotes"
 __addon__ = xbmcaddon.Addon("script.module.osmcsetting.remotes")
 __path__ = xbmc.translatePath(xbmcaddon.Addon(addonid).getAddonInfo('path'))
-
-PY2 = sys.version_info.major == 2
 
 DIALOG = xbmcgui.Dialog()
 
@@ -33,21 +31,8 @@ if not os.path.isdir(ETC_LIRC):
     LIRCD_PATH = '/home/plaskev/temp/lirc/lircd.conf'
     ETC_LIRC = '/home/plaskev/temp/lirc'
 
-
-def log(message):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
-
-    xbmc.log('REMOTE: ' + str(message), level=xbmc.LOGDEBUG)
-
-
-@clog(log)
-def lang(string_id):
-    if PY2:
-        return __addon__.getLocalizedString(string_id).encode('utf-8', 'ignore')
-    return __addon__.getLocalizedString(string_id)
+lang = LangRetriever(__addon__).lang
+log = StandardLogger(addonid, os.path.basename(__file__)).log
 
 
 def construct_listitem(conf):
@@ -71,8 +56,8 @@ def construct_listitem(conf):
 
         tmp = xbmcgui.ListItem(label=name, label2=name2)
         tmp.setArt({
-                       'thumb': image_path
-                   })
+            'thumb': image_path
+        })
 
     else:
 
