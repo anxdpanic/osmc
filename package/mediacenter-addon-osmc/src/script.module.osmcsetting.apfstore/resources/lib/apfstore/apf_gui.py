@@ -10,7 +10,9 @@ import socket
 import json
 
 # OSMC SETTING Modules
-from .CompLogger import comprehensive_logger as clog
+from osmccommon.osmc_logging import clog
+from osmccommon.osmc_logging import StandardLogger
+from osmccommon.osmc_language import LangRetriever
 
 addonid = "script.module.osmcsetting.apfstore"
 __addon__ = xbmcaddon.Addon(addonid)
@@ -19,23 +21,10 @@ __path__ = xbmc.translatePath(xbmcaddon.Addon(addonid).getAddonInfo('path'))
 ADDONART = os.path.join(__path__, 'resources', 'skins', 'Default', 'media')
 USERART = os.path.join(xbmc.translatePath('special://userdata/'), 'addon_data ', addonid)
 
-PY2 = sys.version_info.major == 2
 PY3 = sys.version_info.major == 3
 
-
-def lang(string_id):
-    if PY2:
-        return __addon__.getLocalizedString(string_id).encode('utf-8', 'ignore')
-    return __addon__.getLocalizedString(string_id)
-
-
-def log(message):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
-
-    xbmc.log('OSMC APFStore gui : ' + str(message), level=xbmc.LOGDEBUG)
+lang = LangRetriever(__addon__).lang
+log = StandardLogger(addonid, os.path.basename(__file__)).log
 
 
 class apf_GUI(xbmcgui.WindowXMLDialog):
