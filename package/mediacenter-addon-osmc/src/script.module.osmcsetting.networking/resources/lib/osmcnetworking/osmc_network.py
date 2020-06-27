@@ -416,7 +416,7 @@ def has_network_connection(online):
                         if online:
                             return check_MS_NCSI_response()
                         else:  # if we on NFS we have network
-                            True
+                            return True
     for address, wifis in get_wifi_networks().items():
         for ssid in wifis.keys():
             info = wifis[ssid]

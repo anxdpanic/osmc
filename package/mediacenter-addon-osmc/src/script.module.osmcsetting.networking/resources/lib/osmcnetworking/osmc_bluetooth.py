@@ -1,22 +1,28 @@
+import os
 import sys
 import pexpect
 import json
+
+from osmccommon.osmc_logging import StandardLogger
+from osmccommon.osmc_language import LangRetriever
 
 from . import connman
 from . import bluetooth
 from . import osmc_systemd
 
-RUNNING_IN_KODI = True
-
-# XBMC Modules
+addonid = 'script.module.osmcsetting.networking'
 try:
     import xbmc
     import xbmcgui
     import xbmcaddon
-except:
-    RUNNING_IN_KODI = False
 
-PY2 = sys.version_info.major == 2
+    __addon__ = xbmcaddon.Addon(addonid)
+except ImportError:
+    xbmc = None
+    xbmcgui = None
+    xbmcaddon = None
+
+    __addon__ = None
 
 DEVICE_PATH = 'org.bluez.Device1'
 PAIRING_AGENT = 'osmc_bluetooth_agent.py'
@@ -26,20 +32,8 @@ BLUETOOTH_SERVICE = 'bluetooth.service'
 PEXPECT_SOL = 'SOL@'
 PEXPECT_EOL = '@EOL'
 
-__addon__ = xbmcaddon.Addon('script.module.osmcsetting.networking')
-
-
-def log(message):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
-
-    msg_str = 'OSMC_BLUETOOTH -  ' + str(message)
-    if RUNNING_IN_KODI:
-        xbmc.log(msg_str, level=xbmc.LOGDEBUG)
-    else:
-        print(msg_str)
+log = StandardLogger(addonid, os.path.basename(__file__)).log
+lang = LangRetriever(__addon__).lang
 
 
 def is_bluetooth_available():
@@ -205,7 +199,7 @@ def pair_using_agent(deviceAddress, scriptBasePath=''):
                 break
             if return_value == 'DEVICE_NOT_FOUND':
                 return False  # return early no need to call remove_device()
-            if RUNNING_IN_KODI:
+            if xbmc:
                 deviceAlias = get_device_property(deviceAddress, 'Alias')
                 returnValue = handleAgentInteraction(deviceAlias, return_value, messages)
                 if returnValue:
@@ -254,9 +248,3 @@ def handleAgentInteraction(deviceAlias, command, messages):
         return value
 
     return None
-
-
-def lang(string_id):
-    if PY2:
-        return __addon__.getLocalizedString(string_id).encode('utf-8', 'ignore')
-    return __addon__.getLocalizedString(string_id)

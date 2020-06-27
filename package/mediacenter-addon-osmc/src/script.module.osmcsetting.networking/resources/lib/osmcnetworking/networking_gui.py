@@ -2,7 +2,6 @@
 import os
 import socket
 import subprocess
-import sys
 import threading
 import traceback
 
@@ -11,13 +10,15 @@ import xbmcaddon
 import xbmcgui
 import xbmc
 
+from osmccommon.osmc_logging import StandardLogger
+from osmccommon.osmc_language import LangRetriever
+
 from . import osmc_bluetooth
 from . import osmc_network
 from .osmc_advset_editor import AdvancedSettingsEditor
 
-__addon__ = xbmcaddon.Addon('script.module.osmcsetting.networking')
-
-PY2 = sys.version_info.major == 2
+addonid = 'script.module.osmcsetting.networking'
+__addon__ = xbmcaddon.Addon(addonid)
 
 DIALOG = xbmcgui.Dialog()
 
@@ -25,21 +26,8 @@ WIFI_THREAD_NAME = 'wifi_population_thread'
 BLUETOOTH_THREAD_NAME = 'bluetooth_population_thread'
 WIFI_SCAN_THREAD_NAME = 'wifi_scan_thread'
 
-
-def log(message):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
-
-    xbmc.log(str(message), level=xbmc.LOGDEBUG)
-
-
-def lang(string_id):
-    if PY2:
-        return __addon__.getLocalizedString(string_id).encode('utf-8', 'ignore')
-    return __addon__.getLocalizedString(string_id)
-
+log = StandardLogger(addonid, os.path.basename(__file__)).log
+lang = LangRetriever(__addon__).lang
 
 gui_ids = {
 

@@ -111,7 +111,7 @@ class Agent(dbus.service.Object):
         returnValue = decode_response(returnStr)
         pin = '0000'
         if not returnValue == None:
-            pin = returnValue;
+            pin = returnValue
         message_list = ['ENTER_PIN', str(pin)]
         return_status('NOTIFICATION', message_list)
         return dbus.UInt32(pin)
