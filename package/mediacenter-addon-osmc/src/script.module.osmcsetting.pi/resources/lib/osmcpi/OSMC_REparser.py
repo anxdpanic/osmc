@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 """
 DICT OF ITEMS IN CONFIG WHICH AFFECT THIS KODI SETTING
 

@@ -3,9 +3,11 @@ import xbmc
 import xbmcaddon
 import xbmcgui
 import subprocess
-import sys
 import time
 import os
+
+from osmccommon.osmc_logging import StandardLogger
+from osmccommon.osmc_language import LangRetriever
 
 ACTION_PREVIOUS_MENU = 10
 ACTION_NAV_BACK = 92
@@ -13,27 +15,14 @@ SAVE = 5
 HEADING = 1
 ACTION_SELECT_ITEM = 7
 
-__addon__ = xbmcaddon.Addon("script.module.osmcsetting.pi")
+addonid = "script.module.osmcsetting.pi"
+__addon__ = xbmcaddon.Addon(addonid)
 scriptPath = __addon__.getAddonInfo('path')
 DIALOG = xbmcgui.Dialog()
 IMAGE = os.path.join(scriptPath, 'resources', 'osmc', 'FO_Icon.png')
 
-PY2 = sys.version_info.major == 2
-
-
-def lang(string_id):
-    if PY2:
-        return __addon__.getLocalizedString(string_id).encode('utf-8', 'ignore')
-    return __addon__.getLocalizedString(string_id)
-
-
-def log(message):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
-
-    xbmc.log('OSMC PI Config Editor' + str(message), level=xbmc.LOGDEBUG)
+log = StandardLogger(addonid, os.path.basename(__file__)).log
+lang = LangRetriever(__addon__).lang
 
 
 class ConfigEditor(xbmcgui.WindowXMLDialog):

@@ -1,1 +1,1 @@
-__all__ = ['CompLogger', 'config_editor', 'OSMC_REparser']
+__all__ = ['config_editor', 'OSMC_REparser']
