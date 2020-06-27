@@ -1,11 +1,13 @@
 import os
 import subprocess
-import sys
 import xbmcaddon
 import xbmcgui
 import xbmc
 from collections import OrderedDict
-from .CompLogger import comprehensive_logger as clog
+
+from osmccommon.osmc_logging import clog
+from osmccommon.osmc_logging import StandardLogger
+from osmccommon.osmc_language import LangRetriever
 
 ACTION_PREVIOUS_MENU = 10
 ACTION_NAV_BACK = 92
@@ -16,22 +18,8 @@ ACTION_SELECT_ITEM = 7
 addonid = "script.module.osmcsetting.services"
 __addon__ = xbmcaddon.Addon(addonid)
 
-PY2 = sys.version_info.major == 2
-
-
-def KodiLogger(message):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
-
-    xbmc.log('OSMC SERVICES ' + str(message), level=xbmc.LOGDEBUG)
-
-
-def lang(string_id):
-    if PY2:
-        return __addon__.getLocalizedString(string_id).encode('utf-8', 'ignore')
-    return __addon__.getLocalizedString(string_id)
+lang = LangRetriever(__addon__).lang
+log = StandardLogger(addonid, os.path.basename(__file__)).log
 
 
 class MaitreD(object):
@@ -39,21 +27,21 @@ class MaitreD(object):
     def __init__(self):
         self.services = {}
 
-    @clog(KodiLogger)
+    @clog(log)
     def enable_service(self, s_entry):
 
         for service in s_entry:
             os.system("sudo /bin/systemctl enable " + service)
             os.system("sudo /bin/systemctl start " + service)
 
-    @clog(KodiLogger)
+    @clog(log)
     def disable_service(self, s_entry):
 
         for service in s_entry:
             os.system("sudo /bin/systemctl disable " + service)
             os.system("sudo /bin/systemctl stop " + service)
 
-    @clog(KodiLogger)
+    @clog(log)
     def is_running(self, s_entry):
 
         for service in s_entry:
@@ -65,7 +53,7 @@ class MaitreD(object):
 
         return True
 
-    @clog(KodiLogger)
+    @clog(log)
     def is_enabled(self, s_entry):
 
         for service in s_entry:
@@ -78,7 +66,7 @@ class MaitreD(object):
 
         return True
 
-    @clog(KodiLogger, maxlength=500)
+    @clog(log, maxlength=500)
     def discover_services(self):
         """ Returns a dict of service tuples. {s_name: (entry, service_name, running, enabled)}
             s_name is the name shown in the GUI
@@ -95,8 +83,8 @@ class MaitreD(object):
                     s_name = lines.pop(0).replace('\n', '')
                     s_entry = [line.replace('\n', '') for line in lines]
 
-                    KodiLogger("MaitreD: Service Friendly Name: %s" % s_name)
-                    KodiLogger("MaitreD: Service Entry Point(s): %s" % s_entry)
+                    log("MaitreD: Service Friendly Name: %s" % s_name)
+                    log("MaitreD: Service Entry Point(s): %s" % s_entry)
 
                     enabled = self.is_enabled(s_entry)
                     runcheck = self.is_running(s_entry)
@@ -115,7 +103,7 @@ class MaitreD(object):
 
         return self.services
 
-    @clog(KodiLogger, maxlength=250)
+    @clog(log, maxlength=250)
     def process_user_changes(self, initiants, finitiants):
         """ User selection is a list of tuples (s_name::str, service_name::list, enable::bool) """
 
