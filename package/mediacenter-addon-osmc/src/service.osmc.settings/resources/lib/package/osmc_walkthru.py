@@ -1,5 +1,3 @@
-
-
 # XBMC modules
 import xbmc
 import xbmcaddon
@@ -16,115 +14,110 @@ import threading
 import traceback
 import xml.etree.ElementTree as ET
 
-sys.path.append(xbmc.translatePath(os.path.join(xbmcaddon.Addon().getAddonInfo('path'), 'resources','lib')))
-
 # Custom Modules
-import osmc_timezones
-import LICENSE
-import WARRANTY
+from . import osmc_timezones
+from . import LICENSE
+from . import WARRANTY
 
-EULA       = LICENSE.license
-WARR       = WARRANTY.warranty
-DIALOG     = xbmcgui.Dialog()
+EULA = LICENSE.license
+WARR = WARRANTY.warranty
+DIALOG = xbmcgui.Dialog()
 
-__addon__  = xbmcaddon.Addon()
+__addon__ = xbmcaddon.Addon()
 scriptPath = __addon__.getAddonInfo('path')
-
+PY2 = sys.version_info.major == 2
 
 PANEL_MAP = {
     'language': {
-                'order'                 :           1,
-                'panel_menu_item_id'    :           1002,
-                'visibility_controller' :           92000,
-                'default_control'       :           20010,
-                },
+        'order': 1,
+        'panel_menu_item_id': 1002,
+        'visibility_controller': 92000,
+        'default_control': 20010,
+    },
     'timezone': {
-                'order'                 :           2,
-                'panel_menu_item_id'    :           1003,
-                'visibility_controller' :           93000,
-                'default_control'       :           3001,
-                },
+        'order': 2,
+        'panel_menu_item_id': 1003,
+        'visibility_controller': 93000,
+        'default_control': 3001,
+    },
     'hostname': {
-                'order'                 :           3,
-                'panel_menu_item_id'    :           10035,
-                'visibility_controller' :           125000,
-                'default_control'       :           350010,
-                },
-    'SSH':      {
-                'order'                 :           4,
-                'panel_menu_item_id'    :           10037,
-                'visibility_controller' :           127000,
-                'default_control'       :           370010,
-                },
-    'TandC':    {
-                'order'                 :           5,
-                'panel_menu_item_id'    :           1004,
-                'visibility_controller' :           94000,
-                'default_control'       :           40010,
-                },
+        'order': 3,
+        'panel_menu_item_id': 10035,
+        'visibility_controller': 125000,
+        'default_control': 350010,
+    },
+    'SSH': {
+        'order': 4,
+        'panel_menu_item_id': 10037,
+        'visibility_controller': 127000,
+        'default_control': 370010,
+    },
+    'TandC': {
+        'order': 5,
+        'panel_menu_item_id': 1004,
+        'visibility_controller': 94000,
+        'default_control': 40010,
+    },
     'warranty': {
-                'order'                 :           6,
-                'panel_menu_item_id'    :           1007,
-                'visibility_controller' :           97000,
-                'default_control'       :           70010,
-                },
-    'networking':{
-                'order'                 :           7,
-                'panel_menu_item_id'    :           1006,
-                'visibility_controller' :           96000,
-                'default_control'       :           60010,
-                },
-    'skin':     {
-                'order'                 :           8,
-                'panel_menu_item_id'    :           1008,
-                'visibility_controller' :           98000,
-                'default_control'       :           80010,
-                },
-    'newsletter':{
-                'order'                 :           9,
-                'panel_menu_item_id'    :           1009,
-                'visibility_controller' :           99000,
-                'default_control'       :           90010,
-                },
-    'exit':     {
-                'order'                 :           10,
-                'panel_menu_item_id'    :           1005,
-                'visibility_controller' :           95000,
-                'default_control'       :           1005,
-                },
+        'order': 6,
+        'panel_menu_item_id': 1007,
+        'visibility_controller': 97000,
+        'default_control': 70010,
+    },
+    'networking': {
+        'order': 7,
+        'panel_menu_item_id': 1006,
+        'visibility_controller': 96000,
+        'default_control': 60010,
+    },
+    'skin': {
+        'order': 8,
+        'panel_menu_item_id': 1008,
+        'visibility_controller': 98000,
+        'default_control': 80010,
+    },
+    'newsletter': {
+        'order': 9,
+        'panel_menu_item_id': 1009,
+        'visibility_controller': 99000,
+        'default_control': 90010,
+    },
+    'exit': {
+        'order': 10,
+        'panel_menu_item_id': 1005,
+        'visibility_controller': 95000,
+        'default_control': 1005,
+    },
 }
 
 
 def log(message, level=xbmc.LOGDEBUG):
-
     try:
         message = str(message)
     except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore' )
+        message = message.encode('utf-8', 'ignore')
 
     xbmc.log(str(message), level=level)
 
 
-def lang(id):
-    san = __addon__.getLocalizedString(id).encode( 'utf-8', 'ignore' )
-    return san
+def lang(string_id):
+    if PY2:
+        return __addon__.getLocalizedString(string_id).encode('utf-8', 'ignore')
+    return __addon__.getLocalizedString(string_id)
 
 
 class mock_Networking_caller(object):
 
     def __init__(self, parent, net_call):
-
         self.ftr_running = False
-        self.timeout     = 0
+        self.timeout = 0
         self.parent = parent
         self.parent.internet_connected = True
 
     def start(self):
-
         pass
 
     def setDaemon(self, bool):
-
         pass
 
 
@@ -134,13 +127,12 @@ class Networking_caller(threading.Thread):
 
         super(Networking_caller, self).__init__()
 
-        self.daemon      = True
-        self.cancelled   = False
-        self.parent      = parent
-        self.net_call    = net_call
+        self.daemon = True
+        self.cancelled = False
+        self.parent = parent
+        self.net_call = net_call
         self.ftr_running = True
-        self.timeout     = 0
-
+        self.timeout = 0
 
     def run(self):
         """Calls Barkers method to check for network connection"""
@@ -171,12 +163,11 @@ class Networking_caller(threading.Thread):
 
 
 def close_walkthru_on_error(func):
-
     def wrapper(parent, *args, **kwargs):
 
         try:
             return func(parent, *args, **kwargs)
-        except Exception, e:
+        except Exception as e:
 
             log('============= Walkthru Error ====================', xbmc.LOGERROR)
             log(traceback.format_exc(), xbmc.LOGERROR)
@@ -187,35 +178,33 @@ def close_walkthru_on_error(func):
     return wrapper
 
 
-
-
 class walkthru_gui(xbmcgui.WindowXMLDialog):
 
-    def __init__(   self,
-                    strXMLname,
-                    strFallbackPath,
-                    strDefaultName,
-                    networking_instance,
-                    lang_rerun,
-                    selected_language,
-                    testing=False):
+    def __init__(self,
+                 strXMLname,
+                 strFallbackPath,
+                 strDefaultName,
+                 networking_instance,
+                 lang_rerun,
+                 selected_language,
+                 testing=False):
 
         self.testing = testing
 
         # the order of the panels, this list can be changed depending on the specific need
-        self.panel_order    = sorted(PANEL_MAP.keys(), key=lambda x: PANEL_MAP[x]['order'])
+        self.panel_order = sorted(PANEL_MAP.keys(), key=lambda x: PANEL_MAP[x]['order'])
 
         # the specific controlIDs for the main menu items and others, this is used by onFocus and saves recreating the list every time
-        self.menu_controls  = [v['panel_menu_item_id'] for v in PANEL_MAP.values()]
-        self.tz_controls    = [3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009]
-        self.skin_controls  = [80010, 80020]
+        self.menu_controls = [v['panel_menu_item_id'] for v in PANEL_MAP.values()]
+        self.tz_controls = [3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009]
+        self.skin_controls = [80010, 80020]
 
         # switch that identifies whether the internet is connected, there is also a flag to determine if the
         # networking panel has already been revealed.
         self.internet_connected = False
         self.networking_panel_revealed = False
 
-        #start a new thread that begins checking for an internet connection
+        # start a new thread that begins checking for an internet connection
         self.start_checking_for_internet(networking_instance)
 
         # this flag tells us whether the GUI has been reloaded due to language selection
@@ -245,20 +234,20 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         self.languages = self.get_languages()
 
         self.tz_control_map = {
-                        'Africa'    : 30010,
-                        'America'   : 30020,
-                        'Asia'      : 30030,
-                        'Atlantic'  : 30040,
-                        'Australia' : 30050,
-                        'Europe'    : 30060,
-                        'Indian'    : 30070,
-                        'Pacific'   : 30080,
-                        'UTC'       : 30090,
-                        }
+            'Africa': 30010,
+            'America': 30020,
+            'Asia': 30030,
+            'Atlantic': 30040,
+            'Australia': 30050,
+            'Europe': 30060,
+            'Indian': 30070,
+            'Pacific': 30080,
+            'UTC': 30090,
+        }
 
         self.selected_language = selected_language
-        self.selected_region   = None
-        self.selected_country  = None
+        self.selected_region = None
+        self.selected_country = None
 
         # textures for the skin image
         media_path = xbmc.translatePath(os.path.join(xbmcaddon.Addon().getAddonInfo('path'), 'resources', 'skins', 'Default', 'media'))
@@ -271,7 +260,6 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
         # this attribute is used to determine when the user is allowed to exit the walkthru using the Esc or Back buttons
         self.prevent_escape = True
-
 
     def onInit(self):
 
@@ -301,7 +289,6 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
             self.lang_rerun = False
             self.reveal_next_panel('language')
 
-
     def start_checking_for_internet(self, networking_instance):
         self.net_call = networking_instance
 
@@ -313,47 +300,39 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         self.internet_checker.setDaemon(True)
         self.internet_checker.start()
 
-
     def remove_coversheet(self):
-        ''' When the window is first loaded, this coversheet (repeated of the background) covers everything.
+        """ When the window is first loaded, this coversheet (repeated of the background) covers everything.
             This allows the controls in the background to be hidden discretely. This method simply removes the cover
-            sheet as the final step of the Init. '''
+            sheet as the final step of the Init. """
 
         self.getControl(123456789).setVisible(False)
 
-
     def hide_controls_on_init(self):
 
-        #hide all timezone, TandC and Apply buttons
+        # hide all timezone, TandC and Apply buttons
         for hide_this in [1003, 10035, 10037, 1004, 1005, 1006, 1007, 1008, 1009]:
-
             self.getControl(hide_this).setVisible(False)
 
         # hide the controls that determine panel visibility
-        for visibility_control in [93000,125000,127000,94000,95000, 96000, 97000, 98000, 99000]:
-
+        for visibility_control in [93000, 125000, 127000, 94000, 95000, 96000, 97000, 98000, 99000]:
             self.getControl(visibility_control).setVisible(False)
 
         # hide the language sub menus
         for tz in [3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009]:
-
-            self.getControl(tz*10).setVisible(False)
-
+            self.getControl(tz * 10).setVisible(False)
 
     def populate_language_controls(self):
 
         # populate the language control
-        for language_name, language_id in self.languages.iteritems():
-
-            self.tmp = xbmcgui.ListItem(label=language_name, label2='', thumbnailImage='')
+        for language_name, language_id in self.languages.items():
+            self.tmp = xbmcgui.ListItem(label=language_name, label2='')
 
             self.getControl(20010).addItem(self.tmp)
-
 
     def populate_timezone_controls(self):
 
         # populate the timezone controls
-        for region, countries in self.timezones.iteritems():
+        for region, countries in self.timezones.items():
 
             for country in countries:
 
@@ -361,10 +340,8 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
                 if not ctl_id: continue
 
-                self.tmp = xbmcgui.ListItem(label=country, label2='', thumbnailImage='')
-
+                self.tmp = xbmcgui.ListItem(label=country, label2='')
                 self.getControl(ctl_id).addItem(self.tmp)
-
 
     def get_languages(self):
         # try and find language files (Kodi 14.x)
@@ -418,21 +395,19 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
                 languages[language_name] = folder
         return languages
 
-
     def set_skin_image(self, skin):
 
-        ''' Sets the image for the skin preview '''
+        """ Sets the image for the skin preview """
 
         if skin == 'CONF':
             self.getControl(88888).setImage(self.conf_skin_image)
         else:
             self.getControl(88888).setImage(self.osmc_skin_image)
 
-
     def is_Vero(self):
-        '''
+        """
             Checks whether this is a Vero and whether the warranty info should be shown
-        '''
+        """
 
         # generate the URL
         with open('/proc/cmdline', 'r') as f:
@@ -446,7 +421,6 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
                 if setting.startswith('osmcdev='):
 
                     if 'vero' in setting or 'vero2' in setting:
-
                         log('Hardware is Vero')
 
                         return True
@@ -455,9 +429,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
         return False
 
-
     def apply_SSH_state_password(self):
-
 
         try:
 
@@ -477,7 +449,6 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
             log('ssh state change failed')
             log(traceback.format_exc())
 
-
     def apply_hostname_change(self):
 
         # INTERFACE TO CHANGE THE HOSTNAME
@@ -491,7 +462,6 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
             log('hostname change failed')
             log(traceback.format_exc())
 
-
     @close_walkthru_on_error
     def exit_proceedure(self):
 
@@ -502,7 +472,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         if self.selected_country != None:
 
             # set timezone
-            for reg, cnt in self.timezones.iteritems():
+            for reg, cnt in self.timezones.items():
 
                 if self.selected_country in cnt:
                     self.selected_region = reg
@@ -525,10 +495,9 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
         self.close()
 
-
     def still_checking_for_network(self):
-        ''' Checks to see if the internet checker has finished, and if not, shows a progress bar until complete or exit.
-            The internet checker will toggle the internet_connected bool if a connection is made.'''
+        """ Checks to see if the internet checker has finished, and if not, shows a progress bar until complete or exit.
+            The internet checker will toggle the internet_connected bool if a connection is made."""
 
         if self.internet_checker.ftr_running == True:
             # only display Please Wait Progress Bar if the ftr is still running
@@ -545,7 +514,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
             cnt += 1
 
-            prog = int(min(max(int(cnt/120.0*100),1),100))
+            prog = int(min(max(int(cnt / 120.0 * 100), 1), 100))
 
             self.pDialog.update(percent=prog)
 
@@ -562,14 +531,15 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         except:
             pass
 
-
     def enter_password(self, pass_store, confirm=True, hidden=True):
 
         mypass = None
 
         # show keyboard for the first password
-        kb = xbmc.Keyboard(pass_store, 'Please enter your password', hidden=hidden)
-
+        kb = xbmc.Keyboard()
+        kb.setDefault(pass_store)
+        kb.setHeading(lang(32038))
+        kb.setHiddenInput(hidden)
         kb.doModal()
 
         # only move on if the device has been given a name
@@ -590,8 +560,10 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
                     passhint = ''
 
                 # show keyboard
-                kb = xbmc.Keyboard(passhint, 'Please confirm your password', hidden=hidden)
-
+                kb = xbmc.Keyboard()
+                kb.setDefault(passhint)
+                kb.setHeading(lang(32039))
+                kb.setHiddenInput(hidden)
                 kb.doModal()
 
                 if not kb.isConfirmed():
@@ -607,7 +579,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
                     # if the passwords dont match, then give the user the option of entering via hidden or plain text kayboards
                     if pass1 != pass2 and hidden == True:
 
-                        plain_text_pass = DIALOG.yesno('Password mismatch', 'Would you like to enter your password in plain text?')
+                        plain_text_pass = DIALOG.yesno(lang(32040), lang(32041))
 
                         if plain_text_pass:
 
@@ -620,7 +592,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
                     # if the passwords dont match and they aren't hidden then alert the user and reshow the entry dialog
                     elif pass1 != pass2:
 
-                        ok = DIALOG.ok('Password mismatch', 'Your password entries did not match')
+                        _ = DIALOG.ok(lang(32040), lang(32042))
 
                         mypass = self.enter_password(pass_store, confirm=confirm, hidden=hidden)
 
@@ -629,7 +601,6 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
                         mypass = pass1
 
         return mypass
-
 
     def language_clicked(self, controlID):
 
@@ -657,23 +628,21 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
             # if not, then revert to the previous_language
             self.selected_language = self.previous_language
 
-
     def choose_hostname(self):
 
         # show keyboard
-        kb = xbmc.Keyboard(self.device_name.replace('current name: ', ''), 'Name your device')
-
+        kb = xbmc.Keyboard()
+        kb.setDefault(self.device_name.replace('current name: ', ''))
+        kb.setHeading(lang(32043))
         kb.doModal()
 
         # only move on if the device has been given a name
         if kb.isConfirmed():
-
             self.device_name = kb.getText()
 
-            self.getControl(350010).setLabel('current name: ' + self.device_name.replace('_',''))
+            self.getControl(350010).setLabel('current name: ' + self.device_name.replace('_', ''))
 
             self.getControl(350012).setVisible(True)
-
 
     def requesting_random_name(self):
 
@@ -682,7 +651,6 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         self.getControl(350010).setLabel('current name: ' + self.device_name)
 
         self.getControl(350012).setVisible(True)
-
 
     def toggle_ssh(self):
 
@@ -700,117 +668,119 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
             ctl.setLabel(lang(32037))
             self.setFocusId(370012)
 
-
     def enter_ssh_password(self):
 
         # show keyboard for the first password
         user_pass = self.enter_password(self.ssh_pass, confirm=True, hidden=True)
 
         if user_pass is not None:
-
             self.ssh_pass = user_pass
 
-            self.getControl(370011).setLabel('Click here to change/confirm password:    ' + self.ssh_pass.replace('_',''))
+            self.getControl(370011).setLabel(lang(32044) + '    ' + self.ssh_pass.replace('_', ''))
 
             self.getControl(370012).setVisible(True)
-
 
     def newsletter_signup(self, controlID):
 
         if controlID == 90010:
 
             # show keyboard
-            kb = xbmc.Keyboard(self.email, 'Please enter your email')
+            kb = xbmc.Keyboard()
+            kb.setDefault(self.email)
+            kb.setHeading(lang(32045))
             kb.doModal()
             if kb.isConfirmed():
                 self.email = kb.getText()
                 requests.post('https://osmc.tv/osmc/api/newsletter/?p=subscribe&id=1',
-                                data={'email': self.email, 'subscribe': 'subscribe', 'list[7]': 'signup', 'listname[7]': 'Device'}
-                            )
-
+                              data={
+                                  'email': self.email,
+                                  'subscribe': 'subscribe',
+                                  'list[7]': 'signup',
+                                  'listname[7]': 'Device'
+                              }
+                              )
 
     def get_selected_country(self, controlID):
 
         self.selected_country = self.getControl(controlID).getSelectedItem().getLabel()
 
-
     @close_walkthru_on_error
     def onClick(self, controlID):
 
-        if controlID == 1005:               # Exit control
+        if controlID == 1005:  # Exit control
 
             self.exit_proceedure()
 
-        elif controlID == 20010:            # language container
+        elif controlID == 20010:  # language container
 
             self.language_clicked(controlID)
 
             self.reveal_next_panel(current_panel='language')
 
-        elif controlID in [30010, 30020, 30030, 30040, 30050, 30060, 30070, 30080, 30090]: # timezone containers
+        elif controlID in [30010, 30020, 30030, 30040, 30050, 30060, 30070, 30080, 30090]:  # timezone containers
 
             self.get_selected_country(controlID)
 
             self.reveal_next_panel(current_panel='timezone')
 
-        elif controlID == 350010:           # choosing the hostname
+        elif controlID == 350010:  # choosing the hostname
 
             self.choose_hostname()
 
-        elif controlID == 350011:           # user has asked for a random name
+        elif controlID == 350011:  # user has asked for a random name
 
             self.requesting_random_name()
 
-        elif controlID == 350012:           # user has accepted the hostname
+        elif controlID == 350012:  # user has accepted the hostname
 
             self.reveal_next_panel(current_panel='hostname')
 
-        elif controlID == 370010:           # user wants to disable SSH service
+        elif controlID == 370010:  # user wants to disable SSH service
 
             self.toggle_ssh()
 
-        elif controlID == 370011:           # user wants to change the SSH password DEPRECATED
+        elif controlID == 370011:  # user wants to change the SSH password DEPRECATED
 
             # self.enter_ssh_password()
             pass
 
-        elif controlID == 370012:           # user has accepted the SSH settings
+        elif controlID == 370012:  # user has accepted the SSH settings
 
             self.reveal_next_panel(current_panel='SSH')
 
-        elif controlID == 40010:            # terms and conditions I Agree button
+        elif controlID == 40010:  # terms and conditions I Agree button
 
             self.reveal_next_panel(current_panel='TandC')
 
-        elif controlID == 70010:            # warranty I Agree button
+        elif controlID == 70010:  # warranty I Agree button
 
             self.reveal_next_panel(current_panel='warranty')
 
-        elif controlID == 40020:            # unused scroll bar for TandC
+        elif controlID == 40020:  # unused scroll bar for TandC
 
             self.getControl(555).scroll(10)
 
-        elif controlID == 40030:            # unused scroll bar for TandC
+        elif controlID == 40030:  # unused scroll bar for TandC
 
             self.getControl(555).scroll(-10)
 
-        elif controlID == 60090:            # skip networking button
+        elif controlID == 60090:  # skip networking button
 
             self.reveal_next_panel(current_panel='networking')
 
-        elif controlID == 60010:            # open networking gui
+        elif controlID == 60010:  # open networking gui
 
             self.net_call.run(False)
 
             self.reveal_next_panel(current_panel='networking')
 
-        elif controlID in [80010, 80020]:   # user has selected a skin
+        elif controlID in [80010, 80020]:  # user has selected a skin
 
             self.selected_skin = 'OSMC' if controlID == 80010 else 'Estuary'
 
             self.reveal_next_panel(current_panel='skin')
 
-        elif controlID in [90010, 90020]:   # newsletter sign up
+        elif controlID in [90010, 90020]:  # newsletter sign up
 
             self.newsletter_signup(controlID)
 
@@ -819,21 +789,19 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
             # allow the user to exit
             self.prevent_escape = False
 
-
     def random_name(self):
 
         names = [
-                "Alfonse", "Barnaby", "Aloysius", "Archibald", "Algernon", "Basil", "Bertram", "Carston", "Cavendish", "Cecil",
-                "Cyril", "Danforth", "Cuthbert", "Alastair", "Preston", "Giles", "Cortland", "Atticus",
-                "Edmund", "Gilbert", "Ethelbert", "Frederick", "Geoffrey", "Gideon", "Giggleswick", "Grumbole", "Hamilton",
-                "Ignatius", "Ebenezer", "Herbert", "Clement", "Humphrey", "Ian", "Ichabod", "Jonathan", "Malcolm",
-                "Mervyn", "Mortimer", "Nigel", "Percy", "Prentis", "Reginald", "Ridgewell", "Royston",
-                "Theophilus", "Tobias", "Tristram", "Ulysses", "Ulrich", "Virgil", "Vivian", "Waldo",
-                "Wesley", "Wilbur", "Wilfred", "Willard", "Willoughby",
-                ]
+            "Alfonse", "Barnaby", "Aloysius", "Archibald", "Algernon", "Basil", "Bertram", "Carston", "Cavendish", "Cecil",
+            "Cyril", "Danforth", "Cuthbert", "Alastair", "Preston", "Giles", "Cortland", "Atticus",
+            "Edmund", "Gilbert", "Ethelbert", "Frederick", "Geoffrey", "Gideon", "Giggleswick", "Grumbole", "Hamilton",
+            "Ignatius", "Ebenezer", "Herbert", "Clement", "Humphrey", "Ian", "Ichabod", "Jonathan", "Malcolm",
+            "Mervyn", "Mortimer", "Nigel", "Percy", "Prentis", "Reginald", "Ridgewell", "Royston",
+            "Theophilus", "Tobias", "Tristram", "Ulysses", "Ulrich", "Virgil", "Vivian", "Waldo",
+            "Wesley", "Wilbur", "Wilfred", "Willard", "Willoughby",
+        ]
 
         return "osmc-" + random.choice(names)
-
 
     @close_walkthru_on_error
     def onAction(self, action):
@@ -842,9 +810,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
             return
 
         if action == 10 or action == 92:
-
             self.close()
-
 
     def networking_special_handling(self, next_panel):
 
@@ -871,10 +837,9 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
         return next_panel
 
-
     def reveal_next_panel(self, current_panel):
-        ''' Builds the menu as we proceed.
-            Current_panel is the string name of the panel we are moving from. '''
+        """ Builds the menu as we proceed.
+            Current_panel is the string name of the panel we are moving from. """
 
         try:
             next_panel = self.panel_order[self.panel_order.index(current_panel) + 1]
@@ -903,10 +868,9 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         self.getControl(new_menuitem_id).controlUp(self.getControl(old_menuitem_id))
         self.getControl(old_menuitem_id).controlDown(self.getControl(new_menuitem_id))
 
-
     def show_panel(self, controlID):
 
-        for panel_name, control_dict in PANEL_MAP.iteritems():
+        for panel_name, control_dict in PANEL_MAP.items():
 
             if controlID == panel_name or controlID == control_dict['panel_menu_item_id']:
 
@@ -916,10 +880,8 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
                 self.getControl(control_dict['visibility_controller']).setVisible(False)
 
-
     @close_walkthru_on_error
     def onFocus(self, controlID):
-
 
         if controlID in self.menu_controls:
 
@@ -953,16 +915,16 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
 
 def open_gui(networking_instance, testing=False):
-
-    __addon__        = xbmcaddon.Addon()
-    scriptPath       = __addon__.getAddonInfo('path')
+    __addon__ = xbmcaddon.Addon()
+    scriptPath = __addon__.getAddonInfo('path')
 
     xml = "walkthru_720.xml" if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' else "walkthru.xml"
 
-    lang_rerun          = False
-    first_run           = True
+    lang_rerun = False
+    first_run = True
 
-    selected_language   = None
+    selected_language = None
+    skin_choice = None
 
     while first_run or lang_rerun:
 
@@ -974,9 +936,9 @@ def open_gui(networking_instance, testing=False):
             log(traceback.format_exc(), xbmc.LOGERROR)
             return
 
-        selected_language   = GUI.selected_language
-        skin_choice         = GUI.selected_skin
-        lang_rerun          = GUI.lang_rerun
+        selected_language = GUI.selected_language
+        skin_choice = GUI.selected_skin
+        lang_rerun = GUI.lang_rerun
 
         # set language
         language_id = GUI.languages.get(selected_language, None)
@@ -984,7 +946,7 @@ def open_gui(networking_instance, testing=False):
             xbmc.executebuiltin('xbmc.SetGUILanguage(%s)' % language_id)
         else:
             log('Failed SetGUILanguage using key:%s, language_id: %s' % (selected_language, language_id))
-            xbmc.executebuiltin('xbmc.SetGUILanguage(%s)' % default_language_id)
+            # xbmc.executebuiltin('xbmc.SetGUILanguage(%s)' % default_language_id)
 
         xbmc.sleep(1000)
 
