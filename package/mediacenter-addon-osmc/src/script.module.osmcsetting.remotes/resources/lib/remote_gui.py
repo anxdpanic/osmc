@@ -1,4 +1,3 @@
-
 # KODI modules
 import xbmc
 import xbmcaddon
@@ -7,602 +6,573 @@ import xbmcgui
 # Standard modules
 import sys
 import os
-import shutil
 import subprocess
 import threading
 
-addonid 	= "script.module.osmcsetting.remotes"
-__addon__  	= xbmcaddon.Addon("script.module.osmcsetting.remotes")
-__path__ 	= xbmc.translatePath(xbmcaddon.Addon(addonid).getAddonInfo('path'))
-DIALOG      = xbmcgui.Dialog()
-
-# Custom module path
-sys.path.append(os.path.join(__path__, 'resources','lib'))
-
 # OSMC SETTING Modules
-from CompLogger import comprehensive_logger as clog
+from .CompLogger import comprehensive_logger as clog
 
+addonid = "script.module.osmcsetting.remotes"
+__addon__ = xbmcaddon.Addon("script.module.osmcsetting.remotes")
+__path__ = xbmc.translatePath(xbmcaddon.Addon(addonid).getAddonInfo('path'))
+
+PY2 = sys.version_info.major == 2
+
+DIALOG = xbmcgui.Dialog()
 
 ACTION_PREVIOUS_MENU = 10
-ACTION_NAV_BACK      = 92
-SAVE                 = 5
-HEADING              = 1
-ACTION_SELECT_ITEM   = 7
+ACTION_NAV_BACK = 92
+SAVE = 5
+HEADING = 1
+ACTION_SELECT_ITEM = 7
 
 LIRCD_PATH = '/etc/lirc/lircd.conf'
-ETC_LIRC   = '/etc/lirc'
+ETC_LIRC = '/etc/lirc'
 
 if not os.path.isdir(ETC_LIRC):
-	LIRCD_PATH = '/home/plaskev/temp/lirc/lircd.conf'
-	ETC_LIRC   = '/home/plaskev/temp/lirc'	
+    LIRCD_PATH = '/home/plaskev/temp/lirc/lircd.conf'
+    ETC_LIRC = '/home/plaskev/temp/lirc'
 
 
 def log(message):
+    try:
+        message = str(message)
+    except UnicodeEncodeError:
+        message = message.encode('utf-8', 'ignore')
 
-	try:
-		message = str(message)
-	except UnicodeEncodeError:
-		message = message.encode('utf-8', 'ignore' )
-		
-	xbmc.log('REMOTE: ' + str(message), level=xbmc.LOGDEBUG)
+    xbmc.log('REMOTE: ' + str(message), level=xbmc.LOGDEBUG)
 
 
 @clog(log)
-def lang(id):
-
-	san = __addon__.getLocalizedString(id).encode( 'utf-8', 'ignore' )
-	return san 
+def lang(string_id):
+    if PY2:
+        return __addon__.getLocalizedString(string_id).encode('utf-8', 'ignore')
+    return __addon__.getLocalizedString(string_id)
 
 
 def construct_listitem(conf):
+    path, filename = os.path.split(conf)
 
-	path, filename = os.path.split(conf)
+    # get conf name; check first line in file for "# name:"
+    with open(conf, 'r') as f:
+        lines = f.readlines()
+        first_line = lines[0]
+        if first_line.startswith("# name:"):
+            name = first_line[len("# name:"):]
+            name2 = filename
+        else:
+            name = filename.replace('.conf', '')
+            name2 = conf
 
-	# get conf name; check first line in file for "# name:"
-	with open(conf, 'r') as f:
-		lines = f.readlines()
-		first_line = lines[0]
-		if first_line.startswith("# name:"):
-			name = first_line[len("# name:"):]
-			name2 = filename
-		else:
-			name = filename.replace('.conf', '')
-			name2 = conf
+    # check for remote image, use it if it is available
+    image_path = os.path.join(path, filename.replace('.conf', '.png'))
 
-	# check for remote image, use it if it is available
-	image_path = os.path.join(path, filename.replace('.conf','.png'))
-	
-	if os.path.isfile(image_path):
+    if os.path.isfile(image_path):
 
-		tmp = xbmcgui.ListItem(label=name, label2=name2, thumbnailImage=image_path)
+        tmp = xbmcgui.ListItem(label=name, label2=name2)
+        tmp.setArt({
+                       'thumb': image_path
+                   })
 
-	else:
+    else:
 
-		tmp = xbmcgui.ListItem(label=name, label2=name2)
+        tmp = xbmcgui.ListItem(label=name, label2=name2)
 
-	tmp.setProperty('fullpath',conf)
+    tmp.setProperty('fullpath', conf)
 
-	tmp.setInfo('video',{'title': ''.join(lines[:100])})
+    tmp.setInfo('video', {
+        'title': ''.join(lines[:100])
+    })
 
-	return tmp
+    return tmp
 
 
 def test_custom(conf):
+    """ Returns a boolean indicating whether the supplied conf file is a custom conf file. """
 
-	''' Returns a boolean indicating whether the supplied conf file is a custom conf file. '''
+    try:
+        path, filename = os.path.split(conf)
 
-	try:
-		path, filename = os.path.split(conf)
+        if path != ETC_LIRC:
+            return True
+        else:
+            return False
 
-		if path != ETC_LIRC:
-			return True
-		else:
-			return False
-
-	except:
-		return False
+    except:
+        return False
 
 
 class remote_gui_launcher(object):
 
-	def __init__(self):
+    def __init__(self):
 
-		# flag to idicate whether the GUI should re-open upon close. This is for when the remote changes do not stick.
-		self.reopen = True
+        # flag to idicate whether the GUI should re-open upon close. This is for when the remote changes do not stick.
+        self.reopen = True
 
-		# container for any confs we want to ignore
-		self.excluded = ['lircd.conf']
+        # container for any confs we want to ignore
+        self.excluded = ['lircd.conf']
 
-		self.active_conf = os.path.realpath(LIRCD_PATH)
+        self.active_conf = os.path.realpath(LIRCD_PATH)
 
-		# check if the target file actually exists, if it doesnt, then set the active conf file as None,
-		# if it does, then check whether it is a custom file
-		if os.path.isfile(self.active_conf):
+        # check if the target file actually exists, if it doesnt, then set the active conf file as None,
+        # if it does, then check whether it is a custom file
+        if os.path.isfile(self.active_conf):
 
-			custom = test_custom(self.active_conf)
+            custom = test_custom(self.active_conf)
 
-		else:
+        else:
 
-			custom = False
-			self.active_conf = None
+            custom = False
+            self.active_conf = None
 
-		# get the contents of /etc/lirc/
-		local_confs_base = os.listdir(ETC_LIRC)
-		local_confs_raw = [os.path.join(ETC_LIRC, conf) for conf in local_confs_base]
-		local_confs_raw.sort()
+        # get the contents of /etc/lirc/
+        local_confs_base = os.listdir(ETC_LIRC)
+        local_confs_raw = [os.path.join(ETC_LIRC, conf) for conf in local_confs_base]
+        local_confs_raw.sort()
 
-		# filter list by files with size (this just removes any empty confs)
-		local_confs = []
-		for conf in local_confs_raw:
-			if os.path.basename(conf) in self.excluded: continue
-			if not conf.endswith('.conf'): continue
-			try:
-				if os.stat(conf).st_size == 0: continue
-			except:
-				continue
+        # filter list by files with size (this just removes any empty confs)
+        local_confs = []
+        for conf in local_confs_raw:
+            if os.path.basename(conf) in self.excluded: continue
+            if not conf.endswith('.conf'): continue
+            try:
+                if os.stat(conf).st_size == 0: continue
+            except:
+                continue
 
-			local_confs.append(construct_listitem(conf))
+            local_confs.append(construct_listitem(conf))
 
-		if custom:
-			# self.active_conf can only be None if custom is False, so there is no risk in this
-			# reconstruction of the local_confs
-			local_confs = [construct_listitem(self.active_conf)] + local_confs
+        if custom:
+            # self.active_conf can only be None if custom is False, so there is no risk in this
+            # reconstruction of the local_confs
+            local_confs = [construct_listitem(self.active_conf)] + local_confs
 
-		xml = "RemoteBrowser_720OSMC.xml" if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' else "RemoteBrowser_OSMC.xml"
+        xml = "RemoteBrowser_720OSMC.xml" if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' else "RemoteBrowser_OSMC.xml"
 
-		self.remote_gui = remote_GUI(xml, __path__, 'Default', local_confs=local_confs, active_conf=self.active_conf)
+        self.remote_gui = remote_GUI(xml, __path__, 'Default', local_confs=local_confs, active_conf=self.active_conf)
 
+    def open_gui(self):
 
-	def open_gui(self):
+        while self.reopen:
+            self.reopen = False
 
-		while self.reopen:
-
-			self.reopen = False
-
-			self.remote_gui.doModal()
-
-
-	
+            self.remote_gui.doModal()
 
 
 class remote_GUI(xbmcgui.WindowXMLDialog):
 
-	def __init__(self, strXMLname, strFallbackPath, strDefaultName, local_confs, active_conf):
+    def __init__(self, strXMLname, strFallbackPath, strDefaultName, local_confs, active_conf):
 
-		self.local_confs  = local_confs
-		self.active_conf  = active_conf
-		self.rc6_file     = '/etc/modprobe.d/blacklist-rc6.conf'
-		self.rc6_file_loc = '/etc/modprobe.d'
+        self.local_confs = local_confs
+        self.active_conf = active_conf
+        self.rc6_file = '/etc/modprobe.d/blacklist-rc6.conf'
+        self.rc6_file_loc = '/etc/modprobe.d'
 
-		self.remote_selection = None
+        self.remote_selection = None
 
+    def onInit(self):
 
-	def onInit(self):
+        self.list = self.getControl(500)
+        self.list.setVisible(True)
 
-		self.list = self.getControl(500)
-		self.list.setVisible(True)
+        for i, x in enumerate(self.local_confs):
+            self.list.addItem(x)
 
-		for i, x in enumerate(self.local_confs):
-			self.list.addItem(x)
+        self.highlight_selected()
 
-		self.highlight_selected()
+        try:
+            self.getControl(50).setVisible(False)
+        except:
+            pass
 
-		try:
-			self.getControl(50).setVisible(False)
-		except:
-			pass
+        # check for RC6 file, then set the radiobutton appropriately
+        if os.path.isfile(self.rc6_file):
+            log('RC6 blacklist file located')
+            self.getControl(8).setSelected(True)
+        else:
+            log('RC6 blacklist file not found')
+            self.getControl(8).setSelected(False)
 
-		# check for RC6 file, then set the radiobutton appropriately
-		if os.path.isfile(self.rc6_file):
-			log('RC6 blacklist file located')
-			self.getControl(8).setSelected(True)
-		else:
-			log('RC6 blacklist file not found')
-			self.getControl(8).setSelected(False)
+    def find_custom_item(self):
 
+        log('Finding custom item in list')
 
-	def find_custom_item(self):
+        for i in range(0, self.list.size()):
+            tmp = self.list.getListItem(i)
+            tmp_path = tmp.getLabel2()
+            if test_custom(tmp_path):
+                log('Custom item found')
+                return i, tmp
 
-		log('Finding custom item in list')
+        return 0, 'failed'
 
-		for i in range(0,self.list.size()):
-			tmp = self.list.getListItem(i)
-			tmp_path = tmp.getLabel2()
-			if test_custom(tmp_path):
-				log('Custom item found')
-				return i, tmp
+    def highlight_selected(self):
 
-		return 0, 'failed'
+        log('Changing highlighting to %s' % self.active_conf)
 
+        for i in range(0, self.list.size()):
+            tmp = self.list.getListItem(i)
 
-	def highlight_selected(self):
+            tmp_path = tmp.getLabel2()
 
-		log('Changing highlighting to %s' % self.active_conf)
+            # if self.active_conf is None (i.e. the user deleted it externally) then no item will be selected
+            if self.active_conf == tmp_path:
+                tmp.select(True)
+            else:
+                tmp.select(False)
 
-		for i in range(0,self.list.size()):
-			tmp = self.list.getListItem(i)
+    def rc6_handling(self):
 
-			tmp_path = tmp.getLabel2()
+        sel = self.getControl(8).isSelected()
 
-			# if self.active_conf is None (i.e. the user deleted it externally) then no item will be selected
-			if self.active_conf == tmp_path:
-				tmp.select(True)
-			else:
-				tmp.select(False)
+        if sel:
+            # always overwrite the file, this will allow the contents to be updated (if ever needed)
+            log('Creating RC6 blacklist file')
 
+            with open('/var/tmp/blacklist-rc6.conf', 'w') as f:
+                f.write('blacklist ir_rc6_decoder\ninstall ir_rc6_decoder /bin/true')
 
-	def rc6_handling(self):
+            subprocess.call(["sudo", "mv", '/var/tmp/blacklist-rc6.conf', self.rc6_file_loc])
 
-		sel = self.getControl(8).isSelected()
+            log('RC6 blacklist file moved')
 
-		if sel:
-			# always overwrite the file, this will allow the contents to be updated (if ever needed)
-			log('Creating RC6 blacklist file')
+        else:
 
-			with open('/var/tmp/blacklist-rc6.conf', 'w') as f:
-				f.write('blacklist ir_rc6_decoder\ninstall ir_rc6_decoder /bin/true')
+            log('RC6 blacklist file removed')
 
-			subprocess.call(["sudo", "mv", '/var/tmp/blacklist-rc6.conf', self.rc6_file_loc])
+            subprocess.call(["sudo", "rm", "-f", self.rc6_file])
 
-			log('RC6 blacklist file moved')
+    def onClick(self, controlID):
 
-		else:
+        if controlID == 500:
+            # user has selected a local file from /etc/lirc
 
-			log('RC6 blacklist file removed')
+            self.remote_selection = self.getControl(500).getSelectedItem().getProperty('fullpath')
+            result = self.test_selection()
 
-			subprocess.call(["sudo", "rm", "-f", self.rc6_file])
+            if result == 'success':
 
+                log('User confirmed the remote changes work')
 
-	def onClick(self, controlID):
+                # change the highlighted remote to the new selection
+                self.active_conf = self.remote_selection
 
-		if controlID == 500:
-			# user has selected a local file from /etc/lirc
 
-			self.remote_selection = self.getControl(500).getSelectedItem().getProperty('fullpath')
-			result = self.test_selection()
+            elif result == 'service_dead':
+                log('Remote service failed to restart.')
 
-			if result == 'success':
+                ok = DIALOG.ok(lang(32006), lang(32013))
 
-				log('User confirmed the remote changes work')
+                self.remote_selection = None
 
-				# change the highlighted remote to the new selection
-				self.active_conf = self.remote_selection
 
+            else:
 
-			elif result == 'service_dead':
-				log('Remote service failed to restart.')
+                log('User did not confirm remote changes')
 
-				ok = DIALOG.ok(lang(32006), lang(32013))
+                self.remote_selection = None
 
-				self.remote_selection = None
+            self.highlight_selected()
 
+        elif controlID == 7:
+            # user has selected Exit
 
-			else:
+            self.rc6_handling()
 
-				log('User did not confirm remote changes')
+            self.remote_selection = None
 
-				self.remote_selection = None
+            self.close()
 
-			self.highlight_selected()
+        elif controlID == 62:
+            # user has chosen to browse for the file
 
-		elif controlID == 7:
-			# user has selected Exit
+            log('User is browsing for remote conf')
 
-			self.rc6_handling()
+            browser = xbmcgui.Dialog().browse(1, lang(32005), 'files', mask='.conf')
 
-			self.remote_selection = None
+            if browser:
 
-			self.close()
+                log('User selected remote conf: %s' % self.remote_selection)
 
-		elif controlID == 62:
-			# user has chosen to browse for the file
+                self.remote_selection = browser
 
-			log('User is browsing for remote conf')
+                result = self.test_selection()
 
-			browser = xbmcgui.Dialog().browse(1, lang(32005), 'files', mask='.conf')
+                if result == 'success':
 
-			if browser:
+                    log('user confirmed the remote changes work')
 
-				log('User selected remote conf: %s' % self.remote_selection)
+                    # change the highlighted remote to the new selection
+                    self.active_conf = self.remote_selection
 
-				self.remote_selection = browser
+                    # see if there is a custom file in the list, delete it if there is
+                    i, custom = self.find_custom_item()
 
-				result = self.test_selection()
+                    if custom:
+                        self.list.removeItem(i)
 
-				if result == 'success':
+                    # add the new custom as an item
+                    # self.active_conf cannot be None at this point, as the user must have selected one
+                    tmp = construct_listitem(self.active_conf)
+                    self.list.addItem(tmp)
 
-					log('user confirmed the remote changes work')
+                    self.highlight_selected()
 
-					# change the highlighted remote to the new selection
-					self.active_conf = self.remote_selection
+                elif result == 'service_dead':
+                    log('Remote service failed to restart.')
 
-					# see if there is a custom file in the list, delete it if there is
-					i, custom = self.find_custom_item()
+                    ok = DIALOG.ok(lang(32006), lang(32013))
 
-					if custom:
-						self.list.removeItem(i)
+                    self.remote_selection = None
 
-					# add the new custom as an item
-					# self.active_conf cannot be None at this point, as the user must have selected one
-					tmp = construct_listitem(self.active_conf)
-					self.list.addItem(tmp)
+                else:
 
-					self.highlight_selected()
+                    self.remote_selection = None
 
-				elif result == 'service_dead':
-					log('Remote service failed to restart.')
+            else:
 
-					ok = DIALOG.ok(lang(32006), lang(32013))
+                self.remote_selection = None
 
-					self.remote_selection = None
+    def test_selection(self):
 
-				else:
+        log('Testing remote conf selection: %s' % self.remote_selection)
 
-					self.remote_selection = None
+        if os.path.isfile(self.remote_selection):
 
-			else:
+            # read the symlink target
+            original_target = os.readlink(LIRCD_PATH)
 
-				self.remote_selection = None
+            log('Original lircd_path target: %s' % original_target)
 
+            # symlink the master conf to the new selection
+            subprocess.call(['sudo', 'ln', '-sf', self.remote_selection, LIRCD_PATH])
 
-	def test_selection(self):
+            # open test dialog
+            xml = "OSMC_remote_testing720.xml" if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' else "OSMC_remote_testing.xml"
+            self.remote_test = remote_test(xml, __path__, 'Default', self.remote_selection)
+            self.remote_test.doModal()
 
-		log('Testing remote conf selection: %s' % self.remote_selection)
+            log('Testing complete, result: %s' % self.remote_test.test_successful)
 
-		if os.path.isfile(self.remote_selection):
+            # if the test wasnt successful, then revert to the previous conf
+            if not self.remote_test.test_successful:
 
-			# read the symlink target
-			original_target = os.readlink( LIRCD_PATH )
+                subprocess.call(['sudo', 'ln', '-sf', original_target, LIRCD_PATH])
 
-			log('Original lircd_path target: %s' % original_target)
-			
-			# symlink the master conf to the new selection
-			subprocess.call(['sudo', 'ln', '-sf', self.remote_selection, LIRCD_PATH])
+                subprocess.call(['sudo', 'systemctl', 'restart', 'lircd_helper@*'])
 
+                # add busy dialog, loop until service restarts
 
-			# open test dialog
-			xml = "OSMC_remote_testing720.xml" if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' else "OSMC_remote_testing.xml"
-			self.remote_test = remote_test(xml, __path__, 'Default', self.remote_selection)
-			self.remote_test.doModal()
+                if not self.remote_test.service_running:
 
-			log('Testing complete, result: %s' % self.remote_test.test_successful)
+                    return 'service_dead'
 
-			# if the test wasnt successful, then revert to the previous conf
-			if not self.remote_test.test_successful:
+                else:
 
-				subprocess.call(['sudo', 'ln', '-sf', original_target, LIRCD_PATH])
+                    return 'failed'
 
-				subprocess.call(['sudo', 'systemctl', 'restart', 'lircd_helper@*'])
+            return 'success'
 
-				# add busy dialog, loop until service restarts
-
-				if not self.remote_test.service_running:
-
-					return 'service_dead'
-
-				else:
-
-					return 'failed'
-
-			return 'success'
-
-		return 'failed'
-
+        return 'failed'
 
 
 class remote_test(xbmcgui.WindowXMLDialog):
 
-	# control IDs
+    # control IDs
 
-	# 90		restarting service label
-	# 91		service restarted label, informs the user that the service has restarted and to confirm using the test button
-	# 25		test button, user clicks this to confirm that the remotes changes have been successful
-	# 45		countdown label, is controlled by the timer, and counts down the seconds to revert
-	# 55 		quick revert button
+    # 90		restarting service label
+    # 91		service restarted label, informs the user that the service has restarted and to confirm using the test button
+    # 25		test button, user clicks this to confirm that the remotes changes have been successful
+    # 45		countdown label, is controlled by the timer, and counts down the seconds to revert
+    # 55 		quick revert button
 
-	def __init__(self, strXMLname, strFallbackPath, strDefaultName, selection):
+    def __init__(self, strXMLname, strFallbackPath, strDefaultName, selection):
 
-		self.test_successful = False
+        self.test_successful = False
 
-		self.service_running = True
+        self.service_running = True
 
-		self.selection = selection
+        self.selection = selection
 
-		self.countdown_limit = 20
+        self.countdown_limit = 20
 
-		self.quick_revert = False
+        self.quick_revert = False
 
-		self.countdown_timer = countdown_timer(self)
-		self.countdown_timer.setDaemon(True)
+        self.countdown_timer = countdown_timer(self)
+        self.countdown_timer.setDaemon(True)
 
-		# setup the service checker straight away
-		self.service_checker = service_checker(self)
-		self.service_checker.setDaemon(True)
+        # setup the service checker straight away
+        self.service_checker = service_checker(self)
+        self.service_checker.setDaemon(True)
 
+    def onInit(self):
 
-	def onInit(self):
+        log('Opening test dialog')
 
-		log('Opening test dialog')
+        self.restarting_service_label = self.getControl(90)
+        self.check_remote_label = self.getControl(91)
+        # self.countdown_label   		= self.getControl(45)
+        self.test_button = self.getControl(25)
+        self.progress_bar = self.getControl(101)
 
-		self.restarting_service_label 	= self.getControl(90)
-		self.check_remote_label 		= self.getControl(91)
-		# self.countdown_label   		= self.getControl(45)
-		self.test_button 				= self.getControl(25)
-		self.progress_bar				= self.getControl(101)
+        self.initial_state()
 
-		self.initial_state()
+        # start the service_checker AFTER the class attributes have been set (prevents race condition)
+        self.service_checker.start()
 
-		# start the service_checker AFTER the class attributes have been set (prevents race condition)
-		self.service_checker.start()
+    def initial_state(self):
 
+        """ the dialog is telling the user that the service if restarting, and to please wait """
 
-	def initial_state(self):
+        log('Setting initial state of test dialog')
 
-		''' the dialog is telling the user that the service if restarting, and to please wait '''
+        # change label to say remote service restarting
+        self.progress_bar.setVisible(False)
+        self.restarting_service_label.setVisible(True)
+        self.check_remote_label.setVisible(False)
+        self.test_button.setVisible(False)
 
-		log('Setting initial state of test dialog')
+    # self.countdown_label.setVisible(False)
+    # self.countdown_label.setLabel(str(self.countdown_limit))
 
-		# change label to say remote service restarting
-		self.progress_bar.setVisible(False)
-		self.restarting_service_label.setVisible(True)
-		self.check_remote_label.setVisible(False)
-		self.test_button.setVisible(False)
-		# self.countdown_label.setVisible(False)
-		# self.countdown_label.setLabel(str(self.countdown_limit))
+    def second_state(self):
 
+        """ the service has been confirmed to be running again, and now the dialog is telling the user to click on
+            on the Confirm button. This will confirm that they have been able to navigate down to the button, and
+            click on it. """
 
-	def second_state(self):
+        log('Setting second state of test dialog')
 
-		''' the service has been confirmed to be running again, and now the dialog is telling the user to click on
-			on the Confirm button. This will confirm that they have been able to navigate down to the button, and 
-			click on it. '''
+        # change the label to say that the remote service has restarted and does the user want to keep the changes
+        self.restarting_service_label.setVisible(False)
+        self.check_remote_label.setVisible(True)
+        self.progress_bar.setVisible(True)
+        self.test_button.setVisible(True)
 
-		log('Setting second state of test dialog')
+        # display the exit button (controlID 25)
+        # self.countdown_label.setVisible(True)
 
-		# change the label to say that the remote service has restarted and does the user want to keep the changes
-		self.restarting_service_label.setVisible(False)
-		self.check_remote_label.setVisible(True)	
-		self.progress_bar.setVisible(True)	
-		self.test_button.setVisible(True)
+        # start the timer
+        self.countdown_timer.start()
 
-		# display the exit button (controlID 25)
-		# self.countdown_label.setVisible(True)
+    def service_dead_state(self):
 
-		# start the timer
-		self.countdown_timer.start()
+        """ the service has not been detected to have started within 20 seconds.
+            inform the user with OK style dialog
+        """
 
+        log('Service is dead')
 
-	def service_dead_state(self):
+        self.service_running = False
 
-		''' the service has not been detected to have started within 20 seconds.
-			inform the user with OK style dialog
-		'''
+        self.close()
 
-		log('Service is dead')
+    def onClick(self, controlID):
 
-		self.service_running = False
+        if controlID == 25:
+            """ user has clicked the test successful button, keep the changes,
+                this is the only place that the new conf can be confirmed
+            """
 
-		self.close()
-		
+            log('User has confirmed that the new conf is working.')
 
+            self.test_successful = True
+            self.countdown_timer.exit = True
+            try:
+                self.service_checker.exit = True
+            except:
+                pass
+            self.close()
 
-	def onClick(self, controlID):
+        elif controlID == 55:
 
-		if controlID == 25:
-			''' user has clicked the test successful button, keep the changes,
-				this is the only place that the new conf can be confirmed
-			'''
+            """ The user has decided to end the test, and would like to revert to the previous conf. This
+                is likely to only occur while the service is being checked. 
+            """
 
-			log('User has confirmed that the new conf is working.')
-
-			self.test_successful = True
-			self.countdown_timer.exit = True
-			try:
-				self.service_checker.exit = True
-			except:
-				pass
-			self.close()
-
-		elif controlID == 55:
-
-			''' The user has decided to end the test, and would like to revert to the previous conf. This
-				is likely to only occur while the service is being checked. 
-			'''
-
-			log('User has decided to revert to the previous conf.')
-			try:
-				self.service_checker.exit = True
-			except:
-				pass
-			self.countdown_timer.exit = True
-			self.close()
+            log('User has decided to revert to the previous conf.')
+            try:
+                self.service_checker.exit = True
+            except:
+                pass
+            self.countdown_timer.exit = True
+            self.close()
 
 
 class service_checker(threading.Thread):
+    """ Rsstarts the remote service, and waits for the response that it is running. """
 
-	''' Rsstarts the remote service, and waits for the response that it is running. '''
+    def __init__(self, parent):
 
-	def __init__(self, parent):
+        super(service_checker, self).__init__(name='service_checker')
+        self.parent = parent
+        self.exit = False
 
-		super(service_checker, self).__init__(name='service_checker')
-		self.parent = parent
-		self.exit = False
+    def run(self):
 
-	def run(self):
+        log('Remote service checker thread active.')
 
-		log('Remote service checker thread active.')
+        counter = 0
 
-		counter = 0
+        # restart the service for the changes to take effect
+        proc = subprocess.Popen(['sudo', 'systemctl', 'restart', 'lircd_helper@*'])
 
-		# restart the service for the changes to take effect
-		proc = subprocess.Popen(['sudo', 'systemctl', 'restart', 'lircd_helper@*'])
+        # loop until the service has restarted (or too much time has elapsed, in which case fail out)
+        while counter < 40 and not self.exit:
 
-		# loop until the service has restarted (or too much time has elapsed, in which case fail out)
-		while counter < 40 and not self.exit:
+            p = proc.poll()
 
-			p = proc.poll()
+            if p is None:
+                counter += 1
+                xbmc.sleep(250)
+                continue
 
-			if p is None:
-				counter += 1
-				xbmc.sleep(250)
-				continue
+            elif p == 0:
+                break
 
-			elif p == 0:
-				break
+        else:
+            # if the process times out or the exit signal is recieved, then return nothing
+            # on a timeout however, enter something in the log
 
-		else:
-			# if the process times out or the exit signal is recieved, then return nothing
-			# on a timeout however, enter something in the log
+            if counter >= 40:
+                # this is reached if the counter reaches 40, meaning the process check timed out
+                self.parent.service_dead_state()
 
-			if counter >= 40:
-				# this is reached if the counter reaches 40, meaning the process check timed out
-				self.parent.service_dead_state()
+            elif self.exit:
+                # this occurs when the user has clicked cancel or back
+                # there is no need to do anything
+                pass
 
-			elif self.exit:
-				# this occurs when the user has clicked cancel or back
-				# there is no need to do anything
-				pass
+            elif p != 0:
+                # this occurs if there is an error code returned by the process
+                log('Error code from systemctl restart lircd-helper: %s' % p)
 
-			elif p != 0:
-				# this occurs if there is an error code returned by the process
-				log('Error code from systemctl restart lircd-helper: %s' % p)
+            return
 
-			return
-
-
-		# this point it only reached if proc.poll returns 0
-		self.parent.second_state()
+        # this point it only reached if proc.poll returns 0
+        self.parent.second_state()
 
 
 class countdown_timer(threading.Thread):
 
-	def __init__(self, parent):
+    def __init__(self, parent):
+        super(countdown_timer, self).__init__(name='countdown_timer')
+        self.parent = parent
+        self.exit = False
+        self.countdown = self.parent.countdown_limit
 
-		super(countdown_timer, self).__init__(name='countdown_timer')
-		self.parent = parent
-		self.exit = False
-		self.countdown = self.parent.countdown_limit
+    def run(self):
+        """ Update the label on the dialog to show how many seconds until the conf reverts to the previous state
+        """
 
-		
+        log('Countdown timer thread active')
 
-	def run(self):
+        while not self.exit and self.countdown:
+            # self.parent.countdown_label.setLabel(str(self.countdown))
+            self.parent.progress_bar.setWidth(self.countdown * 60)
 
-		''' Update the label on the dialog to show how many seconds until the conf reverts to the previous state 
-		'''
+            xbmc.sleep(1000)
 
-		log('Countdown timer thread active')
+            self.countdown -= 1
 
-		while not self.exit and self.countdown:
-
-
-			# self.parent.countdown_label.setLabel(str(self.countdown))
-			self.parent.progress_bar.setWidth(self.countdown * 60)
-
-			xbmc.sleep(1000)
-
-			self.countdown -= 1
-
-		self.parent.close()
-
-
-
+        self.parent.close()

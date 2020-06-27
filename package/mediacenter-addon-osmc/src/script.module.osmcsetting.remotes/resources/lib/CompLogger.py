@@ -3,84 +3,77 @@ from functools import wraps
 
 TEST_LOG_BOOL = True
 
+
 def test_logger(msg):
-	print 'test-' + msg
+    print('test-' + msg)
 
 
 def comprehensive_logger(logger=None, logging=True, maxlength=250, nowait=False):
-	'''
-		Decorator to log the inputs and outputs of functions, as well as the time taken
-		to run the function.
-		Requires: time, functools
-		logger: 	[opt] logging function, if not provided print is used
-		logging: 	[opt] boolean, turn logging on and off, default is True
-		maxlength:	[opt] integer, sets the maximum length an argument or returned variable cant take, default 25
-		nowait:		[opt] boolean, instructs the logger not to wait for the function to finish, default is False
-	'''
+    """
+        Decorator to log the inputs and outputs of functions, as well as the time taken
+        to run the function.
+        Requires: time, functools
+        logger: 	[opt] logging function, if not provided print is used
+        logging: 	[opt] boolean, turn logging on and off, default is True
+        maxlength:	[opt] integer, sets the maximum length an argument or returned variable cant take, default 25
+        nowait:		[opt] boolean, instructs the logger not to wait for the function to finish, default is False
+    """
 
-	def default_logger(msg):
+    def default_logger(msg):
 
-		print msg
+        print(msg)
 
+    if logger is None:
+        logger = default_logger
 
-	if logger == None:
+    def get_args(*args, **kwargs):
 
-		logger = default_logger
+        all_args = []
 
+        for i, arg in enumerate(args):
+            itm = 'pos' + str(i) + ": " + str(arg)[:maxlength]
 
-	def get_args(*args, **kwargs):
+            all_args.append(itm)
 
-		all_args = []
+        for k, v in kwargs.items():
+            itm = str(k) + ": " + str(v)[:maxlength]
 
-		for i, arg in enumerate(args):
+            all_args.append(itm)
 
-			itm = 'pos' + str(i) + ": " + str(arg)[:maxlength]
+        return all_args
 
-			all_args.append(itm)
+    def decorater(func):
 
-		for k, v in kwargs.iteritems():
+        @wraps(func)
+        def wrapper(*args, **kwargs):
 
-			itm = str(k) + ": " + str(v)[:maxlength]
+            if logging and logger is not None:
+                logger(func.__module__ + '.' + func.__name__ + " received: " + ", ".join(get_args(*args, **kwargs)))
 
-			all_args.append(itm)
+            if nowait:
 
-		return all_args
+                func(*args, **kwargs)
 
+                logger(func.__module__ + '.' + func.__name__ + " -nowait")
 
-	def decorater(func):
+                return
 
-		@wraps(func)
-		def wrapper(*args, **kwargs):
+            else:
 
-			if logging and logger != None:
-			
-				logger(func.__module__ + '.' + func.__name__ + " received: " + ", ".join(get_args(*args, **kwargs)))
+                start = time.time()
 
-			if nowait:
-				
-				func(*args, **kwargs)
+                result = func(*args, **kwargs)
 
-				logger(func.__module__ + '.' + func.__name__ + " -nowait")
+                end = time.time()
 
-				return
+                if logging and logger is not None:
+                    logger(func.__module__ + '.' + func.__name__ + " [" + str(end - start) + "] " + ' returns: ' + str(result)[:maxlength])
 
-			else:
-	
-				start 	= time.time()
-				
-				result 	= func(*args, **kwargs)
+                return result
 
-				end 	= time.time()
+        return wrapper
 
-				if logging and logger != None:
-				
-					logger(func.__module__ + '.' + func.__name__ + " [" + str(end-start) + "] " + ' returns: ' + str(result)[:maxlength])
-
-				return result
-
-		return wrapper
-
-	return decorater
+    return decorater
 
 
 clog = comprehensive_logger
@@ -88,13 +81,12 @@ clog = comprehensive_logger
 
 @clog(logging=TEST_LOG_BOOL)
 def arg_tester(a, b, cdef):
+    print('a: ' + str(a))
 
-	print 'a: ' + str(a)
-	
-	print 'b: ' + str(b)
-	
-	print 'cdef: ' + str(cdef)
+    print('b: ' + str(b))
+
+    print('cdef: ' + str(cdef))
 
 
 if __name__ == "__main__":
-	arg_tester('han', ['chewie', 'luke'], cdef='123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890')
+    arg_tester('han', ['chewie', 'luke'], cdef='123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890')
