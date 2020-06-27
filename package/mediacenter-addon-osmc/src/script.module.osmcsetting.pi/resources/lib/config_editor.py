@@ -8,261 +8,249 @@ import time
 import os
 
 ACTION_PREVIOUS_MENU = 10
-ACTION_NAV_BACK      = 92
-SAVE                 = 5
-HEADING              = 1
-ACTION_SELECT_ITEM   = 7
+ACTION_NAV_BACK = 92
+SAVE = 5
+HEADING = 1
+ACTION_SELECT_ITEM = 7
 
-__addon__   = xbmcaddon.Addon("script.module.osmcsetting.pi")
-scriptPath  = __addon__.getAddonInfo('path')
-DIALOG      = xbmcgui.Dialog()
-IMAGE 		= os.path.join(scriptPath,'resources','osmc','FO_Icon.png')
+__addon__ = xbmcaddon.Addon("script.module.osmcsetting.pi")
+scriptPath = __addon__.getAddonInfo('path')
+DIALOG = xbmcgui.Dialog()
+IMAGE = os.path.join(scriptPath, 'resources', 'osmc', 'FO_Icon.png')
+
+PY2 = sys.version_info.major == 2
 
 
-def lang(id):
-    san = __addon__.getLocalizedString(id).encode( 'utf-8', 'ignore' )
-    return san 
+def lang(string_id):
+    if PY2:
+        return __addon__.getLocalizedString(string_id).encode('utf-8', 'ignore')
+    return __addon__.getLocalizedString(string_id)
 
 
 def log(message):
+    try:
+        message = str(message)
+    except UnicodeEncodeError:
+        message = message.encode('utf-8', 'ignore')
 
-	try:
-		message = str(message)
-	except UnicodeEncodeError:
-		message = message.encode('utf-8', 'ignore' )
-		
-	xbmc.log('OSMC PI Config Editor' + str(message), level=xbmc.LOGDEBUG)
+    xbmc.log('OSMC PI Config Editor' + str(message), level=xbmc.LOGDEBUG)
 
 
 class ConfigEditor(xbmcgui.WindowXMLDialog):
 
+    def onInit(self):
 
-	def onInit(self):
+        # give the settings enough time to be saved to the config.txt
+        xbmc.sleep(150)
 
-		# give the settings enough time to be saved to the config.txt
-		xbmc.sleep(150)
+        # list of settings that are ignored in the duplicate check
+        self.ignore_list = ['dtoverlay', 'device_tree', 'device_tree_param', 'device_tree_overlay', 'dtparam']
 
-		# list of settings that are ignored in the duplicate check
-		self.ignore_list = ['dtoverlay', 'device_tree', 'device_tree_param', 'device_tree_overlay', 'dtparam']
+        self.del_string = ' [' + lang(32056) + ']'
 
-		self.del_string = ' [' + lang(32056) + ']'
+        try:
+            self.config = '/boot/config.txt'
 
-		try:
-			self.config = '/boot/config.txt'
+            with open(self.config, 'r') as f:
+                self.lines = f.readlines()
 
-			with open(self.config, 'r') as f:
-				self.lines = f.readlines()			
+        except:
 
-		except:
+            # FOR TESTING
+            self.config = '/home/plaskev/Documents/config.txt'
 
-			# FOR TESTING
-			self.config = '/home/plaskev/Documents/config.txt'
+            with open(self.config, 'r') as f:
+                self.lines = f.readlines()
 
-			with open(self.config, 'r') as f:
-				self.lines = f.readlines()
+        log('lines = %s' % self.lines)
 
-		log('lines = %s' % self.lines)
+        self.lines = [line.replace('\n', '') for line in self.lines if line not in ['\n', '', '\t']]
 
-		self.lines = [line.replace('\n','') for line in self.lines if line not in ['\n', '', '\t']]
-		
-		# Save button
-		self.ok = self.getControl(SAVE)
-		self.ok.setLabel(lang(32050))
+        # Save button
+        self.ok = self.getControl(SAVE)
+        self.ok.setLabel(lang(32050))
 
-		# Heading
-		self.hdg = self.getControl(HEADING)
-		self.hdg.setLabel(lang(32051))
-		self.hdg.setVisible(True)
+        # Heading
+        self.hdg = self.getControl(HEADING)
+        self.hdg.setLabel(lang(32051))
+        self.hdg.setVisible(True)
 
-		# Hide unused list frame
-		self.x = self.getControl(3)
-		self.x.setVisible(False)
+        # Hide unused list frame
+        self.x = self.getControl(3)
+        self.x.setVisible(False)
 
-		# Populate the list frame
-		self.list_control      = self.getControl(6)
-		self.list_control.setEnabled(True)
+        # Populate the list frame
+        self.list_control = self.getControl(6)
+        self.list_control.setEnabled(True)
 
-		self.items = [lang(32052)]
-		self.items.extend(self.lines)
+        self.items = [lang(32052)]
+        self.items.extend(self.lines)
 
-		self.item_count = len(self.items)
+        self.item_count = len(self.items)
 
-		# Start the window with the first item highlighted
-		# self.list_control.getListItem(0).select(True)
+        # Start the window with the first item highlighted
+        # self.list_control.getListItem(0).select(True)
 
-		# Set action when clicking right from the Save button
-		self.ok.controlRight(self.list_control)
+        # Set action when clicking right from the Save button
+        self.ok.controlRight(self.list_control)
 
-		for i in self.items:
-			# populate the random list
-			self.tmp = xbmcgui.ListItem(i)#, thumbnailImage=IMAGE)
-			self.list_control.addItem(self.tmp)
+        for i in self.items:
+            # populate the random list
+            self.tmp = xbmcgui.ListItem(i)  # , thumbnailImage=IMAGE)
+            self.list_control.addItem(self.tmp)
 
-		self.changed = False
+        self.changed = False
 
-		self.setFocus(self.list_control)
+        self.setFocus(self.list_control)
 
-		# check for duplications, warn the user if there are duplicates
-		dup_check = [y for y in [x.split('=')[0] for x in self.grab_item_strings() if '=' in x] if y not in self.ignore_list]
-		if len(dup_check) != len(set(dup_check)):
-			ok = DIALOG.ok(lang(32051), lang(32065), lang(32066))
+        # check for duplications, warn the user if there are duplicates
+        dup_check = [y for y in [x.split('=')[0] for x in self.grab_item_strings() if '=' in x] if y not in self.ignore_list]
+        if len(dup_check) != len(set(dup_check)):
+            _ = DIALOG.ok(lang(32051), '[CR]'.join([lang(32065), lang(32066)]))
 
+    def onAction(self, action):
 
-	def onAction(self, action):
+        actionID = action.getId()
+        if (actionID in (ACTION_PREVIOUS_MENU, ACTION_NAV_BACK)):
+            log('CLOSE')
+            self.close()
 
-		actionID = action.getId()
-		if (actionID in (ACTION_PREVIOUS_MENU, ACTION_NAV_BACK)):
-			log('CLOSE')
-			self.close()
+    def onClick(self, controlID):
+        log('%s' % controlID)
 
+        if controlID == SAVE:
+            log('SAVE')
 
-	def onClick(self, controlID):
-		log('%s' % controlID)
+            if self.changed:
 
-		if controlID == SAVE:
-			log('SAVE')
+                final_action = DIALOG.yesno(lang(32052), lang(32053), nolabel=lang(32054), yeslabel=lang(32055))
 
-			if self.changed:
+                if final_action:
 
-				final_action = DIALOG.yesno(lang(32052), lang(32053), nolabel=lang(32054), yeslabel=lang(32055))
+                    log('final action')
 
-				if final_action:
+                    new_config = self.grab_item_strings()
 
-					log('final action')
+                    # temporary location for the config.txt
+                    tmp_loc = '/var/tmp/config.txt'
 
-					new_config = self.grab_item_strings()
+                    # write the long_string_file to the config.txt
+                    with open(tmp_loc, 'w') as f:
+                        for line in new_config:
+                            f.write(line.replace(" = ", "=") + '\n')
+                            log('' + line)
 
-					# temporary location for the config.txt
-					tmp_loc = '/var/tmp/config.txt'
+                    # backup existing config
+                    suffix = '_' + str(time.time()).split('.')[0]
+                    subprocess.call(["sudo", "cp", self.config, '/home/pi/'])
+                    subprocess.call(["sudo", "mv", '/home/pi/config.txt', '/home/pi/config' + suffix + '.txt'])
 
-					# write the long_string_file to the config.txt
-					with open(tmp_loc,'w') as f:
-						for line in new_config:
-							f.write(line.replace(" = ","=") + '\n')
-							log('' + line)
+                    # copy over the temp config.txt to /boot/ as superuser
+                    subprocess.call(["sudo", "mv", tmp_loc, self.config])
 
-					# backup existing config
-					suffix = '_' + str(time.time()).split('.')[0]
-					subprocess.call(["sudo", "cp", self.config, '/home/pi/' ])
-					subprocess.call(["sudo", "mv", '/home/pi/config.txt', '/home/pi/config' + suffix + '.txt' ])
+                    # THIS IS JUST FOR TESTING, LAPTOP DOESNT LIKE SUDO HERE
+                    try:
+                        subprocess.call(["mv", tmp_loc, self.config])
+                    except:
+                        pass
 
-					# copy over the temp config.txt to /boot/ as superuser
-					subprocess.call(["sudo", "mv", tmp_loc, self.config ])
+                    log('writing ended')
 
-					# THIS IS JUST FOR TESTING, LAPTOP DOESNT LIKE SUDO HERE
-					try:
-						subprocess.call(["mv", tmp_loc, self.config ])
-					except:
-						pass
+            self.close()
 
-					log('writing ended')
+        else:
+            selected_entry = self.list_control.getSelectedPosition()
+            item = self.list_control.getSelectedItem()
+            currentlabel = item.getLabel()
 
-			self.close()
+            if selected_entry != 0:
 
-		else:
-			selected_entry = self.list_control.getSelectedPosition()
-			item = self.list_control.getSelectedItem()
-			currentlabel = item.getLabel()
-			
-			if selected_entry != 0:
+                if self.del_string not in currentlabel:
+                    action = DIALOG.yesno(lang(32051), lang(32057), nolabel=lang(32058), yeslabel=lang(32059))
 
-				if self.del_string not in currentlabel:
-					action = DIALOG.yesno(lang(32051), lang(32057), nolabel=lang(32058), yeslabel=lang(32059))
+                    if action:
+                        # delete
+                        item.setLabel(currentlabel + self.del_string)
+                        self.changed = True
 
-					if action:
-						# delete
-						item.setLabel(currentlabel + self.del_string)
-						self.changed = True
+                    else:
+                        # edit
+                        d = DIALOG.input(lang(32060), currentlabel, type=xbmcgui.INPUT_ALPHANUM)
 
-					else:
-						# edit
-						d = DIALOG.input(lang(32060), currentlabel, type=xbmcgui.INPUT_ALPHANUM)
+                        if d:
+                            self.check_for_duplicates(d, True)
 
-						if d:
+                            item.setLabel(d)
+                            self.changed = True
 
-							self.check_for_duplicates(d, True)
+                else:
+                    action = DIALOG.yesno(lang(32051), lang(32061), nolabel=lang(32058), yeslabel=lang(32062))
 
-							item.setLabel(d)
-							self.changed = True
+                    if action:
+                        # delete
+                        item.setLabel(currentlabel[:len(currentlabel) - len(self.del_string)])
+                        self.changed = True
 
-				else:
-					action = DIALOG.yesno(lang(32051), lang(32061), nolabel=lang(32058), yeslabel=lang(32062))
+                    else:
+                        # edit
+                        d = DIALOG.input(lang(32063), currentlabel, type=xbmcgui.INPUT_ALPHANUM)
 
-					if action:
-						# delete
-						item.setLabel(currentlabel[:len(currentlabel) - len(self.del_string)])
-						self.changed = True
+                        if d:
+                            self.check_for_duplicates(d, edit=True)
 
-					else:
-						# edit
-						d = DIALOG.input(lang(32063), currentlabel, type=xbmcgui.INPUT_ALPHANUM)
+                            item.setLabel(d)
+                            self.changed = True
 
-						if d:
-							self.check_for_duplicates(d, edit=True)
+            else:
+                d = DIALOG.input(lang(32064), type=xbmcgui.INPUT_ALPHANUM)
 
-							item.setLabel(d)
-							self.changed = True
+                if d:
+                    self.check_for_duplicates(d)
 
-			else:
-				d = DIALOG.input(lang(32064), type=xbmcgui.INPUT_ALPHANUM)
+                    # add the new item to the list
+                    tmp = xbmcgui.ListItem(d)  # , thumbnailImage=IMAGE)
+                    self.list_control.addItem(tmp)
 
-				if d:
+                    self.changed = True
 
-					self.check_for_duplicates(d)
+                    self.item_count += 1
 
-					# add the new item to the list
-					tmp = xbmcgui.ListItem(d)#, thumbnailImage=IMAGE)
-					self.list_control.addItem(tmp)
-					
-					self.changed = True
+    def check_for_duplicates(self, d, edit=False):
 
-					self.item_count += 1
+        if '=' in d:
+            dupe_check_raw = self.grab_item_strings()
+            dupe_check = [x.split('=')[0] for x in dupe_check_raw]
 
+            dupe = d.split('=')[0]
 
-	def check_for_duplicates(self, d, edit=False):
-		
-		
-		if '=' in d:
-			dupe_check_raw = self.grab_item_strings()
-			dupe_check = [x.split('=')[0] for x in dupe_check_raw]
+            if dupe not in self.ignore_list and ((edit and dupe_check.count(dupe) > 1) or (not edit and dupe in dupe_check)):
+                _ = DIALOG.ok(lang(32051), '[CR]'.join([lang(32067), lang(32066)]))
 
-			dupe = d.split('=')[0]
+    def grab_item_strings(self):
 
+        new_config = []
 
-			if dupe not in self.ignore_list and ((edit and dupe_check.count(dupe) > 1) or (not edit and dupe in dupe_check)):
+        for i in range(self.item_count):
+            if i == 0: continue
 
-				ok = DIALOG.ok(lang(32051), lang(32067), lang(32066))
+            item = self.list_control.getListItem(i)
 
+            currentlabel = item.getLabel()
 
-	def grab_item_strings(self):
+            if self.del_string not in currentlabel:
+                new_config.append(currentlabel)
 
-		new_config = []
-
-		for i in range(self.item_count):
-			if i == 0: continue
-
-			item = self.list_control.getListItem(i)
-
-			currentlabel = item.getLabel()
-
-			if self.del_string not in currentlabel:
-				new_config.append(currentlabel)
-
-		return new_config
+        return new_config
 
 
 if __name__ == "__main__":
+    log('OPEN')
+    CE = ConfigEditor("DialogSelect.xml", scriptPath, 'Default')
 
-	log('OPEN')
-	CE = ConfigEditor("DialogSelect.xml", scriptPath, 'Default')
-	
-	CE.doModal()
-	
-	del CE
+    CE.doModal()
 
-	log('CLOSED')
-	
-	xbmc.sleep(150)
+    del CE
 
-	# __addon__.openSettings()
+    log('CLOSED')
 
+    xbmc.sleep(150)

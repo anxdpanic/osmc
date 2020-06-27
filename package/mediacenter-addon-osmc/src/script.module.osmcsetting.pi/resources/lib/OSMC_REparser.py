@@ -37,7 +37,7 @@ NEEDS A FINAL CHECK FOR HDMI_SAFE to make sure the entries related to it are rem
 """
 
 import re
-import sys
+
 
 def config_to_kodi(MASTER_SETTINGS, config):
     """ Takes the existing config and uses the protocols in the MASTER_SETTINGS to extract the settings
@@ -51,10 +51,9 @@ def config_to_kodi(MASTER_SETTINGS, config):
     # print "Settings being extracted from config.txt"
     # print "==--==--"*20
 
-    for setting, protocols in MASTER_SETTINGS.iteritems():
-        
+    for setting, protocols in MASTER_SETTINGS.items():
         value = general_config_get(config, **protocols)
-        
+
         # print "%s: %s" % (setting, value)
 
         extracted_settings_for_kodi[setting] = value
@@ -110,20 +109,16 @@ def general_config_get(config, config_get_patterns, config_validation, kodi_set,
                     result = config_validation(raw_value.group(1))
 
                     if result is not None:
-
                         results.append(result)
     kodi_setting = kodi_set(results)
 
     if kodi_setting is None:
-
         kodi_setting = retrieve_default(**default)
     return kodi_setting
 
 
 def retrieve_default(function, value):
-
     if function is not None:
-
         value = function()
     return value
 
@@ -165,14 +160,14 @@ def kodi_to_config(MASTER_SETTINGS, config, new_settings):
 
 
 def general_config_set(
-    config,
-    new_settings,
-    new_value,
-    config_get_patterns,
-    config_set,
-    already_set,
-    setting_stub,
-    **kwargs
+        config,
+        new_settings,
+        new_value,
+        config_get_patterns,
+        config_set,
+        already_set,
+        setting_stub,
+        **kwargs
 ):
     """ Runs through the config.txt looking for a specific setting and replaces the existing
         values when they are found. If there are duplicate entries, the last entry is kept, the others
@@ -208,7 +203,7 @@ def general_config_set(
         # ignore inline comments on the line
         try:
             cf_line = line[: line.index("#")]
-            comment = line[line.index("#") :]
+            comment = line[line.index("#"):]
         except ValueError:
             cf_line = line
             comment = ""
@@ -233,7 +228,6 @@ def general_config_set(
                     continue
                 # if the value has been set already, then comment out this line
                 if already_set:
-
                     # comment out any duplicated entries (this could be changed to removal if we want)
                     new_config.append("#" + line.replace("\n", "") + " # DUPLICATE")
                     # print '\t\tSetting has already been set, skipping subsequent matches and marking as DUPLICATE'
@@ -274,14 +268,15 @@ converted to what is recognised by the settings in Kodi.                        
 
 
 def generic_bool_validation(config_value):
-
-    permitted = {"0": "false", "1": "true"}
+    permitted = {
+        "0": "false",
+        "1": "true"
+    }
 
     return permitted.get(config_value, None)
 
 
 def generic_range_validation(config_value, myrange):
-
     try:
         if int(config_value) in myrange:
             return config_value
@@ -292,19 +287,19 @@ def generic_range_validation(config_value, myrange):
 
 
 def onoff_validation(config_value):
-
-    permitted = {"off": "false", "on": "true"}
+    permitted = {
+        "off": "false",
+        "on": "true"
+    }
 
     return permitted.get(config_value, None)
 
 
 def config_hdmi_boost_validation(config_value):
-
     return generic_range_validation(config_value, range(1, 12))
 
 
 def soundcard_dac_validation(config_value):
-
     permitted = {
         "hifiberry-dac-overlay": "1",
         "hifiberry-dac": "1",
@@ -335,18 +330,15 @@ def soundcard_dac_validation(config_value):
 
 
 def gpio_pin_validation(config_value):
-
     return generic_range_validation(config_value, range(1, 28))
 
 
 def blank_check_validation(config_value):
-
     if config_value:
         return config_value
 
 
 def display_rotate_validation(config_value):
-
     permitted = ["0", "1", "2", "3", "0x10000", "0x20000"]
 
     if config_value in permitted:
@@ -354,47 +346,38 @@ def display_rotate_validation(config_value):
 
 
 def gpu_mem_1024_validation(config_value):
-
     return generic_range_validation(config_value, range(16, 321))
 
 
 def gpu_mem_512_validation(config_value):
-
     return generic_range_validation(config_value, range(16, 257))
 
 
 def gpu_mem_256_validation(config_value):
-
     return generic_range_validation(config_value, range(16, 193))
 
 
 def hdmi_group_validation(config_value):
-
     return generic_range_validation(config_value, range(0, 3))
 
 
 def hdmi_mode_validation(config_value):
-
     return generic_range_validation(config_value, range(1, 87))
 
 
 def hdmi_pixel_encoding_validation(config_value):
-
     return generic_range_validation(config_value, range(0, 5))
 
 
 def sdtv_aspect_validation(config_value):
-
     return generic_range_validation(config_value, range(1, 4))
 
 
 def sdtv_mode_validation(config_value):
-
     return generic_range_validation(config_value, range(0, 4))
 
 
 def w1gpio_validation(config_value):
-
     permitted = ["w1-gpio-overlay", "w1-gpio-pullup-overlay"]
 
     try:
@@ -404,7 +387,6 @@ def w1gpio_validation(config_value):
 
 
 def bcm2835_validation(config_value):
-
     permitted = ["spi-bcm2835-overlay"]
 
     if config_value in permitted:
@@ -412,7 +394,6 @@ def bcm2835_validation(config_value):
 
 
 def hdmi_ignore_edid_validation(config_value):
-
     permitted = ["0xa5000080"]
 
     if config_value in permitted:
@@ -452,7 +433,6 @@ Takes both the new value of the setting and all the other settings for reference
 
 
 def generic_bool_config_set(kodi_setting, all_settings):
-
     if kodi_setting == "true":
         return "1"
     else:
@@ -460,7 +440,6 @@ def generic_bool_config_set(kodi_setting, all_settings):
 
 
 def generic_passthrough_config_set(kodi_setting, all_settings):
-
     if kodi_setting:
 
         return kodi_setting
@@ -476,7 +455,6 @@ def start_x_config_set(kodi_setting, all_settings):
 
 
 def config_hdmi_boost_config_set(kodi_setting, all_settings):
-
     # if hdmi_safe is active, then remove this conflicting line
     kodi_setting = hdmi_safe_group_removal(kodi_setting, all_settings)
 
@@ -489,7 +467,6 @@ def config_hdmi_boost_config_set(kodi_setting, all_settings):
 
 
 def display_rotate_config_set(kodi_setting, all_settings):
-
     permitted = ["remove_this_line", "1", "2", "3", "0x10000", "0x20000"]
 
     if kodi_setting in permitted:
@@ -513,7 +490,6 @@ def store_hdmi_to_file_config_set(kodi_setting, all_settings):
 
 
 def hdmi_group_config_set(kodi_setting, all_settings):
-
     # if hdmi_safe is active, then remove this conflicting line
     kodi_setting = hdmi_safe_group_removal(kodi_setting, all_settings)
 
@@ -526,7 +502,6 @@ def hdmi_group_config_set(kodi_setting, all_settings):
 
 
 def hdmi_mode_config_set(kodi_setting, all_settings):
-
     # if hdmi_safe is active, then remove this conflicting line
     kodi_setting = hdmi_safe_group_removal(kodi_setting, all_settings)
 
@@ -539,7 +514,6 @@ def hdmi_mode_config_set(kodi_setting, all_settings):
 
 
 def hdmi_pixel_config_set(kodi_setting, all_settings):
-
     if kodi_setting in [str(x) for x in range(1, 5)]:
 
         return kodi_setting
@@ -549,7 +523,6 @@ def hdmi_pixel_config_set(kodi_setting, all_settings):
 
 
 def hdmi_safe_group_removal(kodi_setting, all_settings):
-
     if all_settings.get("hdmi_safe", None) == "true":
 
         return "remove_this_line"
@@ -559,7 +532,6 @@ def hdmi_safe_group_removal(kodi_setting, all_settings):
 
 
 def hdmi_ignore_edid_config_set(kodi_setting, all_settings):
-
     # if hdmi_safe is active, then remove this conflicting line
     kodi_setting = hdmi_safe_group_removal(kodi_setting, all_settings)
 
@@ -572,7 +544,6 @@ def hdmi_ignore_edid_config_set(kodi_setting, all_settings):
 
 
 def sdtv_aspect_config_set(kodi_setting, all_settings):
-
     if kodi_setting in [str(x) for x in range(1, 4)]:
 
         return kodi_setting
@@ -582,7 +553,6 @@ def sdtv_aspect_config_set(kodi_setting, all_settings):
 
 
 def sdtv_mode_config_set(kodi_setting, all_settings):
-
     if kodi_setting in [str(x) for x in range(1, 4)]:
 
         return kodi_setting
@@ -592,7 +562,6 @@ def sdtv_mode_config_set(kodi_setting, all_settings):
 
 
 def bcm2835_config_set(kodi_setting, all_settings):
-
     if kodi_setting == "true":
 
         return "spi-bcm2835-overlay"
@@ -602,7 +571,6 @@ def bcm2835_config_set(kodi_setting, all_settings):
 
 
 def w1gpio_config_set(kodi_setting, all_settings):
-
     permitted = ["remove_this_line", "w1-gpio-overlay", "w1-gpio-pullup-overlay"]
 
     try:
@@ -614,7 +582,6 @@ def w1gpio_config_set(kodi_setting, all_settings):
 
 
 def soundcard_dac_config_set(kodi_setting, all_settings):
-
     permitted = [
         "remove_this_line",
         "hifiberry-dac-overlay",
@@ -645,7 +612,6 @@ def legacy_gpio_removal(kodi_setting, all_settings):
 
 
 def gpio_group_removal(kodi_setting, all_settings):
-
     if all_settings.get("lirc-rpi-overlay") != "true":
 
         return "remove_this_line"
@@ -655,7 +621,6 @@ def gpio_group_removal(kodi_setting, all_settings):
 
 
 def gpio_pin_config_set(kodi_setting, all_settings):
-
     if kodi_setting not in ["0", 0]:
 
         return int(kodi_setting)
@@ -665,7 +630,6 @@ def gpio_pin_config_set(kodi_setting, all_settings):
 
 
 def audio_config_set(kodi_setting, all_settings):
-
     if all_settings.get("soundcard_dac", "0") != "0":
 
         return "off"
@@ -725,7 +689,10 @@ Houses the protocols for the settings in Kodi which come from the config.txt    
 
 MASTER_SETTINGS = {
     "audio": {
-        "default": {"function": None, "value": "false"},
+        "default": {
+            "function": None,
+            "value": "false"
+        },
         "config_get_patterns": [
             {
                 "identify": r"\s*(?:dtparam|dtparams|device_tree_param|device_tree_params)\s*=.*audio\s*=",
@@ -739,7 +706,10 @@ MASTER_SETTINGS = {
         "setting_stub": "dtparam=audio=%s",
     },
     "config_hdmi_boost": {
-        "default": {"function": hdmi_boost_custom_default, "value": ""},
+        "default": {
+            "function": hdmi_boost_custom_default,
+            "value": ""
+        },
         "config_get_patterns": [
             {
                 "identify": r"\s*(?:hdmi_boost|config_hdmi_boost)\s*=",
@@ -753,9 +723,15 @@ MASTER_SETTINGS = {
         "setting_stub": "config_hdmi_boost=%s",
     },
     "decode_MPG2": {
-        "default": {"function": None, "value": ""},
+        "default": {
+            "function": None,
+            "value": ""
+        },
         "config_get_patterns": [
-            {"identify": r"\s*decode_MPG2\s*=\s*", "extract": r"\s*decode_MPG2\s*=\s*(\w+)"}
+            {
+                "identify": r"\s*decode_MPG2\s*=\s*",
+                "extract": r"\s*decode_MPG2\s*=\s*(\w+)"
+            }
         ],
         "config_set": generic_passthrough_config_set,
         "config_validation": blank_check_validation,
@@ -764,9 +740,15 @@ MASTER_SETTINGS = {
         "setting_stub": "decode_MPG2=%s",
     },
     "decode_WVC1": {
-        "default": {"function": None, "value": ""},
+        "default": {
+            "function": None,
+            "value": ""
+        },
         "config_get_patterns": [
-            {"identify": r"\s*decode_WVC1\s*=\s*", "extract": r"\s*decode_WVC1\s*=\s*(\w+)"}
+            {
+                "identify": r"\s*decode_WVC1\s*=\s*",
+                "extract": r"\s*decode_WVC1\s*=\s*(\w+)"
+            }
         ],
         "config_set": generic_passthrough_config_set,
         "config_validation": blank_check_validation,
@@ -775,9 +757,15 @@ MASTER_SETTINGS = {
         "setting_stub": "decode_WVC1=%s",
     },
     "display_rotate": {
-        "default": {"function": None, "value": "0"},
+        "default": {
+            "function": None,
+            "value": "0"
+        },
         "config_get_patterns": [
-            {"identify": r"\s*display_rotate\s*=\s*", "extract": r"\s*display_rotate\s*=\s*(\w+)"}
+            {
+                "identify": r"\s*display_rotate\s*=\s*",
+                "extract": r"\s*display_rotate\s*=\s*(\w+)"
+            }
         ],
         "config_set": display_rotate_config_set,
         "config_validation": display_rotate_validation,
@@ -786,10 +774,19 @@ MASTER_SETTINGS = {
         "setting_stub": "display_rotate=%s",
     },
     "gpu_mem_1024": {
-        "default": {"function": None, "value": "256"},
+        "default": {
+            "function": None,
+            "value": "256"
+        },
         "config_get_patterns": [
-            {"identify": r"\s*gpu_mem_1024\s*=", "extract": r"\s*gpu_mem_1024\s*=\s*(\d+)"},
-            {"identify": r"\s*gpu_mem\s*=", "extract": r"\s*gpu_mem\s*=\s*(\d+)"},
+            {
+                "identify": r"\s*gpu_mem_1024\s*=",
+                "extract": r"\s*gpu_mem_1024\s*=\s*(\d+)"
+            },
+            {
+                "identify": r"\s*gpu_mem\s*=",
+                "extract": r"\s*gpu_mem\s*=\s*(\d+)"
+            },
         ],
         "config_set": generic_passthrough_config_set,
         "config_validation": gpu_mem_1024_validation,
@@ -798,10 +795,19 @@ MASTER_SETTINGS = {
         "setting_stub": "gpu_mem_1024=%s",
     },
     "gpu_mem_512": {
-        "default": {"function": None, "value": "144"},
+        "default": {
+            "function": None,
+            "value": "144"
+        },
         "config_get_patterns": [
-            {"identify": r"\s*gpu_mem_512\s*=", "extract": r"\s*gpu_mem_512\s*=\s*(\d+)"},
-            {"identify": r"\s*gpu_mem\s*=", "extract": r"\s*gpu_mem\s*=\s*(\d+)"},
+            {
+                "identify": r"\s*gpu_mem_512\s*=",
+                "extract": r"\s*gpu_mem_512\s*=\s*(\d+)"
+            },
+            {
+                "identify": r"\s*gpu_mem\s*=",
+                "extract": r"\s*gpu_mem\s*=\s*(\d+)"
+            },
         ],
         "config_set": generic_passthrough_config_set,
         "config_validation": gpu_mem_512_validation,
@@ -810,10 +816,19 @@ MASTER_SETTINGS = {
         "setting_stub": "gpu_mem_512=%s",
     },
     "gpu_mem_256": {
-        "default": {"function": None, "value": "112"},
+        "default": {
+            "function": None,
+            "value": "112"
+        },
         "config_get_patterns": [
-            {"identify": r"\s*gpu_mem_256\s*=", "extract": r"\s*gpu_mem_256\s*=\s*(\d+)"},
-            {"identify": r"\s*gpu_mem\s*=", "extract": r"\s*gpu_mem\s*=\s*(\d+)"},
+            {
+                "identify": r"\s*gpu_mem_256\s*=",
+                "extract": r"\s*gpu_mem_256\s*=\s*(\d+)"
+            },
+            {
+                "identify": r"\s*gpu_mem\s*=",
+                "extract": r"\s*gpu_mem\s*=\s*(\d+)"
+            },
         ],
         "config_set": generic_passthrough_config_set,
         "config_validation": gpu_mem_256_validation,
@@ -822,7 +837,10 @@ MASTER_SETTINGS = {
         "setting_stub": "gpu_mem_256=%s",
     },
     "hdmi_force_hotplug": {
-        "default": {"function": None, "value": "false"},
+        "default": {
+            "function": None,
+            "value": "false"
+        },
         "config_get_patterns": [
             {
                 "identify": r"\s*hdmi_force_hotplug\s*=",
@@ -836,9 +854,15 @@ MASTER_SETTINGS = {
         "setting_stub": "hdmi_force_hotplug=%s",
     },
     "hdmi_edid_file": {
-        "default": {"function": None, "value": "false"},
+        "default": {
+            "function": None,
+            "value": "false"
+        },
         "config_get_patterns": [
-            {"identify": r"\s*hdmi_edid_file\s*=", "extract": r"\s*hdmi_edid_file\s*=\s*(\d+)"}
+            {
+                "identify": r"\s*hdmi_edid_file\s*=",
+                "extract": r"\s*hdmi_edid_file\s*=\s*(\d+)"
+            }
         ],
         "config_set": generic_bool_config_set,
         "config_validation": generic_bool_validation,
@@ -847,9 +871,15 @@ MASTER_SETTINGS = {
         "setting_stub": "hdmi_edid_file=%s",
     },
     "hdmi_group": {
-        "default": {"function": None, "value": "0"},
+        "default": {
+            "function": None,
+            "value": "0"
+        },
         "config_get_patterns": [
-            {"identify": r"\s*hdmi_group\s*=", "extract": r"\s*hdmi_group\s*=\s*(\d+)"}
+            {
+                "identify": r"\s*hdmi_group\s*=",
+                "extract": r"\s*hdmi_group\s*=\s*(\d+)"
+            }
         ],
         "config_set": hdmi_group_config_set,
         "config_validation": hdmi_group_validation,
@@ -858,9 +888,15 @@ MASTER_SETTINGS = {
         "setting_stub": "hdmi_group=%s",
     },
     "hdmi_ignore_cec": {
-        "default": {"function": None, "value": "false"},
+        "default": {
+            "function": None,
+            "value": "false"
+        },
         "config_get_patterns": [
-            {"identify": r"\s*hdmi_ignore_cec\s*=", "extract": r"\s*hdmi_ignore_cec\s*=\s*(\d+)"}
+            {
+                "identify": r"\s*hdmi_ignore_cec\s*=",
+                "extract": r"\s*hdmi_ignore_cec\s*=\s*(\d+)"
+            }
         ],
         "config_set": generic_bool_config_set,
         "config_validation": generic_bool_validation,
@@ -869,7 +905,10 @@ MASTER_SETTINGS = {
         "setting_stub": "hdmi_ignore_cec=%s",
     },
     "hdmi_ignore_cec_init": {
-        "default": {"function": None, "value": "false"},
+        "default": {
+            "function": None,
+            "value": "false"
+        },
         "config_get_patterns": [
             {
                 "identify": r"\s*hdmi_ignore_cec_init\s*=",
@@ -883,9 +922,15 @@ MASTER_SETTINGS = {
         "setting_stub": "hdmi_ignore_cec_init=%s",
     },
     "hdmi_ignore_edid": {
-        "default": {"function": None, "value": "false"},
+        "default": {
+            "function": None,
+            "value": "false"
+        },
         "config_get_patterns": [
-            {"identify": r"\s*hdmi_ignore_edid\s*=", "extract": r"\s*hdmi_ignore_edid\s*=\s*(\w+)"}
+            {
+                "identify": r"\s*hdmi_ignore_edid\s*=",
+                "extract": r"\s*hdmi_ignore_edid\s*=\s*(\w+)"
+            }
         ],
         "config_set": hdmi_ignore_edid_config_set,
         "config_validation": hdmi_ignore_edid_validation,
@@ -894,9 +939,15 @@ MASTER_SETTINGS = {
         "setting_stub": "hdmi_ignore_edid=%s",
     },
     "hdmi_mode": {
-        "default": {"function": None, "value": "0"},
+        "default": {
+            "function": None,
+            "value": "0"
+        },
         "config_get_patterns": [
-            {"identify": r"\s*hdmi_mode\s*=", "extract": r"\s*hdmi_mode\s*=\s*(\d+)"}
+            {
+                "identify": r"\s*hdmi_mode\s*=",
+                "extract": r"\s*hdmi_mode\s*=\s*(\d+)"
+            }
         ],
         "config_set": hdmi_mode_config_set,
         "config_validation": hdmi_mode_validation,
@@ -905,7 +956,10 @@ MASTER_SETTINGS = {
         "setting_stub": "hdmi_mode=%s",
     },
     "hdmi_pixel_encoding": {
-        "default": {"function": None, "value": "0"},
+        "default": {
+            "function": None,
+            "value": "0"
+        },
         "config_get_patterns": [
             {
                 "identify": r"\s*hdmi_pixel_encoding\s*=",
@@ -919,9 +973,15 @@ MASTER_SETTINGS = {
         "setting_stub": "hdmi_pixel_encoding=%s",
     },
     "hdmi_safe": {
-        "default": {"function": None, "value": "false"},
+        "default": {
+            "function": None,
+            "value": "false"
+        },
         "config_get_patterns": [
-            {"identify": r"\s*hdmi_safe\s*=", "extract": r"\s*hdmi_safe\s*=\s*(\d+)"}
+            {
+                "identify": r"\s*hdmi_safe\s*=",
+                "extract": r"\s*hdmi_safe\s*=\s*(\d+)"
+            }
         ],
         "config_set": generic_bool_config_set,
         "config_validation": generic_bool_validation,
@@ -930,9 +990,15 @@ MASTER_SETTINGS = {
         "setting_stub": "hdmi_safe=%s",
     },
     "sdtv_aspect": {
-        "default": {"function": None, "value": "1"},
+        "default": {
+            "function": None,
+            "value": "1"
+        },
         "config_get_patterns": [
-            {"identify": r"\s*sdtv_aspect\s*=", "extract": r"\s*sdtv_aspect\s*=\s*(\d+)"}
+            {
+                "identify": r"\s*sdtv_aspect\s*=",
+                "extract": r"\s*sdtv_aspect\s*=\s*(\d+)"
+            }
         ],
         "config_set": sdtv_aspect_config_set,
         "config_validation": sdtv_aspect_validation,
@@ -941,9 +1007,15 @@ MASTER_SETTINGS = {
         "setting_stub": "sdtv_aspect=%s",
     },
     "sdtv_mode": {
-        "default": {"function": None, "value": "0"},
+        "default": {
+            "function": None,
+            "value": "0"
+        },
         "config_get_patterns": [
-            {"identify": r"\s*sdtv_mode\s*=", "extract": r"\s*sdtv_mode\s*=\s*(\d+)"}
+            {
+                "identify": r"\s*sdtv_mode\s*=",
+                "extract": r"\s*sdtv_mode\s*=\s*(\d+)"
+            }
         ],
         "config_set": sdtv_mode_config_set,
         "config_validation": sdtv_mode_validation,
@@ -952,7 +1024,10 @@ MASTER_SETTINGS = {
         "setting_stub": "sdtv_mode=%s",
     },
     "spi-bcm2835-overlay": {
-        "default": {"function": None, "value": "false"},
+        "default": {
+            "function": None,
+            "value": "false"
+        },
         "config_get_patterns": [
             {
                 "identify": r"\s*(?:dtoverlay|device_tree_overlay)\s*=\s*[-\w\d]*spi-bcm2835[-\w\d]*",
@@ -966,7 +1041,10 @@ MASTER_SETTINGS = {
         "setting_stub": "dtoverlay=%s",
     },
     "w1gpio": {
-        "default": {"function": None, "value": "0"},
+        "default": {
+            "function": None,
+            "value": "0"
+        },
         "config_get_patterns": [
             {
                 "identify": r"\s*(?:dtoverlay|device_tree_overlay)\s*=.*w1-gpio",
@@ -980,7 +1058,10 @@ MASTER_SETTINGS = {
         "setting_stub": "dtoverlay=%s",
     },
     "soundcard_dac": {
-        "default": {"function": None, "value": "0"},
+        "default": {
+            "function": None,
+            "value": "0"
+        },
         "config_get_patterns": [
             {
                 "identify": r"\s*(?:dtoverlay|device_tree_overlay)\s*=\s*[-\w\d]*(?:hifiberry-d|iqaudio-d|justboom-d|allo-piano-d|allo-boss-d|allo-digione-d)",
@@ -994,9 +1075,15 @@ MASTER_SETTINGS = {
         "setting_stub": "dtoverlay=%s",
     },
     "start_x": {
-        "default": {"function": None, "value": "1"},
+        "default": {
+            "function": None,
+            "value": "1"
+        },
         "config_get_patterns": [
-            {"identify": r"\s*start_x\s*=", "extract": r"\s*start_x\s*=\s*(\d)"}
+            {
+                "identify": r"\s*start_x\s*=",
+                "extract": r"\s*start_x\s*=\s*(\d)"
+            }
         ],
         "config_set": start_x_config_set,
         "config_validation": blank_check_validation,
@@ -1005,7 +1092,10 @@ MASTER_SETTINGS = {
         "setting_stub": "start_x=%s",
     },
     "lirc-rpi-overlay": {
-        "default": {"function": None, "value": "defunct"},
+        "default": {
+            "function": None,
+            "value": "defunct"
+        },
         "config_get_patterns": [
             {
                 "identify": r"\s*(?:dtoverlay|device_tree_overlay)\s*=\s*[-\w\d]*lirc-rpi[-\w\d]*",
@@ -1020,7 +1110,10 @@ MASTER_SETTINGS = {
     },
 
     "gpio_in_pull": {
-        "default": {"function": None, "value": "defunct"},
+        "default": {
+            "function": None,
+            "value": "defunct"
+        },
         "config_get_patterns": [
             {
                 "identify": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|device_tree_param|device_tree_params)\s*=(?:lirc-rpi:)?.*gpio_in_pull[-\w\d]*=",
@@ -1037,7 +1130,10 @@ MASTER_SETTINGS = {
         # This group looks for the new gpio-ir setting and deletes it when found.
         # The gpio_in_pin or gpio_pin settings control whether dtoverlay=gpio-ir
         # is added to the config.txt.
-        "default": {"function": None, "value": "defunct"},
+        "default": {
+            "function": None,
+            "value": "defunct"
+        },
         "config_get_patterns": [
             {
                 "identify": r"\s*(?:dtoverlay|device_tree_overlay)\s*=\s*[-\w\d]*gpio-ir[-\w\d]*",
@@ -1051,7 +1147,10 @@ MASTER_SETTINGS = {
         "setting_stub": "",
     },
     "gpio_out_pin": {
-        "default": {"function": None, "value": "defunct"},
+        "default": {
+            "function": None,
+            "value": "defunct"
+        },
         "config_get_patterns": [
             {
                 "identify": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|device_tree_param|device_tree_params)\s*=(?:lirc-rpi:)?.*gpio_out_pin[-\w\d]*=",
@@ -1065,7 +1164,10 @@ MASTER_SETTINGS = {
         "setting_stub": "",
     },
     "gpio_in_pin": {
-        "default": {"function": None, "value": "defunct"},
+        "default": {
+            "function": None,
+            "value": "defunct"
+        },
         "config_get_patterns": [
             {
                 "identify": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|device_tree_param|device_tree_params)\s*=(?:lirc-rpi:)?.*gpio_in_pin[-\w\d]*=",
@@ -1079,7 +1181,10 @@ MASTER_SETTINGS = {
         "setting_stub": "",
     },
     "gpio_pin": {
-        "default": {"function": None, "value": "0"},
+        "default": {
+            "function": None,
+            "value": "0"
+        },
         "config_get_patterns": [
             {
                 "identify": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|device_tree_param|device_tree_params)\s*=(?:gpio-ir:)?.*gpio_pin[-\w\d]*=",
@@ -1100,14 +1205,11 @@ MASTER_SETTINGS = {
 
 
 def read_config_file(location):
-
     with open(location, "r") as f:
-        config = f.readlines()
-    return config
+        return f.readlines()
 
 
 def write_config_file(location, new_config):
-
     new_config = [
         x + "\n" if not x.endswith("\n") else x for x in new_config if "remove_this_line" not in x
     ]
@@ -1149,7 +1251,6 @@ def clean_config(config, patterns):
 
 
 if __name__ == "__main__":
-
     import subprocess
 
     config = read_config_file('/boot/config.txt')
@@ -1157,4 +1258,4 @@ if __name__ == "__main__":
     extracted_settings = config_to_kodi(MASTER_SETTINGS, config)
     new_settings = kodi_to_config(MASTER_SETTINGS, original_config, extracted_settings)
     write_config_file('/var/tmp/config.txt', new_settings)
-    subprocess.call(["sudo", "mv",  '/var/tmp/config.txt', '/boot/config.txt'])
+    subprocess.call(["sudo", "mv", '/var/tmp/config.txt', '/boot/config.txt'])
