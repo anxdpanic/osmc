@@ -1,6 +1,5 @@
 #!/usr/bin/env python2
 
-from __future__ import print_function
 import xml.etree.ElementTree as ET
 import os.path
 import traceback
@@ -13,7 +12,7 @@ except NameError:
     FileNotFoundError = IOError
 
 DEFAULT_GUIFILE = '.kodi/userdata/guisettings.xml'
-DEFAULT_STRINGSFILE = '/usr/share/kodi/addons/resource.language.en_gb/resources/strings.po' # noqa E501
+DEFAULT_STRINGSFILE = '/usr/share/kodi/addons/resource.language.en_gb/resources/strings.po'  # noqa E501
 DEFAULT_SETTINGSFILE = '/usr/share/kodi/system/settings/settings.xml'
 
 # A list of tuples of the default information from guisettings to return
@@ -90,15 +89,15 @@ class GuiParser(object):
                 for line in f:
                     if line.startswith('msgctxt'):
                         try:
-                            msgctxt = line.split(' ')[1].strip().split('"')[1][1:] # noqa E501
+                            msgctxt = line.split(' ')[1].strip().split('"')[1][1:]  # noqa E501
                         except IndexError:
                             continue
                         for line in f:
                             if line.startswith('msgid'):
                                 try:
-                                    system_strings[msgctxt] = line.split(' ', 1)[1].strip().split('"')[1] # noqa E501
+                                    system_strings[msgctxt] = line.split(' ', 1)[1].strip().split('"')[1]  # noqa E501
                                 except IndexError:
-                                    system_strings[msgctxt] = 'string failed - %s' % line # noqa E501
+                                    system_strings[msgctxt] = 'string failed - %s' % line  # noqa E501
                                 break
         except Exception:
             tb = traceback.format_exc()
@@ -142,8 +141,8 @@ class GuiParser(object):
             return ("{}x{}".format(
                 int(resolution[0:5]),
                 int(resolution[5:10])),
-                float(resolution[10:18]),
-                resolution[19:20])
+                    float(resolution[10:18]),
+                    resolution[19:20])
         except ValueError:
             return resolution, None, None
 
@@ -186,7 +185,7 @@ class GuiParser(object):
                     continue
                 setting = self.gui_settings.find('/'.join(s))
             else:
-                setting = self.gui_settings.find('.//setting[@id="{}"]'.format(sj)) # noqa E501
+                setting = self.gui_settings.find('.//setting[@id="{}"]'.format(sj))  # noqa E501
 
             try:
                 setting_text = setting.text.strip()
@@ -200,7 +199,7 @@ class GuiParser(object):
                 section = self.system_settings[sj]
             except Exception:
                 try:
-                    self.parsed_values.append('{}: {}'.format(sj, setting_text)) # noqa E501
+                    self.parsed_values.append('{}: {}'.format(sj, setting_text))  # noqa E501
                 except Exception:
                     pass
                 continue
@@ -243,12 +242,12 @@ class GuiParser(object):
                         settings = settings + self._parent_map(
                             self.gui_settings.find(sec))
                     except Exception:
-                        settings = settings + ['=' * 40 + '\nBad section: {}\n'.format(sec) + '=' * 40] # noqa E501
+                        settings = settings + ['=' * 40 + '\nBad section: {}\n'.format(sec) + '=' * 40]  # noqa E501
         else:
             for s in self.gui_settings:
                 try:
                     t = tuple(s.attrib['id'].split('.'))
-                    if (self.section_subset != 'all' and t[0] in self.section_subset.split(',')) or self.section_subset == 'all': # noqa E501
+                    if (self.section_subset != 'all' and t[0] in self.section_subset.split(',')) or self.section_subset == 'all':  # noqa E501
                         settings.append(t)
                 except Exception:
                     pass
@@ -272,9 +271,9 @@ class GuiParser(object):
     def failure(self, failed_to, *args, **kwargs):
 
         info = (
-                failed_to,
-                traceback.format_exc(),
-                str(self.__dict__).replace(',', '\n\t'))
+            failed_to,
+            traceback.format_exc(),
+            str(self.__dict__).replace(',', '\n\t'))
 
         return ['Failed to %s:\n%s\nParser Variables:\n\t%s' % info]
 
@@ -327,11 +326,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     gp = GuiParser(
-            guifile=args.guifile,
-            stringsfile=args.stringsfile,
-            settingsfile=args.settingsfile,
-            settings_list=DEFAULT_SETTINGSLIST,
-            section_subset=args.all)
+        guifile=args.guifile,
+        stringsfile=args.stringsfile,
+        settingsfile=args.settingsfile,
+        settings_list=DEFAULT_SETTINGSLIST,
+        section_subset=args.all)
 
     for l in gp.go():
         print(l)
