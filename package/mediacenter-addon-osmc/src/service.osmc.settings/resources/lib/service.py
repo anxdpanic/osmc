@@ -23,7 +23,7 @@
 import xbmc
 
 # Custom modules
-from package import osmc_main as m
+from osmcsettings import osmc_main as m
 
 
 def log(message):

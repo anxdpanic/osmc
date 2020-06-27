@@ -1,1 +1,1 @@
-__all__ = ['package', 'service']
+__all__ = ['osmcupdates', 'service']

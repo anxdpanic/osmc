@@ -40,7 +40,6 @@ class SimpleScheduler(object):
             # if the user wants a specific time, then use that, otherwise use a random time
             self.trigger_time = self.set_trigger_time(right_now)
 
-
         elif self.frequency == 2:
 
             # the initial trigger time will be this year and month, but the day is the one the user has chosen, as well as the users
@@ -54,7 +53,6 @@ class SimpleScheduler(object):
 
             # if the user wants a specific time, then use that, otherwise use a random time
             self.trigger_time = self.set_trigger_time(right_now + datetime.timedelta(days=delta_days))
-
 
         elif self.frequency == 3:
 

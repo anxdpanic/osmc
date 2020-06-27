@@ -18,7 +18,7 @@
 #  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 #  http://www.gnu.org/copyleft/gpl.html
 
-from package import update_service
+from osmcupdates import update_service
 
 if __name__ == "__main__":
     m = update_service.Main()

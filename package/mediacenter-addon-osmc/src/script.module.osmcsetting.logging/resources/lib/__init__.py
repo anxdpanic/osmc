@@ -1,1 +1,1 @@
-__all__ = ['CompLogger', 'grablogs', 'readgui']
+__all__ = ['osmclogging']

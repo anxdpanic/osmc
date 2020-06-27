@@ -26,7 +26,7 @@ __addonid__ = __addon__.getAddonInfo('id')
 __scriptPath__ = __addon__.getAddonInfo('path')
 __setting__ = __addon__.getSetting
 __image_file__ = os.path.join(__scriptPath__, 'resources', 'media', 'update_available.png')
-__libpath__ = xbmc.translatePath(os.path.join(xbmcaddon.Addon().getAddonInfo('path'), 'resources', 'lib'))
+__libpath__ = xbmc.translatePath(os.path.join(xbmcaddon.Addon().getAddonInfo('path'), 'resources', 'lib', 'osmcupdates'))
 
 DIALOG = xbmcgui.Dialog()
 

@@ -16,7 +16,7 @@ try:
     import xbmcgui
     import xbmcaddon
 
-    addonid = "script.module.osmcsetting.logging"
+    addonid = "script.module.osmccommon"
     __addon__ = xbmcaddon.Addon(addonid)
 
     DIALOG = xbmcgui.Dialog()

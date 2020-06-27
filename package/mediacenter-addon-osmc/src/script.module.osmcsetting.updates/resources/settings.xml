@@ -90,16 +90,16 @@
 	</category>
 	<category label="32094">
 		<!-- 32056: Scan for updates now -->
-		<setting action="RunScript($CWD/resources/lib/call_parent.py, update)" id="update_now" label="32056" option="close" type="action"/>
+		<setting action="RunScript($CWD/resources/lib/osmcupdates/call_parent.py, update)" id="update_now" label="32056" option="close" type="action"/>
 		<!-- install now visibility bool -->
 		<setting visible="false" default="false" id="install_now_visible" label="" type="bool"/>
 		<!-- install now -->
-		<setting action="RunScript($CWD/resources/lib/call_parent.py, install)" id="install_now" label="32053" option="close" type="action" visible="eq(-1,true)"/>
+		<setting action="RunScript($CWD/resources/lib/osmcupdates/call_parent.py, install)" id="install_now" label="32053" option="close" type="action" visible="eq(-1,true)"/>
 		<!-- backup now -->
-		<setting action="RunScript($CWD/resources/lib/call_parent.py, backup)" id="backup_now" label="32105" option="close" type="action"/>
+		<setting action="RunScript($CWD/resources/lib/osmcupdates/call_parent.py, backup)" id="backup_now" label="32105" option="close" type="action"/>
 		<!-- restore now -->
-		<setting action="RunScript($CWD/resources/lib/call_parent.py, restore)" id="restore_now" label="32106" option="close" type="action"/>
-		<setting action="RunScript($CWD/resources/lib/OSMC_HotFix.py, restore)" id="hotfix_now" label="32114" option="close" type="action"/>
+		<setting action="RunScript($CWD/resources/lib/osmcupdates/call_parent.py, restore)" id="restore_now" label="32106" option="close" type="action"/>
+		<setting action="RunScript($CWD/resources/lib/osmcupdates/OSMC_HotFix.py, restore)" id="hotfix_now" label="32114" option="close" type="action"/>
 		<!-- 32134: Kodi Reset -->
 		<setting default="false" label="32134" id="kodi_reset" type="bool"/>
 		<setting label="32135" type="lsep" visible="eq(-1,true)"/>

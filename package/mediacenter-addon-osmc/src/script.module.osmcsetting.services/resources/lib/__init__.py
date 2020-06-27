@@ -1,1 +1,1 @@
-__all__ = ['CompLogger', 'service_selection_gui']
+__all__ = ['osmcservices']

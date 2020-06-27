@@ -343,7 +343,7 @@ class OSMCGui(threading.Thread):
         """ Takes each live_module and loads the information required for it to be included in the MyOSMC widget into the Home window.
         """
 
-        script_location = os.path.join(scriptPath, 'resources', 'lib', 'call_osmc_parent.py')
+        script_location = os.path.join(scriptPath, 'resources', 'lib', 'osmcsettings', 'call_osmc_parent.py')
 
         WINDOW.setProperty('MyOSMC.Module.Script', script_location)
 

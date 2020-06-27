@@ -83,7 +83,6 @@
 
 """
 
-
 # XBMC Modules
 import xbmcaddon
 import xbmc
@@ -94,17 +93,15 @@ import threading
 
 
 def log(message):
-
     try:
         message = str(message)
     except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore' )
+        message = message.encode('utf-8', 'ignore')
 
-    xbmc.log(msg = 'OSMC UPDATES ' + str(message), level=xbmc.LOGDEBUG)
+    xbmc.log(msg='OSMC UPDATES ' + str(message), level=xbmc.LOGDEBUG)
 
 
 class OSMCSettingClass(threading.Thread):
-
     """
         A OSMCSettingClass is way to substantiate the settings of an OSMC settings module, and make them available to the
         OSMC Settings Addon (OSA).
@@ -126,11 +123,11 @@ class OSMCSettingClass(threading.Thread):
         # this is what is displayed in the main settings gui
         self.shortname = 'Updates'
 
-        self.description =  ""
+        self.description = ""
 
         self.reset_file = '/home/osmc/.factoryreset'
 
-        self.setting_data_method =  {}
+        self.setting_data_method = {}
 
         # 'mercury':    {
         #                   'setting_value' : '',
@@ -156,9 +153,8 @@ class OSMCSettingClass(threading.Thread):
         self.reboot_required = False
 
         log('START')
-        for x, k in self.setting_data_method.iteritems():
-            log("%s = %s" % (x, k.get('setting_value','no setting value')))
-
+        for x, k in self.setting_data_method.items():
+            log("%s = %s" % (x, k.get('setting_value', 'no setting value')))
 
     def populate_setting_data_method(self):
 
@@ -173,7 +169,7 @@ class OSMCSettingClass(threading.Thread):
         for key in self.setting_data_method.keys():
 
             # grab the translate method (if there is one)
-            translate_method = self.setting_data_method.get(key,{}).get('translate',{})
+            translate_method = self.setting_data_method.get(key, {}).get('translate', {})
 
             # get the setting value, translate it if needed
             if translate_method:
@@ -183,7 +179,6 @@ class OSMCSettingClass(threading.Thread):
 
             # add it to the dictionary
             self.setting_data_method[key]['setting_value'] = setting_value
-
 
     def run(self):
 
@@ -213,10 +208,8 @@ class OSMCSettingClass(threading.Thread):
             subprocess.call(['sudo', 'rm', self.reset_file])
 
         log('END')
-        for x, k in self.setting_data_method.iteritems():
-            log("%s = %s" % (x, k.get('setting_value','no setting value')))
-
-
+        for x, k in self.setting_data_method.items():
+            log("%s = %s" % (x, k.get('setting_value', 'no setting value')))
 
     def settings_retriever_xml(self):
 
@@ -228,11 +221,9 @@ class OSMCSettingClass(threading.Thread):
         latest_settings = {}
 
         for key in self.setting_data_method.keys():
-
             latest_settings[key] = self.me.getSetting(key)
 
         return latest_settings
-
 
     ##############################################################################################################################
     #                                                                                                                            #
@@ -248,7 +239,6 @@ class OSMCSettingClass(threading.Thread):
 
         pass
 
-
     def final_method(self):
 
         """
@@ -261,7 +251,6 @@ class OSMCSettingClass(threading.Thread):
 
         pass
 
-
     def boot_method(self):
 
         """
@@ -273,7 +262,6 @@ class OSMCSettingClass(threading.Thread):
 
     #                                                                                                                            #
     ##############################################################################################################################
-
 
     ##############################################################################################################################
     #                                                                                                                            #
@@ -307,6 +295,7 @@ class OSMCSettingClass(threading.Thread):
 
     #                                                                                                                            #
     ##############################################################################################################################
+
 
 if __name__ == "__main__":
     pass
