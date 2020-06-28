@@ -8,4 +8,4 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
-__all__ = ['remote_gui', 'remote_remotes']
+__all__ = ['remote_gui', 'remote_remotes', 'osmc']

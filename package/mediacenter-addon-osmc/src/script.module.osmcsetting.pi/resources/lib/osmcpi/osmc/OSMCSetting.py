@@ -2,7 +2,7 @@
 """
     Copyright (C) 2014-2020 OSMC (KodeKarnage)
 
-    This file is part of script.module.osmcsetting.apfstore
+    This file is part of script.module.osmcsetting.pi
 
     SPDX-License-Identifier: GPL-2.0-only
     See LICENSES/GPL-2.0-only for more information.
@@ -103,111 +103,200 @@
 # XBMC Modules
 import xbmc
 import xbmcaddon
+import xbmcgui
+
+# STANDARD Modules
+import subprocess
 import sys
 import os
 import threading
+import traceback
 
-addonid = "script.module.osmcsetting.apfstore"
-__addon__ = xbmcaddon.Addon(addonid)
-
-# Custom modules
-sys.path.append(xbmc.translatePath(os.path.join(xbmcaddon.Addon(addonid).getAddonInfo('path'), 'resources', 'lib', 'apfstore')))
+from osmccommon.osmc_logging import StandardLogger
+from osmccommon.osmc_language import LangRetriever
 
 # OSMC SETTING Modules
-from CompLogger import comprehensive_logger as clog
-from apf_store import APF_STORE
+from .. import OSMC_REparser as parser
 
+addonid = "script.module.osmcsetting.pi"
+__addon__ = xbmcaddon.Addon(addonid)
+DIALOG = xbmcgui.Dialog()
 
-def log(message):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
+# Custom modules
 
-    xbmc.log('OSMC APFStore ' + str(message), level=xbmc.LOGDEBUG)
+PY3 = sys.version_info.major == 3
+
+log = StandardLogger(addonid, os.path.basename(__file__)).log
+lang = LangRetriever(__addon__).lang
 
 
 class OSMCSettingClass(threading.Thread):
-    """ 
-        A OSMCSettingClass is way to substantiate the settings of an OSMC settings module, and make them available to the 
+    """
+        A OSMCSettingClass is way to substantiate the settings of an OSMC settings module, and make them available to the
         OSMC Settings Addon (OSA).
 
     """
 
     def __init__(self):
-        """ 
-            The logger simply runs specific logs. All this module does is open the Settings window.
+
+        """
+            The MASTER_SETTINGS contains all the settings in the settings group, as well as the methods to call when a
+            setting_value has changed and the existing setting_value.
         """
 
         super(OSMCSettingClass, self).__init__()
 
         self.addonid = addonid
-        self.me = xbmcaddon.Addon(self.addonid)
+        self.me = __addon__
+
+        self.path = os.path.join(xbmc.translatePath(self.me.getAddonInfo('path')), 'resources', 'lib', 'osmcpi', 'osmc')
 
         # this is what is displayed in the main settings gui
-        self.shortname = 'App Store'
+        self.shortname = 'Pi Config'
 
-        self.description = """This module is where you can grab awesome APFs like ... """
+        self.description = """This is the text that is shown on the OSG. [CR][CR]It should describe:[CR]   - what the settings module is for,[CR]   - the settings it controls,[CR]   - and anything else you want, I suppose."""
 
-    @clog(log, nowait=True)
+        self.description = """The Raspberry Pi doesn't have a conventional BIOS. System configuration parameters are stored in a "config.txt" file. For more detail, visit http://elinux.org/RPiconfig[CR]
+This settings module allows you to edit your config.txt from within OSMC using a graphical interface.
+
+The module includes:
+- display rotation
+- hdmi_safe & hdmi_boost
+- hdmi_group & hdmi_mode
+- function to save edid to file
+- sdtv_mode & sdtv_aspect
+- GPU memory split
+- MPG2 & WVC1 licences (including status)
+- your Pi's serial number
+
+Finally, there is a Config Editor that will allow you to quickly add, edit, or delete lines in your config.txt.
+
+Overclock settings are set using the Pi Overclock module."""
+
+        # the location of the config file FOR TESTING ONLY
+        try:
+            self.config_location = '/boot/config.txt'
+
+            self.populate_misc_info()
+
+        except:
+
+            # if anything fails above, assume we are testing and look for the config
+            # in the testing location
+            self.config_location = '/home/plaskev/Documents/config.txt'
+
+        try:
+            self.clean_user_config()
+        except Exception:
+
+            log('Error cleaning users config')
+            log(traceback.format_exc())
+
     def run(self):
+
         """
             The method determines what happens when the item is clicked in the settings GUI.
             Usually this would be __addon__.OpenSettings(), but it could be any other script.
-            This allows the creation of action buttons in the GUI, as well as allowing developers to script and skin their 
+            This allows the creation of action buttons in the GUI, as well as allowing developers to script and skin their
             own user interfaces.
         """
 
-        me = APF_STORE()
+        # read the config.txt file everytime the settings are opened. This is unavoidable because it is possible for
+        # the user to have made manual changes to the config.txt while OSG is active.
+        config = parser.read_config_file(self.config_location)
 
-    @clog(log)
+        extracted_settings = parser.config_to_kodi(parser.MASTER_SETTINGS, config)
+
+        # load the settings into kodi
+        log('Settings extracted from the config.txt')
+        for k, v in extracted_settings.items():
+            log("%s : %s" % (k, v))
+            self.me.setSetting(k, str(v))
+
+        # open the settings GUI and let the user monkey about with the controls
+        self.me.openSettings()
+
+        # retrieve the new settings from kodi
+        new_settings = self.settings_retriever_xml()
+
+        log('New settings applied to the config.txt')
+        for k, v in new_settings.items():
+            log("%s : %s" % (k, v))
+
+        # read the config into a list of lines again
+        config = parser.read_config_file(self.config_location)
+
+        # construct the new set of config lines using the protocols and the new settings
+        new_settings = parser.kodi_to_config(parser.MASTER_SETTINGS, config, new_settings)
+
+        # write the new lines to the temporary config file
+        parser.write_config_file('/var/tmp/config.txt', new_settings)
+
+        # copy over the temp config.txt to /boot/ as superuser
+        subprocess.call(["sudo", "mv", '/var/tmp/config.txt', self.config_location])
+
+        DIALOG.notification(lang(32095), lang(32096))
+
     def apply_settings(self):
-        """
-            This method will apply all of the settings. It calls the first_method, if it exists. 
-            Then it calls the method listed in pi_settings_dict for each setting. Then it calls the
-            final_method, again, if it exists.
-        """
 
         pass
 
-    ##############################################################################################################################
-    #																															 #
-    def first_method(self):
-        """ 
-            The method to call before all the other setting methods are called.
-
-            For example, this could be a call to stop a service. The final method could then restart the service again. 
-            This can be used to apply the setting changes.
+    def settings_retriever_xml(self):
 
         """
-
-    @clog(log)
-    def final_method(self):
-        """ 
-            The method to call after all the other setting methods have been called.
-
-            For example, in the case of the Raspberry Pi's settings module, the final writing to the config.txt can be delayed
-            until all the settings have been updated in the pi_settings_dict. 
-
+            Reads the stored settings (in settings.xml) and returns a dictionary with the setting_name: setting_value. This
+            method cannot be overwritten.
         """
 
-        """ This method will write the changed settings to the config.txt file. """
+        latest_settings = {}
 
-        pass
+        addon = xbmcaddon.Addon(self.addonid)
 
-    #																															 #
-    ##############################################################################################################################
+        for key in parser.MASTER_SETTINGS.keys():
+            latest_settings[key] = addon.getSetting(key)
 
-    ##############################################################################################################################
-    #																															 #
+        return latest_settings
 
-    """ 
-        Methods beyond this point are for specific settings. 
-    """
+    def populate_misc_info(self):
 
+        # grab the Pi serial number and check to see whether the codec licences are enabled
+        mpg = subprocess.check_output(["/opt/vc/bin/vcgencmd", "codec_enabled", "MPG2"])
+        wvc = subprocess.check_output(["/opt/vc/bin/vcgencmd", "codec_enabled", "WVC1"])
+        serial_raw = subprocess.check_output(["cat", "/proc/cpuinfo"])
 
-#																															 #
-##############################################################################################################################
+        if PY3:
+            if isinstance(mpg, (bytes, bytearray)):
+                mpg = mpg.decode('utf-8', 'ignore')
+            if isinstance(wvc, (bytes, bytearray)):
+                wvc = wvc.decode('utf-8', 'ignore')
+            if isinstance(serial_raw, (bytes, bytearray)):
+                serial_raw = serial_raw.decode('utf-8', 'ignore')
+
+        # grab just the serial number
+        serial = serial_raw[serial_raw.index('Serial') + len('Serial'):].replace('\n', '').replace(':', '').replace(' ', '').replace('\t', '')
+
+        # load the values into the settings gui
+        __addon__.setSetting('codec_check', mpg.replace('\n', '') + ', ' + wvc.replace('\n', ''))
+        __addon__.setSetting('serial', serial)
+
+    def clean_user_config(self):
+        """ Comment out problematic lines in the users config.txt """
+
+        patterns = [
+
+            r".*=.*\[remove\].*",
+            r".*=remove",
+        ]
+
+        config = parser.read_config_file(self.config_location)
+
+        new_config = parser.clean_config(config, patterns)
+
+        # write the new lines to the temporary config file
+        parser.write_config_file('/var/tmp/config.txt', new_config)
+
+        # copy over the temp config.txt to /boot/ as superuser
+        subprocess.call(["sudo", "mv", '/var/tmp/config.txt', self.config_location])
 
 
 if __name__ == "__main__":

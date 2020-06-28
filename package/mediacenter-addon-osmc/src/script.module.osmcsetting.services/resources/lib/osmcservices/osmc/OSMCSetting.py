@@ -2,7 +2,7 @@
 """
     Copyright (C) 2014-2020 OSMC (KodeKarnage)
 
-    This file is part of script.module.osmcsetting.networking
+    This file is part of script.module.osmcsetting.services
 
     SPDX-License-Identifier: GPL-2.0-only
     See LICENSES/GPL-2.0-only for more information.
@@ -102,224 +102,121 @@
 
 # XBMC Modules
 import xbmcaddon
-import xbmc
 import xbmcgui
-import sys
+import xbmc
+
 import os
 import threading
 
-addonid = "script.module.osmcsetting.networking"
-__addon__ = xbmcaddon.Addon(addonid)
-
-# Custom modules
-sys.path.append(xbmc.translatePath(os.path.join(xbmcaddon.Addon(addonid).getAddonInfo('path'), 'resources', 'lib', 'osmcnetworking')))
+from osmccommon.osmc_logging import StandardLogger
 
 # OSMC SETTING Modules
-from networking_gui import networking_gui
-import osmc_network
-from osmc_advset_editor import AdvancedSettingsEditor
+from ..service_selection_gui import service_selection
 
-DIALOG = xbmcgui.Dialog()
-PY2 = sys.version_info.major == 2
+addonid = "script.module.osmcsetting.services"
+__addon__ = xbmcaddon.Addon(addonid)
 
-
-def log(message):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
-
-    xbmc.log('OSMC NETWORKING ' + str(message), level=xbmc.LOGDEBUG)
-
-
-def lang(string_id):
-    if PY2:
-        return __addon__.getLocalizedString(string_id).encode('utf-8', 'ignore')
-    return __addon__.getLocalizedString(string_id)
+log = StandardLogger(addonid, os.path.basename(__file__)).log
 
 
 class OSMCSettingClass(threading.Thread):
-    """ 
-        A OSMCSettingClass is way to substantiate the settings of an OSMC settings module, and make them available to the 
+    """
+        A OSMCSettingClass is way to substantiate the settings of an OSMC settings module, and make them available to the
         OSMC Settings Addon (OSA).
 
     """
 
     def __init__(self):
-
-        """ 
+        """
             The setting_data_method contains all the settings in the settings group, as well as the methods to call when a
-            setting_value has changed and the existing setting_value. 
+            setting_value has changed and the existing setting_value.
         """
 
         super(OSMCSettingClass, self).__init__()
 
-        self.addonid = "script.module.osmcsetting.networking"
-        self.me = xbmcaddon.Addon(self.addonid)
+        self.addonid = addonid
+        self.me = __addon__
+
+        self.path = os.path.join(xbmc.translatePath(self.me.getAddonInfo('path')), 'resources', 'lib', 'osmcservices', 'osmc')
 
         # this is what is displayed in the main settings gui
-        self.shortname = 'Network'
+        self.shortname = 'Services'
 
         self.description = """
-                                This is network settings, it contains settings for the network. 
-                                MORE TEXT SHOULD GO HERE
+                                This is the text that is shown on the OSG. It should describe what the settings module is for,
+                                the settings it controls, and anything else you want, I suppose.
                             """
 
-        self.setting_data_method = {}
+        self.setting_data_method = {
+
+            'none': {
+                'setting_value': '',
+            }
+
+        }
 
         # populate the settings data in the setting_data_method
         self.populate_setting_data_method()
 
-        # create the advanced settings reader to determine if Wait_for_Network should be activated
-        self.ASE = AdvancedSettingsEditor(log)
-
-        # read advancedsettings.xml and convert it into a dictionary
-        advset_dict = self.ASE.parse_advanced_settings()
-
-        # check whether the advanced settings dict contains valid MySQL information
-        valid_advset_dict, _ = self.ASE.validate_advset_dict(advset_dict, reject_empty=True, exclude_name=True)
-
-        # when a valid MySQL advanced settings file is found, toggle the Wait_for_Network setting to ON
-        if valid_advset_dict:
-
-            # only proceed if the (either) server is not on the localhost
-            if self.ASE.server_not_localhost(advset_dict):
-
-                # confirm that wait_for_network is not already enabled
-                if not osmc_network.is_connman_wait_for_network_enabled():
-
-                    undo_change = DIALOG.yesno('MyOSMC', lang(32078), nolabel=lang(32080), yeslabel=lang(32079), autoclose=10000)
-
-                    if not undo_change:
-                        osmc_network.toggle_wait_for_network(True)
-
         # a flag to determine whether a setting change requires a reboot to take effect
         self.reboot_required = False
 
-        log('START')
-        for x, k in self.setting_data_method.items():
-            log("%s = %s" % (x, k.get('setting_value', 'no setting value')))
-
     def populate_setting_data_method(self):
-
         """
-            Populates the setting_value in the setting_data_method.
+            Constructs list of service tuples (service name, status[active, inactive]).
         """
 
-        # this is the method to use if you are populating the dict from the settings.xml
-        latest_settings = self.settings_retriever_xml()
+        pass
 
-        # cycle through the setting_data_method dict, and populate with the settings values
-        for key in self.setting_data_method.keys():
-
-            # grab the translate method (if there is one)
-            translate_method = self.setting_data_method.get(key, {}).get('translate', {})
-
-            # get the setting value, translate it if needed
-            if translate_method:
-                setting_value = translate_method(latest_settings[key])
-            else:
-                setting_value = latest_settings[key]
-
-            # add it to the dictionary
-            self.setting_data_method[key]['setting_value'] = setting_value
-
-    def run(self, usePreseed=False):
-
+    def run(self):
         """
             The method that determines what happens when the item is clicked in the settings GUI.
             Usually this would be __addon__.OpenSettings(), but it could be any other script.
-            This allows the creation of action buttons in the GUI, as well as allowing developers to script and skin their 
+            This allows the creation of action buttons in the GUI, as well as allowing developers to script and skin their
             own user interfaces.
         """
-
-        log(xbmcaddon.Addon("script.module.osmcsetting.networking").getAddonInfo('id'))
 
         me = xbmcaddon.Addon(self.addonid)
         scriptPath = me.getAddonInfo('path')
 
-        xml = "network_gui_720.xml" if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' else "network_gui.xml"
+        # 						( s_entry, service_name, running, enabled )
 
-        self.GUI = networking_gui(xml, scriptPath, 'Default')
-        self.GUI.setUsePreseed(usePreseed)
-        self.GUI.doModal()
+        service_list = {
+            'test1b': ('test1', 'test1a', ' (running)', True),
+            'test2b': ('test2', 'test2a', ' (enabled)', True),
+            'test3b': ('test3', 'test3a', '', False)
+        }
 
-        del self.GUI
+        xml = "ServiceBrowser_720OSMC.xml" if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' else "ServiceBrowser_OSMC.xml"
 
-        log('END')
+        creation = service_selection(xml, scriptPath, 'Default', service_list=service_list, logger=log)
+        creation.doModal()
+        del creation
 
     def apply_settings(self):
-
         """
-            This method will apply all of the settings. It calls the first_method, if it exists. 
+            This method will apply all of the settings. It calls the first_method, if it exists.
             Then it calls the method listed in setting_data_method for each setting. Then it calls the
             final_method, again, if it exists.
         """
 
-        # retrieve the current settings from the settings.xml (this is where the user has made changes)
-        new_settings = self.settings_retriever_xml()
-
-        # call the first method, if there is one
-        try:
-            self.first_method()
-        except:
-            pass
-
-        # apply the individual settings changes
-        for k, v in self.setting_data_method.items():
-
-            # get the application method and stored setting value from the dictionary
-            method = v.get('apply', False)
-            value = v.get('setting_value', '')
-
-            # if the new setting is different to the stored setting then change the dict and run the 'apply' method
-            if new_settings[k] != value:
-
-                # change stored setting_value to the new value
-                self.setting_data_method[k]['setting_value'] = new_settings[k]
-
-                # if a specific apply method exists for the setting, then call that
-                try:
-                    method(new_settings[k])
-                except:
-                    pass
-
-        # call the final method if there is one
-        try:
-            self.final_method()
-        except:
-            pass
+        pass
 
     def settings_retriever_xml(self):
-
-        """ 
-            Reads the stored settings (in settings.xml) and returns a dictionary with the setting_name: setting_value. This 
+        """
+            Reads the stored settings (in settings.xml) and returns a dictionary with the setting_name: setting_value. This
             method cannot be overwritten.
         """
 
-        latest_settings = {}
-
-        addon = xbmcaddon.Addon(self.addonid)
-
-        for key in self.setting_data_method.keys():
-            latest_settings[key] = addon.getSetting(key)
-
-        return latest_settings
-
-    def check_network(self, online):
-        return osmc_network.has_network_connection(online)
-
-    def is_ftr_running(self):
-        return osmc_network.is_ftr_running()
+        pass
 
     ##############################################################################################################################
     #																															 #
     def first_method(self):
-
-        """ 
+        """
             The method to call before all the other setting methods are called.
 
-            For example, this could be a call to stop a service. The final method could then restart the service again. 
+            For example, this could be a call to stop a service. The final method could then restart the service again.
             This can be used to apply the setting changes.
 
         """
@@ -327,20 +224,18 @@ class OSMCSettingClass(threading.Thread):
         pass
 
     def final_method(self):
-
-        """ 
+        """
             The method to call after all the other setting methods have been called.
 
             For example, in the case of the Raspberry Pi's settings module, the final writing to the config.txt can be delayed
-            until all the settings have been updated in the setting_data_method. 
+            until all the settings have been updated in the setting_data_method.
 
         """
 
         pass
 
     def boot_method(self):
-
-        """ 
+        """
             The method to call when the OSA is first activated (on reboot)
 
         """
@@ -359,7 +254,6 @@ class OSMCSettingClass(threading.Thread):
 
     # SETTING METHOD
     def method_to_apply_changes_X(self, data):
-
         """
             Method for implementing changes to setting x.
 
@@ -368,7 +262,6 @@ class OSMCSettingClass(threading.Thread):
         log('hells yeah!')
 
     def translate_on_populate_X(self, data, reverse=False):
-
         """
             Method to translate the data before adding to the setting_data_method dict.
 

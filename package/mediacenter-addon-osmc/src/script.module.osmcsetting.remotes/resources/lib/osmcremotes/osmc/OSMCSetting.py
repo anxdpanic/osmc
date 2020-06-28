@@ -103,28 +103,19 @@
 # XBMC Modules
 import xbmc
 import xbmcaddon
-import sys
+
 import os
 import threading
+
+from osmccommon.osmc_logging import clog
+from osmccommon.osmc_logging import StandardLogger
+
+from .. import remote_gui
 
 addonid = "script.module.osmcsetting.remotes"
 __addon__ = xbmcaddon.Addon(addonid)
 
-# Custom modules
-sys.path.append(xbmc.translatePath(os.path.join(xbmcaddon.Addon(addonid).getAddonInfo('path'), 'resources', 'lib', 'osmcremotes')))
-
-# OSMC SETTING Modules
-from CompLogger import comprehensive_logger as clog
-import remote_gui
-
-
-def log(message):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
-
-    xbmc.log('OSMC REMOTES ' + str(message), level=xbmc.LOGDEBUG)
+log = StandardLogger(addonid, os.path.basename(__file__)).log
 
 
 class OSMCSettingClass(threading.Thread):
@@ -142,7 +133,9 @@ class OSMCSettingClass(threading.Thread):
         super(OSMCSettingClass, self).__init__()
 
         self.addonid = addonid
-        self.me = xbmcaddon.Addon(self.addonid)
+        self.me = __addon__
+
+        self.path = os.path.join(xbmc.translatePath(self.me.getAddonInfo('path')), 'resources', 'lib', 'osmcremotes', 'osmc')
 
         # this is what is displayed in the main settings gui
         self.shortname = 'Remotes'

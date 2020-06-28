@@ -103,27 +103,16 @@
 # XBMC Modules
 import xbmc
 import xbmcaddon
-import sys
 import os
 import threading
+
+from osmccommon.osmc_logging import clog
+from osmccommon.osmc_logging import StandardLogger
 
 addonid = "script.module.osmcsetting.logging"
 __addon__ = xbmcaddon.Addon(addonid)
 
-# Custom modules
-sys.path.append(xbmc.translatePath(os.path.join(xbmcaddon.Addon(addonid).getAddonInfo('path'), 'resources', 'lib', 'osmclogging')))
-
-# OSMC SETTING Modules
-from CompLogger import comprehensive_logger as clog
-
-
-def log(message):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
-
-    xbmc.log('OSMC LOGGING ' + str(message), level=xbmc.LOGDEBUG)
+log = StandardLogger(addonid, os.path.basename(__file__)).log
 
 
 class OSMCSettingClass(threading.Thread):
@@ -141,7 +130,9 @@ class OSMCSettingClass(threading.Thread):
         super(OSMCSettingClass, self).__init__()
 
         self.addonid = addonid
-        self.me = xbmcaddon.Addon(self.addonid)
+        self.me = __addon__
+
+        self.path = os.path.join(xbmc.translatePath(self.me.getAddonInfo('path')), 'resources', 'lib', 'osmclogging', 'osmc')
 
         # this is what is displayed in the main settings gui
         self.shortname = 'Log Uploader'

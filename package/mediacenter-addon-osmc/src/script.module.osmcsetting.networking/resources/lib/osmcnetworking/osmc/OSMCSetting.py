@@ -2,7 +2,7 @@
 """
     Copyright (C) 2014-2020 OSMC (KodeKarnage)
 
-    This file is part of script.module.osmcsetting.updates
+    This file is part of script.module.osmcsetting.networking
 
     SPDX-License-Identifier: GPL-2.0-only
     See LICENSES/GPL-2.0-only for more information.
@@ -14,15 +14,20 @@
 
     In order to more easily accomodate future changes and enhancements, each OSMC settings bundle (module) is a separate addon.
     The module can take the form of an xbmc service, an xbmc script, or an xbmc module, but it must be installed into the users'
-    userdata/addons folder.
+    /usr/share/kodi/addons folder.
 
-    The OSA leverages the settings interface provided by XBMC. Each addon has its own individual settings defined in a
-    settings.xml file located in the addon's resources/ folder.
+    The OSA collects the modules it can find, loads their icons, and launches them individually when the user clicks on an icon.
 
-    The OSG detects changes to the settings by identifying the differences between a newly read settings.xml and the values from
-    a previously read settings.xml.
+    The modules can either have their own GUI, or they can leverage the settings interface provided by XBMC. If the OSG uses the XBMC
+    settings interface, then all of their settings must be stored in the addons settings.xml. This is true even if the source of record
+    is a separate config file.
 
-    The values of the settings displayed by the OSG are only ever populated by the items in the settings.xml. [Note: meaning that
+    An example of this type is the Pi settings module; the actual settings are read from the config.txt, then written to the
+    settings.xml for display in kodi, then finally all changes are written back to the config.txt. The Pi module detects user
+    changes to the settings by identifying the differences between a newly read settings.xml and the values from a previously
+    read settings.xml.
+
+    The values of the settings displayed by this module are only ever populated by the items in the settings.xml. [Note: meaning that
     if the settings data is retrieved from a different source, it will need to be populated in the module before it is displayed
     to the user.]
 
@@ -37,12 +42,14 @@
 
     The key variables in this class are:
 
-        addonid                         : The id for the addon. This must be the id declared in the addons addon.xml.
+        addonid							: The id for the addon. This must be the id declared in the addons addon.xml.
 
-        reboot_required                 : A boolean to declare if the OS needs to be rebooted. If a change in a specific setting
+        description 					: The description for the module, shown in the OSA
+
+        reboot_required					: A boolean to declare if the OS needs to be rebooted. If a change in a specific setting
                                           requires an OS reboot to take affect, this is flag that will let the OSG know.
 
-        setting_data_method             : This dictionary contains:
+        setting_data_method 			: This dictionary contains:
                                                 - the name of all settings in the module
                                                 - the current value of those settings
                                                 - [optional] apply - a method to call for each setting when the value changes
@@ -54,23 +61,23 @@
 
     The key methods of this class are:
 
-        open_settings_window            : This is called by the OSG when the icon is clicked. This will open the settings window.
+        open_settings_window			: This is called by the OSG when the icon is clicked. This will open the settings window.
                                           Usually this would be __addon__.OpenSettings(), but it could be any other script.
                                           This allows the creation of action buttons in the GUI, as well as allowing developers
                                           to script and skin their own user interfaces.
 
-        [optional] first_method         : called before any individual settings changes are applied.
+        [optional] first_method			: called before any individual settings changes are applied.
 
-        [optional] final_method         : called after all the individual settings changes are done.
+        [optional] final_method			: called after all the individual settings changes are done.
 
-        [optional] boot_method          : called when the OSA is first started.
+        [optional] boot_method			: called when the OSA is first started.
 
-        apply_settings                  : This is called by the OSG to apply the changes to any settings that have changed.
+        apply_settings					: This is called by the OSG to apply the changes to any settings that have changed.
                                           It calls the first setting method, if it exists.
                                           Then it calls the method listed in setting_data_method for each setting. Then it
                                           calls the final method, again, if it exists.
 
-        populate_setting_data_method    : This method is used to populate the setting_data_method with the current settings data.
+        populate_setting_data_method	: This method is used to populate the setting_data_method with the current settings data.
                                           Usually this will be from the addons setting data stored in settings.xml and retrieved
                                           using the settings_retriever_xml method.
 
@@ -81,14 +88,14 @@
                                           the settings.xml, the developer should ensure that the external data is loaded into that
                                           xml before the settings window is opened.
 
-
-        settings_retriever_xml          : This method is used to retrieve all the data for the settings listed in the
+        settings_retriever_xml			: This method is used to retrieve all the data for the settings listed in the
                                           setting_data_method from the addons settings.xml.
 
     The developer is free to create any methods they see fit, but the ones listed above are specifically used by the OSA.
+    Specifically, the apply_settings method is called when the OSA closes.
 
     Settings changes are applied when the OSG is called to close. But this behaviour can be changed to occur when the addon
-    settings window closes by editing the open_settings_window. The method apply_settings will still be called by OSG, so
+    settings window closes by editing the open_settings_window. The method apply_settings will still be called by OSA, so
     keep that in mind.
 
 """
@@ -96,68 +103,85 @@
 # XBMC Modules
 import xbmcaddon
 import xbmc
-
+import xbmcgui
+import sys
 import os
-import subprocess
 import threading
 
+from osmccommon.osmc_logging import StandardLogger
+from osmccommon.osmc_language import LangRetriever
 
-def log(message):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
+# OSMC SETTING Modules
+from ..networking_gui import networking_gui
+from ..osmc_advset_editor import AdvancedSettingsEditor
+from .. import osmc_network
 
-    xbmc.log(msg='OSMC UPDATES ' + str(message), level=xbmc.LOGDEBUG)
+addonid = "script.module.osmcsetting.networking"
+__addon__ = xbmcaddon.Addon(addonid)
+
+DIALOG = xbmcgui.Dialog()
+PY2 = sys.version_info.major == 2
+
+log = StandardLogger(addonid, os.path.basename(__file__)).log
+lang = LangRetriever(__addon__).lang
 
 
 class OSMCSettingClass(threading.Thread):
-    """
-        A OSMCSettingClass is way to substantiate the settings of an OSMC settings module, and make them available to the
+    """ 
+        A OSMCSettingClass is way to substantiate the settings of an OSMC settings module, and make them available to the 
         OSMC Settings Addon (OSA).
 
     """
 
     def __init__(self):
 
-        """
+        """ 
             The setting_data_method contains all the settings in the settings group, as well as the methods to call when a
-            setting_value has changed and the existing setting_value.
+            setting_value has changed and the existing setting_value. 
         """
 
         super(OSMCSettingClass, self).__init__()
 
-        self.addonid = "script.module.osmcsetting.updates"
-        self.me = xbmcaddon.Addon(self.addonid)
+        self.addonid = addonid
+        self.me = __addon__
+
+        self.path = os.path.join(xbmc.translatePath(self.me.getAddonInfo('path')), 'resources', 'lib', 'osmcnetworking', 'osmc')
 
         # this is what is displayed in the main settings gui
-        self.shortname = 'Updates'
+        self.shortname = 'Network'
 
-        self.description = ""
-
-        self.reset_file = '/home/osmc/.factoryreset'
+        self.description = """
+                                This is network settings, it contains settings for the network. 
+                                MORE TEXT SHOULD GO HERE
+                            """
 
         self.setting_data_method = {}
 
-        # 'mercury':    {
-        #                   'setting_value' : '',
-        #                   'apply'         : self.method_to_apply_changes_X,
-        #                   'translate'     : self.translate_on_populate_X,
-        #                   },
-
-        # 'venus':  {'setting_value' : ''},
-        # 'earth':  {'setting_value' : ''},
-        # 'mars':   {'setting_value' : ''},
-        # 'jupiter':    {'setting_value' : ''},
-        # 'saturn':     {'setting_value' : ''},
-        # 'uranus':     {'setting_value' : ''},
-        # 'neptune':    {'setting_value' : ''},
-        # 'pluto':  {'setting_value' : ''},
-
-        # }
-
         # populate the settings data in the setting_data_method
         self.populate_setting_data_method()
+
+        # create the advanced settings reader to determine if Wait_for_Network should be activated
+        self.ASE = AdvancedSettingsEditor(log)
+
+        # read advancedsettings.xml and convert it into a dictionary
+        advset_dict = self.ASE.parse_advanced_settings()
+
+        # check whether the advanced settings dict contains valid MySQL information
+        valid_advset_dict, _ = self.ASE.validate_advset_dict(advset_dict, reject_empty=True, exclude_name=True)
+
+        # when a valid MySQL advanced settings file is found, toggle the Wait_for_Network setting to ON
+        if valid_advset_dict:
+
+            # only proceed if the (either) server is not on the localhost
+            if self.ASE.server_not_localhost(advset_dict):
+
+                # confirm that wait_for_network is not already enabled
+                if not osmc_network.is_connman_wait_for_network_enabled():
+
+                    undo_change = DIALOG.yesno('MyOSMC', lang(32078), nolabel=lang(32080), yeslabel=lang(32079), autoclose=10000)
+
+                    if not undo_change:
+                        osmc_network.toggle_wait_for_network(True)
 
         # a flag to determine whether a setting change requires a reboot to take effect
         self.reboot_required = False
@@ -190,59 +214,102 @@ class OSMCSettingClass(threading.Thread):
             # add it to the dictionary
             self.setting_data_method[key]['setting_value'] = setting_value
 
-    def run(self):
+    def run(self, usePreseed=False):
 
         """
             The method that determines what happens when the item is clicked in the settings GUI.
             Usually this would be __addon__.OpenSettings(), but it could be any other script.
-            This allows the creation of action buttons in the GUI, as well as allowing developers to script and skin their
+            This allows the creation of action buttons in the GUI, as well as allowing developers to script and skin their 
             own user interfaces.
         """
 
-        # check if kodi_reset file is present, if it is then set the bool as true, else set as false
+        log(xbmcaddon.Addon("script.module.osmcsetting.networking").getAddonInfo('id'))
 
-        if os.path.isfile(self.reset_file):
-            log('Kodi reset file found')
-            self.me.setSetting('kodi_reset', 'true')
-        else:
-            log('Kodi reset file not found')
-            self.me.setSetting('kodi_reset', 'false')
+        me = xbmcaddon.Addon(self.addonid)
+        scriptPath = me.getAddonInfo('path')
 
-        self.me.openSettings()
+        xml = "network_gui_720.xml" if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' else "network_gui.xml"
 
-        # check the kodi reset setting, if it is true then create the kodi_reset file, otherwise remove that file
-        if self.me.getSetting('kodi_reset') == 'true':
-            log('creating kodi reset file')
-            subprocess.call(['sudo', 'touch', self.reset_file])
-        else:
-            subprocess.call(['sudo', 'rm', self.reset_file])
+        self.GUI = networking_gui(xml, scriptPath, 'Default')
+        self.GUI.setUsePreseed(usePreseed)
+        self.GUI.doModal()
+
+        del self.GUI
 
         log('END')
-        for x, k in self.setting_data_method.items():
-            log("%s = %s" % (x, k.get('setting_value', 'no setting value')))
+
+    def apply_settings(self):
+
+        """
+            This method will apply all of the settings. It calls the first_method, if it exists. 
+            Then it calls the method listed in setting_data_method for each setting. Then it calls the
+            final_method, again, if it exists.
+        """
+
+        # retrieve the current settings from the settings.xml (this is where the user has made changes)
+        new_settings = self.settings_retriever_xml()
+
+        # call the first method, if there is one
+        try:
+            self.first_method()
+        except:
+            pass
+
+        # apply the individual settings changes
+        for k, v in self.setting_data_method.items():
+
+            # get the application method and stored setting value from the dictionary
+            method = v.get('apply', False)
+            value = v.get('setting_value', '')
+
+            # if the new setting is different to the stored setting then change the dict and run the 'apply' method
+            if new_settings[k] != value:
+
+                # change stored setting_value to the new value
+                self.setting_data_method[k]['setting_value'] = new_settings[k]
+
+                # if a specific apply method exists for the setting, then call that
+                try:
+                    method(new_settings[k])
+                except:
+                    pass
+
+        # call the final method if there is one
+        try:
+            self.final_method()
+        except:
+            pass
 
     def settings_retriever_xml(self):
 
-        """
-            Reads the stored settings (in settings.xml) and returns a dictionary with the setting_name: setting_value. This
+        """ 
+            Reads the stored settings (in settings.xml) and returns a dictionary with the setting_name: setting_value. This 
             method cannot be overwritten.
         """
 
         latest_settings = {}
 
+        addon = xbmcaddon.Addon(self.addonid)
+
         for key in self.setting_data_method.keys():
-            latest_settings[key] = self.me.getSetting(key)
+            latest_settings[key] = addon.getSetting(key)
 
         return latest_settings
 
+    def check_network(self, online):
+        return osmc_network.has_network_connection(online)
+
+    def is_ftr_running(self):
+        return osmc_network.is_ftr_running()
+
     ##############################################################################################################################
-    #                                                                                                                            #
+    #																															 #
     def first_method(self):
 
-        """
+        """ 
             The method to call before all the other setting methods are called.
 
-            For example, this could be a call to stop a service. The final method could then restart the service again.
+            For example, this could be a call to stop a service. The final method could then restart the service again. 
             This can be used to apply the setting changes.
 
         """
@@ -251,11 +318,11 @@ class OSMCSettingClass(threading.Thread):
 
     def final_method(self):
 
-        """
+        """ 
             The method to call after all the other setting methods have been called.
 
             For example, in the case of the Raspberry Pi's settings module, the final writing to the config.txt can be delayed
-            until all the settings have been updated in the setting_data_method.
+            until all the settings have been updated in the setting_data_method. 
 
         """
 
@@ -263,21 +330,21 @@ class OSMCSettingClass(threading.Thread):
 
     def boot_method(self):
 
-        """
+        """ 
             The method to call when the OSA is first activated (on reboot)
 
         """
 
         pass
 
-    #                                                                                                                            #
+    #																															 #
     ##############################################################################################################################
 
     ##############################################################################################################################
-    #                                                                                                                            #
+    #																															 #
 
-    """
-        Methods beyond this point are for specific settings.
+    """ 
+        Methods beyond this point are for specific settings. 
     """
 
     # SETTING METHOD
@@ -303,8 +370,9 @@ class OSMCSettingClass(threading.Thread):
         if reverse:
             return data
 
-    #                                                                                                                            #
-    ##############################################################################################################################
+
+#																															 #
+##############################################################################################################################
 
 
 if __name__ == "__main__":

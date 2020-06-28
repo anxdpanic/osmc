@@ -8,4 +8,4 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
-__all__ = ['apf_class', 'apf_gui', 'apf_store']
+__all__ = ['apf_class', 'apf_gui', 'apf_store', 'osmc']

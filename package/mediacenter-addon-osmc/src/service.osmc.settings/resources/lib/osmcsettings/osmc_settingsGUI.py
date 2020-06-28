@@ -13,8 +13,6 @@ import xbmc
 import xbmcaddon
 import xbmcgui
 
-# STANDARD library modules
-import imp
 import os
 import sys
 import threading
@@ -222,7 +220,7 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
 
                 module['SET'] = setting_instance
 
-                # instance = imp.load_source(new_module_name, osmc_setting_file)
+                # instance = importlib.load_source(new_module_name, osmc_setting_file)
                 # module_holder['SET'] = instance
                 # instance.setDaemon(True)
                 setting_instance.start()
@@ -295,19 +293,20 @@ class OSMCGui(threading.Thread):
 
     @clog(log)
     def create_gui(self):
-        # known modules is a list of tuples detailing all the known and permissable modules and services
-        # (module name, order): the order is the hierarchy of addons (which is used to
-        # determine the positions of addon in the gui)
-        self.known_modules_order = {
-            "script.module.osmcsetting.pi": 0,
-            "script.module.osmcsetting.pioverclock": 1,
-            "script.module.osmcsetting.updates": 2,
-            "script.module.osmcsetting.networking": 3,
-            "script.module.osmcsetting.logging": 4,
-            "script.module.osmcsetting.apfstore": 5,
-            "script.module.osmcsetting.services": 6,
-            "script.module.osmcsetting.remotes": 7,
+        """
+            known modules is a list of tuples detailing all the known and permissible modules and services
+            (module name, order): the order is the hierarchy of addons (which is used to
+            determine the positions of addon in the gui)
+        """
 
+        self.known_modules_order = {
+            "osmcpi": 0,
+            "osmcupdates": 1,
+            "osmcnetworking": 2,
+            "osmclogging": 3,
+            "apfstore": 4,
+            "osmcservices": 5,
+            "osmcremotes": 6,
         }
 
         # order of addon hierarchy
@@ -415,80 +414,66 @@ class OSMCGui(threading.Thread):
 
         self.module_tally = 1000
 
-        if os.path.isdir('/usr/share/kodi/addons/service.osmc.settings'):
-            addon_folder = '/usr/share/kodi/addons'
-        else:
-            addon_folder = os.path.join(xbmc.translatePath("special://home"), "addons/")  # FOR TESTING
-
-        folders = [item for item in os.listdir(addon_folder) if os.path.isdir(os.path.join(addon_folder, item))]
-
-        osmc_modules = [x for x in [self.inspect_folder(addon_folder, folder) for folder in folders] if x]
+        known_modules = self.known_modules_order.keys()
+        osmc_modules = [x for x in [self.inspect_module(module_name) for module_name in known_modules] if x]
 
         return osmc_modules
 
-    def inspect_folder(self, addon_folder, sub_folder):
+    def inspect_module(self, module_name):
         """
-            Checks the provided folder to see if it is a genuine OSMC module.
+            Checks the provided module to see if it is genuine.
             Returns a tuple.
                 (preferred order of module, module name: {unfocussed icon, focussed icon, instance of OSMCSetting class})
         """
 
-        # check for osmc subfolder, return nothing is it doesnt exist
-        osmc_subfolder = os.path.join(addon_folder, sub_folder, "resources", "osmc")
-        if not os.path.isdir(osmc_subfolder): return
-
-        # check for OSMCSetting.py, return nothing is it doesnt exist
-        osmc_setting_file = os.path.join(osmc_subfolder, "OSMCSetting.py")
-        if not os.path.isfile(osmc_setting_file): return
-
-        # check for the unfocussed icon.png
-        osmc_setting_FX_icon = os.path.join(osmc_subfolder, "FX_Icon.png")
-        if not os.path.isfile(osmc_setting_FX_icon): return
-
-        # check for the focussed icon.png
-        osmc_setting_FO_icon = os.path.join(osmc_subfolder, "FO_Icon.png")
-        if not os.path.isfile(osmc_setting_FO_icon): return
-
-        # check for the unfocussed widget icon.png
-        osmc_setting_FX_icon_Widget = os.path.join(osmc_subfolder, "FX_Icon_Widget.png")
-        if not os.path.isfile(osmc_setting_FX_icon):
-            # if not found, use the ordinary icon instead
-            osmc_setting_FX_icon_Widget = osmc_setting_FX_icon
-
-        # check for the focussed widget icon.png
-        osmc_setting_FO_icon_Widget = os.path.join(osmc_subfolder, "FO_Icon_Widget.png")
-        if not os.path.isfile(osmc_setting_FO_icon):
-            # if not found, use the ordinary icon instead
-            osmc_setting_FO_icon_Widget = osmc_setting_FO_icon
-
         # if you got this far then this is almost certainly an OSMC setting
         try:
-            new_module_name = sub_folder.replace('.', '')
-            log(new_module_name)
-            OSMCSetting = imp.load_source(new_module_name, osmc_setting_file)
-            log(dir(OSMCSetting))
+            log(module_name)
+            OSMCSetting = __import__('%s.osmc.OSMCSetting' % module_name, fromlist=[''])
             setting_instance = OSMCSetting.OSMCSettingClass()
+            module_path = setting_instance.path()
+            log(dir(module_path))
             setting_instance.setDaemon(True)
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
-            log('OSMCSetting __ %s __ failed to import' % sub_folder)
+            log('OSMCSetting __ %s __ failed to import' % module_name)
             log(exc_type)
             log(exc_value)
             log(traceback.format_exc())
             return
 
+        # check for the unfocussed icon.png
+        osmc_setting_FX_icon = os.path.join(module_path, "FX_Icon.png")
+        if not os.path.isfile(osmc_setting_FX_icon): return
+
+        # check for the focussed icon.png
+        osmc_setting_FO_icon = os.path.join(module_path, "FO_Icon.png")
+        if not os.path.isfile(osmc_setting_FO_icon): return
+
+        # check for the unfocussed widget icon.png
+        osmc_setting_FX_icon_Widget = os.path.join(module_path, "FX_Icon_Widget.png")
+        if not os.path.isfile(osmc_setting_FX_icon):
+            # if not found, use the ordinary icon instead
+            osmc_setting_FX_icon_Widget = osmc_setting_FX_icon
+
+        # check for the focussed widget icon.png
+        osmc_setting_FO_icon_Widget = os.path.join(module_path, "FO_Icon_Widget.png")
+        if not os.path.isfile(osmc_setting_FO_icon):
+            # if not found, use the ordinary icon instead
+            osmc_setting_FO_icon_Widget = osmc_setting_FO_icon
+
         # success!
-        log('OSMC Setting Module __ %s __ found and imported' % sub_folder)
+        log('OSMC Setting Module __ %s __ found and imported' % module_name)
 
         # DETERMINE ORDER OF ADDONS, THIS CAN BE HARDCODED FOR SOME OR THE USER SHOULD BE ABLE TO CHOOSE THEIR OWN ORDER
-        if sub_folder in self.known_modules_order.keys():
-            order = self.known_modules_order[sub_folder]
+        if module_name in self.known_modules_order.keys():
+            order = self.known_modules_order[module_name]
         else:
             order = self.module_tally
             self.module_tally += 1
 
         return (order, {
-            'id': sub_folder,
+            'id': module_name,
             'FX_Icon': osmc_setting_FX_icon,
             'FO_Icon': osmc_setting_FO_icon,
             'FX_Icon_Widget': osmc_setting_FX_icon_Widget,
