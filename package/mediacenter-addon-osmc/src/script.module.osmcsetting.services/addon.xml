@@ -15,8 +15,8 @@
         <email>karnage@osmc.tv</email>
         <source>https://osmc.tv</source>
         <assets>
-            <icon>icon.png</icon>
-            <fanart>fanart.png</fanart>
+            <icon>resources/media/icon.png</icon>
+            <fanart>resources/media/fanart.jpg</fanart>
         </assets>
     </extension>
 </addon>

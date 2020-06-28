@@ -13,5 +13,9 @@
         <license>GPL-2.0-only</license>
         <email>karnage@osmc.tv</email>
         <source>https://osmc.tv</source>
+        <assets>
+            <icon>resources/media/icon.png</icon>
+            <fanart>resources/media/fanart.jpg</fanart>
+        </assets>
     </extension>
 </addon>
