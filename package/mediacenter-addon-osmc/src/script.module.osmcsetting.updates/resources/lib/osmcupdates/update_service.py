@@ -34,18 +34,18 @@ from osmccommon import osmc_comms as comms
 # Custom modules
 from . import OSMC_Backups
 
-__addon__ = xbmcaddon.Addon()
-__addonid__ = __addon__.getAddonInfo('id')
+addonid = 'script.module.osmcsetting.updates'
+__addon__ = xbmcaddon.Addon(addonid)
 __scriptPath__ = __addon__.getAddonInfo('path')
 __setting__ = __addon__.getSetting
 __image_file__ = os.path.join(__scriptPath__, 'resources', 'media', 'update_available.png')
-__libpath__ = xbmc.translatePath(os.path.join(xbmcaddon.Addon().getAddonInfo('path'), 'resources', 'lib', 'osmcupdates'))
+__libpath__ = xbmc.translatePath(os.path.join(__scriptPath__, 'resources', 'lib', 'osmcupdates'))
 
 DIALOG = xbmcgui.Dialog()
 
 PY3 = sys.version_info.major == 3
 
-log = StandardLogger('script.module.osmcsetting.updates', os.path.basename(__file__)).log
+log = StandardLogger(addonid, os.path.basename(__file__)).log
 lang = LangRetriever(__addon__).lang
 
 

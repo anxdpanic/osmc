@@ -21,7 +21,8 @@ import xbmcgui
 
 WINDOW = xbmcgui.Window(10000)
 
-FOLDER = xbmc.translatePath(os.path.join(xbmcaddon.Addon().getAddonInfo('path'), 'resources'))
+addonid = 'service.osmc.settings'
+FOLDER = xbmc.translatePath(os.path.join(xbmcaddon.Addon(addonid).getAddonInfo('path'), 'resources'))
 
 FONT_FOLDER = xbmc.translatePath(os.path.join(FOLDER, 'skins', 'Default', 'fonts'))
 

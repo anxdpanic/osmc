@@ -36,7 +36,7 @@ WARR = WARRANTY.warranty
 DIALOG = xbmcgui.Dialog()
 
 addonid = 'service.osmc.settings'
-__addon__ = xbmcaddon.Addon()
+__addon__ = xbmcaddon.Addon(addonid)
 scriptPath = __addon__.getAddonInfo('path')
 
 PANEL_MAP = {
@@ -250,7 +250,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         self.selected_country = None
 
         # textures for the skin image
-        media_path = xbmc.translatePath(os.path.join(xbmcaddon.Addon().getAddonInfo('path'), 'resources', 'skins', 'Default', 'media'))
+        media_path = xbmc.translatePath(os.path.join(scriptPath, 'resources', 'skins', 'Default', 'media'))
         self.osmc_skin_image = os.path.join(media_path, 'osmc_preview.jpg')
         self.conf_skin_image = os.path.join(media_path, 'conf_preview.jpg')
 
@@ -915,9 +915,6 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
 
 def open_gui(networking_instance, testing=False):
-    __addon__ = xbmcaddon.Addon()
-    scriptPath = __addon__.getAddonInfo('path')
-
     xml = "walkthru_720.xml" if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' else "walkthru.xml"
 
     lang_rerun = False

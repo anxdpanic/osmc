@@ -44,8 +44,7 @@ from . import osmc_settingsGUI
 from . import osmc_ubiquifonts
 
 addonid = 'service.osmc.settings'
-__addon__ = xbmcaddon.Addon()
-__addonid__ = __addon__.getAddonInfo('id')
+__addon__ = xbmcaddon.Addon(addonid)
 __setting__ = __addon__.getSetting
 DIALOG = xbmcgui.Dialog()
 PY3 = sys.version_info.major == 3

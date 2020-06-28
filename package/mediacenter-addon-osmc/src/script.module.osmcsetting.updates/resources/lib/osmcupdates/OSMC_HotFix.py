@@ -22,14 +22,14 @@ import xbmcgui
 from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_language import LangRetriever
 
-__addon__ = xbmcaddon.Addon()
-__addonid__ = __addon__.getAddonInfo('id')
+addonid = 'script.module.osmcsetting.updates'
+__addon__ = xbmcaddon.Addon(addonid)
 __scriptPath__ = __addon__.getAddonInfo('path')
 __setting__ = __addon__.getSetting
 
 DIALOG = xbmcgui.Dialog()
 
-log = StandardLogger('script.module.osmcsetting.updates', os.path.basename(__file__)).log
+log = StandardLogger(addonid, os.path.basename(__file__)).log
 lang = LangRetriever(__addon__).lang
 
 

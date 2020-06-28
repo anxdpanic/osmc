@@ -24,13 +24,13 @@ from osmccommon.osmc_logging import clog
 from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_language import LangRetriever
 
-path = xbmcaddon.Addon().getAddonInfo('path')
-lib = os.path.join(path, 'resources', 'lib')
-media = os.path.join(path, 'resources', 'skins', 'Default', 'media')
-
 addonid = 'service.osmc.settings'
-__addon__ = xbmcaddon.Addon()
+__addon__ = xbmcaddon.Addon(addonid)
 scriptPath = __addon__.getAddonInfo('path')
+
+lib = os.path.join(scriptPath, 'resources', 'lib')
+media = os.path.join(scriptPath, 'resources', 'skins', 'Default', 'media')
+
 WINDOW = xbmcgui.Window(10000)
 
 log = StandardLogger(addonid, os.path.basename(__file__)).log
