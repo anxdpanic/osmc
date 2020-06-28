@@ -29,10 +29,14 @@ if not os.path.isfile('/walkthrough_completed'):
 # Standard modules
 import datetime
 import json
-import Queue
 import socket
 import subprocess
 import sys
+
+try:
+    import queue as Queue
+except ImportError:
+    import Queue
 
 from osmccommon.osmc_comms import Communicator
 from osmccommon.osmc_logging import StandardLogger
