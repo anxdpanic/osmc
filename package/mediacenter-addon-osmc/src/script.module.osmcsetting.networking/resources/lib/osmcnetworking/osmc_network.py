@@ -37,7 +37,7 @@ WAIT_FOR_NETWORK_SERVICE = 'connman-wait-for-network.service'
 
 
 def is_ethernet_enabled():
-    return connman.is_technology_enabled('ethernet') or not get_nfs_ip_cmdline_value() == None
+    return connman.is_technology_enabled('ethernet') or not get_nfs_ip_cmdline_value() is None
 
 
 def toggle_ethernet_state(state):
@@ -233,8 +233,8 @@ def create_cmdline_nfs_manual_string(settings_dict, internet_protocol):
                  '::' + settings_dict[internet_protocol]['Gateway'] + ':' + \
                  settings_dict[internet_protocol]['Netmask']
     cmd_string += ':osmc:eth0:off'
-    for int in range(1, 3):
-        count = str(int)
+    for num in range(1, 3):
+        count = str(num)
         if 'DNS_' + count in settings_dict['Nameservers'] and settings_dict['Nameservers']['DNS_' + count]:
             cmd_string = cmd_string + ':' + settings_dict['Nameservers']['DNS_' + count]
     return cmd_string
@@ -461,7 +461,7 @@ def parse_preseed():
                 string = entry.replace('d-i network/', '')
                 key = string[:string.find(' ')]
                 string = string[string.find(' ') + 1:]
-                type = string[:string.find(' ')]
+                _type = string[:string.find(' ')]
                 value = string[string.find(' ') + 1:]
                 preseed_info[key] = value
         # convert preseed format into the same format we are using in the rest of the code

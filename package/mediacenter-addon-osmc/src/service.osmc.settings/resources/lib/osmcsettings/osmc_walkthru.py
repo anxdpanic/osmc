@@ -117,7 +117,7 @@ class mock_Networking_caller(object):
     def start(self):
         pass
 
-    def setDaemon(self, bool):
+    def setDaemon(self, value):
         pass
 
 
@@ -469,7 +469,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
         self.apply_SSH_state_password()
 
-        if self.selected_country != None:
+        if self.selected_country is not None:
 
             # set timezone
             for reg, cnt in self.timezones.items():
@@ -478,7 +478,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
                     self.selected_region = reg
                     break
 
-        if self.selected_country != None and self.selected_region != None:
+        if self.selected_country is not None and self.selected_region is not None:
 
             users_timezone = "%s/%s" % (self.selected_region, self.selected_country)
 

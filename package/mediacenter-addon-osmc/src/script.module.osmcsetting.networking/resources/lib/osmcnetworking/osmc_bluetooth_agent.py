@@ -105,7 +105,7 @@ class Agent(dbus.service.Object):
         returnStr = input('Enter Pin: ')
         returnValue = decode_response(returnStr)
         pin = '0000'
-        if not returnValue == None:
+        if not returnValue is None:
             pin = returnValue
         message_list = ['ENTER_PIN', str(pin)]
         return_status('NOTIFICATION', message_list)
@@ -120,7 +120,7 @@ class Agent(dbus.service.Object):
         returnStr = input('Enter Pin: ')
         returnValue = decode_response(returnStr)
         pin = '0000'
-        if not returnValue == None:
+        if not returnValue is None:
             pin = returnValue
         message_list = ['ENTER_PIN', str(pin)]
         return_status('NOTIFICATION', message_list)

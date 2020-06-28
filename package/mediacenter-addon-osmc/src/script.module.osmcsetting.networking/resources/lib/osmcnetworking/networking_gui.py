@@ -407,7 +407,7 @@ class networking_gui(xbmcgui.WindowXMLDialog):
             xbmc.executebuiltin("XBMC.Notification(%s,%s,%s)" % ("Networking Add-on", message, "2500"))
 
     def shutdown_process(self):
-        ''' Actions that are done when the user chooses to Go Back, Escape, or clicks Exit '''
+        """ Actions that are done when the user chooses to Go Back, Escape, or clicks Exit """
 
         self.stop_wifi_population_thread()
 
@@ -641,7 +641,7 @@ class networking_gui(xbmcgui.WindowXMLDialog):
             self.toggle_controls(True, ip_labels)
 
     def populate_mysql(self, dictionary):
-        ''' Reads the MySQL information from the CAS and loads it into the local addon '''
+        """ Reads the MySQL information from the CAS and loads it into the local addon """
 
         main = dictionary.get('advancedsettings', {})
 
@@ -707,7 +707,7 @@ class networking_gui(xbmcgui.WindowXMLDialog):
         return
 
     def read_mysql_settings(self, dictionary):
-        ''' Reads the MySQL settings from the gui, and writes them directly into the ADVS. '''
+        """ Reads the MySQL settings from the gui, and writes them directly into the ADVS. """
 
         sub_dict = dictionary.get('advancedsettings', {})
 
@@ -789,7 +789,7 @@ class networking_gui(xbmcgui.WindowXMLDialog):
         }
 
     def write_advancedsettings(self, dictionary):
-        ''' Takes a dictionary and writes it to the advancedsettings.xml file '''
+        """ Takes a dictionary and writes it to the advancedsettings.xml file """
 
         # check the dictionary to see if it is valid
         dictionary_valid, invalidity_type = self.ASE.validate_advset_dict(dictionary, no_pw_ok=True)
@@ -853,7 +853,7 @@ class networking_gui(xbmcgui.WindowXMLDialog):
             log('Failed to write to advancedsettings.xml.\n\n%s' % traceback.format_exc())
 
     def user_entry_mysql(self, controlID):
-        ''' Handles the user input for MySQL panel. '''
+        """ Handles the user input for MySQL panel. """
 
         # as soon as a control is touched in the MySQL panel, the trigger for rewriting the advancedsettings.xml file is flipped, and cannot be reversed
         if not self.mysql_changed:

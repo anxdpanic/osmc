@@ -35,7 +35,7 @@ class AdvancedSettingsEditor(object):
         pass
 
     def parse_advanced_settings(self):
-        ''' Parses the advancedsettings.xml file. Returns a dict with ALL the details. '''
+        """ Parses the advancedsettings.xml file. Returns a dict with ALL the details. """
 
         user_data = xbmc.translatePath('special://userdata')
         loc = os.path.join(user_data, 'advancedsettings.xml')
@@ -73,7 +73,7 @@ class AdvancedSettingsEditor(object):
             return null_doc
 
     def server_not_localhost(self, dictionary):
-        ''' Checks the MySQL settings to ensure neither server is on the localhost '''
+        """ Checks the MySQL settings to ensure neither server is on the localhost """
 
         dbs = [dictionary.get('advancedsettings', {}).get('musicdatabase', {}),
                dictionary.get('advancedsettings', {}).get('videodatabase', {})]
@@ -91,10 +91,10 @@ class AdvancedSettingsEditor(object):
         return False
 
     def validate_advset_dict(self, dictionary, reject_empty=False, exclude_name=False, no_pw_ok=False):
-        ''' Checks whether the provided dictionary is fully populated with MySQL settings info.
+        """ Checks whether the provided dictionary is fully populated with MySQL settings info.
             If reject_empty is False, then Blank dictionaries are rejected, but dictionaries with no video or music database dicts are passed.
             If reject_empty is True,  then Blank dictionaries are rejected, AND dictionaries with no video or music database dicts are also rejected.
-            exclude_name means that the name sql item can be ignored (it is not strictly required, but the GUI ALWAYS adds it.'''
+            exclude_name means that the name sql item can be ignored (it is not strictly required, but the GUI ALWAYS adds it."""
 
         main = dictionary.get('advancedsettings', {})
 
@@ -131,7 +131,7 @@ class AdvancedSettingsEditor(object):
         return True, 'complete'
 
     def write_advancedsettings(self, loc, dictionary):
-        ''' Writes the supplied dictionary back to the advancedsettings.xml file '''
+        """ Writes the supplied dictionary back to the advancedsettings.xml file """
 
         if not dictionary.get('advancedsettings', None):
             self.log('Empty dictionary passed to advancedsettings file writer. Preventing write, backing up and removing file.')

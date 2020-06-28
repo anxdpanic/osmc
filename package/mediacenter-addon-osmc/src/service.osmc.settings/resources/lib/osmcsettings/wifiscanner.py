@@ -83,7 +83,7 @@ class wifiScanner(threading.Thread):
     def scanForWifiNetworks(self):
         networkInterface = self.wIface
         output = ""
-        if (networkInterface != None):
+        if (networkInterface is not None):
             command = ["iwlist", networkInterface, "scanning"]
             process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             process.wait()

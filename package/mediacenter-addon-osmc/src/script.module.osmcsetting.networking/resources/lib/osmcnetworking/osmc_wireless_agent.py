@@ -190,7 +190,7 @@ if __name__ == '__main__':
                              'net.connman.Manager')
 
     path = "/test/agent"
-    object = Agent(bus, path)
+    obj = Agent(bus, path)
 
     if len(sys.argv) >= 2:
         for arg in sys.argv[1:]:
@@ -200,10 +200,10 @@ if __name__ == '__main__':
                 keyfile.close()
                 lines = data.split('\n')
                 if len(lines) > 0 and len(lines[0]) > 0:
-                    object.passphrase = lines[0]
+                    obj.passphrase = lines[0]
                 if len(lines) > 1 and len(lines[1]) > 0:
-                    object.name = lines[1]
-                    object.ssid = lines[1]
+                    obj.name = lines[1]
+                    obj.ssid = lines[1]
 
 try:
     manager.RegisterAgent(path)

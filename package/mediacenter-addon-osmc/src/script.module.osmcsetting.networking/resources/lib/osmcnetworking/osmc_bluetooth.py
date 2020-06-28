@@ -163,7 +163,7 @@ def list_devices(filterkey=None, expectedvalue=None):
             # remove dbus.String from the key
             for key in dbus_dict:
                 device_dict[str(key)] = dbus_dict[key]
-            if filterkey == None or device_dict[filterkey] == expectedvalue:
+            if filterkey is None or device_dict[filterkey] == expectedvalue:
                 devices[str(device_dict['Address'])] = device_dict
     return devices
 
