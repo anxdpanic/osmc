@@ -1,4 +1,13 @@
 #!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+"""
+    Copyright (C) 2014-2020 OSMC (KodeKarnage)
+
+    This file is part of script.module.osmcsetting.logging
+
+    SPDX-License-Identifier: GPL-2.0-only
+    See LICENSES/GPL-2.0-only for more information.
+"""
 
 import xml.etree.ElementTree as ET
 import os.path
