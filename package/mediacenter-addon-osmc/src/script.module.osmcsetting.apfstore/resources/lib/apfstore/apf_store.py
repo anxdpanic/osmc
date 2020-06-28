@@ -18,11 +18,15 @@ import os
 import threading
 import json
 import requests
-import Queue
 import shutil
 import traceback
 import datetime as dt
 import subprocess
+
+try:
+    import queue as Queue
+except ImportError:
+    import Queue
 
 # OSMC SETTING Modules
 from osmccommon.osmc_logging import clog
