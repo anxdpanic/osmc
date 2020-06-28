@@ -9,10 +9,12 @@ import os
 import random
 import requests
 import subprocess
-import sys
 import threading
 import traceback
 import xml.etree.ElementTree as ET
+
+from osmccommon.osmc_logging import StandardLogger
+from osmccommon.osmc_language import LangRetriever
 
 # Custom Modules
 from . import osmc_timezones
@@ -23,9 +25,9 @@ EULA = LICENSE.license
 WARR = WARRANTY.warranty
 DIALOG = xbmcgui.Dialog()
 
+addonid = 'service.osmc.settings'
 __addon__ = xbmcaddon.Addon()
 scriptPath = __addon__.getAddonInfo('path')
-PY2 = sys.version_info.major == 2
 
 PANEL_MAP = {
     'language': {
@@ -90,20 +92,8 @@ PANEL_MAP = {
     },
 }
 
-
-def log(message, level=xbmc.LOGDEBUG):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
-
-    xbmc.log(str(message), level=level)
-
-
-def lang(string_id):
-    if PY2:
-        return __addon__.getLocalizedString(string_id).encode('utf-8', 'ignore')
-    return __addon__.getLocalizedString(string_id)
+log = StandardLogger(addonid, os.path.basename(__file__)).log
+lang = LangRetriever(__addon__).lang
 
 
 class mock_Networking_caller(object):

@@ -44,33 +44,24 @@ import socket
 import subprocess
 import sys
 
+from osmccommon.osmc_comms import Communicator
+from osmccommon.osmc_logging import StandardLogger
+from osmccommon.osmc_language import LangRetriever
+
 # Custom modules
 from . import osmc_walkthru
 from . import osmc_settingsGUI
-from . import osmc_comms
 from . import osmc_ubiquifonts
 
+addonid = 'service.osmc.settings'
 __addon__ = xbmcaddon.Addon()
 __addonid__ = __addon__.getAddonInfo('id')
 __setting__ = __addon__.getSetting
 DIALOG = xbmcgui.Dialog()
-PY2 = sys.version_info.major == 2
 PY3 = sys.version_info.major == 3
 
-
-def lang(string_id):
-    if PY2:
-        return __addon__.getLocalizedString(string_id).encode('utf-8', 'ignore')
-    return __addon__.getLocalizedString(string_id)
-
-
-def log(message):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
-
-    xbmc.log('OSMC ADDON MAIN ' + str(message), level=xbmc.LOGDEBUG)
+log = StandardLogger(addonid, os.path.basename(__file__)).log
+lang = LangRetriever(__addon__).lang
 
 
 def check_vendor():
@@ -155,7 +146,7 @@ class Main(object):
         self.parent_queue = Queue.Queue()
 
         # create socket, listen for comms
-        self.listener = osmc_comms.communicator(self.parent_queue, socket_file='/var/tmp/osmc.settings.sockfile')
+        self.listener = Communicator(self.parent_queue, socket_file='/var/tmp/osmc.settings.sockfile')
         self.listener.start()
 
         # the gui is created and stored in memory for quick access

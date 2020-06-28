@@ -1,32 +1,23 @@
+import os
 import socket
 import sys
 
-import xbmc
 import xbmcgui
 import xbmcaddon
 
-__addon__ = xbmcaddon.Addon()
+from osmccommon.osmc_logging import StandardLogger
+from osmccommon.osmc_language import LangRetriever
+
+addonid = 'service.osmc.settings'
+__addon__ = xbmcaddon.Addon(addonid)
 __setting__ = __addon__.getSetting
+
 DIALOG = xbmcgui.Dialog()
 
-PY2 = sys.version_info.major == 2
 PY3 = sys.version_info.major == 3
 
-
-def log(message):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
-
-    xbmc.log(message, level=xbmc.LOGDEBUG)
-
-
-def lang(string_id):
-    if PY2:
-        return __addon__.getLocalizedString(string_id).encode('utf-8', 'ignore')
-    return __addon__.getLocalizedString(string_id)
-
+log = StandardLogger(addonid, os.path.basename(__file__)).log
+lang = LangRetriever(__addon__).lang
 
 log('default started')
 

@@ -9,32 +9,22 @@ import os
 import sys
 import threading
 import traceback
-from .CompLogger import comprehensive_logger as clog
+
+from osmccommon.osmc_logging import clog
+from osmccommon.osmc_logging import StandardLogger
+from osmccommon.osmc_language import LangRetriever
 
 path = xbmcaddon.Addon().getAddonInfo('path')
 lib = os.path.join(path, 'resources', 'lib')
 media = os.path.join(path, 'resources', 'skins', 'Default', 'media')
 
+addonid = 'service.osmc.settings'
 __addon__ = xbmcaddon.Addon()
 scriptPath = __addon__.getAddonInfo('path')
 WINDOW = xbmcgui.Window(10000)
 
-PY2 = sys.version_info.major == 2
-
-
-def lang(string_id):
-    if PY2:
-        return __addon__.getLocalizedString(string_id).encode('utf-8', 'ignore')
-    return __addon__.getLocalizedString(string_id)
-
-
-def log(message):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
-
-    xbmc.log('osmc_settings: ' + str(message), level=xbmc.LOGDEBUG)
+log = StandardLogger(addonid, os.path.basename(__file__)).log
+lang = LangRetriever(__addon__).lang
 
 
 class OSMC_gui(xbmcgui.WindowXMLDialog):

@@ -18,22 +18,14 @@
  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
  http://www.gnu.org/copyleft/gpl.html
 """
+import os
 
-# KODI modules
-import xbmc
+from osmccommon.osmc_logging import StandardLogger
 
 # Custom modules
 from osmcsettings import osmc_main as m
 
-
-def log(message):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
-
-    xbmc.log('OSMC ADDON MAIN ' + str(message), level=xbmc.LOGDEBUG)
-
+log = StandardLogger('service.osmc.settings', os.path.basename(__file__)).log
 
 if __name__ == "__main__":
     m.set_version()
