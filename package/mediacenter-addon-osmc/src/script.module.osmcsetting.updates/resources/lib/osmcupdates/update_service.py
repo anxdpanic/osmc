@@ -14,12 +14,16 @@ from datetime import datetime
 import decimal
 import json
 import os
-import Queue
 import random
 import socket
 import sys
 import subprocess
 import traceback
+
+try:
+    import queue as Queue
+except ImportError:
+    import Queue
 
 # Kodi Modules
 import xbmc
