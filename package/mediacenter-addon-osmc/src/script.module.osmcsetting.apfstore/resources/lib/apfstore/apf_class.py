@@ -85,7 +85,7 @@ class APF_obj(xbmcgui.ListItem):
 
     def set_installed(self, status):
 
-        if status == True:
+        if status is True:
             self.installed = True
             self.setLabel2(lang(32005))
 

@@ -102,12 +102,12 @@ class GuiParser(object):
                             msgctxt = line.split(' ')[1].strip().split('"')[1][1:]  # noqa E501
                         except IndexError:
                             continue
-                        for line in f:
-                            if line.startswith('msgid'):
+                        for next_line in f:
+                            if next_line.startswith('msgid'):
                                 try:
-                                    system_strings[msgctxt] = line.split(' ', 1)[1].strip().split('"')[1]  # noqa E501
+                                    system_strings[msgctxt] = next_line.split(' ', 1)[1].strip().split('"')[1]  # noqa E501
                                 except IndexError:
-                                    system_strings[msgctxt] = 'string failed - %s' % line  # noqa E501
+                                    system_strings[msgctxt] = 'string failed - %s' % next_line  # noqa E501
                                 break
         except Exception:
             tb = traceback.format_exc()

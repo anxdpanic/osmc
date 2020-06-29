@@ -124,7 +124,7 @@ class APF_STORE(object):
 
         self.use_cache = self.check_lastupdated()
 
-        if self.use_cache == True:
+        if self.use_cache is True:
 
             cache = self.read_jsoncache()
 

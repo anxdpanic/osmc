@@ -431,7 +431,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
         try:
 
-            if self.ssh_state != True:
+            if self.ssh_state is not True:
 
                 log('Disabling SSH service')
 
@@ -497,7 +497,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         """ Checks to see if the internet checker has finished, and if not, shows a progress bar until complete or exit.
             The internet checker will toggle the internet_connected bool if a connection is made."""
 
-        if self.internet_checker.ftr_running == True:
+        if self.internet_checker.ftr_running is True:
             # only display Please Wait Progress Bar if the ftr is still running
             self.pDialog = xbmcgui.DialogProgress()
             self.pDialog.create(lang(32025), lang(32024))
@@ -506,7 +506,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         # this will allow more frequent updates to the progress bar than using the timeout value would permit
         cnt = self.internet_checker.timeout * 10.0
 
-        while self.internet_checker.ftr_running == True:
+        while self.internet_checker.ftr_running is True:
             # ftr is still running, tell the user to Please Wait, and try again
             # this will time out after 2 minutes
 

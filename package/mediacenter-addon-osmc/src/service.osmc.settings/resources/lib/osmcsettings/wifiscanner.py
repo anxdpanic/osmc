@@ -81,7 +81,6 @@ class wifiScanner(threading.Thread):
 
     def scanForWifiNetworks(self):
         networkInterface = self.wIface
-        output = ""
         if (networkInterface is not None):
             command = ["iwlist", networkInterface, "scanning"]
             process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -109,7 +108,6 @@ class wifiScanner(threading.Thread):
         while (output != ""):
             entry = self.cutTo(output, "Address:")
 
-            address = ""
             essid = ""
             mode = ""
             channel = ""
