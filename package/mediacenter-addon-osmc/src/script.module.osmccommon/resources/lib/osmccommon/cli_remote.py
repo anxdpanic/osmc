@@ -111,20 +111,20 @@ def test(settings):
         'Content-Type': 'application/json'
     }
     data = json.dumps({
-                          "jsonrpc": "2.0",
-                          "method": "JSONRPC.Ping",
-                          "id": 1
-                      })
+        "jsonrpc": "2.0",
+        "method": "JSONRPC.Ping",
+        "id": 1
+    })
     _ = requests.post(url, data=data, headers=headers, auth=(settings['user'], settings['pssw']))
     data = json.dumps({
-                          "jsonrpc": "2.0",
-                          "method": "GUI.ShowNotification",
-                          "params": {
-                              "title": "Kodi CLI Remote",
-                              "message": "Connected!"
-                          },
-                          "id": 1
-                      })
+        "jsonrpc": "2.0",
+        "method": "GUI.ShowNotification",
+        "params": {
+            "title": "Kodi CLI Remote",
+            "message": "Connected!"
+        },
+        "id": 1
+    })
     _ = requests.post(url, data=data, headers=headers, auth=(settings['user'], settings['pssw']))
 
 

@@ -37,7 +37,7 @@
             <!-- <pagecontrol>13</pagecontrol>-->
             <!-- <scrolltime>200</scrolltime>-->
             <!-- <autoscroll delay="3000" time="1000" repeat="10000">!Control.HasFocus(13)</autoscroll>-->
-            <label>Text to display goes here [CR] next line... </label>
+            <label>Text to display goes here [CR] next line...</label>
         </control>
         <!-- 9 box grid grouping -->
         <!-- grouping like this is necessary to be able to have the middle item selected by default, only group has this option -->
@@ -102,7 +102,7 @@
             <!--former_line<shadowcolor>ff000000</shadowcolor>-->
             <wrapmultiline>false</wrapmultiline>
             <scrollspeed>50</scrollspeed>
-            <scrollsuffix>- </scrollsuffix>
+            <scrollsuffix>-</scrollsuffix>
         </control>
         <control id="4444" type="button">
             <description>previous menu</description>
@@ -499,33 +499,33 @@
             </control>
 
 
-<control type="button" id="909">
-            <description>Advanced Settings (beta)</description>
-      <left>1520</left>
-      <top>450</top>
-      <width>250</width>
-      <height>200</height>
-      <colordiffuse>FFFFFFFF</colordiffuse>
-      <label>Advanced[CR]Settings[CR](beta)</label>
-      <font>osmc_addon_Med</font>
-      <textcolor>66ffffff</textcolor>
-      <focusedcolor>ffe0b074</focusedcolor>
-      <align>center</align>
-      <aligny>center</aligny>
-      <textoffsetx></textoffsetx>
-      <textoffsety></textoffsety>
-      <pulseonselect></pulseonselect>
-      <onclick></onclick>
-      <onfocus>-</onfocus>
-      <onunfocus>-</onunfocus>
-      <onup></onup>
-      <ondown></ondown>
-      <onleft>106</onleft>
-      <onright></onright>
-      <visible>System.HasAddon(script.advancedsettingsetter)</visible>
-    <texturefocus colordiffuse="FFFFAAFF"></texturefocus>
-      <texturenofocus colordiffuse="FFFFAAFF"></texturenofocus>
-</control>
+            <control type="button" id="909">
+                <description>Advanced Settings (beta)</description>
+                <left>1520</left>
+                <top>450</top>
+                <width>250</width>
+                <height>200</height>
+                <colordiffuse>FFFFFFFF</colordiffuse>
+                <label>Advanced[CR]Settings[CR](beta)</label>
+                <font>osmc_addon_Med</font>
+                <textcolor>66ffffff</textcolor>
+                <focusedcolor>ffe0b074</focusedcolor>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textoffsetx></textoffsetx>
+                <textoffsety></textoffsety>
+                <pulseonselect></pulseonselect>
+                <onclick></onclick>
+                <onfocus>-</onfocus>
+                <onunfocus>-</onunfocus>
+                <onup></onup>
+                <ondown></ondown>
+                <onleft>106</onleft>
+                <onright></onright>
+                <visible>System.HasAddon(script.advancedsettingsetter)</visible>
+                <texturefocus colordiffuse="FFFFAAFF"></texturefocus>
+                <texturenofocus colordiffuse="FFFFAAFF"></texturenofocus>
+            </control>
 
 
             <!-- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ -->

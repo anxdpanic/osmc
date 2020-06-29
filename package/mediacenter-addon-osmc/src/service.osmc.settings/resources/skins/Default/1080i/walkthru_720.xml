@@ -699,20 +699,20 @@
 
 
             <!-- SSH PASSWORD CHANGE FUNCTION SUPPRESSED AT THIS TIME -->
-<!--             <control id="370011" type="button">
-                <width>1600</width>
-                <height>42</height>
-                <label>Click here to change/confirm password:    osmc (default)</label>
-                <font>osmc_addon_720_Med</font>
-                <textcolor>66ffffff</textcolor>
-                <focusedcolor>ffe0b074</focusedcolor>
-                <texturefocus>single_pixel.png</texturefocus>
-                <texturenofocus>single_pixel.png</texturenofocus>
-                <align>left</align>
-                <aligny>center</aligny>
-                <onclick>noop</onclick>
-            </control> -->
-            
+            <!--             <control id="370011" type="button">
+                            <width>1600</width>
+                            <height>42</height>
+                            <label>Click here to change/confirm password:    osmc (default)</label>
+                            <font>osmc_addon_720_Med</font>
+                            <textcolor>66ffffff</textcolor>
+                            <focusedcolor>ffe0b074</focusedcolor>
+                            <texturefocus>single_pixel.png</texturefocus>
+                            <texturenofocus>single_pixel.png</texturenofocus>
+                            <align>left</align>
+                            <aligny>center</aligny>
+                            <onclick>noop</onclick>
+                        </control> -->
+
             <control id="370012" type="button">
                 <width>1600</width>
                 <height>42</height>
@@ -1415,7 +1415,7 @@
             </control>
         </control>
 
-                <!-- COVER, provides a sheet over all the controls when the window loads -->
+        <!-- COVER, provides a sheet over all the controls when the window loads -->
         <control type="image" id="123456789">
             <left>0</left>
             <top>0</top>

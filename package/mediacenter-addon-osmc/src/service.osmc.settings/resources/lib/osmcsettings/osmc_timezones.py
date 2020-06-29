@@ -10,6 +10,7 @@
 
 from io import open
 
+
 def get_timezones():
     """ Returns a dictionary or regions, which hold lists of countries within those regions. """
 

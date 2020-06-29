@@ -1595,7 +1595,7 @@
             <!-- VIDEO GROUP -->
             <control description="MySQL Video Group" type="group">
                 <visible>Control.IsEnabled(10510) + String.Contains(Control.GetLabel(10510),*)</visible>
-                 <!-- <itemgap>34</itemgap> -->
+                <!-- <itemgap>34</itemgap> -->
                 <posx>75</posx>
                 <posy>180</posy>
                 <orientation>vertical</orientation>
