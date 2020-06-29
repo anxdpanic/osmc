@@ -8,7 +8,6 @@
     See LICENSES/GPL-2.0-or-later for more information.
 """
 
-import importlib
 import os
 import sys
 import threading
@@ -428,8 +427,8 @@ class OSMCGui(threading.Thread):
         # if you got this far then this is almost certainly an OSMC setting
         try:
             log(module_name)
-            loaded_module = importlib.import_module('%s.osmc' % module_name)
-            setting_instance = loaded_module.OSMCSettingClass()
+            OSMCSetting = __import__('%s.osmc.OSMCSetting' % module_name, fromlist=[''])
+            setting_instance = OSMCSetting.OSMCSettingClass()
             module_path = setting_instance.path
             log(dir(module_path))
             setting_instance.setDaemon(True)
@@ -478,5 +477,5 @@ class OSMCGui(threading.Thread):
             'FX_Icon_Widget': osmc_setting_FX_icon_Widget,
             'FO_Icon_Widget': osmc_setting_FO_icon_Widget,
             'SET': setting_instance,
-            'OSMCSetting': loaded_module
+            'OSMCSetting': OSMCSetting
         })
