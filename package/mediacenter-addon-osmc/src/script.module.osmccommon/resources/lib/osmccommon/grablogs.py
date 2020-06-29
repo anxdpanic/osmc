@@ -702,7 +702,7 @@ class Main(object):
 
         self.number_of_actions = sum(1 for k, v in SETS.items() if v.get('active', False))
 
-        self.pDialog.create(lang(32024), lang(32025))
+        self.pDialog.create(lang(32001), lang(32004))
 
         self.arguments = [(k, v) for k, v in SETS.items()]
 
@@ -751,12 +751,12 @@ class Main(object):
 
                 pct = int(100.0 * float(count) / float(self.number_of_actions))
 
-                self.pDialog.update(percent=pct, message=lang(32036) % k)
+                self.pDialog.update(percent=pct, message=lang(32006) % k)
 
                 for log in v['logs']:
                     self.grab_log(**log)
 
-        self.pDialog.update(percent=100, message=lang(32027))
+        self.pDialog.update(percent=100, message=lang(32005))
 
     def grab_log(self, ltyp, actn, name, key):
         """ Method grabs the logs from either a file or the command line."""
@@ -797,8 +797,6 @@ class Main(object):
 
             return
 
-        # self.pDialog.update(percent=100, message=lang(32026))
-
     def dispatch_logs(self):
         """ Either copies the combined logs to the SD Card or Uploads them to the pastebin. """
 
@@ -807,7 +805,7 @@ class Main(object):
             os.popen('sudo cp -rf %s /boot/' % TEMP_LOG_FILE)
 
             if xbmc:
-                _ = DIALOG.ok(lang(32013), lang(32040))
+                _ = DIALOG.ok(lang(32001), lang(32008))
 
             else:
 
@@ -860,7 +858,7 @@ class Main(object):
 
                 if xbmc:
 
-                    self.copy_to_boot = DIALOG.yesno(lang(32013), '[CR]'.join([lang(32023), lang(32039)]))
+                    self.copy_to_boot = DIALOG.yesno(lang(32001), '[CR]'.join([lang(32003), lang(32007)]))
 
                 else:
 
@@ -877,7 +875,7 @@ class Main(object):
 
                 if xbmc:
 
-                    _ = DIALOG.ok(lang(32013), lang(32014) % self.url)
+                    _ = DIALOG.ok(lang(32001), lang(32002) % self.url)
 
                 else:
 
