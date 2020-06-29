@@ -26,7 +26,7 @@ FOLDER = xbmc.translatePath(os.path.join(xbmcaddon.Addon(addonid).getAddonInfo('
 
 FONT_FOLDER = xbmc.translatePath(os.path.join(FOLDER, 'skins', 'Default', 'fonts'))
 
-FONT_PARTIALS = os.path.join(FOLDER, 'lib', 'fonts.txt')
+FONT_PARTIALS = os.path.join(FOLDER, 'lib', 'osmcsettings', 'fonts.txt')
 
 
 # FONT_PARTIALS = '/home/kubkev/.kodi/addons/service.osmc.settings/resources/lib/fonts.txt'
