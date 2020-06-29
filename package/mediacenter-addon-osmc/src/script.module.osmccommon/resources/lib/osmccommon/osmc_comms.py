@@ -118,6 +118,8 @@ class Communicator(threading.Thread):
                 try:
                     data = conn.recv(8192)
                     passed = True
+                    if isinstance(data, bytes):
+                        data = data.decode('utf-8')
                     log('data = %s' % data)
                 except:
                     total_wait += wait
