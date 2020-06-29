@@ -4,6 +4,8 @@
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.osmccommon" version="0.1.0"/>
     </requires>
+    <extension point="xbmc.python.module" library="resources/lib/"/>
+
     <extension point="xbmc.service" library="resources/lib/service.py"/>
 
     <extension point="xbmc.addon.metadata">
