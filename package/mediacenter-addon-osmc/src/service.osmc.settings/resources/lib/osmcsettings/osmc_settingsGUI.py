@@ -13,6 +13,7 @@ import xbmc
 import xbmcaddon
 import xbmcgui
 
+import importlib
 import os
 import sys
 import threading
@@ -289,16 +290,6 @@ class OSMCGui(threading.Thread):
 
         super(OSMCGui, self).__init__()
 
-        self.create_gui()
-
-    @clog(log)
-    def create_gui(self):
-        """
-            known modules is a list of tuples detailing all the known and permissible modules and services
-            (module name, order): the order is the hierarchy of addons (which is used to
-            determine the positions of addon in the gui)
-        """
-
         self.known_modules_order = {
             "osmcpi": 0,
             "osmcupdates": 1,
@@ -308,6 +299,16 @@ class OSMCGui(threading.Thread):
             "osmcservices": 5,
             "osmcremotes": 6,
         }
+
+        self.create_gui()
+
+    @clog(log)
+    def create_gui(self):
+        """
+            known modules is a list of tuples detailing all the known and permissible modules and services
+            (module name, order): the order is the hierarchy of addons (which is used to
+            determine the positions of addon in the gui)
+        """
 
         # order of addon hierarchy
         # 105 is Apply
@@ -429,9 +430,9 @@ class OSMCGui(threading.Thread):
         # if you got this far then this is almost certainly an OSMC setting
         try:
             log(module_name)
-            OSMCSetting = __import__('%s.osmc.OSMCSetting' % module_name, fromlist=[''])
-            setting_instance = OSMCSetting.OSMCSettingClass()
-            module_path = setting_instance.path()
+            loaded_module = importlib.import_module('%s.osmc' % module_name)
+            setting_instance = loaded_module.OSMCSettingClass()
+            module_path = setting_instance.path
             log(dir(module_path))
             setting_instance.setDaemon(True)
         except:
@@ -479,5 +480,5 @@ class OSMCGui(threading.Thread):
             'FX_Icon_Widget': osmc_setting_FX_icon_Widget,
             'FO_Icon_Widget': osmc_setting_FO_icon_Widget,
             'SET': setting_instance,
-            'OSMCSetting': OSMCSetting
+            'OSMCSetting': loaded_module
         })
