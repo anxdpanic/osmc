@@ -609,7 +609,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         # display confirmation dialog
         user_confirmation = DIALOG.yesno(lang(32046), self.selected_language, autoclose=10000)
 
-        if user_confirmation == True:
+        if user_confirmation is True:
             # if user CONFIRMS, check whether a skin reload is required
 
             if 'english' not in self.selected_language.lower():
