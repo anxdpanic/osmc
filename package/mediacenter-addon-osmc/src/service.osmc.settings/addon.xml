@@ -11,10 +11,10 @@
         <import addon="script.module.osmcsetting.services" version="0.1.0"/>
         <import addon="script.module.osmcsetting.updates" version="0.1.0"/>
     </requires>
-    <extension point="xbmc.python.script" library="resources/default.py">
+    <extension point="xbmc.python.script" library="resources/lib/default.py">
         <provides>executable</provides>
     </extension>
-    <extension point="xbmc.service" library="resources/service.py"/>
+    <extension point="xbmc.service" library="resources/lib/service.py"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en_GB">My OSMC</summary>
         <language>en</language>
