@@ -174,7 +174,7 @@ class Main(object):
         self.EXTERNAL_UPDATE_REQUIRED = 1
 
         # create socket, listen for comms
-        self.listener = comms.communicator(self.parent_queue, socket_file='/var/tmp/osmc.settings.update.sockfile')
+        self.listener = comms.Communicator(self.parent_queue, socket_file='/var/tmp/osmc.settings.update.sockfile')
         self.listener.start()
 
         # grab the settings, saves them into a dict called seld.s
