@@ -12,6 +12,8 @@
 import xbmc
 import xbmcaddon
 import xbmcgui
+
+from io import open
 import subprocess
 import time
 import os
@@ -50,7 +52,7 @@ class ConfigEditor(xbmcgui.WindowXMLDialog):
         try:
             self.config = '/boot/config.txt'
 
-            with open(self.config, 'r') as f:
+            with open(self.config, 'r', encoding='utf-8') as f:
                 self.lines = f.readlines()
 
         except:
@@ -58,7 +60,7 @@ class ConfigEditor(xbmcgui.WindowXMLDialog):
             # FOR TESTING
             self.config = '/home/plaskev/Documents/config.txt'
 
-            with open(self.config, 'r') as f:
+            with open(self.config, 'r', encoding='utf-8') as f:
                 self.lines = f.readlines()
 
         log('lines = %s' % self.lines)
@@ -134,7 +136,7 @@ class ConfigEditor(xbmcgui.WindowXMLDialog):
                     tmp_loc = '/var/tmp/config.txt'
 
                     # write the long_string_file to the config.txt
-                    with open(tmp_loc, 'w') as f:
+                    with open(tmp_loc, 'w', encoding='utf-8') as f:
                         for line in new_config:
                             f.write(line.replace(" = ", "=") + '\n')
                             log('' + line)

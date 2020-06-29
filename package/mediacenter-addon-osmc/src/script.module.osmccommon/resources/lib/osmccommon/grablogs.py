@@ -10,6 +10,7 @@
 """
 
 import argparse
+from io import open
 import os
 import shlex
 import subprocess
@@ -594,7 +595,7 @@ def right_now(raw=False):
             if raw:
                 return datetime.now()
             else:
-                with open('/proc/uptime', 'r') as f:
+                with open('/proc/uptime', 'r', encoding='utf-8') as f:
                     uptime_seconds = f.readline().split()[0]
 
                 return datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " - (Uptime = " + uptime_seconds + ")"
@@ -783,7 +784,7 @@ class Main(object):
         self.log_blotter = [x.replace('\0', '') for x in self.log_blotter]
 
         try:
-            with open(TEMP_LOG_FILE, 'w') as f:
+            with open(TEMP_LOG_FILE, 'w', encoding='utf-8') as f:
 
                 # write the blotter contents
                 f.writelines(self.log_blotter)

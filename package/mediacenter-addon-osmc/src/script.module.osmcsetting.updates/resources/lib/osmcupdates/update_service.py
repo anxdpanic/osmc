@@ -11,6 +11,7 @@
 # Standard Modules
 import apt
 from datetime import datetime
+from io import open
 import decimal
 import json
 import os
@@ -70,7 +71,7 @@ def exit_osmc_settings_addon():
 def get_hardware_prefix():
     """ Returns the prefix for the hardware type. rbp, rbp2, etc """
 
-    with open('/proc/cmdline', 'r') as f:
+    with open('/proc/cmdline', 'r', encoding='utf-8') as f:
 
         line = f.readline()
 
@@ -226,7 +227,7 @@ class Main(object):
         # check for the external update failed
         fail_check_file = '/var/tmp/.osmc_failed_update'
         if os.path.isfile(fail_check_file):
-            with open(fail_check_file, 'r') as f:
+            with open(fail_check_file, 'r', encoding='utf-8') as f:
                 package = f.readline()
 
             _ = DIALOG.ok(lang(32087), '[CR]'.join([lang(32088) % package, '', lang(32089)]))
@@ -358,7 +359,7 @@ class Main(object):
         """ Sets the conditions for future update checks to be blocked. """
 
         # create the file that will prevent further update checks until the updates have been installed
-        with open(self.block_update_file, 'w') as f:
+        with open(self.block_update_file, 'w', encoding='utf-8') as f:
             f.write('d')
 
         # trigger the flag to skip update checks
@@ -953,7 +954,7 @@ class Main(object):
         if self.s['on_upd_detected'] == 3:
 
             # create the file that will prevent further update checks until the updates have been installed
-            with open(self.block_update_file, 'w') as f:
+            with open(self.block_update_file, 'w', encoding='utf-8') as f:
                 f.write('d')
 
             # turn on the "install now" setting in Settings.xml
@@ -1322,7 +1323,7 @@ class Main(object):
                     self.progress_bar(kill=True)
 
                     # create the file that will prevent further update checks until the updates have been installed
-                    with open(self.block_update_file, 'w') as f:
+                    with open(self.block_update_file, 'w', encoding='utf-8') as f:
                         f.write('d')
 
                     # trigger the flag to skip update checks

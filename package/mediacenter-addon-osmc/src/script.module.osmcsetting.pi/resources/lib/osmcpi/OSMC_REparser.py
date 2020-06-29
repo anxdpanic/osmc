@@ -44,6 +44,7 @@ NEEDS A FINAL CHECK FOR HDMI_SAFE to make sure the entries related to it are rem
 
 """
 
+from io import open
 import re
 
 
@@ -1213,7 +1214,7 @@ MASTER_SETTINGS = {
 
 
 def read_config_file(location):
-    with open(location, "r") as f:
+    with open(location, "r", encoding='utf-8') as f:
         return f.readlines()
 
 
@@ -1225,7 +1226,7 @@ def write_config_file(location, new_config):
     # print new_config
     # print "J" * 50
 
-    with open(location, "w") as f:
+    with open(location, "w", encoding='utf-8') as f:
         f.writelines(new_config)
 
 

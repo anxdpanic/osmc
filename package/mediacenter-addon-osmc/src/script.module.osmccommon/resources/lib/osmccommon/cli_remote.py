@@ -9,6 +9,7 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
+from io import open
 import curses
 import json
 import sys
@@ -32,7 +33,7 @@ _keymap = {
 }
 
 try:
-    with open('/home/osmc/cli_remote.conf', 'r') as f:
+    with open('/home/osmc/cli_remote.conf', 'r', encoding='utf-8') as f:
         lines = f.readlines()
     single = ''.join(lines)
     raw_sets = json.loads(single)

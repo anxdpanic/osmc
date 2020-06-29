@@ -14,7 +14,7 @@ import xbmcaddon
 import xbmcgui
 
 # Standard modules
-import sys
+from io import open
 import os
 import hashlib
 
@@ -29,8 +29,6 @@ __path__ = xbmc.translatePath(xbmcaddon.Addon(addonid).getAddonInfo('path'))
 
 ADDONART = os.path.join(__path__, 'resources', 'skins', 'Default', 'media')
 USERART = os.path.join(xbmc.translatePath('special://userdata/'), 'addon_data', addonid)
-
-PY3 = sys.version_info.major == 3
 
 log = StandardLogger(addonid, os.path.basename(__file__)).log
 lang = LangRetriever(__addon__).lang
@@ -134,11 +132,9 @@ class APF_obj(xbmcgui.ListItem):
         log('current icon = %s' % current_icon)
 
         # get the hash
-        with open(current_icon, 'r') as open_file:
+        with open(current_icon, 'rb') as open_file:
             icon_image = open_file.read()
 
-        if PY3 and not isinstance(icon_image, (bytes, bytearray)):
-            icon_image = icon_image.encode('utf-8', 'ignore')
         icon_hash = hashlib.md5(icon_image).hexdigest()
 
         if icon_hash != self.iconhash:

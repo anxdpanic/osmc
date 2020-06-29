@@ -28,6 +28,7 @@ if not os.path.isfile('/walkthrough_completed'):
 
 # Standard modules
 import datetime
+from io import open
 import json
 import socket
 import subprocess
@@ -65,7 +66,7 @@ def check_vendor():
     """
 
     if os.path.isfile('/vendor'):
-        with open('/vendor', 'r') as f:
+        with open('/vendor', 'r', encoding='utf-8') as f:
             line = f.readline()
 
         if 'noobs' in line:
@@ -96,7 +97,7 @@ def set_version():
 
         version = []
 
-        with open('/etc/os-release', 'r') as f:
+        with open('/etc/os-release', 'r', encoding='utf-8') as f:
 
             tags = ['NAME=', 'VERSION=', 'VERSION_ID=']
 
@@ -186,7 +187,7 @@ class Main(object):
 
                         log("Vendor is %s" % vendor)
 
-                        with open('/tmp/walkthrough_completed', 'w+') as f:
+                        with open('/tmp/walkthrough_completed', 'w+', encoding='utf-8') as f:
                             log('/tmp/walkthrough_completed written')
                             pass
 

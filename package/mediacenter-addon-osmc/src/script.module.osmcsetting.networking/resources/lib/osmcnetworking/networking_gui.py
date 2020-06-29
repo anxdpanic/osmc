@@ -9,6 +9,7 @@
 """
 
 # Standard Modules
+from io import open
 import os
 import socket
 import subprocess
@@ -998,7 +999,7 @@ class networking_gui(xbmcgui.WindowXMLDialog):
             if self.current_network_config:
                 osmc_network.apply_network_changes(self.current_network_config, self.internet_protocol)
                 if self.current_network_config[self.internet_protocol]['Method'] in ['nfs_dhcp', 'nfs_manual']:
-                    with open(self.reboot_required_file, 'w') as f:
+                    with open(self.reboot_required_file, 'w', encoding='utf-8') as f:
                         f.write('d')
                     # 'NFS Network Settings'
                     # 'Your Settings will not take effect until you reboot. Reboot Now?''

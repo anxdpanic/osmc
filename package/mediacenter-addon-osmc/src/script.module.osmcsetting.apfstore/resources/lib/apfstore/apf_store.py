@@ -14,6 +14,7 @@ import xbmcgui
 import xbmcaddon
 
 # Standard modules
+from io import open
 import os
 import threading
 import json
@@ -229,7 +230,7 @@ class APF_STORE(object):
         try:
 
             # generate the URL
-            with open('/proc/cmdline', 'r') as f:
+            with open('/proc/cmdline', 'r', encoding='utf-8') as f:
 
                 line = f.readline()
 

@@ -8,11 +8,12 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
+from io import open
 
 def get_timezones():
     """ Returns a dictionary or regions, which hold lists of countries within those regions. """
 
-    with open('/usr/share/zoneinfo/zone.tab', 'r') as f:
+    with open('/usr/share/zoneinfo/zone.tab', 'r', encoding='utf-8') as f:
 
         lines = f.readlines()
 

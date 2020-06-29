@@ -15,6 +15,7 @@ import xbmcgui
 
 # STANDARD library modules
 from collections import OrderedDict
+from io import open
 import os
 import random
 import requests
@@ -410,7 +411,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         """
 
         # generate the URL
-        with open('/proc/cmdline', 'r') as f:
+        with open('/proc/cmdline', 'r', encoding='utf-8') as f:
 
             line = f.readline()
 

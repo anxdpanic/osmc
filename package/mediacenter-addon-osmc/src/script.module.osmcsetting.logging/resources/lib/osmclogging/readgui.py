@@ -9,6 +9,7 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
+from io import open
 import xml.etree.ElementTree as ET
 import os.path
 import traceback
@@ -94,7 +95,7 @@ class GuiParser(object):
         system_strings = {}
 
         try:
-            with open(self.stringsfile) as f:
+            with open(self.stringsfile, encoding='utf-8') as f:
                 for line in f:
                     if line.startswith('msgctxt'):
                         try:

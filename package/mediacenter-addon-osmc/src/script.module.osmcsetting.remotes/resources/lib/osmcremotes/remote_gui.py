@@ -14,6 +14,7 @@ import xbmcaddon
 import xbmcgui
 
 # Standard modules
+from io import open
 import os
 import subprocess
 import threading
@@ -49,15 +50,16 @@ def construct_listitem(conf):
     path, filename = os.path.split(conf)
 
     # get conf name; check first line in file for "# name:"
-    with open(conf, 'r') as f:
+    with open(conf, 'r', encoding='utf-8') as f:
         lines = f.readlines()
-        first_line = lines[0]
-        if first_line.startswith("# name:"):
-            name = first_line[len("# name:"):]
-            name2 = filename
-        else:
-            name = filename.replace('.conf', '')
-            name2 = conf
+
+    first_line = lines[0]
+    if first_line.startswith("# name:"):
+        name = first_line[len("# name:"):]
+        name2 = filename
+    else:
+        name = filename.replace('.conf', '')
+        name2 = conf
 
     # check for remote image, use it if it is available
     image_path = os.path.join(path, filename.replace('.conf', '.png'))
@@ -224,7 +226,7 @@ class remote_GUI(xbmcgui.WindowXMLDialog):
             # always overwrite the file, this will allow the contents to be updated (if ever needed)
             log('Creating RC6 blacklist file')
 
-            with open('/var/tmp/blacklist-rc6.conf', 'w') as f:
+            with open('/var/tmp/blacklist-rc6.conf', 'w', encoding='utf-8') as f:
                 f.write('blacklist ir_rc6_decoder\ninstall ir_rc6_decoder /bin/true')
 
             subprocess.call(["sudo", "mv", '/var/tmp/blacklist-rc6.conf', self.rc6_file_loc])

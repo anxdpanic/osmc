@@ -10,6 +10,7 @@
 
 # STANDARD Modules
 import datetime as dt
+from io import open
 import json
 import math
 import os
@@ -855,7 +856,7 @@ class osmc_backup(object):
         new_lines = []
 
         # read the current fstab file, process it line by line
-        with open('/etc/fstab', 'r') as current_fstab:
+        with open('/etc/fstab', 'r', encoding='utf-8') as current_fstab:
 
             # process each line in the current fstab files
             for line in current_fstab.readlines():
@@ -895,7 +896,7 @@ class osmc_backup(object):
             # we have to unquify the list first, as the proceedure above could result in multiple
             # commented out lines appearing in the restored fstab
             # it's just easier to remove them here than avoid adding them in the first place
-            with open('/tmp/fstab', 'w') as f:
+            with open('/tmp/fstab', 'w', encoding='utf-8') as f:
                 f.writelines(self.uniquify(new_lines))
 
             # finally, copy the temp fstab over the live fstab

@@ -8,6 +8,7 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
+from io import open
 import os
 import re
 import subprocess
@@ -49,14 +50,14 @@ class AdvancedSettingsEditor(object):
         if not os.path.isfile(loc): return null_doc
 
         try:
-            with open(loc, 'r') as f:
+            with open(loc, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
 
             if not lines:
                 self.log('advancedsettings.xml file is empty')
                 raise
 
-            with open(loc, 'r') as f:
+            with open(loc, 'r', encoding='utf-8') as f:
                 doc = xmltodict.parse(f)
 
             # ensure empty advancedsettings nodes are ignored
@@ -142,5 +143,5 @@ class AdvancedSettingsEditor(object):
 
             return
 
-        with open(loc, 'w') as f:
+        with open(loc, 'w', encoding='utf-8') as f:
             xmltodict.unparse(input_dict=dictionary, output=f, pretty=True)

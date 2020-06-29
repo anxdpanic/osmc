@@ -8,6 +8,7 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
+from io import open
 import os
 import subprocess
 import xbmcaddon
@@ -88,23 +89,23 @@ class MaitreD(object):
         for service_name in os.listdir("/etc/osmc/apps.d"):
             service_name = service_name.replace('\n', '')
             if os.path.isfile("/etc/osmc/apps.d/" + service_name):
-                with open("/etc/osmc/apps.d/" + service_name) as f:
+                with open("/etc/osmc/apps.d/" + service_name, encoding='utf-8') as f:
                     lines = f.readlines()
-                    s_name = lines.pop(0).replace('\n', '')
-                    s_entry = [line.replace('\n', '') for line in lines]
+                s_name = lines.pop(0).replace('\n', '')
+                s_entry = [line.replace('\n', '') for line in lines]
 
-                    log("MaitreD: Service Friendly Name: %s" % s_name)
-                    log("MaitreD: Service Entry Point(s): %s" % s_entry)
+                log("MaitreD: Service Friendly Name: %s" % s_name)
+                log("MaitreD: Service Entry Point(s): %s" % s_entry)
 
-                    enabled = self.is_enabled(s_entry)
-                    runcheck = self.is_running(s_entry)
+                enabled = self.is_enabled(s_entry)
+                runcheck = self.is_running(s_entry)
 
-                    if runcheck:
-                        running = lang(32003)
-                    else:
-                        running = lang(32005)
+                if runcheck:
+                    running = lang(32003)
+                else:
+                    running = lang(32005)
 
-                    svcs[s_name] = (s_entry, service_name, running, enabled)
+                svcs[s_name] = (s_entry, service_name, running, enabled)
 
         # this last part creates a dictionary ordered by the services friendly name
         self.services = OrderedDict()

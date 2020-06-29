@@ -9,6 +9,7 @@
 """
 
 # Standard Modules
+from io import open
 import os
 import requests
 import shlex
@@ -284,7 +285,7 @@ class HotFix(object):
 
         """ Saves the hotfix output to a temporary file """
 
-        with open(self.tmp_hfo_location, 'w') as f:
+        with open(self.tmp_hfo_location, 'w', encoding='utf-8') as f:
             f.writelines(results)
 
     def resolution_save(self, results):

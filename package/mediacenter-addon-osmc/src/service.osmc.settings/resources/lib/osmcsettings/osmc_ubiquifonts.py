@@ -9,6 +9,7 @@
 """
 
 # Standard modules
+from io import open
 import os
 import subprocess
 import traceback
@@ -122,7 +123,7 @@ def import_osmc_fonts():
     # check whether the fonts are already in the font xml, if they are then simply return.
     # the previous solution of checking for a backup fonts file is pointless as an update of the skin
     # would overwrite the Font.xml and leave the backup in place
-    with open(alien_font_xml, 'r') as f:
+    with open(alien_font_xml, 'r', encoding='utf-8') as f:
         lines = f.readlines()
         for line in lines:
             if 'osmc_addon_XLarge' in line:
@@ -134,10 +135,10 @@ def import_osmc_fonts():
     for filename in unique_files:
         subprocess.call(["sudo", "cp", os.path.join(FONT_FOLDER, filename), alien_fonts_folder])
 
-    with open(FONT_PARTIALS, 'r') as f:
+    with open(FONT_PARTIALS, 'r', encoding='utf-8') as f:
         osmc_lines = f.readlines()
 
-    with open(alien_font_xml, 'r') as af:
+    with open(alien_font_xml, 'r', encoding='utf-8') as af:
         alien_lines = af.readlines()
 
     new_lines = []
@@ -166,7 +167,7 @@ def import_osmc_fonts():
 
     subprocess.call(["sudo", "cp", alien_font_xml, backup_file])
 
-    with open('/tmp/Font.xml', 'w') as bf:
+    with open('/tmp/Font.xml', 'w', encoding='utf-8') as bf:
         bf.writelines(new_lines)
 
     subprocess.call(["sudo", "mv", '/tmp/Font.xml', alien_font_xml])
