@@ -323,7 +323,7 @@ class Main(object):
 
             if not self.EXTERNAL_UPDATE_REQUIRED:
 
-                install_now = DIALOG.yesno(lang(32072), lang(32073), lang(32074))
+                install_now = DIALOG.yesno(lang(32072), '[CR]'.join([lang(32073), lang(32074)]))
 
                 if install_now:
                     self.call_child_script('commit')
@@ -332,7 +332,7 @@ class Main(object):
 
             else:
 
-                exit_install = DIALOG.yesno(lang(32072), lang(32075), lang(32076))
+                exit_install = DIALOG.yesno(lang(32072), '[CR]'.join([lang(32075), lang(32076)]))
 
                 if exit_install:
                     exit_osmc_settings_addon()
@@ -1103,7 +1103,7 @@ class Main(object):
             confirm = self.display_update_warning()
             if not confirm: return
 
-        ans = DIALOG.yesno(lang(32072), lang(32075), lang(32076))
+        ans = DIALOG.yesno(lang(32072), '[CR]'.join([lang(32075), lang(32076)]))
 
         if ans:
             __addon__.setSetting('install_now_visible', 'false')
@@ -1305,7 +1305,7 @@ class Main(object):
 
             else:
 
-                install = DIALOG.yesno(lang(32072), lang(32083), lang(32084))
+                install = DIALOG.yesno(lang(32072), '[CR]'.join([lang(32083), lang(32084)]))
 
                 if install:
 
