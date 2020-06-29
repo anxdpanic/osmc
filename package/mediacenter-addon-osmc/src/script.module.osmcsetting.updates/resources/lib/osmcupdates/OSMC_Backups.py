@@ -4,8 +4,8 @@
 
     This file is part of script.module.osmcsetting.updates
 
-    SPDX-License-Identifier: GPL-2.0-only
-    See LICENSES/GPL-2.0-only for more information.
+    SPDX-License-Identifier: GPL-2.0-or-later
+    See LICENSES/GPL-2.0-or-later for more information.
 """
 
 import datetime as dt
