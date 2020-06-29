@@ -193,3 +193,7 @@ msgstr ""
 msgctxt "#32045"
 msgid "Please enter your email"
 msgstr ""
+
+msgctxt "#32046"
+msgid "Confirm"
+msgstr ""

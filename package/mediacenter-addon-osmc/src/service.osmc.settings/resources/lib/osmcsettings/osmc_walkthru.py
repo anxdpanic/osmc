@@ -607,7 +607,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         self.selected_language = self.getControl(controlID).getSelectedItem().getLabel()
 
         # display confirmation dialog
-        user_confirmation = DIALOG.yesno('Confirm', self.selected_language, autoclose=10000)
+        user_confirmation = DIALOG.yesno(lang(32046), self.selected_language, autoclose=10000)
 
         if user_confirmation == True:
             # if user CONFIRMS, check whether a skin reload is required
