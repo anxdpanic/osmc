@@ -8,9 +8,9 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
+import os
 import subprocess
 import time
-import os
 
 
 def is_service_running(service_name):

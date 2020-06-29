@@ -6,12 +6,12 @@
 #  Copyright 2007-2012 Intel Corporation
 #  Copyright 2014 Sam Nazarko <email@samnazarko.co.uk>
 
-import gobject
+import sys
 
 import dbus
-import dbus.service
 import dbus.mainloop.glib
-import sys
+import dbus.service
+import gobject
 
 try:
     input = raw_input

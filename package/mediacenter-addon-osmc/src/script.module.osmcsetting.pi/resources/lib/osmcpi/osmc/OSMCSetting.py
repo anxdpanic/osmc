@@ -100,29 +100,22 @@
 
 """
 
-# XBMC Modules
-import xbmc
-import xbmcaddon
-import xbmcgui
-
-# STANDARD Modules
+import os
 import subprocess
 import sys
-import os
 import threading
 import traceback
 
-from osmccommon.osmc_logging import StandardLogger
+import xbmc
+import xbmcaddon
+import xbmcgui
 from osmccommon.osmc_language import LangRetriever
-
-# OSMC SETTING Modules
+from osmccommon.osmc_logging import StandardLogger
 from .. import OSMC_REparser as parser
 
 addonid = "script.module.osmcsetting.pi"
 __addon__ = xbmcaddon.Addon(addonid)
 DIALOG = xbmcgui.Dialog()
-
-# Custom modules
 
 PY3 = sys.version_info.major == 3
 

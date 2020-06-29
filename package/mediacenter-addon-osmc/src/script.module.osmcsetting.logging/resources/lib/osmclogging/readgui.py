@@ -9,11 +9,11 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
-from io import open
-import xml.etree.ElementTree as ET
+import argparse
 import os.path
 import traceback
-import argparse
+import xml.etree.ElementTree as ET
+from io import open
 
 # For python2/3 compatability
 try:

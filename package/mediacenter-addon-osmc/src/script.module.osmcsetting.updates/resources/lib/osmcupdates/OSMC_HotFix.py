@@ -8,20 +8,18 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
-# Standard Modules
-from io import open
 import os
-import requests
 import shlex
 import subprocess
 import traceback
+from io import open
 
-# Kodi Modules
+import requests
+
 import xbmcaddon
 import xbmcgui
-
-from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_language import LangRetriever
+from osmccommon.osmc_logging import StandardLogger
 
 addonid = 'script.module.osmcsetting.updates'
 __addon__ = xbmcaddon.Addon(addonid)

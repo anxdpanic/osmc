@@ -10,10 +10,10 @@
 
 """ This script is run as root by the osmc update module. """
 
+import json
 import socket
 import sys
 from datetime import datetime
-import json
 
 t = datetime
 PY3 = sys.version_info.major == 3

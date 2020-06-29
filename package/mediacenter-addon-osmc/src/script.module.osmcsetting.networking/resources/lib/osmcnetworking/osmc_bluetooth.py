@@ -8,16 +8,16 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
+import json
 import os
 import sys
+
 import pexpect
-import json
 
-from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_language import LangRetriever
-
-from . import connman
+from osmccommon.osmc_logging import StandardLogger
 from . import bluetooth
+from . import connman
 from . import osmc_systemd
 
 addonid = 'script.module.osmcsetting.networking'

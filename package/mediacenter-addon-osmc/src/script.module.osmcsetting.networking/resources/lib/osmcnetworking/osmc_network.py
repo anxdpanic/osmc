@@ -8,15 +8,16 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
-import dbus
-import time
-import subprocess
-import re
-import sys
 import os
 import os.path
-import requests
+import re
 import socket
+import subprocess
+import sys
+import time
+
+import dbus
+import requests
 
 from . import connman
 from . import osmc_systemd

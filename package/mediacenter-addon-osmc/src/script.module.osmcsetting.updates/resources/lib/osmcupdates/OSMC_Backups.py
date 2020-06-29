@@ -8,9 +8,7 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
-# STANDARD Modules
 import datetime as dt
-from io import open
 import json
 import math
 import os
@@ -18,15 +16,14 @@ import re
 import subprocess
 import tarfile
 import traceback
+from io import open
 
-# KODI Modules
 import xbmc
-import xbmcgui
 import xbmcaddon
+import xbmcgui
 import xbmcvfs
-
-from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_language import LangRetriever
+from osmccommon.osmc_logging import StandardLogger
 
 addonid = 'script.module.osmcsetting.updates'
 __addon__ = xbmcaddon.Addon(addonid)

@@ -100,16 +100,13 @@
 
 """
 
-# XBMC Modules
-import xbmc
-import xbmcaddon
-
 import os
 import threading
 
-from osmccommon.osmc_logging import clog
+import xbmc
+import xbmcaddon
 from osmccommon.osmc_logging import StandardLogger
-
+from osmccommon.osmc_logging import clog
 from .. import remote_gui
 
 addonid = "script.module.osmcsetting.remotes"

@@ -10,15 +10,14 @@
 """
 
 import argparse
-from io import open
 import os
 import shlex
 import subprocess
 import sys
 import time
 import traceback
-
 from datetime import datetime
+from io import open
 
 from .osmc_language import LangRetriever
 from .osmc_logging import StandardLogger

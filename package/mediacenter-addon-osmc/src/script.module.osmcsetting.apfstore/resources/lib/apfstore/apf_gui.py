@@ -8,21 +8,17 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
-# KODI modules
+import json
+import os
+import socket
+import sys
+
 import xbmc
 import xbmcaddon
 import xbmcgui
-
-# Standard modules
-import sys
-import os
-import socket
-import json
-
-# OSMC SETTING Modules
-from osmccommon.osmc_logging import clog
-from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_language import LangRetriever
+from osmccommon.osmc_logging import StandardLogger
+from osmccommon.osmc_logging import clog
 
 addonid = "script.module.osmcsetting.apfstore"
 __addon__ = xbmcaddon.Addon(addonid)

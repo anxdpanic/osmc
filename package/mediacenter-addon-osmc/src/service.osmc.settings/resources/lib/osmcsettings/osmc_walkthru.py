@@ -8,29 +8,26 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
-# XBMC modules
-import xbmc
-import xbmcaddon
-import xbmcgui
-
-# STANDARD library modules
-from collections import OrderedDict
-from io import open
 import os
 import random
-import requests
 import subprocess
 import threading
 import traceback
 import xml.etree.ElementTree as ET
+# STANDARD library modules
+from collections import OrderedDict
+from io import open
 
-from osmccommon.osmc_logging import StandardLogger
+import requests
+
+import xbmc
+import xbmcaddon
+import xbmcgui
 from osmccommon.osmc_language import LangRetriever
-
-# Custom Modules
-from . import osmc_timezones
+from osmccommon.osmc_logging import StandardLogger
 from . import LICENSE
 from . import WARRANTY
+from . import osmc_timezones
 
 EULA = LICENSE.license
 WARR = WARRANTY.warranty

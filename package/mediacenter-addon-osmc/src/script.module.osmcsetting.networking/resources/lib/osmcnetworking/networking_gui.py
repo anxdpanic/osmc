@@ -8,22 +8,18 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
-# Standard Modules
-from io import open
 import os
 import socket
 import subprocess
 import threading
 import traceback
+from io import open
 
-# XBMC Modules
+import xbmc
 import xbmcaddon
 import xbmcgui
-import xbmc
-
-from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_language import LangRetriever
-
+from osmccommon.osmc_logging import StandardLogger
 from . import osmc_bluetooth
 from . import osmc_network
 from .osmc_advset_editor import AdvancedSettingsEditor

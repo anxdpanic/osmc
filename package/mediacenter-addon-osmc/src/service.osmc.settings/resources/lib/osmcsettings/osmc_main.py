@@ -13,7 +13,6 @@
 import os
 import traceback
 
-# XBMC modules
 import xbmc
 import xbmcaddon
 import xbmcgui
@@ -26,7 +25,6 @@ if not os.path.isfile('/walkthrough_completed'):
     except Exception as e:
         print(traceback.format_exc())
 
-# Standard modules
 import datetime
 from io import open
 import json
@@ -43,7 +41,6 @@ from osmccommon.osmc_comms import Communicator
 from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_language import LangRetriever
 
-# Custom modules
 from . import osmc_walkthru
 from . import osmc_settingsGUI
 from . import osmc_ubiquifonts

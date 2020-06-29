@@ -100,17 +100,13 @@
 
 """
 
-# XBMC Modules
-import xbmcaddon
-import xbmcgui
-import xbmc
-
 import os
 import threading
 
+import xbmc
+import xbmcaddon
+import xbmcgui
 from osmccommon.osmc_logging import StandardLogger
-
-# OSMC SETTING Modules
 from ..service_selection_gui import service_selection
 
 addonid = "script.module.osmcsetting.services"

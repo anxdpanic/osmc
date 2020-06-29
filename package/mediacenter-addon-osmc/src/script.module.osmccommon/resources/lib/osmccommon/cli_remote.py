@@ -9,10 +9,10 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
-from io import open
 import curses
 import json
 import sys
+from io import open
 
 import requests
 

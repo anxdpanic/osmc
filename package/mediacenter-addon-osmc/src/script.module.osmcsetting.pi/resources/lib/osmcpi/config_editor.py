@@ -8,18 +8,16 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
-# XBMC Modules
+import os
+import subprocess
+import time
+from io import open
+
 import xbmc
 import xbmcaddon
 import xbmcgui
-
-from io import open
-import subprocess
-import time
-import os
-
-from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_language import LangRetriever
+from osmccommon.osmc_logging import StandardLogger
 
 ACTION_PREVIOUS_MENU = 10
 ACTION_NAV_BACK = 92

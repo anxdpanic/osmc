@@ -12,11 +12,10 @@ import os
 import socket
 import sys
 
-import xbmcgui
 import xbmcaddon
-
-from osmccommon.osmc_logging import StandardLogger
+import xbmcgui
 from osmccommon.osmc_language import LangRetriever
+from osmccommon.osmc_logging import StandardLogger
 
 addonid = 'service.osmc.settings'
 __addon__ = xbmcaddon.Addon(addonid)

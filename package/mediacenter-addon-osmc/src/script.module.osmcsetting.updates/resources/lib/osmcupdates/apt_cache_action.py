@@ -10,13 +10,14 @@
 
 """ This script is run as root by the osmc update module. """
 
-import apt
-from datetime import datetime
 import json
 import os
 import socket
 import sys
 import traceback
+from datetime import datetime
+
+import apt
 
 t = datetime
 PY3 = sys.version_info.major == 3

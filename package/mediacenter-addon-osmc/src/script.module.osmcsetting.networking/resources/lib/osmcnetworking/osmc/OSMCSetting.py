@@ -100,21 +100,18 @@
 
 """
 
-# XBMC Modules
-import xbmcaddon
-import xbmc
-import xbmcgui
-import sys
 import os
+import sys
 import threading
 
-from osmccommon.osmc_logging import StandardLogger
+import xbmc
+import xbmcaddon
+import xbmcgui
 from osmccommon.osmc_language import LangRetriever
-
-# OSMC SETTING Modules
+from osmccommon.osmc_logging import StandardLogger
+from .. import osmc_network
 from ..networking_gui import networking_gui
 from ..osmc_advset_editor import AdvancedSettingsEditor
-from .. import osmc_network
 
 addonid = "script.module.osmcsetting.networking"
 __addon__ = xbmcaddon.Addon(addonid)

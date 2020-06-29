@@ -93,14 +93,12 @@
 
 """
 
-# XBMC Modules
-import xbmcaddon
-import xbmc
-
 import os
 import subprocess
 import threading
 
+import xbmc
+import xbmcaddon
 from osmccommon.osmc_logging import StandardLogger
 
 addonid = "script.module.osmcsetting.updates"

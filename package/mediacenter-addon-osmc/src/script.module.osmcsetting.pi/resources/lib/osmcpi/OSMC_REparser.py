@@ -44,8 +44,8 @@ NEEDS A FINAL CHECK FOR HDMI_SAFE to make sure the entries related to it are rem
 
 """
 
-from io import open
 import re
+from io import open
 
 
 def config_to_kodi(MASTER_SETTINGS, config):

@@ -8,17 +8,17 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
-from io import open
 import os
 import subprocess
+from collections import OrderedDict
+from io import open
+
+import xbmc
 import xbmcaddon
 import xbmcgui
-import xbmc
-from collections import OrderedDict
-
-from osmccommon.osmc_logging import clog
-from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_language import LangRetriever
+from osmccommon.osmc_logging import StandardLogger
+from osmccommon.osmc_logging import clog
 
 ACTION_PREVIOUS_MENU = 10
 ACTION_NAV_BACK = 92

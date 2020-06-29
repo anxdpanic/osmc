@@ -100,14 +100,13 @@
 
 """
 
-# XBMC Modules
-import xbmc
-import xbmcaddon
 import os
 import threading
 
-from osmccommon.osmc_logging import clog
+import xbmc
+import xbmcaddon
 from osmccommon.osmc_logging import StandardLogger
+from osmccommon.osmc_logging import clog
 
 addonid = "script.module.osmcsetting.logging"
 __addon__ = xbmcaddon.Addon(addonid)

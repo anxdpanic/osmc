@@ -8,20 +8,16 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
-# KODI modules
-import xbmc
-import xbmcaddon
-import xbmcgui
-
-# Standard modules
-from io import open
 import os
 import subprocess
 import threading
+from io import open
 
-# OSMC SETTING Modules
-from osmccommon.osmc_logging import StandardLogger
+import xbmc
+import xbmcaddon
+import xbmcgui
 from osmccommon.osmc_language import LangRetriever
+from osmccommon.osmc_logging import StandardLogger
 
 addonid = "script.module.osmcsetting.remotes"
 __addon__ = xbmcaddon.Addon("script.module.osmcsetting.remotes")

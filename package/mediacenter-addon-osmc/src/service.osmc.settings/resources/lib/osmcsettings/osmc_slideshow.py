@@ -8,17 +8,15 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
-# XBMC modules
-import xbmc
-import xbmcaddon
-import xbmcgui
-
 # STANDARD library modules
 import os
 import threading
 
-from osmccommon.osmc_logging import StandardLogger
+import xbmc
+import xbmcaddon
+import xbmcgui
 from osmccommon.osmc_language import LangRetriever
+from osmccommon.osmc_logging import StandardLogger
 
 addonid = 'service.osmc.settings'
 __addon__ = xbmcaddon.Addon(addonid)

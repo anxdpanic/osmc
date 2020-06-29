@@ -11,10 +11,9 @@
 
 import os
 
-from osmccommon.osmc_logging import StandardLogger
-
-# Custom modules
 from osmcsettings import osmc_main as m
+
+from osmccommon.osmc_logging import StandardLogger
 
 log = StandardLogger('service.osmc.settings', os.path.basename(__file__)).log
 

@@ -8,25 +8,24 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
-# Standard Modules
-import apt
-from datetime import datetime
-from io import open
 import decimal
 import json
 import os
 import random
 import socket
-import sys
 import subprocess
+import sys
 import traceback
+from datetime import datetime
+from io import open
+
+import apt
 
 try:
     import queue as Queue
 except ImportError:
     import Queue
 
-# Kodi Modules
 import xbmc
 import xbmcaddon
 import xbmcgui
@@ -36,7 +35,6 @@ from osmccommon.osmc_language import LangRetriever
 from osmccommon import osmc_scheduler as sched
 from osmccommon import osmc_comms as comms
 
-# Custom modules
 from . import OSMC_Backups
 
 addonid = 'script.module.osmcsetting.updates'

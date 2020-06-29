@@ -16,7 +16,6 @@
    limitations under the License.
 """
 
-# Standard Modules
 import subprocess
 import threading
 import time

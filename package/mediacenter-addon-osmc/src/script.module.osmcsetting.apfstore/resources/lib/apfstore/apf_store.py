@@ -8,28 +8,26 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
-# KODI modules
-import xbmc
-import xbmcgui
-import xbmcaddon
-
-# Standard modules
-from io import open
-import os
-import threading
-import json
-import requests
-import shutil
-import traceback
 import datetime as dt
+import json
+import os
+import shutil
 import subprocess
+import threading
+import traceback
+from io import open
+
+import requests
+
+import xbmc
+import xbmcaddon
+import xbmcgui
 
 try:
     import queue as Queue
 except ImportError:
     import Queue
 
-# OSMC SETTING Modules
 from osmccommon.osmc_logging import clog
 from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_language import LangRetriever

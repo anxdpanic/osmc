@@ -8,16 +8,13 @@
     See LICENSES/GPL-2.0-only for more information.
 """
 
-# Standard modules
 import os
 import socket
 import subprocess
 import sys
 import threading
 
-# XBMC modules
 import xbmc
-
 from .osmc_logging import StandardLogger
 
 PY3 = sys.version_info.major == 3
