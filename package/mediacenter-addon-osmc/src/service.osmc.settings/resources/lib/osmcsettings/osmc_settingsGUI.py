@@ -86,7 +86,7 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
                     shortname = ''
 
                 # set the icon (texturefocus, texturenofocus)
-                list_item = xbmcgui.ListItem(label=shortname, label2='')
+                list_item = xbmcgui.ListItem(label=shortname, label2='', offscreen=True)
                 list_item.setArt({
                     'thumb': module['FX_Icon']
                 })
@@ -110,7 +110,7 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
             # set up the apply buttons
             for apply_button in self.apply_buttons:
                 # set the image
-                list_item = xbmcgui.ListItem(label='', label2='')
+                list_item = xbmcgui.ListItem(label='', label2='', offscreen=True)
                 list_item.setProperty('Action', "Apply")
 
                 self.getControl(apply_button).addItem(list_item)

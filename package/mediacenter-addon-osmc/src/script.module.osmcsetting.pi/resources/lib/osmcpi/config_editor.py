@@ -95,7 +95,7 @@ class ConfigEditor(xbmcgui.WindowXMLDialog):
 
         for i in self.items:
             # populate the random list
-            self.tmp = xbmcgui.ListItem(i)  # , thumbnailImage=IMAGE)
+            self.tmp = xbmcgui.ListItem(i, offscreen=True)  # , thumbnailImage=IMAGE)
             self.list_control.addItem(self.tmp)
 
         self.changed = False
@@ -207,7 +207,7 @@ class ConfigEditor(xbmcgui.WindowXMLDialog):
                     self.check_for_duplicates(d)
 
                     # add the new item to the list
-                    tmp = xbmcgui.ListItem(d)  # , thumbnailImage=IMAGE)
+                    tmp = xbmcgui.ListItem(d, offscreen=True)  # , thumbnailImage=IMAGE)
                     self.list_control.addItem(tmp)
 
                     self.changed = True

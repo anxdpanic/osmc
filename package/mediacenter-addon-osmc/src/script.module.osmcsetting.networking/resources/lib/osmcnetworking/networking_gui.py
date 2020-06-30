@@ -1822,7 +1822,7 @@ class bluetooth_population_thread(threading.Thread):
             else:
                 icon_image = 'bluetooth_cnp.png'
 
-        item = xbmcgui.ListItem(label)
+        item = xbmcgui.ListItem(label, offscreen=True)
         item.setArt({
             'icon': icon_image
         })
@@ -2002,7 +2002,7 @@ class wifi_populate_bot(threading.Thread):
         # icon_tuple = (connected, encrypted, strength)
         icon_image = self.get_wifi_icon(encrypted, strength, connected)
 
-        item = xbmcgui.ListItem(self.getListItemLabel(wifi, multiAdapter))
+        item = xbmcgui.ListItem(self.getListItemLabel(wifi, multiAdapter), offscreen=True)
         item.setArt({
             'icon': icon_image
         })

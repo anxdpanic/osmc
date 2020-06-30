@@ -323,7 +323,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
         # populate the language control
         for language_name, language_id in self.languages.items():
-            self.tmp = xbmcgui.ListItem(label=language_name, label2='')
+            self.tmp = xbmcgui.ListItem(label=language_name, label2='', offscreen=True)
 
             self.getControl(20010).addItem(self.tmp)
 
@@ -338,7 +338,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
                 if not ctl_id: continue
 
-                self.tmp = xbmcgui.ListItem(label=country, label2='')
+                self.tmp = xbmcgui.ListItem(label=country, label2='', offscreen=True)
                 self.getControl(ctl_id).addItem(self.tmp)
 
     def get_languages(self):

@@ -164,7 +164,7 @@ class service_selection(xbmcgui.WindowXMLDialog):
 
             sublabel = ','.join(s_entry)
 
-            self.tmp = xbmcgui.ListItem(label=s_name + sundry, label2=sublabel)
+            self.tmp = xbmcgui.ListItem(label=s_name + sundry, label2=sublabel, offscreen=True)
             self.name_list.addItem(self.tmp)
 
             # highlight the already selection randos

@@ -54,7 +54,7 @@ class APF_obj(xbmcgui.ListItem):
 
     def __init__(self):
 
-        xbmcgui.ListItem.__init__(self)
+        xbmcgui.ListItem.__init__(self, offscreen=True)
 
     def populate(self, data):
 

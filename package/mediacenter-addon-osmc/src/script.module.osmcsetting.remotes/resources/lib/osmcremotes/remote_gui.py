@@ -62,14 +62,14 @@ def construct_listitem(conf):
 
     if os.path.isfile(image_path):
 
-        tmp = xbmcgui.ListItem(label=name, label2=name2)
+        tmp = xbmcgui.ListItem(label=name, label2=name2, offscreen=True)
         tmp.setArt({
             'thumb': image_path
         })
 
     else:
 
-        tmp = xbmcgui.ListItem(label=name, label2=name2)
+        tmp = xbmcgui.ListItem(label=name, label2=name2, offscreen=True)
 
     tmp.setProperty('fullpath', conf)
 

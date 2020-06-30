@@ -130,7 +130,7 @@ class OSMC_Slideshow_GUI(xbmcgui.WindowXMLDialog):
 
         # populate the image list as well as the navi list
         for image in self.images:
-            li = xbmcgui.ListItem(label=image, label2='')
+            li = xbmcgui.ListItem(label=image, label2='', offscreen=True)
             li.setArt({
                 'thumb': image
             })
