@@ -1048,7 +1048,7 @@ class networking_gui(xbmcgui.WindowXMLDialog):
     def update_apply_reset_button(self, net_type):
 
         if net_type == 'WIRED':
-            if cmp(self.get_wired_config(), self.current_network_config) == 0 or not self.get_wired_config():
+            if self.get_wired_config() == self.current_network_config or not self.get_wired_config():
                 self.toggle_controls(False, [WIRED_RESET_BUTTON, WIRED_APPLY_BUTTON])
 
             else:
@@ -1056,7 +1056,7 @@ class networking_gui(xbmcgui.WindowXMLDialog):
 
         if net_type == 'WIRELESS':
             wireless_config = self.get_wireless_config(self.conn_ssid)
-            if cmp(wireless_config, self.current_network_config) == 0:
+            if wireless_config == self.current_network_config:
                 self.toggle_controls(False, [WIRELESS_RESET_BUTTON, WIRELESS_APPLY_BUTTON])
 
             else:
@@ -2036,7 +2036,3 @@ class wifi_populate_bot(threading.Thread):
             filename += '80100'
 
         return filename + ".png"
-
-
-def cmp(a, b):
-    return (a > b) - (a < b)
