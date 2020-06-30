@@ -36,7 +36,10 @@ class StandardLogger(object):
 
     def __init__(self, addonid='osmc', module=''):
         self.addonid = addonid
-        self.module = module
+        try:
+            self.module = module.replace('.py', '')
+        except:
+            self.module = module
 
     def log(self, message, label=''):
 
