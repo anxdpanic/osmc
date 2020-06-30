@@ -575,40 +575,40 @@ class Main(object):
             self.s['check_minute'] = int(float(__setting__('check_minute')))
             self.s['pos_x'] = int(float(__setting__('pos_x')))
             self.s['pos_y'] = int(float(__setting__('pos_y')))
-            self.s['suppress_progress'] = True if __setting__('suppress_progress') == 'true' else False
-            self.s['suppress_icon'] = True if __setting__('suppress_icon') == 'true' else False
-            self.s['update_on_idle'] = True if __setting__('update_on_idle') == 'true' else False
-            self.s['home_prompts_only'] = True if __setting__('home_prompts_only') == 'true' else False
-            # self.s['export_library']        = True if 	__setting__('export_library')			== 'true' else False
-            # self.s['export_video']          = True if 	__setting__('export_video')				== 'true' else False
-            # self.s['multifile_vid_export']  = True if 	__setting__('multifile_vid_export')		== 'true' else False
-            # self.s['export_music']          = True if 	__setting__('export_music')				== 'true' else False
-            # self.s['create_tarball']        = True if 	__setting__('create_tarball')			== 'true' else False
+            self.s['suppress_progress'] = __setting__('suppress_progress') == 'true'
+            self.s['suppress_icon'] = __setting__('suppress_icon') == 'true'
+            self.s['update_on_idle'] = __setting__('update_on_idle') == 'true'
+            self.s['home_prompts_only'] = __setting__('home_prompts_only') == 'true'
+            # self.s['export_library']        = 	__setting__('export_library')			== 'true'
+            # self.s['export_video']          = 	__setting__('export_video')				== 'true'
+            # self.s['multifile_vid_export']  = 	__setting__('multifile_vid_export')		== 'true'
+            # self.s['export_music']          = 	__setting__('export_music')				== 'true'
+            # self.s['create_tarball']        = 	__setting__('create_tarball')			== 'true'
             self.s['location_selection'] = __setting__('location_selection')
             self.s['backup_location'] = __setting__('backup_location')
             self.s['backup_location_typed'] = __setting__('backup_location_typed')
             self.s['tarball_count'] = int(float(__setting__('tarball_count')))
-            self.s['backup_on_update'] = True if __setting__('backup_on_update') == 'true' else False
-            self.s['backup_addons'] = True if __setting__('backup_addons') == 'true' else False
-            self.s['backup_addon_data'] = True if __setting__('backup_addon_data') == 'true' else False
-            self.s['backup_Database'] = True if __setting__('backup_Database') == 'true' else False
-            self.s['backup_keymaps'] = True if __setting__('backup_keymaps') == 'true' else False
-            self.s['backup_library'] = True if __setting__('backup_library') == 'true' else False
-            self.s['backup_playlists'] = True if __setting__('backup_playlists') == 'true' else False
-            self.s['backup_profilesF'] = True if __setting__('backup_profilesF') == 'true' else False
-            self.s['backup_Thumbnails'] = True if __setting__('backup_Thumbnails') == 'true' else False
-            self.s['backup_favourites'] = True if __setting__('backup_favourites') == 'true' else False
-            self.s['backup_keyboard'] = True if __setting__('backup_keyboard') == 'true' else False
-            self.s['backup_remote'] = True if __setting__('backup_remote') == 'true' else False
-            self.s['backup_LCD'] = True if __setting__('backup_LCD') == 'true' else False
-            self.s['backup_profiles'] = True if __setting__('backup_profiles') == 'true' else False
-            self.s['backup_RssFeeds'] = True if __setting__('backup_RssFeeds') == 'true' else False
-            self.s['backup_sources'] = True if __setting__('backup_sources') == 'true' else False
-            self.s['backup_upnpserver'] = True if __setting__('backup_upnpserver') == 'true' else False
-            self.s['backup_peripheral_data'] = True if __setting__('backup_peripheral_data') == 'true' else False
-            self.s['backup_guisettings'] = True if __setting__('backup_guisettings') == 'true' else False
-            self.s['backup_fstab'] = True if __setting__('backup_fstab') == 'true' else False
-            self.s['backup_advancedsettings'] = True if __setting__('backup_advancedsettings') == 'true' else False
+            self.s['backup_on_update'] = __setting__('backup_on_update') == 'true'
+            self.s['backup_addons'] = __setting__('backup_addons') == 'true'
+            self.s['backup_addon_data'] = __setting__('backup_addon_data') == 'true'
+            self.s['backup_Database'] = __setting__('backup_Database') == 'true'
+            self.s['backup_keymaps'] = __setting__('backup_keymaps') == 'true'
+            self.s['backup_library'] = __setting__('backup_library') == 'true'
+            self.s['backup_playlists'] = __setting__('backup_playlists') == 'true'
+            self.s['backup_profilesF'] = __setting__('backup_profilesF') == 'true'
+            self.s['backup_Thumbnails'] = __setting__('backup_Thumbnails') == 'true'
+            self.s['backup_favourites'] = __setting__('backup_favourites') == 'true'
+            self.s['backup_keyboard'] = __setting__('backup_keyboard') == 'true'
+            self.s['backup_remote'] = __setting__('backup_remote') == 'true'
+            self.s['backup_LCD'] = __setting__('backup_LCD') == 'true'
+            self.s['backup_profiles'] = __setting__('backup_profiles') == 'true'
+            self.s['backup_RssFeeds'] = __setting__('backup_RssFeeds') == 'true'
+            self.s['backup_sources'] = __setting__('backup_sources') == 'true'
+            self.s['backup_upnpserver'] = __setting__('backup_upnpserver') == 'true'
+            self.s['backup_peripheral_data'] = __setting__('backup_peripheral_data') == 'true'
+            self.s['backup_guisettings'] = __setting__('backup_guisettings') == 'true'
+            self.s['backup_fstab'] = __setting__('backup_fstab') == 'true'
+            self.s['backup_advancedsettings'] = __setting__('backup_advancedsettings') == 'true'
 
             return "initial run", self.s
 
@@ -627,44 +627,44 @@ class Main(object):
             tmp_s['check_minute'] = int(float(__setting__('check_minute')))
             tmp_s['pos_x'] = int(float(__setting__('pos_x')))
             tmp_s['pos_y'] = int(float(__setting__('pos_y')))
-            tmp_s['suppress_progress'] = True if __setting__('suppress_progress') == 'true' else False
-            tmp_s['suppress_icon'] = True if __setting__('suppress_icon') == 'true' else False
-            tmp_s['update_on_idle'] = True if __setting__('update_on_idle') == 'true' else False
-            tmp_s['home_prompts_only'] = True if __setting__('home_prompts_only') == 'true' else False
-            tmp_s['suppress_progress'] = True if __setting__('suppress_progress') == 'true' else False
-            tmp_s['suppress_icon'] = True if __setting__('suppress_icon') == 'true' else False
-            tmp_s['update_on_idle'] = True if __setting__('update_on_idle') == 'true' else False
-            tmp_s['home_prompts_only'] = True if __setting__('home_prompts_only') == 'true' else False
-            # tmp_s['export_library']        = True if 		__setting__('export_library')			== 'true' else False
-            # tmp_s['export_video']          = True if 		__setting__('export_video')				== 'true' else False
-            # tmp_s['multifile_vid_export']  = True if 		__setting__('multifile_vid_export')		== 'true' else False
-            # tmp_s['export_music']          = True if 		__setting__('export_music')				== 'true' else False
-            # tmp_s['create_tarball']        = True if 		__setting__('create_tarball')			== 'true' else False
+            tmp_s['suppress_progress'] = __setting__('suppress_progress') == 'true'
+            tmp_s['suppress_icon'] = __setting__('suppress_icon') == 'true'
+            tmp_s['update_on_idle'] = __setting__('update_on_idle') == 'true'
+            tmp_s['home_prompts_only'] = __setting__('home_prompts_only') == 'true'
+            tmp_s['suppress_progress'] = __setting__('suppress_progress') == 'true'
+            tmp_s['suppress_icon'] = __setting__('suppress_icon') == 'true'
+            tmp_s['update_on_idle'] = __setting__('update_on_idle') == 'true'
+            tmp_s['home_prompts_only'] = __setting__('home_prompts_only') == 'true'
+            # tmp_s['export_library']        = 		__setting__('export_library')			== 'true'
+            # tmp_s['export_video']          = 		__setting__('export_video')				== 'true'
+            # tmp_s['multifile_vid_export']  = 		__setting__('multifile_vid_export')		== 'true'
+            # tmp_s['export_music']          = 		__setting__('export_music')				== 'true'
+            # tmp_s['create_tarball']        = 		__setting__('create_tarball')			== 'true'
             tmp_s['location_selection'] = __setting__('location_selection')
             tmp_s['backup_location'] = __setting__('backup_location')
             tmp_s['backup_location_typed'] = __setting__('backup_location_typed')
             tmp_s['tarball_count'] = int(float(__setting__('tarball_count')))
-            tmp_s['backup_on_update'] = True if __setting__('backup_on_update') == 'true' else False
-            tmp_s['backup_addons'] = True if __setting__('backup_addons') == 'true' else False
-            tmp_s['backup_addon_data'] = True if __setting__('backup_addon_data') == 'true' else False
-            tmp_s['backup_Database'] = True if __setting__('backup_Database') == 'true' else False
-            tmp_s['backup_keymaps'] = True if __setting__('backup_keymaps') == 'true' else False
-            tmp_s['backup_library'] = True if __setting__('backup_library') == 'true' else False
-            tmp_s['backup_playlists'] = True if __setting__('backup_playlists') == 'true' else False
-            tmp_s['backup_profilesF'] = True if __setting__('backup_profilesF') == 'true' else False
-            tmp_s['backup_Thumbnails'] = True if __setting__('backup_Thumbnails') == 'true' else False
-            tmp_s['backup_favourites'] = True if __setting__('backup_favourites') == 'true' else False
-            tmp_s['backup_keyboard'] = True if __setting__('backup_keyboard') == 'true' else False
-            tmp_s['backup_remote'] = True if __setting__('backup_remote') == 'true' else False
-            tmp_s['backup_LCD'] = True if __setting__('backup_LCD') == 'true' else False
-            tmp_s['backup_profiles'] = True if __setting__('backup_profiles') == 'true' else False
-            tmp_s['backup_RssFeeds'] = True if __setting__('backup_RssFeeds') == 'true' else False
-            tmp_s['backup_sources'] = True if __setting__('backup_sources') == 'true' else False
-            tmp_s['backup_upnpserver'] = True if __setting__('backup_upnpserver') == 'true' else False
-            tmp_s['backup_peripheral_data'] = True if __setting__('backup_peripheral_data') == 'true' else False
-            tmp_s['backup_guisettings'] = True if __setting__('backup_guisettings') == 'true' else False
-            tmp_s['backup_fstab'] = True if __setting__('backup_fstab') == 'true' else False
-            tmp_s['backup_advancedsettings'] = True if __setting__('backup_advancedsettings') == 'true' else False
+            tmp_s['backup_on_update'] = __setting__('backup_on_update') == 'true'
+            tmp_s['backup_addons'] = __setting__('backup_addons') == 'true'
+            tmp_s['backup_addon_data'] = __setting__('backup_addon_data') == 'true'
+            tmp_s['backup_Database'] = __setting__('backup_Database') == 'true'
+            tmp_s['backup_keymaps'] = __setting__('backup_keymaps') == 'true'
+            tmp_s['backup_library'] = __setting__('backup_library') == 'true'
+            tmp_s['backup_playlists'] = __setting__('backup_playlists') == 'true'
+            tmp_s['backup_profilesF'] = __setting__('backup_profilesF') == 'true'
+            tmp_s['backup_Thumbnails'] = __setting__('backup_Thumbnails') == 'true'
+            tmp_s['backup_favourites'] = __setting__('backup_favourites') == 'true'
+            tmp_s['backup_keyboard'] = __setting__('backup_keyboard') == 'true'
+            tmp_s['backup_remote'] = __setting__('backup_remote') == 'true'
+            tmp_s['backup_LCD'] = __setting__('backup_LCD') == 'true'
+            tmp_s['backup_profiles'] = __setting__('backup_profiles') == 'true'
+            tmp_s['backup_RssFeeds'] = __setting__('backup_RssFeeds') == 'true'
+            tmp_s['backup_sources'] = __setting__('backup_sources') == 'true'
+            tmp_s['backup_upnpserver'] = __setting__('backup_upnpserver') == 'true'
+            tmp_s['backup_peripheral_data'] = __setting__('backup_peripheral_data') == 'true'
+            tmp_s['backup_guisettings'] = __setting__('backup_guisettings') == 'true'
+            tmp_s['backup_fstab'] = __setting__('backup_fstab') == 'true'
+            tmp_s['backup_advancedsettings'] = __setting__('backup_advancedsettings') == 'true'
 
         # flags to determine whether the update scheduler needs to be reconstructed or icon repositioned
         update_scheduler = False
