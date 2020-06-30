@@ -608,6 +608,7 @@ def parse_arguments():
     """ Parses the arguments provided by the user and activates the entries in SETS.
         Returns a bool determining whether the user wants to copy the logs to the SD Card.
         If help is true, then the help dialog is displayed. """
+    global SETS
 
     parser = argparse.ArgumentParser(description='Uploads vital logs to %s. If the network is unavailable, logs are copied to the SD Card.' % UPLOAD_LOC)
 
@@ -655,19 +656,23 @@ def parse_arguments():
     return args.copy, args.termprint
 
 
-def retrieve_settings():
+def retrieve_settings(addon=None):
     """ Gets the settings from Kodi and activates the relevant entries in SETS.
         Returns a bool determining whether the user wants to copy the logs to the SD Card.  """
+    global SETS
+
+    if addon is None:
+        addon = __addon__
 
     excluded_from_all = []
 
-    grab_all = True if __addon__.getSetting('all') == 'true' else False
+    grab_all = True if addon.getSetting('all') == 'true' else False
 
     for key in SETS:
         if grab_all and key not in excluded_from_all:
             SETS[key]['active'] = True
         else:
-            SETS[key]['active'] = True if __addon__.getSetting(key) == 'true' else False
+            SETS[key]['active'] = True if addon.getSetting(key) == 'true' else False
 
     return sys.argv[1] == 'copy', False
 
@@ -763,11 +768,13 @@ class Main(object):
 
         self.log_blotter.extend([SECTION_START % (name, key)])
 
-        func = open if ltyp == 'file_log' else CommandLineInterface
-
         try:
-            with func(actn) as f:
-                self.log_blotter.extend(f.readlines())
+            if ltyp == 'file_log':
+                with open(actn, encoding='utf-8') as f:
+                    self.log_blotter.extend(f.readlines())
+            else:
+                with CommandLineInterface(actn) as f:
+                    self.log_blotter.extend(f.readlines())
         except:
             self.log_blotter.extend(['%s error' % name])
 
@@ -780,7 +787,7 @@ class Main(object):
     def write_to_temp_file(self):
         """ Writes the logs to a single temporary file """
         # clean up the blotter
-        self.log_blotter = [x.replace('\0', '') for x in self.log_blotter]
+        self.log_blotter = [x.replace('\0', '') for x in self.log_blotter if hasattr(x, 'replace')]
 
         try:
             with open(TEMP_LOG_FILE, 'w', encoding='utf-8') as f:
