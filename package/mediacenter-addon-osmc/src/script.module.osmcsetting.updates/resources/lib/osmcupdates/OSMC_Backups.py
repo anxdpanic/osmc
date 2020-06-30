@@ -358,53 +358,45 @@ class osmc_backup(object):
 
         self.progress(**{
             'percent': pct,
-            'heading': 'OSMC Backup',
-            'message': 'Starting tar ball backup'
+            'heading': lang(32147),
+            'message': lang(32159)
         })
 
         new_root = xbmc.translatePath('special://home')
 
         try:
+            with tarfile.open(name=local_tarball_name, mode="w:gz") as tar:
+                for name, size in self.backup_candidates:
 
-            f = xbmcvfs.File(local_tarball_name, 'w')
+                    # if the user wants to backup the fstab file, then copy it to userdata
+                    if name.endswith('fstab'):
+                        try:
+                            self.copy_fstab_to_userdata(name)
+                        except:
+                            continue
 
-            tar = tarfile.open(fileobj=f, mode="w:gz")
+                    self.progress(**{
+                        'percent': pct,
+                        'heading': lang(32147),
+                        'message': '%s' % name
+                    })
 
-            for name, size in self.backup_candidates:
-
-                # if the user wants to backup the fstab file, then copy it to userdata
-                if name.endswith('fstab'):
                     try:
-                        self.copy_fstab_to_userdata(name)
+                        new_path = os.path.relpath(name, new_root)
+                        tar.add(name, arcname=new_path)
                     except:
+                        log('%s failed to backup to tarball' % name)
                         continue
 
-                self.progress(**{
-                    'percent': pct,
-                    'heading': 'OSMC Backup',
-                    'message': '%s' % name
-                })
+                    progress_total += math.log(max(size, 1))
 
-                try:
-                    new_path = os.path.relpath(name, new_root)
-                    tar.add(name, arcname=new_path)
-                except:
-                    log('%s failed to backup to tarball' % name)
-                    continue
-
-                progress_total += math.log(max(size, 1))
-
-                pct = int((progress_total / float(total_size)) * 100.0)
-
-            tar.close()
-
-            f.close()
+                    pct = int((progress_total / float(total_size)) * 100.0)
 
             # copy the local file to remote location
             self.progress(**{
                 'percent': 100,
-                'heading': 'OSMC Backup',
-                'message': 'Transferring backup file'
+                'heading': lang(32147),
+                'message': lang(32160)
             })
 
             log('local tarball name: %s' % local_tarball_name)
@@ -442,8 +434,8 @@ class osmc_backup(object):
                 try:
                     self.progress(**{
                         'percent': 100,
-                        'heading': 'OSMC Backup',
-                        'message': 'Removing old backup file: %s' % r
+                        'heading': lang(32147),
+                        'message': lang(32161) % r
                     })
                     xbmcvfs.delete(os.path.join(location, r))
                 except Exception as e:
@@ -691,7 +683,8 @@ class osmc_backup(object):
                             log(e.args)
                             log(traceback.format_exc())
 
-                            if self.success == 'Full':    self.success = []
+                            if self.success == 'Full':
+                                self.success = []
 
                             self.success.append(member.name)
 

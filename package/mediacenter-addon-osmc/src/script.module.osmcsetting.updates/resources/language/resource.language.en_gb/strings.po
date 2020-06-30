@@ -649,3 +649,15 @@ msgstr""
 msgctxt "#32158"
 msgid "Items successfully restored"
 msgstr""
+
+msgctxt "#32159"
+msgid "Starting backup"
+msgstr""
+
+msgctxt "#32160"
+msgid "Transferring backup file"
+msgstr""
+
+msgctxt "#32161"
+msgid "Removing old backup file: %s"
+msgstr""
