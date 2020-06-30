@@ -150,7 +150,7 @@ def kodi_to_config(MASTER_SETTINGS, config, new_settings):
     # file. Dictionaries aren't order in python 2, so we have to do the ordering
     # using a sorted list of keys. (!!!!) 
     new_setting_keys = new_settings.keys()
-    new_setting_keys.sort()
+    new_setting_keys = sorted(new_setting_keys)
 
     for setting in new_setting_keys:
         new_value = new_settings[setting]
