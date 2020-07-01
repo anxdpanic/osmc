@@ -47,7 +47,8 @@ PY2 = sys.version_info.major == 2
 SECTION_START = '\n====================== %s =================== %s\n'
 SECTION_END = '\n---------------------- %s END --------------- %s\n\n'
 USERDATA = '/home/osmc/.kodi/userdata/'
-TEMP_LOG_FILE = '/var/tmp/uploadlog.txt'
+TEMP_LOG_FILENAME = 'uploadlog.txt'
+TEMP_LOG_FILE = '/var/tmp/' + TEMP_LOG_FILENAME
 UPLOAD_LOC = 'https://paste.osmc.tv'
 
 SETS = {
@@ -702,10 +703,7 @@ class Main(object):
 
         self.log_blotter = []  # list to hold all the lines that need to be printed/uploaded
 
-        try:
-            self.pDialog = xbmcgui.DialogProgressBG()
-        except:
-            self.pDialog = Dummy_Progress_Dialog()
+        self.stage_dialog()
 
         self.number_of_actions = sum(1 for k, v in SETS.items() if v.get('active', False))
 
@@ -714,6 +712,21 @@ class Main(object):
         self.arguments = [(k, v) for k, v in SETS.items()]
 
         self.arguments.sort(key=lambda x: x[1].get('order', 99))
+
+    def stage_dialog(self):
+        try:
+            if self.pDialog:
+                self.pDialog.close()
+                del self.pDialog
+        except:
+            try:
+                del self.pDialog
+            except:
+                pass
+        try:
+            self.pDialog = xbmcgui.DialogProgressBG()
+        except:
+            self.pDialog = Dummy_Progress_Dialog()
 
     def launch_process(self):
 
@@ -764,6 +777,7 @@ class Main(object):
                     self.grab_log(**log)
 
         self.pDialog.update(percent=100, message=lang(32005))
+        self.pDialog.close()
 
     def grab_log(self, ltyp, actn, name, key):
         """ Method grabs the logs from either a file or the command line."""
@@ -812,31 +826,40 @@ class Main(object):
 
     def dispatch_logs(self):
         """ Either copies the combined logs to the SD Card or Uploads them to the pastebin. """
+        self.stage_dialog()
 
         if self.copy_to_boot:
+            self.pDialog.create(lang(32001), lang(32009) % ('/boot/' + TEMP_LOG_FILENAME))
 
             os.popen('sudo cp -rf %s /boot/' % TEMP_LOG_FILE)
+
+            self.pDialog.update(percent=100, message=lang(32008))
 
             if xbmc:
                 _ = DIALOG.ok(lang(32001), lang(32008))
 
             else:
 
-                log('Logs copied to /boot/%s on the SD card FAT partition' % os.path.basename(TEMP_LOG_FILE))
-
+                log('Logs copied to /boot/%s on the SD card FAT partition' % TEMP_LOG_FILENAME)
             self.pDialog.close()
-
+            del self.pDialog
         else:
+            self.pDialog.create(lang(32001), lang(32010))
 
             attempts = [
                 'curl -X POST -s    -T',
                 'curl -X POST -s -0 -T'
             ]
 
+            steps = len(attempts) + 1
+            step_pct = int(100 // steps)
+            pct = 0
+
             upload_exception = None
             key = None
 
             for attempt in attempts:
+                pct += step_pct
                 try:
                     with os.popen('%s "%s" %s/documents' % (attempt, TEMP_LOG_FILE, UPLOAD_LOC)) as f:
 
@@ -846,6 +869,8 @@ class Main(object):
 
                         if xbmc:
                             log('pastio line: %s' % repr(line))
+
+                    self.pDialog.update(percent=pct, message=lang(32010))
 
                     if not key:
                         # the upload returning an empty string is considered a specific Exception
@@ -857,11 +882,14 @@ class Main(object):
                         break
 
                 except Exception as e:
+                    self.pDialog.update(percent=pct, message=lang(32010))
 
                     upload_exception = traceback.format_exc()
 
-            self.pDialog.close()
+            self.pDialog.update(percent=100, message=lang(32011))
             time.sleep(0.5)
+            self.pDialog.close()
+            del self.pDialog
 
             if not key:
 

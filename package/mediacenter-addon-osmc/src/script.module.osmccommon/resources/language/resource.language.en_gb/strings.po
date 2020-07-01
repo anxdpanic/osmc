@@ -44,3 +44,15 @@ msgstr ""
 msgctxt "#32008"
 msgid "Copy Complete"
 msgstr ""
+
+msgctxt "#32009"
+msgid "Copying logs to %s"
+msgstr ""
+
+msgctxt "#32010"
+msgid "Uploading logs"
+msgstr ""
+
+msgctxt "#32011"
+msgid "Upload Complete"
+msgstr ""
