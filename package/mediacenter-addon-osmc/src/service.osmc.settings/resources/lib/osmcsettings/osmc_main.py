@@ -174,7 +174,7 @@ class Main(object):
 
             for module in self.stored_gui.live_modules:
                 if 'id' in module:
-                    if module['id'] == "script.module.osmcsetting.networking":
+                    if module['id'] == "osmcnetworking":
                         networking_instance = module['SET']
 
                         vendor = check_vendor()
