@@ -9,7 +9,6 @@
     See LICENSES/GPL-2.0-or-later for more information.
 """
 
-# OS module
 import os
 import traceback
 
