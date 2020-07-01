@@ -10,6 +10,7 @@
 
 import os
 import subprocess
+import sys
 import time
 from io import open
 
@@ -30,6 +31,8 @@ __addon__ = xbmcaddon.Addon(addonid)
 scriptPath = __addon__.getAddonInfo('path')
 DIALOG = xbmcgui.Dialog()
 IMAGE = os.path.join(scriptPath, 'resources', 'osmc', 'FO_Icon.png')
+
+PY2 = sys.version_info.major == 2
 
 log = StandardLogger(addonid, os.path.basename(__file__)).log
 lang = LangRetriever(__addon__).lang
@@ -136,8 +139,11 @@ class ConfigEditor(xbmcgui.WindowXMLDialog):
                     # write the long_string_file to the config.txt
                     with open(tmp_loc, 'w', encoding='utf-8') as f:
                         for line in new_config:
-                            f.write(line.replace(" = ", "=") + '\n')
-                            log('' + line)
+                            _line = line.replace(" = ", "=") + '\n'
+                            if PY2 and isinstance(_line, str):
+                                _line = _line.decode('utf-8')
+                            f.write(_line)
+                            log('' + _line)
 
                     # backup existing config
                     suffix = '_' + str(time.time()).split('.')[0]

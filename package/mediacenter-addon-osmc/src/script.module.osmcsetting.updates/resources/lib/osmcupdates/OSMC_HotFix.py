@@ -11,6 +11,7 @@
 import os
 import shlex
 import subprocess
+import sys
 import traceback
 from io import open
 
@@ -25,6 +26,8 @@ addonid = 'script.module.osmcsetting.updates'
 __addon__ = xbmcaddon.Addon(addonid)
 __scriptPath__ = __addon__.getAddonInfo('path')
 __setting__ = __addon__.getSetting
+
+PY2 = sys.version_info.major == 2
 
 DIALOG = xbmcgui.Dialog()
 
@@ -282,6 +285,10 @@ class HotFix(object):
     def save_temp_hotfix_output(self, results):
 
         """ Saves the hotfix output to a temporary file """
+        if PY2:
+            results = [
+                x.decode('utf-8') if isinstance(x, str) else x for x in results
+            ]
 
         with open(self.tmp_hfo_location, 'w', encoding='utf-8') as f:
             f.writelines(results)

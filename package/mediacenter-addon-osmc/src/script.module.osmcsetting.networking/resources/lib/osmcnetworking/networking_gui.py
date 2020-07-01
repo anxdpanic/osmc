@@ -11,6 +11,7 @@
 import os
 import socket
 import subprocess
+import sys
 import threading
 import traceback
 from io import open
@@ -32,6 +33,8 @@ DIALOG = xbmcgui.Dialog()
 WIFI_THREAD_NAME = 'wifi_population_thread'
 BLUETOOTH_THREAD_NAME = 'bluetooth_population_thread'
 WIFI_SCAN_THREAD_NAME = 'wifi_scan_thread'
+
+PY2 = sys.version_info.major == 2
 
 log = StandardLogger(addonid, os.path.basename(__file__)).log
 lang = LangRetriever(__addon__).lang
@@ -996,7 +999,7 @@ class networking_gui(xbmcgui.WindowXMLDialog):
                 osmc_network.apply_network_changes(self.current_network_config, self.internet_protocol)
                 if self.current_network_config[self.internet_protocol]['Method'] in ['nfs_dhcp', 'nfs_manual']:
                     with open(self.reboot_required_file, 'w', encoding='utf-8') as f:
-                        f.write('d')
+                        f.write(u'd' if PY2 else 'd')
                     # 'NFS Network Settings'
                     # 'Your Settings will not take effect until you reboot. Reboot Now?''
                     if DIALOG.yesno(lang(32036), lang(32037)):

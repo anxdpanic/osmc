@@ -10,6 +10,7 @@
 
 import os
 import subprocess
+import sys
 import traceback
 from io import open
 from xml.etree import ElementTree as ET
@@ -27,8 +28,7 @@ FONT_FOLDER = xbmc.translatePath(os.path.join(FOLDER, 'skins', 'Default', 'fonts
 
 FONT_PARTIALS = os.path.join(FOLDER, 'lib', 'osmcsettings', 'fonts.txt')
 
-
-# FONT_PARTIALS = '/home/kubkev/.kodi/addons/service.osmc.settings/resources/lib/fonts.txt'
+PY2 = sys.version_info.major == 2
 
 
 def log(message):
@@ -157,6 +157,11 @@ def import_osmc_fonts():
         else:
 
             new_lines.append(line)
+
+    if PY2:
+        new_lines = [
+            x.decode('utf-8') if isinstance(x, str) else x for x in new_lines
+        ]
 
     # make backup of original Font.xml
     backup_file = os.path.join(alien_fonts_folder, 'backup_Font.xml')

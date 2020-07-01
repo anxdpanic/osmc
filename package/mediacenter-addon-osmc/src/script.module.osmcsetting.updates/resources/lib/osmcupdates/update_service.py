@@ -44,6 +44,8 @@ __setting__ = __addon__.getSetting
 __image_file__ = os.path.join(__scriptPath__, 'resources', 'media', 'update_available.png')
 __libpath__ = xbmc.translatePath(os.path.join(__scriptPath__, 'resources', 'lib', 'osmcupdates'))
 
+PY2 = sys.version_info.major == 2
+
 DIALOG = xbmcgui.Dialog()
 
 PY3 = sys.version_info.major == 3
@@ -358,7 +360,7 @@ class Main(object):
 
         # create the file that will prevent further update checks until the updates have been installed
         with open(self.block_update_file, 'w', encoding='utf-8') as f:
-            f.write('d')
+            f.write(u'd' if PY2 else 'd')
 
         # trigger the flag to skip update checks
         self.skip_update_check = True
@@ -953,7 +955,7 @@ class Main(object):
 
             # create the file that will prevent further update checks until the updates have been installed
             with open(self.block_update_file, 'w', encoding='utf-8') as f:
-                f.write('d')
+                f.write(u'd' if PY2 else 'd')
 
             # turn on the "install now" setting in Settings.xml
             __addon__.setSetting('install_now_visible', 'true')
@@ -1322,7 +1324,7 @@ class Main(object):
 
                     # create the file that will prevent further update checks until the updates have been installed
                     with open(self.block_update_file, 'w', encoding='utf-8') as f:
-                        f.write('d')
+                        f.write(u'd' if PY2 else 'd')
 
                     # trigger the flag to skip update checks
                     self.skip_update_check = True

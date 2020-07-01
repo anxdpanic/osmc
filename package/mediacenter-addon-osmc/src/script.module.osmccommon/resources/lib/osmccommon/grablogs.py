@@ -42,6 +42,8 @@ except ImportError:
 log = StandardLogger(addonid, os.path.basename(__file__)).log
 lang = LangRetriever(__addon__).lang
 
+PY2 = sys.version_info.major == 2
+
 SECTION_START = '\n====================== %s =================== %s\n'
 SECTION_END = '\n---------------------- %s END --------------- %s\n\n'
 USERDATA = '/home/osmc/.kodi/userdata/'
@@ -788,7 +790,11 @@ class Main(object):
         """ Writes the logs to a single temporary file """
         # clean up the blotter
         self.log_blotter = [x.replace('\0', '') for x in self.log_blotter if hasattr(x, 'replace')]
-
+        if PY2:
+            self.log_blotter = [
+                x.decode('utf-8', 'ignore') if isinstance(x, str) else x
+                for x in self.log_blotter
+            ]
         try:
             with open(TEMP_LOG_FILE, 'w', encoding='utf-8') as f:
 

@@ -10,6 +10,7 @@
 
 import os
 import subprocess
+import sys
 import threading
 from io import open
 
@@ -22,6 +23,8 @@ from osmccommon.osmc_logging import StandardLogger
 addonid = "script.module.osmcsetting.remotes"
 __addon__ = xbmcaddon.Addon("script.module.osmcsetting.remotes")
 __path__ = xbmc.translatePath(xbmcaddon.Addon(addonid).getAddonInfo('path'))
+
+PY2 = sys.version_info.major == 2
 
 DIALOG = xbmcgui.Dialog()
 
@@ -221,9 +224,11 @@ class remote_GUI(xbmcgui.WindowXMLDialog):
         if sel:
             # always overwrite the file, this will allow the contents to be updated (if ever needed)
             log('Creating RC6 blacklist file')
-
+            blacklist_payload = 'blacklist ir_rc6_decoder\ninstall ir_rc6_decoder /bin/true'
+            if PY2:
+                blacklist_payload = blacklist_payload.decode('utf-8')
             with open('/var/tmp/blacklist-rc6.conf', 'w', encoding='utf-8') as f:
-                f.write('blacklist ir_rc6_decoder\ninstall ir_rc6_decoder /bin/true')
+                f.write(blacklist_payload)
 
             subprocess.call(["sudo", "mv", '/var/tmp/blacklist-rc6.conf', self.rc6_file_loc])
 

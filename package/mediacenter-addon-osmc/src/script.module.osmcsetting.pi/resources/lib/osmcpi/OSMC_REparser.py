@@ -1228,7 +1228,7 @@ def write_config_file(location, new_config):
 
     if PY2:
         new_config = [
-            x.decode('utf-8') if not isinstance(x, unicode) else x for x in new_config
+            x.decode('utf-8') if isinstance(x, str) else x for x in new_config
         ]
 
     with open(location, "w", encoding='utf-8') as f:
