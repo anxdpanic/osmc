@@ -37,7 +37,7 @@ class StandardLogger(object):
     def __init__(self, addonid='osmc', module=''):
         self.addonid = addonid
         try:
-            self.module = module.replace('.py', '')
+            self.module = module.replace('.pyo', '').replace('.pyc', '').replace('.py', '')
         except:
             self.module = module
 
