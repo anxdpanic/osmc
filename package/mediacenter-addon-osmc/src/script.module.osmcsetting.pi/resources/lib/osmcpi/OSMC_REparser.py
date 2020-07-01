@@ -45,7 +45,10 @@ NEEDS A FINAL CHECK FOR HDMI_SAFE to make sure the entries related to it are rem
 """
 
 import re
+import sys
 from io import open
+
+PY2 = sys.version_info.major == 2
 
 
 def config_to_kodi(MASTER_SETTINGS, config):
@@ -1222,9 +1225,11 @@ def write_config_file(location, new_config):
     new_config = [
         x + "\n" if not x.endswith("\n") else x for x in new_config if "remove_this_line" not in x
     ]
-    # print "J" * 50
-    # print new_config
-    # print "J" * 50
+
+    if PY2:
+        new_config = [
+            x.decode('utf-8') if not isinstance(x, unicode) else x for x in new_config
+        ]
 
     with open(location, "w", encoding='utf-8') as f:
         f.writelines(new_config)
