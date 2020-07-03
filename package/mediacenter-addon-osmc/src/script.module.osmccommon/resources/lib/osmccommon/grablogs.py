@@ -19,9 +19,6 @@ import traceback
 from datetime import datetime
 from io import open
 
-from .osmc_language import LangRetriever
-from .osmc_logging import StandardLogger
-
 addonid = "script.module.osmccommon"
 try:
 
@@ -39,8 +36,19 @@ except ImportError:
     __addon__ = None
     DIALOG = None
 
-log = StandardLogger(addonid, os.path.basename(__file__)).log
-lang = LangRetriever(__addon__).lang
+try:
+    from .osmc_language import LangRetriever
+    from .osmc_logging import StandardLogger
+
+    log = StandardLogger(addonid, os.path.basename(__file__)).log
+    lang = LangRetriever(__addon__).lang
+except ValueError:
+    def lang(value):
+        return value
+
+
+    def log(value):
+        print(value)
 
 PY2 = sys.version_info.major == 2
 
@@ -771,7 +779,7 @@ class Main(object):
 
                 pct = int(100.0 * float(count) / float(self.number_of_actions))
 
-                self.pDialog.update(percent=pct, message=lang(32006) % k)
+                self.pDialog.update(percent=pct, message='' if not xbmc else lang(32006) % k)
 
                 for log in v['logs']:
                     self.grab_log(**log)
@@ -829,7 +837,7 @@ class Main(object):
         self.stage_dialog()
 
         if self.copy_to_boot:
-            self.pDialog.create(lang(32001), lang(32009) % ('/boot/' + TEMP_LOG_FILENAME))
+            self.pDialog.create(lang(32001), '' if not xbmc else lang(32009) % ('/boot/' + TEMP_LOG_FILENAME))
 
             os.popen('sudo cp -rf %s /boot/' % TEMP_LOG_FILE)
 
