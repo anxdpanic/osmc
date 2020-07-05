@@ -14,5 +14,14 @@ fi
 
 if [ "$1" = "install" -o "$1" = "upgrade" ]; then
 	systemctl stop mediacenter.service >/dev/null 2>&1
+	rm -rf /usr/share/kodi/addons/script.module.osmccommon
+	rm -rf /usr/share/kodi/addons/script.module.osmcsetting.apfstore
+	rm -rf /usr/share/kodi/addons/script.module.osmc.osmcsetting.logging
+	rm -rf /usr/share/kodi/addons/script.module.osmc.osmcsetting.networking
+	rm -rf /usr/share/kodi/addons/script.module.osmc.osmcsetting.pi
+	rm -rf /usr/share/kodi/addons/script.module.osmc.osmcsetting.remotes
+	rm -rf /usr/share/kodi/addons/script.module.osmc.osmcsetting.services
+	rm -rf /usr/share/kodi/addons/script.module.osmc.osmcsetting.updates
+	rm -rf /usr/share/kodi/addons/service.osmc.settings
 	exit 0
 fi
