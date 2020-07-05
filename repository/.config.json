@@ -1,0 +1,36 @@
+{
+  "compress_addons": true,
+  "path": {
+    "source": "C:\\Workspace\\GitHub\\osmc\\package\\mediacenter-addon-osmc\\src",
+    "repository": "C:\\Workspace\\GitHub\\osmc\\repository",
+    "zips": "C:\\Workspace\\GitHub\\osmc\\repository\\zips"
+  },
+  "python_version": 3,
+  "tag_unofficial_releases": true,
+  "matrix_build_version": true,
+  "compress_only":{
+    "unofficial": true,
+    "python3": true
+  },
+  "ignored": {
+    "addons": [
+    ],
+    "files": [
+      "README.md",
+      "append_to_languages.py",
+      "new_strings.txt"
+    ],
+    "file_starts_with": [
+      "."
+    ],
+    "file_ends_with": [
+      ".pyo",
+      ".pyc",
+      "template.md"
+    ],
+    "directories": [
+      ".git",
+      ".idea"
+    ]
+  }
+}

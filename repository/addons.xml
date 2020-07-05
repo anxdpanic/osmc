@@ -1,0 +1,243 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+<addons>
+<addon id="repository.osmc.testing" name="OSMC Add-on Repository [Testing]" version="0.0.1+matrix.1" provider-name="anxdpanic">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+    </requires>
+
+    <extension point="xbmc.addon.repository" name="OSMC Add-on Repository [Testing]">
+        <info compressed="false">https://raw.githubusercontent.com/anxdpanic/osmc/repo_py3/repository/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/anxdpanic/osmc/repo_py3/repository/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/anxdpanic/osmc/repo_py3/repository/zips/</datadir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Install add-ons from repository.osmc.testing</summary>
+        <description>Install add-ons from repository.osmc.testing</description>
+        <platform>all</platform>
+    </extension>
+</addon>
+
+<addon id="script.module.osmccommon" name="OSMC Common Code" version="0.1.0+matrix.1~beta1" provider-name="OSMC (KodeKarnage)">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+    </requires>
+
+    <extension point="xbmc.python.module" library="resources/lib/"/>
+
+    <extension point="xbmc.addon.metadata">
+        <description lang="en_GB">Common code and classes for My OSMC settings modules.</description>
+        <language>en</language>
+        <platform>all</platform>
+        <license>GPL-2.0-or-later</license>
+        <email>karnage@osmc.tv</email>
+        <source>https://osmc.tv</source>
+        <assets>
+            <icon>resources/media/icon.png</icon>
+            <fanart>resources/media/fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
+
+<addon id="script.module.osmcsetting.apfstore" name="Apps" version="0.1.0+matrix.1~beta1" provider-name="OSMC (KodeKarnage)">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.osmccommon" version="0.1.0~beta1"/>
+    </requires>
+
+    <extension point="xbmc.python.module" library="resources/lib/"/>
+
+    <extension point="xbmc.addon.metadata">
+        <description lang="en_GB">My OSMC settings module.</description>
+        <language>en</language>
+        <platform>all</platform>
+        <license>GPL-2.0-or-later</license>
+        <email>karnage@osmc.tv</email>
+        <source>https://osmc.tv</source>
+        <assets>
+            <icon>resources/media/icon.png</icon>
+            <fanart>resources/media/fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
+
+<addon id="script.module.osmcsetting.logging" name="Logging" version="0.1.0+matrix.1~beta1" provider-name="OSMC (KodeKarnage)">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.osmccommon" version="0.1.0~beta1"/>
+    </requires>
+
+    <extension point="xbmc.python.module" library="resources/lib/"/>
+
+    <extension point="xbmc.addon.metadata">
+        <description lang="en_GB">My OSMC settings module.</description>
+        <language>en</language>
+        <platform>all</platform>
+        <license>GPL-2.0-or-later</license>
+        <email>karnage@osmc.tv</email>
+        <source>https://osmc.tv</source>
+        <assets>
+            <icon>resources/media/icon.png</icon>
+            <fanart>resources/media/fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
+
+<addon id="script.module.osmcsetting.networking" name="Networking" version="0.1.0+matrix.1~beta1" provider-name="OSMC (KodeKarnage)">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.xmltodict" version="0.11.0"/>
+        <import addon="script.module.osmccommon" version="0.1.0~beta1"/>
+    </requires>
+
+    <extension point="xbmc.python.module" library="resources/lib/"/>
+
+    <extension point="xbmc.addon.metadata">
+        <description lang="en_GB">My OSMC settings module.</description>
+        <language>en</language>
+        <platform>all</platform>
+        <license>GPL-2.0-or-later</license>
+        <email>karnage@osmc.tv</email>
+        <source>https://osmc.tv</source>
+        <assets>
+            <icon>resources/media/icon.png</icon>
+            <fanart>resources/media/fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
+
+<addon id="script.module.osmcsetting.pi" name="Pi" version="0.1.0+matrix.1~beta1" provider-name="OSMC (KodeKarnage)">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.osmccommon" version="0.1.0~beta1"/>
+    </requires>
+
+    <extension point="xbmc.python.module" library="resources/lib/"/>
+
+    <extension point="xbmc.addon.metadata">
+        <description lang="en_GB">My OSMC settings module.</description>
+        <language>en</language>
+        <platform>all</platform>
+        <license>GPL-2.0-or-later</license>
+        <email>karnage@osmc.tv</email>
+        <source>https://osmc.tv</source>
+        <assets>
+            <icon>resources/media/icon.png</icon>
+            <fanart>resources/media/fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
+
+<addon id="script.module.osmcsetting.remotes" name="Remotes" version="0.1.0+matrix.1~beta1" provider-name="OSMC (KodeKarnage)">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.osmccommon" version="0.1.0~beta1"/>
+    </requires>
+
+    <extension point="xbmc.python.module" library="resources/lib/"/>
+
+    <extension point="xbmc.addon.metadata">
+        <description lang="en_GB">My OSMC settings module.</description>
+        <language>en</language>
+        <platform>all</platform>
+        <license>GPL-2.0-or-later</license>
+        <email>karnage@osmc.tv</email>
+        <source>https://osmc.tv</source>
+        <assets>
+            <icon>resources/media/icon.png</icon>
+            <fanart>resources/media/fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
+
+<addon id="script.module.osmcsetting.services" name="Services" version="0.1.0+matrix.1~beta1" provider-name="OSMC (KodeKarnage)">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.osmccommon" version="0.1.0~beta1"/>
+    </requires>
+
+    <extension point="xbmc.python.module" library="resources/lib/"/>
+
+    <extension point="xbmc.addon.metadata">
+        <description lang="en_GB">My OSMC settings module.</description>
+        <language>en</language>
+        <platform>all</platform>
+        <license>GPL-2.0-or-later</license>
+        <email>karnage@osmc.tv</email>
+        <source>https://osmc.tv</source>
+        <assets>
+            <icon>resources/media/icon.png</icon>
+            <fanart>resources/media/fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
+
+<addon id="script.module.osmcsetting.updates" name="Updates" version="0.1.0+matrix.1~beta1" provider-name="OSMC (KodeKarnage)">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.osmccommon" version="0.1.0~beta1"/>
+    </requires>
+    <extension point="xbmc.python.module" library="resources/lib/"/>
+
+    <extension point="xbmc.service" library="resources/lib/service.py"/>
+
+    <extension point="xbmc.addon.metadata">
+        <description lang="en_GB">My OSMC settings module.</description>
+        <language>en</language>
+        <platform>all</platform>
+        <license>GPL-2.0-or-later</license>
+        <email>karnage@osmc.tv</email>
+        <source>https://osmc.tv</source>
+        <assets>
+            <icon>resources/media/icon.png</icon>
+            <fanart>resources/media/fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
+
+<addon id="script.module.xmltodict" name="xmltodict" version="0.12.0+matrix.1" provider-name="martinblech">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+    </requires>
+    <extension point="xbmc.python.module" library="lib"/>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">Makes working with XML feel like you are working with JSON</summary>
+        <description lang="en_GB">xmltodict is a Python module that makes working with XML feel like you are working with JSON, as in this "spec".</description>
+        <license>MIT</license>
+        <platform>all</platform>
+        <website>https://github.com/martinblech/xmltodict</website>
+        <source>https://github.com/martinblech/xmltodict</source>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
+    </extension>
+</addon>
+
+<addon id="service.osmc.settings" name="My OSMC" version="0.1.0+matrix.1~beta1" provider-name="OSMC (KodeKarnage)">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.osmccommon" version="0.1.0~beta1"/>
+        <import addon="script.module.osmcsetting.apfstore" version="0.1.0~beta1"/>
+        <import addon="script.module.osmcsetting.logging" version="0.1.0~beta1"/>
+        <import addon="script.module.osmcsetting.networking" version="0.1.0~beta1"/>
+        <import addon="script.module.osmcsetting.pi" version="0.1.0~beta1"/>
+        <import addon="script.module.osmcsetting.remotes" version="0.1.0~beta1"/>
+        <import addon="script.module.osmcsetting.services" version="0.1.0~beta1"/>
+        <import addon="script.module.osmcsetting.updates" version="0.1.0~beta1"/>
+    </requires>
+    <extension point="xbmc.python.script" library="resources/lib/default.py">
+        <provides>executable</provides>
+    </extension>
+    <extension point="xbmc.service" library="resources/lib/service.py"/>
+    <extension point="xbmc.addon.metadata">
+        <description lang="en_GB">My OSMC</description>
+        <language>en</language>
+        <platform>all</platform>
+        <license>GPL-2.0-or-later</license>
+        <source>https://osmc.tv</source>
+        <assets>
+            <icon>resources/media/icon.png</icon>
+            <fanart>resources/media/fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
+</addons>
