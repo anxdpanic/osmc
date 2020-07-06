@@ -11,7 +11,11 @@ import sys
 import dbus
 import dbus.mainloop.glib
 import dbus.service
-import gobject
+
+try:
+    from gi.repository import GObject
+except ImportError:
+    import gobject as GObject
 
 try:
     input = raw_input
@@ -210,5 +214,5 @@ try:
 except:
     print("Cannot register connman agent.")
 
-mainloop = gobject.MainLoop()
+mainloop = GObject.MainLoop()
 mainloop.run()
