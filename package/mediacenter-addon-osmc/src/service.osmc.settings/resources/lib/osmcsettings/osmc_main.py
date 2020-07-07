@@ -9,32 +9,24 @@
     See LICENSES/GPL-2.0-or-later for more information.
 """
 
-import os
-import traceback
-
-import xbmc
-import xbmcaddon
-import xbmcgui
-
-WINDOW = xbmcgui.Window(10000)
-if not os.path.isfile('/walkthrough_completed'):
-    WINDOW.setProperty("walkthrough_is_running", 'any_value')
-    try:
-        xbmc.setosmcwalkthroughstatus(1)
-    except Exception as e:
-        print(traceback.format_exc())
-
 import datetime
-from io import open
 import json
+import os
 import socket
 import subprocess
 import sys
+import traceback
+
+from io import open
 
 try:
     import queue as Queue
 except ImportError:
     import Queue
+
+import xbmc
+import xbmcaddon
+import xbmcgui
 
 from osmccommon.osmc_comms import Communicator
 from osmccommon.osmc_logging import StandardLogger
@@ -43,6 +35,14 @@ from osmccommon.osmc_language import LangRetriever
 from . import osmc_walkthru
 from . import osmc_settingsGUI
 from . import osmc_ubiquifonts
+
+WINDOW = xbmcgui.Window(10000)
+if not os.path.isfile('/walkthrough_completed'):
+    WINDOW.setProperty("walkthrough_is_running", 'any_value')
+    try:
+        xbmc.setosmcwalkthroughstatus(1)
+    except Exception as e:
+        print(traceback.format_exc())
 
 addonid = 'service.osmc.settings'
 __addon__ = xbmcaddon.Addon(addonid)
