@@ -19,8 +19,12 @@ import time
 import dbus
 import requests
 
+from io import open
+
 from . import connman
 from . import osmc_systemd
+
+PY2 = sys.version_info.major == 2
 
 WIRELESS_AGENT = 'osmc_wireless_agent.py'
 
@@ -88,7 +92,8 @@ def get_ethernet_settings():
 
 def get_nfs_ip_cmdline_value():
     ip_value = None
-    cmdline_data = open(RUNNING_NETWORK_DETAILS_FILE, 'r').read()
+    with open(RUNNING_NETWORK_DETAILS_FILE, 'r', encoding='utf-8') as cmdline:
+        cmdline_data = cmdline.read()
     nfs_install = False
     for cmdline_value in cmdline_data.split(' '):
         if 'root=/dev/nfs' in cmdline_value:
@@ -177,9 +182,9 @@ def make_variant(string):
 
 
 def update_cmdline_file(file_path, key, value):
-    cmdline_file = open(file_path, 'r')
-    cmdline_data = cmdline_file.read()
-    cmdline_file.close()
+    with open(file_path, 'r', encoding='utf-8') as cmdline_file:
+        cmdline_data = cmdline_file.read()
+
     cmdline_values = []
     for cmdline_value in cmdline_data.split(' '):
         if cmdline_value.startswith(key + '='):
@@ -187,9 +192,10 @@ def update_cmdline_file(file_path, key, value):
         else:
             cmdline_values.extend([cmdline_value])
     updated_cmdline = ' '.join(cmdline_values)  # join the list with a space
-    cmdline_file = open('/tmp/cmdline.txt', 'w')
-    cmdline_file.write(updated_cmdline)
-    cmdline_file.close()
+    with open('/tmp/cmdline.txt', 'w', encoding='utf-8') as cmdline_file:
+        if PY2 and not isinstance(updated_cmdline, unicode):
+            updated_cmdline = updated_cmdline.decode('utf-8')
+        cmdline_file.write(updated_cmdline)
     subprocess.call(['sudo', 'mv', '/tmp/cmdline.txt', file_path])
 
 
@@ -257,9 +263,8 @@ def get_non_connman_connection_details():
         }
     }
     # parse resolve.conf for DNS
-    resolve_conf_file = open('/etc/resolv.conf', 'r')
-    resolve_conf_data = resolve_conf_file.read()
-    resolve_conf_file.close()
+    with open('/etc/resolv.conf', 'r', encoding='utf-8') as resolve_conf_file:
+        resolve_conf_data = resolve_conf_file.read()
     device_settings['Nameservers'] = {}
     count = 1
     for line in resolve_conf_data.split('\n'):
@@ -350,15 +355,19 @@ def wifi_connect(path, password=None, ssid=None, script_base_path=None):
     if password or ssid:
         agentNeeded = True
         print('Starting Wireless Agent')
-        keyfile = open('/tmp/preseed_data', 'w')
-        if password:
-            print('Setting password')
-            keyfile.write(password)
-        keyfile.write('\n')
-        if ssid:
-            print('Setting SSID')
-            keyfile.write(ssid)
-        keyfile.close()
+        with open('/tmp/preseed_data', 'w', encoding='utf-8') as keyfile:
+            if PY2:
+                if not isinstance(password, unicode):
+                    password = password.decode('utf-8')
+                if not isinstance(ssid, unicode):
+                    ssid = ssid.decode('utf-8')
+            if password:
+                print('Setting password')
+                keyfile.write(password)
+            keyfile.write('\n')
+            if ssid:
+                print('Setting SSID')
+                keyfile.write(ssid)
         agent_script = script_base_path + WIRELESS_AGENT
         process = subprocess.Popen([sys.executable, agent_script, 'fromfile'])
     print('Attempting connection to ' + path)
@@ -453,9 +462,8 @@ def check_MS_NCSI_response():
 def parse_preseed():
     network_settings = None
     if os.path.isfile(PREESEED_LOCATION):
-        preseed_file = open(PREESEED_LOCATION, 'r')
-        preseed_data = preseed_file.read()
-        preseed_file.close()
+        with open(PREESEED_LOCATION, 'r', encoding='utf-8') as preseed_file:
+            preseed_data = preseed_file.read()
         preseed_info = {}
         for entry in preseed_data.split("\n"):
             if entry.startswith('d-i network/') and len(entry.strip()) > 0:

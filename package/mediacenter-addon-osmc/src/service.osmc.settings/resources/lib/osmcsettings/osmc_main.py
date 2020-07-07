@@ -79,11 +79,8 @@ def set_version():
 
     # Check for "upgraded" Alpha 4 and earlier
 
-    fnull = open(os.devnull, 'w')
-
-    process = subprocess.call(['/usr/bin/dpkg-query', '-l', 'rbp-mediacenter-osmc'], stderr=fnull, stdout=fnull)
-
-    fnull.close()
+    with open(os.devnull, 'w') as fnull:
+        process = subprocess.call(['/usr/bin/dpkg-query', '-l', 'rbp-mediacenter-osmc'], stderr=fnull, stdout=fnull)
 
     if process == 0:
 

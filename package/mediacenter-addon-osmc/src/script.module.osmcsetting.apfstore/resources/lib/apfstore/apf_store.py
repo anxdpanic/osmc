@@ -360,16 +360,13 @@ class APF_STORE(object):
 
                 install_query = ['dpkg-query', '-W', '-f="${Status}"', apf.id]
 
-                fnull = open(os.devnull, 'w')
+                with open(os.devnull, 'w') as fnull:
+                    try:
+                        output = subprocess.check_output(install_query, stderr=fnull)
 
-                try:
-                    output = subprocess.check_output(install_query, stderr=fnull)
-
-                except subprocess.CalledProcessError as e:
-                    # raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
-                    output = e.output
-
-                fnull.close()
+                    except subprocess.CalledProcessError as e:
+                        # raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
+                        output = e.output
 
                 if isinstance(output, bytes):
                     output = output.decode('utf-8')

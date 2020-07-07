@@ -1416,11 +1416,8 @@ class Main(object):
 
         """ Checks if this version is an Alpha, prevent updates """
 
-        fnull = open(os.devnull, 'w')
-
-        process = subprocess.call(['/usr/bin/dpkg-query', '-l', 'rbp-mediacenter-osmc'], stderr=fnull, stdout=fnull)
-
-        fnull.close()
+        with open(os.devnull, 'w') as fnull:
+            process = subprocess.call(['/usr/bin/dpkg-query', '-l', 'rbp-mediacenter-osmc'], stderr=fnull, stdout=fnull)
 
         if process == 0:
 
