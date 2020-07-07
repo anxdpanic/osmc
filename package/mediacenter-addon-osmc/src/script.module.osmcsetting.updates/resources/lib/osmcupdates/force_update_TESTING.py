@@ -19,22 +19,6 @@ t = datetime
 PY3 = sys.version_info.major == 3
 
 
-class Logger(object):
-    def __init__(self, filename="Default.log"):
-        self.terminal = sys.stdout
-        self.log = open(filename, "a")
-
-    def write(self, message):
-        self.terminal.write(message)
-        self.log.write(message)
-
-
-# try:
-# 	sys.stdout = Logger("/home/kubkev/test.txt")
-# except:
-# 	pass
-
-
 def call_parent(raw_message, data={}):
     address = '/var/tmp/osmc.settings.update.sockfile'
 
