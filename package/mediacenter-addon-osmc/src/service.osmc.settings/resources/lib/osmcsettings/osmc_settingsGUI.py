@@ -227,7 +227,7 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
 
     def left_label_toggle(self, controlID):
 
-        # toggles the left label which displayes the focussed module name
+        # toggles the left label which displays the focused module name
         one = self.getControl(4915)
         two = self.getControl(4916)
         new_label = self.getControl(controlID).getListItem(0).getLabel()
@@ -421,7 +421,7 @@ class OSMCGui(threading.Thread):
         """
             Checks the provided module to see if it is genuine.
             Returns a tuple.
-                (preferred order of module, module name: {unfocussed icon, focussed icon, instance of OSMCSetting class})
+                (preferred order of module, module name: {unfocused icon, focused icon, instance of OSMCSetting class})
         """
 
         # if you got this far then this is almost certainly an OSMC setting
@@ -440,21 +440,21 @@ class OSMCGui(threading.Thread):
             log(traceback.format_exc())
             return
 
-        # check for the unfocussed icon.png
+        # check for the unfocused icon.png
         osmc_setting_FX_icon = os.path.join(module_path, "FX_Icon.png")
         if not os.path.isfile(osmc_setting_FX_icon): return
 
-        # check for the focussed icon.png
+        # check for the focused icon.png
         osmc_setting_FO_icon = os.path.join(module_path, "FO_Icon.png")
         if not os.path.isfile(osmc_setting_FO_icon): return
 
-        # check for the unfocussed widget icon.png
+        # check for the unfocused widget icon.png
         osmc_setting_FX_icon_Widget = os.path.join(module_path, "FX_Icon_Widget.png")
         if not os.path.isfile(osmc_setting_FX_icon):
             # if not found, use the ordinary icon instead
             osmc_setting_FX_icon_Widget = osmc_setting_FX_icon
 
-        # check for the focussed widget icon.png
+        # check for the focused widget icon.png
         osmc_setting_FO_icon_Widget = os.path.join(module_path, "FO_Icon_Widget.png")
         if not os.path.isfile(osmc_setting_FO_icon):
             # if not found, use the ordinary icon instead
