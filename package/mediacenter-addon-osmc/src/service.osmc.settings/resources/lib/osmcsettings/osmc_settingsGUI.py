@@ -310,7 +310,11 @@ class OSMCGui(threading.Thread):
         self.apply_button = [105]
 
         # window xml to use
-        xml = "settings_gui_720.xml" if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' else "settings_gui.xml"
+        try:
+            skin_height = int(xbmcgui.Window(10000).getProperty("SkinHeight"))
+        except ValueError:
+            skin_height = 720
+        xml = "settings_gui_720.xml" if skin_height < 1080 else "settings_gui.xml"
 
         # check if modules and services exist, add the ones that exist to the live_modules list
         self.ordered_live_modules = self.retrieve_modules()
