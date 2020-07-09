@@ -12,6 +12,7 @@ import os
 import sys
 import threading
 import traceback
+from itertools import cycle
 
 import xbmc
 import xbmcaddon
@@ -36,7 +37,9 @@ lang = LangRetriever(__addon__).lang
 class OSMC_gui(xbmcgui.WindowXMLDialog):
 
     def __init__(self, strXMLname, strFallbackPath, strDefaultName, **kwargs):
-
+        super(OSMC_gui, self).__init__(xmlFilename=strXMLname,
+                                       scriptPath=strFallbackPath,
+                                       defaultSkin=strDefaultName)
         self.order_of_fill = kwargs.get('order_of_fill', [])
         self.apply_buttons = kwargs.get('apply_buttons', [])
         self.live_modules = kwargs.get('live_modules', [])
@@ -88,9 +91,10 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
                 # set the icon (texturefocus, texturenofocus)
                 list_item = xbmcgui.ListItem(label=shortname, label2='', offscreen=True)
                 list_item.setArt({
-                    'thumb': module['FX_Icon']
+                    'icon': module['SET'].unfocused_icon,
+                    'thumb': module['SET'].unfocused_icon
                 })
-                list_item.setProperty('FO_ICON', module['FO_Icon'])
+                list_item.setProperty('FO_ICON', module['SET'].focused_icon)
 
                 # grab the modules description for display in the textbox
                 # this is a TRY just in case the module doesnt have a self.description
@@ -203,12 +207,14 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
         else:
 
             module = self.module_holder.get(controlID, {})
-            instance = module.get('SET', False)
+            instance = module.get('SET', None)
 
-            log(instance)
-            log(instance.isAlive())
+            log('Checking instance: %s ' % str(instance))
+            try:
+                log(instance.isAlive())
+            except AttributeError:
+                return
 
-            # try:
             if instance.isAlive():
                 instance.run()
             else:
@@ -217,31 +223,22 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
                 setting_instance.setDaemon(True)
 
                 module['SET'] = setting_instance
-
-                # instance = importlib.load_source(new_module_name, osmc_setting_file)
-                # module_holder['SET'] = instance
-                # instance.setDaemon(True)
                 setting_instance.start()
-        # except:
-        # log('Settings window for __ %s __ failed to open' % module.get('id', "Unknown"))
 
     def left_label_toggle(self, controlID):
-
         # toggles the left label which displays the focused module name
-        one = self.getControl(4915)
-        two = self.getControl(4916)
+        controls = cycle([4915, 4916])
         new_label = self.getControl(controlID).getListItem(0).getLabel()
 
-        if self.visible_left_label == 4915:
-            two.setLabel(new_label)
-            two.setVisible(True)
-            one.setVisible(False)
-            self.visible_left_label = 4916
-        else:
-            one.setLabel(new_label)
-            one.setVisible(True)
-            two.setVisible(False)
-            self.visible_left_label = 4915
+        for control_id in controls:
+            if control_id != self.visible_left_label:
+                control = self.getControl(control_id)
+                control.setLabel(new_label)
+                control.setVisible(True)
+                self.visible_left_label = control_id
+                control = self.getControl(next(controls))
+                control.setVisible(False)
+                break
 
     def onFocus(self, controlID):
 
@@ -346,8 +343,8 @@ class OSMCGui(threading.Thread):
 
         for i, module in enumerate(self.live_modules):
             WINDOW.setProperty('MyOSMC.Module.%s.name' % i, module['SET'].shortname)
-            WINDOW.setProperty('MyOSMC.Module.%s.fo_icon' % i, module['FO_Icon_Widget'])
-            WINDOW.setProperty('MyOSMC.Module.%s.fx_icon' % i, module['FX_Icon_Widget'])
+            WINDOW.setProperty('MyOSMC.Module.%s.fo_icon' % i, module['SET'].focused_widget)
+            WINDOW.setProperty('MyOSMC.Module.%s.fx_icon' % i, module['SET'].unfocused_widget)
             WINDOW.setProperty('MyOSMC.Module.%s.id' % i, module['id'])
 
     def close(self):
@@ -413,7 +410,7 @@ class OSMCGui(threading.Thread):
         self.module_tally = 1000
 
         known_modules = self.known_modules_order.keys()
-        osmc_modules = [x for x in [self.inspect_module(module_name) for module_name in known_modules] if x]
+        osmc_modules = [x for x in [self.inspect_module(module_name) for module_name in known_modules] if x[1]]
 
         return osmc_modules
 
@@ -425,12 +422,10 @@ class OSMCGui(threading.Thread):
         """
 
         # if you got this far then this is almost certainly an OSMC setting
+        log('Inspecting OSMC Setting module __ %s __' % module_name)
         try:
-            log(module_name)
-            OSMCSetting = __import__('%s.osmc.OSMCSetting' % module_name, fromlist=[''])
-            setting_instance = OSMCSetting.OSMCSettingClass()
-            module_path = setting_instance.path
-            log(dir(module_path))
+            osmc_setting = __import__('%s.osmc.OSMCSetting' % module_name, fromlist=[''])
+            setting_instance = osmc_setting.OSMCSettingClass()
             setting_instance.setDaemon(True)
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -438,30 +433,13 @@ class OSMCGui(threading.Thread):
             log(exc_type)
             log(exc_value)
             log(traceback.format_exc())
-            return
+            return -1, None
 
-        # check for the unfocused icon.png
-        osmc_setting_FX_icon = os.path.join(module_path, "FX_Icon.png")
-        if not os.path.isfile(osmc_setting_FX_icon): return
+        if not (setting_instance.unfocused_icon and setting_instance.focused_icon and
+                setting_instance.unfocused_widget and setting_instance.focused_widget):
+            return -1, None
 
-        # check for the focused icon.png
-        osmc_setting_FO_icon = os.path.join(module_path, "FO_Icon.png")
-        if not os.path.isfile(osmc_setting_FO_icon): return
-
-        # check for the unfocused widget icon.png
-        osmc_setting_FX_icon_Widget = os.path.join(module_path, "FX_Icon_Widget.png")
-        if not os.path.isfile(osmc_setting_FX_icon):
-            # if not found, use the ordinary icon instead
-            osmc_setting_FX_icon_Widget = osmc_setting_FX_icon
-
-        # check for the focused widget icon.png
-        osmc_setting_FO_icon_Widget = os.path.join(module_path, "FO_Icon_Widget.png")
-        if not os.path.isfile(osmc_setting_FO_icon):
-            # if not found, use the ordinary icon instead
-            osmc_setting_FO_icon_Widget = osmc_setting_FO_icon
-
-        # success!
-        log('OSMC Setting Module __ %s __ found and imported' % module_name)
+        log('OSMC Setting module __ %s __ found and imported' % module_name)
 
         # DETERMINE ORDER OF ADDONS, THIS CAN BE HARDCODED FOR SOME OR THE USER SHOULD BE ABLE TO CHOOSE THEIR OWN ORDER
         if module_name in self.known_modules_order.keys():
@@ -472,10 +450,6 @@ class OSMCGui(threading.Thread):
 
         return (order, {
             'id': module_name,
-            'FX_Icon': osmc_setting_FX_icon,
-            'FO_Icon': osmc_setting_FO_icon,
-            'FX_Icon_Widget': osmc_setting_FX_icon_Widget,
-            'FO_Icon_Widget': osmc_setting_FO_icon_Widget,
             'SET': setting_instance,
-            'OSMCSetting': OSMCSetting
+            'OSMCSetting': osmc_setting
         })

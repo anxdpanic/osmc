@@ -8,4 +8,5 @@
     See LICENSES/GPL-2.0-or-later for more information.
 """
 
-__all__ = ['cli_remote', 'grablogs', 'osmc_comms', 'osmc_language', 'osmc_logging', 'osmc_scheduler']
+__all__ = ['cli_remote', 'grablogs', 'osmc_comms', 'osmc_language', 'osmc_logging',
+           'osmc_scheduler', 'osmc_setting']
