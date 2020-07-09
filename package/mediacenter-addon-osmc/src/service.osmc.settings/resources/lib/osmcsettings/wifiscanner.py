@@ -20,7 +20,6 @@ import subprocess
 import sys
 import threading
 import time
-
 from io import open
 
 PY3 = sys.version_info.major == 3

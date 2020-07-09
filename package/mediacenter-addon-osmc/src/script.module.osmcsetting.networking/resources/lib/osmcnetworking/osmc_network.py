@@ -15,11 +15,11 @@ import socket
 import subprocess
 import sys
 import time
+from io import open
 
-import dbus
 import requests
 
-from io import open
+import dbus
 
 from . import connman
 from . import osmc_systemd

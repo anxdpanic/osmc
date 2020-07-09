@@ -16,25 +16,26 @@ import socket
 import subprocess
 import sys
 import traceback
-
 from io import open
+
+import xbmc
+import xbmcaddon
+import xbmcgui
+from osmccommon.osmc_comms import Communicator
+from osmccommon.osmc_language import LangRetriever
+from osmccommon.osmc_logging import StandardLogger
+
+from . import osmc_settingsGUI
+from . import osmc_ubiquifonts
+from . import osmc_walkthru
 
 try:
     import queue as Queue
 except ImportError:
     import Queue
 
-import xbmc
-import xbmcaddon
-import xbmcgui
 
-from osmccommon.osmc_comms import Communicator
-from osmccommon.osmc_logging import StandardLogger
-from osmccommon.osmc_language import LangRetriever
 
-from . import osmc_walkthru
-from . import osmc_settingsGUI
-from . import osmc_ubiquifonts
 
 WINDOW = xbmcgui.Window(10000)
 if not os.path.isfile('/walkthrough_completed'):

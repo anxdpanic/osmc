@@ -107,6 +107,7 @@ import xbmc
 import xbmcaddon
 import xbmcgui
 from osmccommon.osmc_logging import StandardLogger
+
 from ..service_selection_gui import service_selection
 
 addonid = "script.module.osmcsetting.services"

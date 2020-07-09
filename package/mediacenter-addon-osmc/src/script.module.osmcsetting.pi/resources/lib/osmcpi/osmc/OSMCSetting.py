@@ -111,6 +111,7 @@ import xbmcaddon
 import xbmcgui
 from osmccommon.osmc_language import LangRetriever
 from osmccommon.osmc_logging import StandardLogger
+
 from .. import OSMC_REparser as parser
 
 addonid = "script.module.osmcsetting.pi"

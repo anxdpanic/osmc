@@ -16,6 +16,8 @@ import dbus
 import dbus.mainloop.glib
 import dbus.service
 
+from . import bluezutils
+
 try:
     from gi.repository import GObject
 except ImportError:
@@ -26,7 +28,6 @@ try:
 except NameError:
     pass
 
-from . import bluezutils
 
 PEXPECT_SOL = 'SOL@'
 PEXPECT_EOL = '@EOL'

@@ -107,6 +107,7 @@ import xbmc
 import xbmcaddon
 from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_logging import clog
+
 from .. import remote_gui
 
 addonid = "script.module.osmcsetting.remotes"

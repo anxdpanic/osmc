@@ -15,10 +15,10 @@ from io import open
 
 import xbmc
 import xbmcaddon
+import xmltodict as xmltodict
 
 __addon__ = xbmcaddon.Addon('script.module.osmcsetting.networking')
 
-import xmltodict as xmltodict
 
 
 class AdvancedSettingsEditor(object):

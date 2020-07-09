@@ -20,22 +20,23 @@ from datetime import datetime
 from io import open
 
 import apt
+import xbmc
+import xbmcaddon
+import xbmcgui
+from osmccommon import osmc_comms as comms
+from osmccommon import osmc_scheduler as sched
+from osmccommon.osmc_language import LangRetriever
+from osmccommon.osmc_logging import StandardLogger
+
+from . import OSMC_Backups
 
 try:
     import queue as Queue
 except ImportError:
     import Queue
 
-import xbmc
-import xbmcaddon
-import xbmcgui
 
-from osmccommon.osmc_logging import StandardLogger
-from osmccommon.osmc_language import LangRetriever
-from osmccommon import osmc_scheduler as sched
-from osmccommon import osmc_comms as comms
 
-from . import OSMC_Backups
 
 addonid = 'script.module.osmcsetting.updates'
 __addon__ = xbmcaddon.Addon(addonid)
@@ -45,10 +46,9 @@ __image_file__ = os.path.join(__scriptPath__, 'resources', 'media', 'update_avai
 __libpath__ = xbmc.translatePath(os.path.join(__scriptPath__, 'resources', 'lib', 'osmcupdates'))
 
 PY2 = sys.version_info.major == 2
+PY3 = sys.version_info.major == 3
 
 DIALOG = xbmcgui.Dialog()
-
-PY3 = sys.version_info.major == 3
 
 log = StandardLogger(addonid, os.path.basename(__file__)).log
 lang = LangRetriever(__addon__).lang

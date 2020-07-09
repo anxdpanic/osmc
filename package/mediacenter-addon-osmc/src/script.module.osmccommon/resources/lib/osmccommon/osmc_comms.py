@@ -15,6 +15,7 @@ import sys
 import threading
 
 import xbmc
+
 from .osmc_logging import StandardLogger
 
 PY3 = sys.version_info.major == 3

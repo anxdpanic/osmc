@@ -25,6 +25,7 @@ import xbmcaddon
 import xbmcgui
 from osmccommon.osmc_language import LangRetriever
 from osmccommon.osmc_logging import StandardLogger
+
 from . import LICENSE
 from . import WARRANTY
 from . import osmc_timezones

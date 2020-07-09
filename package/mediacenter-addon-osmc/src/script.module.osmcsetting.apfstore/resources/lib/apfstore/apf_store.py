@@ -22,17 +22,18 @@ import requests
 import xbmc
 import xbmcaddon
 import xbmcgui
+from osmccommon.osmc_language import LangRetriever
+from osmccommon.osmc_logging import StandardLogger
+from osmccommon.osmc_logging import clog
+
+from .apf_class import APF_obj
+from .apf_gui import apf_GUI
 
 try:
     import queue as Queue
 except ImportError:
     import Queue
 
-from osmccommon.osmc_logging import clog
-from osmccommon.osmc_logging import StandardLogger
-from osmccommon.osmc_language import LangRetriever
-from .apf_class import APF_obj
-from .apf_gui import apf_GUI
 
 addonid = "script.module.osmcsetting.apfstore"
 __addon__ = xbmcaddon.Addon(addonid)

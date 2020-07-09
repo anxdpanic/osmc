@@ -109,6 +109,7 @@ import xbmcaddon
 import xbmcgui
 from osmccommon.osmc_language import LangRetriever
 from osmccommon.osmc_logging import StandardLogger
+
 from .. import osmc_network
 from ..networking_gui import networking_gui
 from ..osmc_advset_editor import AdvancedSettingsEditor

@@ -107,6 +107,7 @@ import xbmc
 import xbmcaddon
 from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_logging import clog
+
 from ..apf_store import APF_STORE
 
 addonid = "script.module.osmcsetting.apfstore"

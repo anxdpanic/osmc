@@ -13,9 +13,9 @@ import os
 import sys
 
 import pexpect
-
 from osmccommon.osmc_language import LangRetriever
 from osmccommon.osmc_logging import StandardLogger
+
 from . import bluetooth
 from . import connman
 from . import osmc_systemd
