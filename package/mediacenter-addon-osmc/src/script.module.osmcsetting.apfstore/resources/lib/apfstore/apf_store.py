@@ -34,7 +34,6 @@ try:
 except ImportError:
     import Queue
 
-
 addonid = "script.module.osmcsetting.apfstore"
 __addon__ = xbmcaddon.Addon(addonid)
 __path__ = xbmc.translatePath(__addon__.getAddonInfo('path'))

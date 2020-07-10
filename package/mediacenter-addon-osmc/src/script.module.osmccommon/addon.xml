@@ -7,7 +7,7 @@
     <extension point="xbmc.python.module" library="resources/lib/"/>
 
     <extension point="xbmc.addon.metadata">
-        <description  lang="en_GB">Common code and classes for My OSMC settings modules.</description >
+        <description lang="en_GB">Common code and classes for My OSMC settings modules.</description>
         <language>en</language>
         <platform>all</platform>
         <license>GPL-2.0-or-later</license>

@@ -28,7 +28,6 @@ try:
 except NameError:
     pass
 
-
 PEXPECT_SOL = 'SOL@'
 PEXPECT_EOL = '@EOL'
 

@@ -20,7 +20,6 @@ import xmltodict as xmltodict
 __addon__ = xbmcaddon.Addon('script.module.osmcsetting.networking')
 
 
-
 class AdvancedSettingsEditor(object):
 
     def __init__(self, logging_function=None):

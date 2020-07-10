@@ -35,9 +35,6 @@ try:
 except ImportError:
     import Queue
 
-
-
-
 addonid = 'script.module.osmcsetting.updates'
 __addon__ = xbmcaddon.Addon(addonid)
 __scriptPath__ = __addon__.getAddonInfo('path')
