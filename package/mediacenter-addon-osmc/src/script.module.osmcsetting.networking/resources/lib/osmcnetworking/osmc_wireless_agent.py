@@ -185,6 +185,10 @@ class Agent(dbus.service.Object):
         print("Cancel")
 
 
+def argv():
+    return sys.argv
+
+
 if __name__ == '__main__':
 
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -196,8 +200,8 @@ if __name__ == '__main__':
     path = "/test/agent"
     obj = Agent(bus, path)
 
-    if len(sys.argv) >= 2:
-        for arg in sys.argv[1:]:
+    if len(argv()) >= 2:
+        for arg in argv()[1:]:
             if arg.startswith("fromfile"):
                 keyfile = open("/tmp/preseed_data")
                 data = keyfile.read()

@@ -615,6 +615,10 @@ def right_now(raw=False):
     return 'Failed to retrieve time'
 
 
+def argv():
+    return sys.argv
+
+
 def parse_arguments():
     """ Parses the arguments provided by the user and activates the entries in SETS.
         Returns a bool determining whether the user wants to copy the logs to the SD Card.
@@ -639,9 +643,9 @@ def parse_arguments():
 
     # Exit if there are no arguments or there is only the COPY argument
     if any([
-        (len(sys.argv) == 1),
-        (len(sys.argv) == 2 and (args.copy or args.termprint)),
-        (len(sys.argv) == 3 and (args.copy and args.termprint))
+        (len(argv()) == 1),
+        (len(argv()) == 2 and (args.copy or args.termprint)),
+        (len(argv()) == 3 and (args.copy and args.termprint))
     ]):
         parser.print_help()
 
@@ -685,7 +689,7 @@ def retrieve_settings(addon=None):
         else:
             SETS[key]['active'] = True if addon.getSetting(key) == 'true' else False
 
-    return sys.argv[1] == 'copy', False
+    return argv()[1] == 'copy', False
 
 
 class Dummy_Progress_Dialog(object):

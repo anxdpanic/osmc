@@ -56,7 +56,12 @@ except:
     print('Or just {"port": "your_port"} if that is all you would like to change.')
     print('')
 
-    for arg in sys.argv[1:]:
+
+    def argv():
+        return sys.argv
+
+
+    for arg in argv()[1:]:
         try:
             k, v = arg.split('=')
             key = _keymap.get(k, None)

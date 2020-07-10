@@ -14,8 +14,13 @@ import sys
 
 PY3 = sys.version_info.major == 3
 
-if len(sys.argv) > 1:
-    msg = sys.argv[1]
+
+def argv():
+    return sys.argv
+
+
+if len(argv()) > 1:
+    msg = argv()[1]
 
     print('OSMC settings sending response, %s' % msg)
 

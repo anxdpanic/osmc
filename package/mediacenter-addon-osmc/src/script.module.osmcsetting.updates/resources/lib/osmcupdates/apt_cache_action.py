@@ -6,9 +6,10 @@
 
     SPDX-License-Identifier: GPL-2.0-or-later
     See LICENSES/GPL-2.0-or-later for more information.
-"""
 
-""" This script is run as root by the osmc update module. """
+    This script is run as root by the osmc update module.
+
+"""
 
 import json
 import os
@@ -21,6 +22,10 @@ import apt
 
 t = datetime
 PY3 = sys.version_info.major == 3
+
+
+def argv():
+    return sys.argv
 
 
 def call_parent(raw_message, data={}):
@@ -149,7 +154,7 @@ class Main(object):
 
         self.package_found = False
 
-        action_string = sys.argv[2]
+        action_string = argv()[2]
 
         action_dict = self.parse_argv2(action_string)
 
@@ -528,8 +533,8 @@ class Download_Progress(apt.progress.base.AcquireProgress):
 
 if __name__ == "__main__":
 
-    if len(sys.argv) > 1:
-        action = sys.argv[1]
+    if len(argv()) > 1:
+        action = argv()[1]
 
         m = Main(action)
 

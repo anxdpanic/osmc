@@ -42,7 +42,11 @@ def call_parent(raw_message, data={}):
     print('%s %s response sent' % (t.now(), 'apt_cache_action.py'))
 
 
+def argv():
+    return sys.argv
+
+
 if __name__ == "__main__":
 
-    if len(sys.argv) > 1:
-        call_parent('%s' % sys.argv[1])
+    if len(argv()) > 1:
+        call_parent('%s' % argv()[1])
