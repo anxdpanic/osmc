@@ -373,23 +373,29 @@ class Main(object):
                     # check whether the response is one of the live_modules, if it is then launch that module
 
                     for module in self.stored_gui.live_modules:
-                        if response == module.get('id', 'id_not_found'):
 
-                            instance = module.get('SET', False)
+                        module_id = module.get('id', 'id_not_found')
+                        if response != module_id:
+                            continue
 
-                            if instance.isAlive():
-                                log('Opening %s from widget' % instance)
-                                instance.run()
+                        class_instance = module.get('SET', None)
+                        module_instance = module.get('OSMCSetting', None)
 
-                            else:
-                                log('Starting %s from widget' % instance)
+                        if class_instance and class_instance.isAlive():
+                            log('Opening %s from widget' % module_id)
+                            class_instance.run()
 
-                                setting_instance = module['OSMCSetting'].OSMCSettingClass()
-                                setting_instance.setDaemon(True)
+                        elif module_instance:
+                            log('Starting %s from widget' % module_id)
 
-                                module['SET'] = setting_instance
+                            class_instance = module_instance.OSMCSettingClass()
+                            class_instance.setDaemon(True)
 
-                                setting_instance.start()
+                            module['SET'] = class_instance
+
+                            class_instance.start()
+
+                        break
 
         # THIS PART MAY NOT BE NEEDED, BUT IS INCLUDED HERE ANYWAY FOR TESTING PURPOSES
         # if the gui was last accessed more than four hours
