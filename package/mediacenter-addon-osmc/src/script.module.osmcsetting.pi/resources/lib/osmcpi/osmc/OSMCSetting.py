@@ -13,7 +13,6 @@ import subprocess
 import sys
 import traceback
 
-import xbmc
 import xbmcaddon
 import xbmcgui
 from osmccommon import osmc_setting
@@ -22,12 +21,12 @@ from osmccommon.osmc_logging import StandardLogger
 
 from .. import OSMC_REparser as parser
 
-addonid = "script.module.osmcsetting.pi"
+addon_id = "script.module.osmcsetting.pi"
 DIALOG = xbmcgui.Dialog()
 
 PY3 = sys.version_info.major == 3
 
-log = StandardLogger(addonid, os.path.basename(__file__)).log
+log = StandardLogger(addon_id, os.path.basename(__file__)).log
 
 
 class OSMCSettingClass(osmc_setting.OSMCSettingClass):
@@ -35,12 +34,11 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
     def __init__(self):
         super(OSMCSettingClass, self).__init__()
 
-        self.addonid = addonid
-        self.me = xbmcaddon.Addon(addonid)
+        self.addon_id = addon_id
 
-        self.path = os.path.join(xbmc.translatePath(self.me.getAddonInfo('path')), 'resources', 'lib', 'osmcpi', 'osmc')
+        self.path = os.path.dirname(os.path.abspath(__file__))
 
-        self.shortname = 'Pi Config'
+        self.short_name = 'Pi Config'
 
         self.description = """This is the text that is shown on the OSG. [CR][CR]It should describe:[CR]   - what the settings module is for,[CR]   - the settings it controls,[CR]   - and anything else you want, I suppose."""
 
@@ -123,7 +121,7 @@ Overclock settings are set using the Pi Overclock module."""
     def settings_retriever_xml(self):
         latest_settings = {}
 
-        addon = xbmcaddon.Addon(self.addonid)
+        addon = xbmcaddon.Addon(self.addon_id)
 
         for key in parser.MASTER_SETTINGS.keys():
             latest_settings[key] = addon.getSetting(key)

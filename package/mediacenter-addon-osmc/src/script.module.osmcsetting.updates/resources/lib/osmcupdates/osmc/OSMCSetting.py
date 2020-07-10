@@ -11,13 +11,11 @@
 import os
 import subprocess
 
-import xbmc
-import xbmcaddon
 from osmccommon import osmc_setting
 from osmccommon.osmc_logging import StandardLogger
 
-addonid = "script.module.osmcsetting.updates"
-log = StandardLogger(addonid, os.path.basename(__file__)).log
+addon_id = "script.module.osmcsetting.updates"
+log = StandardLogger(addon_id, os.path.basename(__file__)).log
 
 
 class OSMCSettingClass(osmc_setting.OSMCSettingClass):
@@ -25,11 +23,11 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
     def __init__(self):
         super(OSMCSettingClass, self).__init__()
 
-        self.addonid = addonid
-        self.me = xbmcaddon.Addon(addonid)
-        self.path = os.path.join(xbmc.translatePath(self.me.getAddonInfo('path')), 'resources', 'lib', 'osmcupdates', 'osmc')
+        self.addon_id = addon_id
 
-        self.shortname = 'Updates'
+        self.path = os.path.dirname(os.path.abspath(__file__))
+
+        self.short_name = 'Updates'
 
         self.description = ""
 

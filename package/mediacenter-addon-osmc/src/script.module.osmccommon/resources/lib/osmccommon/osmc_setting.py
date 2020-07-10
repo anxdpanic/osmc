@@ -6,13 +6,10 @@
 
     SPDX-License-Identifier: GPL-2.0-or-later
     See LICENSES/GPL-2.0-or-later for more information.
-"""
-
-"""
 
     The settings for OSMC are handled by the OSMC Settings Addon (OSA).
 
-    In order to more easily accomodate future changes and enhancements, each OSMC settings bundle (module) is a separate addon.
+    In order to more easily accommodate future changes and enhancements, each OSMC settings bundle (module) is a separate addon.
     The module can take the form of an xbmc service, an xbmc script, or an xbmc module, but it must be installed into the users'
     /usr/share/kodi/addons folder.
 
@@ -38,18 +35,18 @@
     When the OSA creates the OSMC Settings GUI (OSG), these modules are identified and the OSMCSetting.py script in each of them
     is imported. This script provides the mechanism for the OSG to apply the changes required from a change in a setting.
 
-    The OSMCSetting.py file must have a class called OSMCSettingClass as shown below.
+    The OSMCSetting.py file must have a class called OSMCSettingClass.
 
     The key variables in this class are:
 
-        addonid							: The id for the addon. This must be the id declared in the addons addon.xml.
+        addon_id							: The id for the addon. This must be the id declared in the addons addon.xml.
 
-        shortname                       : The name for the module, shown in the OSA
-        
+        short_name                       : The name for the module, shown in the OSA
+
         description 					: The description for the module, shown in the OSA
 
         path                            : The path for the OSMCSettings modules
-        
+
         reboot_required					: A boolean to declare if the OS needs to be rebooted. If a change in a specific setting
                                           requires an OS reboot to take affect, this is flag that will let the OSG know.
 
@@ -107,10 +104,12 @@
 import os
 import threading
 
+import xbmcaddon
+
 
 class OSMCSettingClass(threading.Thread):
-    """ 
-        A OSMCSettingClass is way to substantiate the settings of an OSMC settings module, and make them available to the 
+    """
+        A OSMCSettingClass is way to substantiate the settings of an OSMC settings module, and make them available to the
         OSMC Settings Addon (OSA).
 
     """
@@ -118,13 +117,13 @@ class OSMCSettingClass(threading.Thread):
     def __init__(self):
         super(OSMCSettingClass, self).__init__()
 
-        self.addonid = None
-        self.me = None
+        self.addon_id = None
+        self._me = None
 
         self.path = ''
 
         # this is what is displayed in the main settings gui
-        self.shortname = ''
+        self.short_name = ''
 
         self.description = ''
 
@@ -137,6 +136,12 @@ class OSMCSettingClass(threading.Thread):
         self._focused_icon = ''
         self._unfocused_widget = ''
         self._focused_widget = ''
+
+    @property
+    def me(self):
+        if not self._me:
+            self._me = xbmcaddon.Addon(self.addon_id)
+        return self._me
 
     def run(self):
         """

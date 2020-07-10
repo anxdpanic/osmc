@@ -10,16 +10,14 @@
 
 import os
 
-import xbmc
-import xbmcaddon
 from osmccommon import osmc_setting
 from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_logging import clog
 
 from .. import remote_gui
 
-addonid = "script.module.osmcsetting.remotes"
-log = StandardLogger(addonid, os.path.basename(__file__)).log
+addon_id = "script.module.osmcsetting.remotes"
+log = StandardLogger(addon_id, os.path.basename(__file__)).log
 
 
 class OSMCSettingClass(osmc_setting.OSMCSettingClass):
@@ -27,12 +25,11 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
     def __init__(self):
         super(OSMCSettingClass, self).__init__()
 
-        self.addonid = addonid
-        self.me = xbmcaddon.Addon(addonid)
+        self.addon_id = addon_id
 
-        self.path = os.path.join(xbmc.translatePath(self.me.getAddonInfo('path')), 'resources', 'lib', 'osmcremotes', 'osmc')
+        self.path = os.path.dirname(os.path.abspath(__file__))
 
-        self.shortname = 'Remotes'
+        self.short_name = 'Remotes'
 
         self.description = """This module allows the user to select the appropriate lirc.conf file for their remote."""
 

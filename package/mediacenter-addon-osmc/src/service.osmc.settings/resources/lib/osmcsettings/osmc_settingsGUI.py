@@ -84,12 +84,12 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
             for i, module in enumerate(self.live_modules):
 
                 try:
-                    shortname = module['SET'].shortname
+                    short_name = module['SET'].short_name
                 except:
-                    shortname = ''
+                    short_name = ''
 
                 # set the icon (texturefocus, texturenofocus)
-                list_item = xbmcgui.ListItem(label=shortname, label2='', offscreen=True)
+                list_item = xbmcgui.ListItem(label=short_name, label2='', offscreen=True)
                 list_item.setArt({
                     'icon': module['SET'].unfocused_icon,
                     'thumb': module['SET'].unfocused_icon
@@ -346,7 +346,7 @@ class OSMCGui(threading.Thread):
         WINDOW.setProperty('MyOSMC.Module.Script', script_location)
 
         for i, module in enumerate(self.live_modules):
-            WINDOW.setProperty('MyOSMC.Module.%s.name' % i, module['SET'].shortname)
+            WINDOW.setProperty('MyOSMC.Module.%s.name' % i, module['SET'].short_name)
             WINDOW.setProperty('MyOSMC.Module.%s.fo_icon' % i, module['SET'].focused_widget)
             WINDOW.setProperty('MyOSMC.Module.%s.fx_icon' % i, module['SET'].unfocused_widget)
             WINDOW.setProperty('MyOSMC.Module.%s.id' % i, module['id'])
@@ -373,7 +373,7 @@ class OSMCGui(threading.Thread):
             try:
                 m.apply_settings()
             except:
-                log('apply_settings failed for %s' % m.addonid)
+                log('apply_settings failed for %s' % m.addon_id)
 
         # check is a reboot is required
         reboot = False

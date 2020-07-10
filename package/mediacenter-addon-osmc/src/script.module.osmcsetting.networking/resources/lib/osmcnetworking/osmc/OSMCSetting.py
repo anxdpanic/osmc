@@ -11,7 +11,6 @@
 import os
 import sys
 
-import xbmc
 import xbmcaddon
 import xbmcgui
 from osmccommon import osmc_setting
@@ -22,12 +21,12 @@ from .. import osmc_network
 from ..networking_gui import networking_gui
 from ..osmc_advset_editor import AdvancedSettingsEditor
 
-addonid = "script.module.osmcsetting.networking"
+addon_id = "script.module.osmcsetting.networking"
 
 DIALOG = xbmcgui.Dialog()
 PY2 = sys.version_info.major == 2
 
-log = StandardLogger(addonid, os.path.basename(__file__)).log
+log = StandardLogger(addon_id, os.path.basename(__file__)).log
 
 
 class OSMCSettingClass(osmc_setting.OSMCSettingClass):
@@ -35,12 +34,11 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
     def __init__(self):
         super(OSMCSettingClass, self).__init__()
 
-        self.addonid = addonid
-        self.me = xbmcaddon.Addon(addonid)
+        self.addon_id = addon_id
 
-        self.path = os.path.join(xbmc.translatePath(self.me.getAddonInfo('path')), 'resources', 'lib', 'osmcnetworking', 'osmc')
+        self.path = os.path.dirname(os.path.abspath(__file__))
 
-        self.shortname = 'Network'
+        self.short_name = 'Network'
 
         self.description = """
                                 This is network settings, it contains settings for the network. 
@@ -105,7 +103,7 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
             self.setting_data_method[key]['setting_value'] = setting_value
 
     def run(self, usePreseed=False):
-        log(self.addonid)
+        log(self.addon_id)
         scriptPath = self.me.getAddonInfo('path')
 
         xml = "network_gui_720.xml" if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' else "network_gui.xml"
@@ -156,7 +154,7 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
     def settings_retriever_xml(self):
         latest_settings = {}
 
-        addon = xbmcaddon.Addon(self.addonid)
+        addon = xbmcaddon.Addon(self.addon_id)
 
         for key in self.setting_data_method.keys():
             latest_settings[key] = addon.getSetting(key)

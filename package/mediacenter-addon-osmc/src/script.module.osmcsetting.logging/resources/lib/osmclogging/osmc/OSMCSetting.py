@@ -10,14 +10,12 @@
 
 import os
 
-import xbmc
-import xbmcaddon
 from osmccommon import osmc_setting
 from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_logging import clog
 
-addonid = "script.module.osmcsetting.logging"
-log = StandardLogger(addonid, os.path.basename(__file__)).log
+addon_id = "script.module.osmcsetting.logging"
+log = StandardLogger(addon_id, os.path.basename(__file__)).log
 
 
 class OSMCSettingClass(osmc_setting.OSMCSettingClass):
@@ -25,12 +23,11 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
     def __init__(self):
         super(OSMCSettingClass, self).__init__()
 
-        self.addonid = addonid
-        self.me = xbmcaddon.Addon(addonid)
+        self.addon_id = addon_id
 
-        self.path = os.path.join(xbmc.translatePath(self.me.getAddonInfo('path')), 'resources', 'lib', 'osmclogging', 'osmc')
+        self.path = os.path.dirname(os.path.abspath(__file__))
 
-        self.shortname = 'Log Uploader'
+        self.short_name = 'Log Uploader'
 
         self.description = """This module helps with debugging and troubleshooting by retrieving logs, various xml, and config information from your system and uploading them in a single file.[CR]
         Once uploading is complete, you are provided with a URL which you can share on the OSMC forums.[CR]

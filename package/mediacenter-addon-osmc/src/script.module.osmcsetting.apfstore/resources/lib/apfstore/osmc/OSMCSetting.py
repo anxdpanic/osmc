@@ -10,28 +10,25 @@
 
 import os
 
-import xbmc
-import xbmcaddon
 from osmccommon import osmc_setting
 from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_logging import clog
 
 from ..apf_store import APF_STORE
 
-addonid = "script.module.osmcsetting.apfstore"
-log = StandardLogger(addonid, os.path.basename(__file__)).log
+addon_id = "script.module.osmcsetting.apfstore"
+log = StandardLogger(addon_id, os.path.basename(__file__)).log
 
 
 class OSMCSettingClass(osmc_setting.OSMCSettingClass):
     def __init__(self):
         super(OSMCSettingClass, self).__init__()
 
-        self.addonid = addonid
-        self.me = xbmcaddon.Addon(addonid)
+        self.addon_id = addon_id
 
-        self.path = os.path.join(xbmc.translatePath(self.me.getAddonInfo('path')), 'resources', 'lib', 'apfstore', 'osmc')
+        self.path = os.path.dirname(os.path.abspath(__file__))
 
-        self.shortname = 'App Store'
+        self.short_name = 'App Store'
 
         self.description = """This module is where you can grab awesome APFs like ... """
 
