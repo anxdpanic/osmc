@@ -146,11 +146,11 @@ class OSMCSettingClass(threading.Thread):
     def run(self):
         """
             The method determines what happens when the item is clicked in the settings GUI.
-            Usually this would be __addon__.OpenSettings(), but it could be any other script.
+            Usually this would be __addon__.openSettings(), but it could be any other script.
             This allows the creation of action buttons in the GUI, as well as allowing developers to script and skin their 
             own user interfaces.
         """
-        self.me.OpenSettings()
+        self.me.openSettings()
 
     def first_method(self):
         """ 
