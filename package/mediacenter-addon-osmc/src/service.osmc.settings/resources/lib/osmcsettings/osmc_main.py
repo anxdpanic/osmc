@@ -467,11 +467,3 @@ class Main(object):
 
             self.stored_gui.start()
         log('gui threading finished')
-
-
-if __name__ == "__main__":
-    set_version()
-
-    m = Main()
-
-    log('Exiting OSMC Settings')

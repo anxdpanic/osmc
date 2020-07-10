@@ -9,16 +9,8 @@
     See LICENSES/GPL-2.0-or-later for more information.
 """
 
-import os
+from osmcsettings import osmc_main
 
-from osmccommon.osmc_logging import StandardLogger
-from osmcsettings import osmc_main as m
-
-log = StandardLogger('service.osmc.settings', os.path.basename(__file__)).log
-
-if __name__ == "__main__":
-    m.set_version()
-
-    Main_Service = m.Main()
-
-    log('Exiting OSMC Settings')
+if __name__ == '__main__':
+    osmc_main.set_version()
+    Main_Service = osmc_main.Main()

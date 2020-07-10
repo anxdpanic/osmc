@@ -39,7 +39,7 @@ msgid "If this error persists, try disabling then re-enabling the OSMC Settings 
 msgstr ""
 
 msgctxt "#32007"
-msgid "OSMC Setting Service failed to launch"
+msgid "My OSMC service is unavailable"
 msgstr ""
 
 msgctxt "#32008"
@@ -196,4 +196,8 @@ msgstr ""
 
 msgctxt "#32046"
 msgid "Confirm"
+msgstr ""
+
+msgctxt "#32047"
+msgid "My OSMC"
 msgstr ""

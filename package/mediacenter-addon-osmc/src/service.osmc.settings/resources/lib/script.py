@@ -8,6 +8,7 @@
     See LICENSES/GPL-2.0-or-later for more information.
 """
 
-__all__ = ['call_osmc_parent', 'LICENSE', 'osmc_main', 'osmc_settingsGUI', 'osmc_slideshow',
-           'osmc_timezones', 'osmc_ubiquifonts', 'osmc_walkthru', 'script_entry', 'WARRANTY',
-           'wifiscanner']
+from osmcsettings import script_entry
+
+if __name__ == '__main__':
+    script_entry.run()
