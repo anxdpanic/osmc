@@ -850,39 +850,40 @@ class osmc_backup(object):
 
         # read the current fstab file, process it line by line
         with open('/etc/fstab', 'r', encoding='utf-8') as current_fstab:
+            lines = current_fstab.readlines()
 
-            # process each line in the current fstab files
-            for line in current_fstab.readlines():
+        # process each line in the current fstab files
+        for line in lines:
 
-                # determine if the line contains a valid mount
-                tup = {}  # milham_mod_mini(line)
+            # determine if the line contains a valid mount
+            tup = {}  # milham_mod_mini(line)
 
-                # if not, or if the type of mount is no on this permitted list, then
-                # add the line as-is to the new version, and then go to the next line
-                if not tup or tup.fs_vfstype not in ['nfs', 'cifs', 'bind']:
+            # if not, or if the type of mount is no on this permitted list, then
+            # add the line as-is to the new version, and then go to the next line
+            if not tup or tup.fs_vfstype not in ['nfs', 'cifs', 'bind']:
+                new_lines.append(line)
+                continue
+
+            # if there is a valid mount, then check that local mount point against those
+            # found in the backup file we are restoring
+            for mnt in backup_mnts:
+
+                # if the local mount point is the same, then add the existing line to the new file,
+                # put the backup mnt into new file as a comment, then remove the mnt from the
+                # list of unused backup mnts
+                if mnt.fs_file == tup.fs_file:
                     new_lines.append(line)
-                    continue
+                    new_lines.append('#' + mnt.unparsed)
+                    unused_mnts.remove(mnt)
+                    break
 
-                # if there is a valid mount, then check that local mount point against those
-                # found in the backup file we are restoring
-                for mnt in backup_mnts:
+            else:  # no break
 
-                    # if the local mount point is the same, then add the existing line to the new file,
-                    # put the backup mnt into new file as a comment, then remove the mnt from the
-                    # list of unused backup mnts
-                    if mnt.fs_file == tup.fs_file:
-                        new_lines.append(line)
-                        new_lines.append('#' + mnt.unparsed)
-                        unused_mnts.remove(mnt)
-                        break
+                # if there is no match, then just add the line as-is to the new file
+                new_lines.append(line)
 
-                else:  # no break
-
-                    # if there is no match, then just add the line as-is to the new file
-                    new_lines.append(line)
-
-            # add on all the unused mnts from the backup up file at then end
-            new_lines.extend(unused_mnts)
+        # add on all the unused mnts from the backup up file at then end
+        new_lines.extend(unused_mnts)
 
         if new_lines:
             # create the new, replacement fstab file

@@ -413,16 +413,16 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
             line = f.readline()
 
-            settings = line.split(' ')
+        settings = line.split(' ')
 
-            for setting in settings:
+        for setting in settings:
 
-                if setting.startswith('osmcdev='):
+            if setting.startswith('osmcdev='):
 
-                    if 'vero' in setting or 'vero2' in setting:
-                        log('Hardware is Vero')
+                if 'vero' in setting or 'vero2' in setting:
+                    log('Hardware is Vero')
 
-                        return True
+                    return True
 
         log('Hardware not Vero')
 

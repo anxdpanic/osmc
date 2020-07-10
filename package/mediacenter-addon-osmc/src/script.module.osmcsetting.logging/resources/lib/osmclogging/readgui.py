@@ -96,19 +96,25 @@ class GuiParser(object):
 
         try:
             with open(self.stringsfile, encoding='utf-8') as f:
-                for line in f:
-                    if line.startswith('msgctxt'):
-                        try:
-                            msgctxt = line.split(' ')[1].strip().split('"')[1][1:]  # noqa E501
-                        except IndexError:
-                            continue
-                        for next_line in f:
-                            if next_line.startswith('msgid'):
-                                try:
-                                    system_strings[msgctxt] = next_line.split(' ', 1)[1].strip().split('"')[1]  # noqa E501
-                                except IndexError:
-                                    system_strings[msgctxt] = 'string failed - %s' % next_line  # noqa E501
-                                break
+                lines = f.readlines()
+
+            for idx, line in enumerate(lines):
+                if line.startswith('msgctxt'):
+                    try:
+                        msgctxt = line.split(' ')[1].strip().split('"')[1][1:]  # noqa E501
+                    except IndexError:
+                        continue
+                try:
+                    next_line = lines[idx + 1]
+                except IndexError:
+                    continue
+
+                if next_line.startswith('msgid'):
+                    try:
+                        system_strings[msgctxt] = next_line.split(' ', 1)[1].strip().split('"')[1]  # noqa E501
+                    except IndexError:
+                        system_strings[msgctxt] = 'string failed - %s' % next_line  # noqa E501
+
         except Exception:
             tb = traceback.format_exc()
             system_strings['ERROR'] = tb

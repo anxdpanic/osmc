@@ -69,15 +69,14 @@ def get_hardware_prefix():
     """ Returns the prefix for the hardware type. rbp, rbp2, etc """
 
     with open('/proc/cmdline', 'r', encoding='utf-8') as f:
-
         line = f.readline()
 
-        settings = line.split(' ')
+    settings = line.split(' ')
 
-        for setting in settings:
+    for setting in settings:
 
-            if setting.startswith('osmcdev='):
-                return setting[len('osmcdev='):]
+        if setting.startswith('osmcdev='):
+            return setting[len('osmcdev='):]
 
     return None
 

@@ -229,9 +229,9 @@ class APF_STORE(object):
 
             # generate the URL
             with open('/proc/cmdline', 'r', encoding='utf-8') as f:
+                lines = f.readlines()
 
-                line = f.readline()
-
+            for line in lines:
                 settings = line.split(' ')
 
                 suffix = None

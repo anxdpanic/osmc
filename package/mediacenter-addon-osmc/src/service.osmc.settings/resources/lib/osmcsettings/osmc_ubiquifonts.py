@@ -123,9 +123,10 @@ def import_osmc_fonts():
     # would overwrite the Font.xml and leave the backup in place
     with open(alien_font_xml, 'r', encoding='utf-8') as f:
         lines = f.readlines()
-        for line in lines:
-            if 'osmc_addon_XLarge' in line:
-                return 'ubiquited'
+
+    for line in lines:
+        if 'osmc_addon_XLarge' in line:
+            return 'ubiquited'
 
     # copy fonts to skins font folder
     unique_files = set(os.listdir(FONT_FOLDER)) - alien_fonts

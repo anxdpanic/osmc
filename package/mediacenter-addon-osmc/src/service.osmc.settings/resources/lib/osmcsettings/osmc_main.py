@@ -89,17 +89,15 @@ def set_version():
         version = []
 
         with open('/etc/os-release', 'r', encoding='utf-8') as f:
-
-            tags = ['NAME=', 'VERSION=', 'VERSION_ID=']
-
             lines = f.readlines()
 
-            for line in lines:
+        tags = ['NAME=', 'VERSION=', 'VERSION_ID=']
+        for line in lines:
 
-                for tag in tags:
+            for tag in tags:
 
-                    if line.startswith(tag):
-                        version.append(line[len(tag):].replace('"', '').replace('\n', ''))
+                if line.startswith(tag):
+                    version.append(line[len(tag):].replace('"', '').replace('\n', ''))
 
         version_string = ' '.join(version)
 
@@ -180,7 +178,6 @@ class Main(object):
 
                         with open('/tmp/walkthrough_completed', 'w+', encoding='utf-8') as f:
                             log('/tmp/walkthrough_completed written')
-                            pass
 
                         subprocess.call(['sudo', 'mv', '/tmp/walkthrough_completed', '/walkthrough_completed'])
                         try:

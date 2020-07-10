@@ -15,10 +15,9 @@ def get_timezones():
     """ Returns a dictionary or regions, which hold lists of countries within those regions. """
 
     with open('/usr/share/zoneinfo/zone.tab', 'r', encoding='utf-8') as f:
-
         lines = f.readlines()
 
-        lines = [line for line in lines if line and not line.startswith('#') and '/' in line]
+    lines = [line for line in lines if line and not line.startswith('#') and '/' in line]
 
     tmp = []
     timezones = {
