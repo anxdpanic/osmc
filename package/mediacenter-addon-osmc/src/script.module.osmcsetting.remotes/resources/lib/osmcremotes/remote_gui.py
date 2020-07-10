@@ -22,7 +22,7 @@ from osmccommon.osmc_logging import StandardLogger
 
 addonid = "script.module.osmcsetting.remotes"
 __addon__ = xbmcaddon.Addon("script.module.osmcsetting.remotes")
-__path__ = xbmc.translatePath(xbmcaddon.Addon(addonid).getAddonInfo('path'))
+__path__ = xbmc.translatePath(__addon__.getAddonInfo('path'))
 
 PY2 = sys.version_info.major == 2
 

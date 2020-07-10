@@ -21,7 +21,7 @@ from osmccommon.osmc_logging import clog
 
 addonid = "script.module.osmcsetting.apfstore"
 __addon__ = xbmcaddon.Addon(addonid)
-__path__ = xbmc.translatePath(xbmcaddon.Addon(addonid).getAddonInfo('path'))
+__path__ = xbmc.translatePath(__addon__.getAddonInfo('path'))
 
 ADDONART = os.path.join(__path__, 'resources', 'skins', 'Default', 'media')
 USERART = os.path.join(xbmc.translatePath('special://userdata/'), 'addon_data', addonid)

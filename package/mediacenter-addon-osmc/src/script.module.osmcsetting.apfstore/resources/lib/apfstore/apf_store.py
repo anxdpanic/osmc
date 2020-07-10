@@ -37,7 +37,7 @@ except ImportError:
 
 addonid = "script.module.osmcsetting.apfstore"
 __addon__ = xbmcaddon.Addon(addonid)
-__path__ = xbmc.translatePath(xbmcaddon.Addon(addonid).getAddonInfo('path'))
+__path__ = xbmc.translatePath(__addon__.getAddonInfo('path'))
 __setting__ = __addon__.getSetting
 
 ADDONART = os.path.join(__path__, 'resources', 'skins', 'Default', 'media')
