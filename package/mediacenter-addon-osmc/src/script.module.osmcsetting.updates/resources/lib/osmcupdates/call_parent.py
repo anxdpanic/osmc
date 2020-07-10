@@ -11,6 +11,7 @@
 import json
 import socket
 import sys
+from contextlib import closing
 
 PY3 = sys.version_info.major == 3
 
@@ -24,19 +25,16 @@ if len(argv()) > 1:
 
     print('OSMC settings sending response, %s' % msg)
 
-    address = '/var/tmp/osmc.settings.update.sockfile'
-
     message = ('settings_command', {
         'action': msg
     })
 
     message = json.dumps(message)
 
-    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    sock.connect(address)
-    if PY3 and not isinstance(message, (bytes, bytearray)):
-        message = message.encode('utf-8')
-    sock.sendall(message)
-    sock.close()
+    with closing(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)) as open_socket:
+        open_socket.connect('/var/tmp/osmc.settings.update.sockfile')
+        if PY3 and not isinstance(message, (bytes, bytearray)):
+            message = message.encode('utf-8', 'ignore')
+        open_socket.sendall(message)
 
     print('OSMC settings sent response, %s' % msg)

@@ -11,6 +11,7 @@
 import os
 import socket
 import sys
+from contextlib import closing
 
 import xbmcaddon
 import xbmcgui
@@ -18,7 +19,6 @@ from osmccommon.osmc_language import LangRetriever
 from osmccommon.osmc_logging import StandardLogger
 
 ADDON_ID = 'service.osmc.settings'
-ADDRESS = '/var/tmp/osmc.settings.sockfile'
 PY3 = sys.version_info.major == 3
 
 
@@ -27,13 +27,13 @@ def run():
 
     log('My OSMC opening')
     try:
-        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        sock.connect(ADDRESS)
-        open_cmd = 'open'
-        if PY3:
-            open_cmd = open_cmd.encode('utf-8')
-        sock.sendall(open_cmd)
-        sock.close()
+
+        message = 'open'
+        with closing(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)) as open_socket:
+            open_socket.connect('/var/tmp/osmc.settings.sockfile')
+            if PY3 and not isinstance(message, (bytes, bytearray)):
+                message = message.encode('utf-8', 'ignore')
+            open_socket.sendall(message)
 
     except:
         log('My OSMC failed to open')

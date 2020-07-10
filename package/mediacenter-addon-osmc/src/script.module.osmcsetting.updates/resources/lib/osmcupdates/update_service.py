@@ -16,6 +16,7 @@ import socket
 import subprocess
 import sys
 import traceback
+from contextlib import closing
 from datetime import datetime
 from io import open
 
@@ -53,14 +54,12 @@ lang = LangRetriever(__addon__).lang
 
 # @clog(log)
 def exit_osmc_settings_addon():
-    address = '/var/tmp/osmc.settings.sockfile'
-    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    sock.connect(address)
-    exit_cmd = 'exit'
-    if PY3:
-        exit_cmd = exit_cmd.encode('utf-8')
-    sock.sendall(exit_cmd)
-    sock.close()
+    message = 'exit'
+    with closing(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)) as open_socket:
+        open_socket.connect('/var/tmp/osmc.settings.sockfile')
+        if PY3 and not isinstance(message, (bytes, bytearray)):
+            message = message.encode('utf-8', 'ignore')
+        open_socket.sendall(message)
 
     return 'OSMC Settings addon called to exit'
 

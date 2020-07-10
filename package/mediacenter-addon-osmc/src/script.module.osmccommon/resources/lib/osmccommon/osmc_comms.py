@@ -13,6 +13,7 @@ import socket
 import subprocess
 import sys
 import threading
+from contextlib import closing
 
 import xbmc
 
@@ -72,13 +73,14 @@ class Communicator(threading.Thread):
 
             log('Connection stopping.')
             self.stopped = True
-            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            sock.connect(self.address)
-            exit_cmd = 'exit'
-            if PY3:
-                exit_cmd = exit_cmd.encode('utf-8', 'ignore')
-            sock.send(exit_cmd)
-            sock.close()
+
+            message = 'exit'
+            with closing(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)) as open_socket:
+                open_socket.connect(self.address)
+                if PY3 and not isinstance(message, (bytes, bytearray)):
+                    message = message.encode('utf-8', 'ignore')
+                open_socket.send(message)
+
             self.sock.close()
 
             log('Exit message sent to socket.')
@@ -103,46 +105,45 @@ class Communicator(threading.Thread):
                 break
 
             log('Connection active.')
+            try:
+                # turn off blocking for this temporary connection
+                # this will allow the loop to collect all parts of the message
+                conn.setblocking(False)
 
-            # turn off blocking for this temporary connection
-            # this will allow the loop to collect all parts of the message
-            conn.setblocking(False)
+                passed = False
+                total_wait = 0
+                wait = 0.005
+                data = ''
+                while not passed and total_wait < 0.5:
+                    try:
+                        data = conn.recv(8192)
+                        passed = True
+                        if isinstance(data, bytes):
+                            data = data.decode('utf-8')
+                        log('data = %s' % data)
+                    except:
+                        total_wait += wait
+                        if self.monitor.waitForAbort(wait):
+                            break
 
-            passed = False
-            total_wait = 0
-            wait = 0.005
-            data = ''
-            while not passed and total_wait < 0.5:
-                try:
-                    data = conn.recv(8192)
-                    passed = True
-                    if isinstance(data, bytes):
-                        data = data.decode('utf-8')
-                    log('data = %s' % data)
-                except:
-                    total_wait += wait
-                    if self.monitor.waitForAbort(wait):
-                        break
+                if not passed:
+                    log('Connection failed to collect data.')
+                    self.stopped = True
+                    break
 
-            if not passed:
-                log('Connection failed to collect data.')
-                self.stopped = True
+                log('data = %s' % data)
+
+                # if the message is to stop, then kill the loop
+                if data == 'exit':
+                    log('Connection called to "exit"')
+                    self.stopped = True
+                    break
+
+                # send the data to Main for it to process
+                self.parent_queue.put(data)
+
+            finally:
                 conn.close()
-                break
-
-            log('data = %s' % data)
-
-            # if the message is to stop, then kill the loop
-            if data == 'exit':
-                log('Connection called to "exit"')
-                self.stopped = True
-                conn.close()
-                break
-
-            # send the data to Main for it to process
-            self.parent_queue.put(data)
-
-            conn.close()
 
         try:
             os.remove(self.address)

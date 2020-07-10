@@ -16,6 +16,7 @@ import socket
 import subprocess
 import sys
 import traceback
+from contextlib import closing
 from io import open
 
 import xbmc
@@ -211,20 +212,17 @@ class Main(object):
 
                             try:
 
-                                address = '/var/tmp/osmc.settings.update.sockfile'
-
                                 message = ('settings_command', {
                                     'action': 'update'
                                 })
 
                                 message = json.dumps(message)
 
-                                sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-                                sock.connect(address)
-                                if PY3:
-                                    message = message.encode('utf-8', 'ignore')
-                                sock.sendall(message)
-                                sock.close()
+                                with closing(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)) as open_socket:
+                                    open_socket.connect('/var/tmp/osmc.settings.update.sockfile')
+                                    if PY3 and not isinstance(message, (bytes, bytearray)):
+                                        message = message.encode('utf-8', 'ignore')
+                                    open_socket.sendall(message)
 
                             except Exception as e:
 

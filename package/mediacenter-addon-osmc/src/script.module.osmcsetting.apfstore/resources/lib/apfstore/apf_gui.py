@@ -12,6 +12,7 @@ import json
 import os
 import socket
 import sys
+from contextlib import closing
 
 import xbmc
 import xbmcaddon
@@ -158,21 +159,17 @@ class apf_GUI(xbmcgui.WindowXMLDialog):
 
     @clog(logger=log)
     def contact_update_service(self, action_string):
-
-        address = '/var/tmp/osmc.settings.update.sockfile'
-
         message = ('action_list', {
             'action': action_string
         })
 
         message = json.dumps(message)
 
-        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        sock.connect(address)
-        if PY3:
-            message = message.encode('utf-8', 'ignore')
-        sock.sendall(message)
-        sock.close()
+        with closing(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)) as open_socket:
+            open_socket.connect('/var/tmp/osmc.settings.update.sockfile')
+            if PY3 and not isinstance(message, (bytes, bytearray)):
+                message = message.encode('utf-8', 'ignore')
+            open_socket.sendall(message)
 
 
 class addon_info_gui(xbmcgui.WindowXMLDialog):

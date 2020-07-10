@@ -16,6 +16,7 @@ import os
 import socket
 import sys
 import traceback
+from contextlib import closing
 from datetime import datetime
 
 import apt
@@ -29,8 +30,6 @@ def argv():
 
 
 def call_parent(raw_message, data={}):
-    address = '/var/tmp/osmc.settings.update.sockfile'
-
     print('%s %s sending response' % (t.now(), 'apt_cache_action.py'))
 
     message = (raw_message, data)
@@ -39,14 +38,11 @@ def call_parent(raw_message, data={}):
 
     try:
 
-        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-
-        sock.connect(address)
-        if PY3 and not isinstance(message, (bytes, bytearray)):
-            message = message.encode('utf-8')
-        sock.sendall(message)
-
-        sock.close()
+        with closing(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)) as open_socket:
+            open_socket.connect('/var/tmp/osmc.settings.update.sockfile')
+            if PY3 and not isinstance(message, (bytes, bytearray)):
+                message = message.encode('utf-8')
+            open_socket.sendall(message)
 
     except Exception as e:
 
