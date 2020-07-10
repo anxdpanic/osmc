@@ -14,7 +14,6 @@ import sys
 import xbmcaddon
 import xbmcgui
 from osmccommon import osmc_setting
-from osmccommon.osmc_language import LangRetriever
 from osmccommon.osmc_logging import StandardLogger
 
 from .. import osmc_network
@@ -44,9 +43,6 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
                                 This is network settings, it contains settings for the network. 
                                 MORE TEXT SHOULD GO HERE
                             """
-
-        retriever = LangRetriever(self.me)
-        self.lang = retriever.lang
 
         self.setting_data_method = {}
 

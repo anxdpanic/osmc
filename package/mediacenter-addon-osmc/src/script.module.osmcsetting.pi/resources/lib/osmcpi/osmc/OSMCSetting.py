@@ -16,7 +16,6 @@ import traceback
 import xbmcaddon
 import xbmcgui
 from osmccommon import osmc_setting
-from osmccommon.osmc_language import LangRetriever
 from osmccommon.osmc_logging import StandardLogger
 
 from .. import OSMC_REparser as parser
@@ -58,9 +57,6 @@ The module includes:
 Finally, there is a Config Editor that will allow you to quickly add, edit, or delete lines in your config.txt.
 
 Overclock settings are set using the Pi Overclock module."""
-
-        retriever = LangRetriever(self.me)
-        self.lang = retriever.lang
 
         # the location of the config file FOR TESTING ONLY
         try:

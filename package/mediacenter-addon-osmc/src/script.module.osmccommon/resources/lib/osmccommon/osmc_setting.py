@@ -106,6 +106,8 @@ import threading
 
 import xbmcaddon
 
+from .osmc_language import LangRetriever
+
 
 class OSMCSettingClass(threading.Thread):
     """
@@ -137,11 +139,19 @@ class OSMCSettingClass(threading.Thread):
         self._unfocused_widget = ''
         self._focused_widget = ''
 
+        self._lang = None
+
     @property
     def me(self):
         if not self._me:
             self._me = xbmcaddon.Addon(self.addon_id)
         return self._me
+
+    def lang(self, string_id):
+        if not self._lang:
+            retriever = LangRetriever(self.me)
+            self._lang = retriever.lang
+        return self._lang(string_id)
 
     def run(self):
         """
