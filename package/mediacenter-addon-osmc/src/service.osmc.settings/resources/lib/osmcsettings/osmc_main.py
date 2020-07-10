@@ -40,7 +40,7 @@ if not os.path.isfile('/walkthrough_completed'):
     WINDOW.setProperty("walkthrough_is_running", 'any_value')
     try:
         xbmc.setosmcwalkthroughstatus(1)
-    except Exception as e:
+    except Exception:
         print(traceback.format_exc())
 
 addonid = 'service.osmc.settings'
@@ -120,13 +120,13 @@ class Main(object):
             # Tell Kodi that OSMC is running the walkthrough
             try:
                 xbmc.setosmcwalkthroughstatus(1)
-            except Exception as e:
+            except Exception:
                 log(traceback.format_exc())
         else:
             try:
                 # Tell Kodi that OSMC is done
                 xbmc.setosmcwalkthroughstatus(2)
-            except Exception as e:
+            except Exception:
                 log(traceback.format_exc())
 
         # queue for communication with the comm and Main
@@ -169,75 +169,60 @@ class Main(object):
 
         if not os.path.isfile('/walkthrough_completed'):
 
-            for module in self.stored_gui.live_modules:
-                if 'id' in module:
-                    if module['id'] == "osmcnetworking":
-                        networking_instance = module['SET']
+            network_module = next(iter(module for module in self.stored_gui.live_modules
+                                       if module.get('id') == 'osmcnetworking'), None)
 
-                        vendor = check_vendor()
-
-                        osmc_walkthru.open_gui(networking_instance)
-
-                        log("Vendor is %s" % vendor)
-
-                        with open('/tmp/walkthrough_completed', 'w+', encoding='utf-8') as f:
-                            log('/tmp/walkthrough_completed written')
-
-                        subprocess.call(['sudo', 'mv', '/tmp/walkthrough_completed', '/walkthrough_completed'])
-                        try:
-                            xbmc.setosmcwalkthroughstatus(2)
-                        except Exception as e:
-                            log(traceback.format_exc())
-
-                        WINDOW.clearProperty('walkthrough_is_running')
-
-                        xbmc.executebuiltin('ReloadSkin()')
-
-                        log('Skin reloaded')
-
-                        # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-                        # Query user about whether they would like to update now
-
-                        update_check_now = False
-
-                        if vendor == 'noobs':
-
-                            update_check_now = DIALOG.yesno(lang(32026), '[CR]'.join([lang(32027), lang(32028), lang(32029)]))
-
-                        elif vendor == 'ts':
-
-                            update_check_now = DIALOG.yesno(lang(32026), '[CR]'.join([lang(32030), lang(32031), lang(32029)]))
-
-                        if update_check_now:
-
-                            log('User elected to update now')
-
-                            try:
-
-                                message = ('settings_command', {
-                                    'action': 'update'
-                                })
-
-                                message = json.dumps(message)
-
-                                with closing(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)) as open_socket:
-                                    open_socket.connect('/var/tmp/osmc.settings.update.sockfile')
-                                    if PY3 and not isinstance(message, (bytes, bytearray)):
-                                        message = message.encode('utf-8', 'ignore')
-                                    open_socket.sendall(message)
-
-                            except Exception as e:
-
-                                log(traceback.format_exc())
-
-                        # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-                        break
-            else:
+            if not network_module:
                 log('Networking module not found')
+            else:
+                vendor = check_vendor()
+                log("Vendor is %s" % vendor)
 
-        while True:
+                osmc_walkthru.open_gui(network_module['SET'])
+
+                with open('/tmp/walkthrough_completed', 'w+', encoding='utf-8') as _:
+                    log('/tmp/walkthrough_completed written')
+
+                subprocess.call(['sudo', 'mv', '/tmp/walkthrough_completed', '/walkthrough_completed'])
+                try:
+                    xbmc.setosmcwalkthroughstatus(2)
+                except Exception:
+                    log(traceback.format_exc())
+
+                WINDOW.clearProperty('walkthrough_is_running')
+
+                xbmc.executebuiltin('ReloadSkin()')
+
+                log('Skin reloaded')
+
+                # Query user about whether they would like to update now
+                update_check_now = False
+
+                if vendor == 'noobs':
+                    update_check_now = DIALOG.yesno(lang(32026), '[CR]'.join([lang(32027), lang(32028), lang(32029)]))
+
+                elif vendor == 'ts':
+                    update_check_now = DIALOG.yesno(lang(32026), '[CR]'.join([lang(32030), lang(32031), lang(32029)]))
+
+                if update_check_now:
+                    log('User elected to update now')
+
+                    try:
+                        message = ('settings_command', {
+                            'action': 'update'
+                        })
+                        message = json.dumps(message)
+
+                        with closing(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)) as open_socket:
+                            open_socket.connect('/var/tmp/osmc.settings.update.sockfile')
+                            if PY3 and not isinstance(message, (bytes, bytearray)):
+                                message = message.encode('utf-8', 'ignore')
+                            open_socket.sendall(message)
+
+                    except Exception:
+                        log(traceback.format_exc())
+
+        while not self.monitor.abortRequested():
 
             # Check the current skin directory, if it is different to the previous one, then
             # recreate the gui. This is required because reference in the gui left in memory
@@ -257,9 +242,10 @@ class Main(object):
 
                     if resp == 'reload_please':
 
-                        while True:
+                        while not self.monitor.abortRequested():
 
-                            xbmc.sleep(1000)
+                            if self.monitor.waitForAbort(1):
+                                break
 
                             xml = xbmc.getInfoLabel('Window.Property(xmlfile)')
 
@@ -270,8 +256,7 @@ class Main(object):
 
                                 break
 
-                except Exception as e:
-
+                except Exception:
                     log(traceback.format_exc())
 
                 try:
