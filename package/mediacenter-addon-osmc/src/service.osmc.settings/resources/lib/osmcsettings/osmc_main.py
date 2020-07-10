@@ -73,10 +73,13 @@ def check_vendor():
     return None
 
 
-def set_version():
+def set_version(overwrite=False):
     """ Loads the current OSMC version into the Home window for display in MyOSMC """
 
     # Check for "upgraded" Alpha 4 and earlier
+
+    if not overwrite and WINDOW.getProperty('osmc_version'):
+        return
 
     with open(os.devnull, 'w') as fnull:
         process = subprocess.call(['/usr/bin/dpkg-query', '-l', 'rbp-mediacenter-osmc'], stderr=fnull, stdout=fnull)
