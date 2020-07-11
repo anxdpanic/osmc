@@ -347,25 +347,32 @@ class Main(object):
         except Exception:
             log(traceback.format_exc())
 
-    @staticmethod
-    def check_vendor():
+    def check_vendor(self):
         """ Checks whether OSMC is being installed via N00bs or ts.
             Returns None if the vendor file is not present or does not contain 'noobs' or 'ts'.
             Vendor is pass to the Main settings service, which then asks the user whether they would like
             to update (noobs or ts only).
         """
+        current_vendor = self.window.getProperty('osmc_vendor')
+        if current_vendor:
+            return current_vendor
 
+        current_vendor = None
         if os.path.isfile('/vendor'):
             with open('/vendor', 'r', encoding='utf-8') as f:
                 line = f.readline()
 
-            if 'noobs' in line:
-                return 'noobs'
+            vendors = ['noobs', 'ts']
+            for vendor in vendors:
+                if vendor in line:
+                    current_vendor = vendor
+                    break
 
-            if 'ts' in line:
-                return 'ts'
+        self.window.clearProperty('osmc_vendor')
+        if current_vendor:
+            self.window.setProperty('osmc_vendor', current_vendor)
 
-        return None
+        return current_vendor
 
     def set_version(self, overwrite=False):
         """ Loads the current OSMC version into the Home window for display in MyOSMC """
