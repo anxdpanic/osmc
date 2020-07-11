@@ -13,4 +13,4 @@ from osmcsettings import osmc_main
 
 if __name__ == '__main__':
     osmc_main.set_version()
-    Main_Service = osmc_main.Main()
+    osmc_main.Main()

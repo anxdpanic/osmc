@@ -11,5 +11,4 @@
 from osmcupdates import update_service
 
 if __name__ == "__main__":
-    m = update_service.Main()
-    del m
+    update_service.Main()
