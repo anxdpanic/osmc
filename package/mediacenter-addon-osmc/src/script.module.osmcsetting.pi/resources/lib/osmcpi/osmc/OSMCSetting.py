@@ -35,8 +35,6 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
 
         self.addon_id = addon_id
 
-        self.path = os.path.dirname(os.path.abspath(__file__))
-
         self.short_name = 'Pi Config'
 
         self.description = """This is the text that is shown on the OSG. [CR][CR]It should describe:[CR]   - what the settings module is for,[CR]   - the settings it controls,[CR]   - and anything else you want, I suppose."""

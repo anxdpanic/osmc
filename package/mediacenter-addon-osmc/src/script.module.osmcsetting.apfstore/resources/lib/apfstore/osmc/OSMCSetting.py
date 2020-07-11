@@ -26,8 +26,6 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
 
         self.addon_id = addon_id
 
-        self.path = os.path.dirname(os.path.abspath(__file__))
-
         self.short_name = 'App Store'
 
         self.description = """This module is where you can grab awesome APFs like ... """

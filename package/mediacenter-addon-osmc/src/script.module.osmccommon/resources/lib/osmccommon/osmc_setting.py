@@ -102,6 +102,7 @@
 """
 
 import os
+import sys
 import threading
 
 import xbmcaddon
@@ -122,7 +123,7 @@ class OSMCSettingClass(threading.Thread):
         self.addon_id = None
         self._me = None
 
-        self.path = ''
+        self._path = ''
 
         # this is what is displayed in the main settings gui
         self.short_name = ''
@@ -140,6 +141,12 @@ class OSMCSettingClass(threading.Thread):
         self._focused_widget = ''
 
         self._lang = None
+
+    @property
+    def path(self):
+        if not self._path:
+            self._path = os.path.dirname(os.path.abspath(sys.modules[self.__class__.__module__].__file__))
+        return self._path
 
     @property
     def me(self):

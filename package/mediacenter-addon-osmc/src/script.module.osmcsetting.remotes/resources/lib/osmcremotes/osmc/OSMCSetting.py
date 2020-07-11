@@ -27,8 +27,6 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
 
         self.addon_id = addon_id
 
-        self.path = os.path.dirname(os.path.abspath(__file__))
-
         self.short_name = 'Remotes'
 
         self.description = """This module allows the user to select the appropriate lirc.conf file for their remote."""

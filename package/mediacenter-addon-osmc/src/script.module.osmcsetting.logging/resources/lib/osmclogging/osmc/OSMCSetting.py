@@ -25,8 +25,6 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
 
         self.addon_id = addon_id
 
-        self.path = os.path.dirname(os.path.abspath(__file__))
-
         self.short_name = 'Log Uploader'
 
         self.description = """This module helps with debugging and troubleshooting by retrieving logs, various xml, and config information from your system and uploading them in a single file.[CR]
