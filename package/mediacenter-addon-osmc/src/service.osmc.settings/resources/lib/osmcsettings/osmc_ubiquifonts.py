@@ -52,7 +52,8 @@ def get_addon_folder(alien_skin_folder):
 
         for ext in root.iter('extension'):
             res = ext.find('res')
-            if res is None: continue
+            if res is None:
+                continue
             height = res.attrib['height']
             width = res.attrib['width']
             folder = res.attrib['folder']
@@ -75,7 +76,7 @@ def get_addon_folder(alien_skin_folder):
 
             try:
 
-                test = os.listdir(folder)
+                _ = os.listdir(folder)
                 height = pos_loc[1]
                 width = pos_loc[2]
                 break
@@ -150,8 +151,8 @@ def import_osmc_fonts():
 
             count += 1
 
-            for l in osmc_lines:
-                new_lines.append(l)
+            for osmc_line in osmc_lines:
+                new_lines.append(osmc_line)
 
             new_lines.append(line)
 

@@ -76,7 +76,8 @@ class OSMC_Slideshow(object):
     def progress_bar(self):
         pass
 
-    def create_slideshow(self, image_list):
+    @staticmethod
+    def create_slideshow(image_list):
         xml = "osmc_slideshow_720.xml" if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' else "osmc_slideshow.xml"
 
         return OSMC_Slideshow_GUI(xml, __path__, 'Default', image_list=image_list)

@@ -189,17 +189,17 @@ class wifiScanner(threading.Thread):
             out.write('<?xml version="1.0" encoding="UTF-8"?>\n')
             out.write("<networkslist>\n")
 
-            for l in lst:
+            for lst_itm in lst:
                 out.write("\t<network>\n")
-                out.write("\t\t<address>" + l[0] + "</address>\n")
-                out.write("\t\t<essid>" + l[1] + "</essid>\n")
-                out.write("\t\t<mode>" + l[2] + "</mode>\n")
-                out.write("\t\t<channel>" + l[3] + "</channel>\n")
-                out.write("\t\t<frequency>" + l[4] + "</frequency>\n")
-                out.write("\t\t<quality>" + l[5] + "</quality>\n")
-                out.write("\t\t<signal>" + l[6] + "</signal>\n")
-                out.write("\t\t<noise>" + l[7] + "</noise>\n")
-                out.write("\t\t<security>" + l[8] + "</security>\n")
+                out.write("\t\t<address>" + lst_itm[0] + "</address>\n")
+                out.write("\t\t<essid>" + lst_itm[1] + "</essid>\n")
+                out.write("\t\t<mode>" + lst_itm[2] + "</mode>\n")
+                out.write("\t\t<channel>" + lst_itm[3] + "</channel>\n")
+                out.write("\t\t<frequency>" + lst_itm[4] + "</frequency>\n")
+                out.write("\t\t<quality>" + lst_itm[5] + "</quality>\n")
+                out.write("\t\t<signal>" + lst_itm[6] + "</signal>\n")
+                out.write("\t\t<noise>" + lst_itm[7] + "</noise>\n")
+                out.write("\t\t<security>" + lst_itm[8] + "</security>\n")
 
                 out.write("\t</network>\n")
 

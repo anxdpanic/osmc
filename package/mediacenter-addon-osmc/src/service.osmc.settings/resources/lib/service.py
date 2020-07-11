@@ -9,8 +9,8 @@
     See LICENSES/GPL-2.0-or-later for more information.
 """
 
+import xbmcgui
 from osmcsettings import osmc_main
 
 if __name__ == '__main__':
-    osmc_main.set_version()
-    osmc_main.Main()
+    osmc_main.Main(window=xbmcgui.Window(10000))

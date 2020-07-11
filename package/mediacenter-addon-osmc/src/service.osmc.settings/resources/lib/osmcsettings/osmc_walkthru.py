@@ -143,7 +143,8 @@ class Networking_caller(threading.Thread):
             self.ftr_running = self.net_call.is_ftr_running()
 
             # break early if ftr is not running
-            if not self.ftr_running: break
+            if not self.ftr_running:
+                break
 
             self.timeout += 1
 
@@ -166,7 +167,7 @@ def close_walkthru_on_error(func):
 
         try:
             return func(parent, *args, **kwargs)
-        except Exception as e:
+        except Exception:
 
             log('============= Walkthru Error ====================', xbmc.LOGERROR)
             log(traceback.format_exc(), xbmc.LOGERROR)
@@ -337,7 +338,8 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
                 ctl_id = self.tz_control_map.get(region, False)
 
-                if not ctl_id: continue
+                if not ctl_id:
+                    continue
 
                 self.tmp = xbmcgui.ListItem(label=country, label2='', offscreen=True)
                 self.getControl(ctl_id).addItem(self.tmp)
@@ -576,7 +578,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
                     pass2 = kb.getText()
 
                     # if the passwords dont match, then give the user the option of entering via hidden or plain text kayboards
-                    if pass1 != pass2 and hidden == True:
+                    if pass1 != pass2 and hidden is True:
 
                         plain_text_pass = DIALOG.yesno(lang(32040), lang(32041))
 

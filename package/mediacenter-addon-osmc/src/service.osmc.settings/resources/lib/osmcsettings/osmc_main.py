@@ -17,6 +17,7 @@ import subprocess
 import sys
 import traceback
 from contextlib import closing
+from copy import deepcopy
 from io import open
 
 import xbmc
@@ -35,17 +36,9 @@ try:
 except ImportError:
     import Queue
 
-WINDOW = xbmcgui.Window(10000)
-if not os.path.isfile('/walkthrough_completed'):
-    WINDOW.setProperty("walkthrough_is_running", 'any_value')
-    try:
-        xbmc.setosmcwalkthroughstatus(1)
-    except Exception:
-        print(traceback.format_exc())
-
 addonid = 'service.osmc.settings'
 __addon__ = xbmcaddon.Addon(addonid)
-__setting__ = __addon__.getSetting
+
 DIALOG = xbmcgui.Dialog()
 PY3 = sys.version_info.major == 3
 
@@ -53,81 +46,20 @@ log = StandardLogger(addonid, os.path.basename(__file__)).log
 lang = LangRetriever(__addon__).lang
 
 
-def check_vendor():
-    """ Checks whether OSMC is being installed via N00bs or ts.
-        Returns None if the vendor file is not present or does not contain 'noobs' or 'ts'.
-        Vendor is pass to the Main settings service, which then asks the user whether they would like
-        to update (noobs or ts only).
-    """
-
-    if os.path.isfile('/vendor'):
-        with open('/vendor', 'r', encoding='utf-8') as f:
-            line = f.readline()
-
-        if 'noobs' in line:
-            return 'noobs'
-
-        if 'ts' in line:
-            return 'ts'
-
-    return None
-
-
-def set_version(overwrite=False):
-    """ Loads the current OSMC version into the Home window for display in MyOSMC """
-
-    # Check for "upgraded" Alpha 4 and earlier
-
-    if not overwrite and WINDOW.getProperty('osmc_version'):
-        return
-
-    with open(os.devnull, 'w') as fnull:
-        process = subprocess.call(['/usr/bin/dpkg-query', '-l', 'rbp-mediacenter-osmc'], stderr=fnull, stdout=fnull)
-
-    if process == 0:
-
-        version_string = 'Unsupported OSMC Alpha release'
-
-    else:
-
-        version = []
-
-        with open('/etc/os-release', 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-
-        tags = ['NAME=', 'VERSION=', 'VERSION_ID=']
-        for line in lines:
-
-            for tag in tags:
-
-                if line.startswith(tag):
-                    version.append(line[len(tag):].replace('"', '').replace('\n', ''))
-
-        version_string = ' '.join(version)
-
-    log('Current Version: %s' % version_string)
-
-    WINDOW.setProperty('osmc_version', version_string)
-
-
 class Main(object):
 
-    def __init__(self):
-
+    def __init__(self, window):
         log('main addon starting')
+
+        self.window = window
+        self.set_version()
 
         if not os.path.isfile('/walkthrough_completed'):
             # Tell Kodi that OSMC is running the walkthrough
-            try:
-                xbmc.setosmcwalkthroughstatus(1)
-            except Exception:
-                log(traceback.format_exc())
+            self.window.setProperty("walkthrough_is_running", 'any_value')
+            self.set_walkthrough_status(1)
         else:
-            try:
-                # Tell Kodi that OSMC is done
-                xbmc.setosmcwalkthroughstatus(2)
-            except Exception:
-                log(traceback.format_exc())
+            self.set_walkthrough_status(2)
 
         # queue for communication with the comm and Main
         self.parent_queue = Queue.Queue()
@@ -146,10 +78,10 @@ class Main(object):
         self.monitor = xbmc.Monitor()
 
         # current skin directory, used to detect when the user has changed skins and prompts a reconstruction of the gui
-        self.skindir = xbmc.getSkinDir()
+        self.skin_dir = xbmc.getSkinDir()
 
         # run the ubiquifonts script to import the needed fonts into the Font.xml
-        response = osmc_ubiquifonts.import_osmc_fonts()
+        _ = osmc_ubiquifonts.import_osmc_fonts()
 
         # daemon
         self._daemon()
@@ -160,8 +92,6 @@ class Main(object):
 
         self.stored_gui = osmc_settingsGUI.OSMCGui(queue=self.parent_queue)
         self.stored_gui.setDaemon(True)
-
-    # self.stored_gui.start()
 
     def _daemon(self):
 
@@ -175,7 +105,7 @@ class Main(object):
             if not network_module:
                 log('Networking module not found')
             else:
-                vendor = check_vendor()
+                vendor = self.check_vendor()
                 log("Vendor is %s" % vendor)
 
                 osmc_walkthru.open_gui(network_module['SET'])
@@ -184,12 +114,9 @@ class Main(object):
                     log('/tmp/walkthrough_completed written')
 
                 subprocess.call(['sudo', 'mv', '/tmp/walkthrough_completed', '/walkthrough_completed'])
-                try:
-                    xbmc.setosmcwalkthroughstatus(2)
-                except Exception:
-                    log(traceback.format_exc())
 
-                WINDOW.clearProperty('walkthrough_is_running')
+                self.set_walkthrough_status(2)
+                self.window.clearProperty('walkthrough_is_running')
 
                 xbmc.executebuiltin('ReloadSkin()')
 
@@ -223,17 +150,16 @@ class Main(object):
                         log(traceback.format_exc())
 
         while not self.monitor.abortRequested():
-
             # Check the current skin directory, if it is different to the previous one, then
             # recreate the gui. This is required because reference in the gui left in memory
             # do not survive a refresh of the skins textures (???)
-            if self.skindir != xbmc.getSkinDir():
+            if self.skin_dir != xbmc.getSkinDir():
 
-                log('Old Skin: %s' % self.skindir)
+                log('Old Skin: %s' % self.skin_dir)
 
-                self.skindir = xbmc.getSkinDir()
+                self.skin_dir = xbmc.getSkinDir()
 
-                log('New Skin: %s' % self.skindir)
+                log('New Skin: %s' % self.skin_dir)
 
                 try:
                     resp = osmc_ubiquifonts.import_osmc_fonts()
@@ -270,7 +196,6 @@ class Main(object):
             # if xbmc is aborting
             if self.monitor.waitForAbort(1):
                 self.exit()
-
                 break
 
             if not self.parent_queue.empty():
@@ -289,13 +214,10 @@ class Main(object):
                     self.open_gui()
 
                 elif response == 'refresh_gui':
-
-                    """ This may need to be moved to a separate thread, so that it doesnt hold up the other functions. """
-
-                    # if the gui calls for its own refresh, then delete the existing one and open a new instance
-
-                    # del self.stored_gui
-
+                    ''' 
+                        This may need to be moved to a separate thread, so that it doesnt hold up the other functions.
+                        if the gui calls for its own refresh, then delete the existing one and open a new instance 
+                    '''
                     self.open_gui()
 
                 elif response == 'exit':
@@ -304,26 +226,11 @@ class Main(object):
                     break
 
                 elif response == 'walkthru':
-
                     log('Running manually called walkthru')
 
                     osmc_walkthru.open_gui(None, testing=True)
 
-                # for module in self.stored_gui.live_modules:
-                # 	if 'id' in module:
-                # 		log(module['id'])
-                # 		if module['id'] == "script.module.osmcsetting.networking":
-                # 			networking_instance = module['SET']
-
-                # 			osmc_walkthru.open_gui(networking_instance)
-
-                # 			break
-
-                # else:
-                # 	log('Networking module not found')
-
                 elif 'new_device:' in response:
-
                     # a usb device is attached to the hardware
 
                     # get the device id
@@ -333,8 +240,9 @@ class Main(object):
                     if device_id:
 
                         # get ignore list
-                        ignore_list_raw = __setting__('ignored_devices')
-                        ignore_list = ignore_list_raw.split('|')
+                        ignore_list_raw = __addon__.getSetting('ignored_devices')
+                        ignore_list_initial = ignore_list_raw.split('|')
+                        ignore_list = deepcopy(ignore_list_initial)
 
                         # get sources list
                         media_string = self.get_sources_list()
@@ -342,24 +250,23 @@ class Main(object):
                         # post dialogs to ask the user if they want to add the source, or ignore the device
                         if device_id not in ignore_list and device_id not in media_string:
 
-                            d1 = DIALOG.yesno(lang(32002), '[CR]'.join([lang(32003), lang(32004)]))
+                            result = DIALOG.yesno(lang(32002), '[CR]'.join([lang(32003), lang(32004)]))
 
-                            if d1:
-
+                            if result:
                                 xbmc.executebuiltin("ActivateWindow(mediasource)")
 
                             else:
+                                result = DIALOG.yesno(lang(32002), lang(32005))
 
-                                d2 = DIALOG.yesno(lang(32002), lang(32005))
-
-                                if d2:
+                                if result:
                                     ignore_list.append(str(device_id))
-                                    ignore_string = '|'.join(ignore_list)
-                                    __addon__.setSetting('ignored_devices', ignore_string)
+
+                        if ignore_list_initial != ignore_list:
+                            ignore_string = '|'.join(ignore_list)
+                            __addon__.setSetting('ignored_devices', ignore_string)
 
                 else:
                     # check whether the response is one of the live_modules, if it is then launch that module
-
                     for module in self.stored_gui.live_modules:
 
                         module_id = module.get('id', 'id_not_found')
@@ -385,28 +292,10 @@ class Main(object):
 
                         break
 
-        # THIS PART MAY NOT BE NEEDED, BUT IS INCLUDED HERE ANYWAY FOR TESTING PURPOSES
-        # if the gui was last accessed more than four hours
-        # if not self.skip_check and (datetime.datetime.now() - self.gui_last_accessed).total_seconds() > 14400:
-
-        # 	self.skip_check = True
-
-        # 	del self.stored_gui
-
         log('_daemon exiting')
 
     def exit(self):
-
         # try to kill the gui and comms
-        # try:
-        # 	log('Closing gui')
-
-        # 	# self.stored_gui.close()
-        # 	# del self.stored_gui
-
-        # except:
-        # 	log('Failed to stop/delete stored_gui. (in wait)')
-
         try:
             log('Stopping listener (in wait)')
             self.listener.stop()
@@ -417,8 +306,8 @@ class Main(object):
         except:
             log('Failed to stop/delete listener. (in wait)')
 
-    def get_sources_list(self):
-
+    @staticmethod
+    def get_sources_list():
         query = {
             "jsonrpc": "2.0",
             "id": 1,
@@ -435,24 +324,81 @@ class Main(object):
         return media_string
 
     def open_gui(self):
-
-        log('firstrun? %s' % __setting__('firstrun'))
-
         log('Opening OSMC settings GUI')
 
+        self.gui_last_accessed = datetime.datetime.now()
+        self.skip_check = False
         try:
             # try opening the gui
             self.stored_gui.start()
-            self.gui_last_accessed = datetime.datetime.now()
-            self.skip_check = False
-
         except:
             # if that doesnt work then it is probably because the gui was too old and has been deleted
             # so recreate the gui and open it
-
             self.create_gui()
-            self.gui_last_accessed = datetime.datetime.now()
-            self.skip_check = False
-
             self.stored_gui.start()
+
         log('gui threading finished')
+
+    @staticmethod
+    def set_walkthrough_status(value):
+        try:
+            # Tell Kodi that OSMC is done
+            xbmc.setosmcwalkthroughstatus(int(value))
+        except Exception:
+            log(traceback.format_exc())
+
+    @staticmethod
+    def check_vendor():
+        """ Checks whether OSMC is being installed via N00bs or ts.
+            Returns None if the vendor file is not present or does not contain 'noobs' or 'ts'.
+            Vendor is pass to the Main settings service, which then asks the user whether they would like
+            to update (noobs or ts only).
+        """
+
+        if os.path.isfile('/vendor'):
+            with open('/vendor', 'r', encoding='utf-8') as f:
+                line = f.readline()
+
+            if 'noobs' in line:
+                return 'noobs'
+
+            if 'ts' in line:
+                return 'ts'
+
+        return None
+
+    def set_version(self, overwrite=False):
+        """ Loads the current OSMC version into the Home window for display in MyOSMC """
+
+        # Check for "upgraded" Alpha 4 and earlier
+
+        if not overwrite and self.window.getProperty('osmc_version'):
+            return
+
+        with open(os.devnull, 'w') as fnull:
+            process = subprocess.call(['/usr/bin/dpkg-query', '-l', 'rbp-mediacenter-osmc'], stderr=fnull, stdout=fnull)
+
+        if process == 0:
+
+            version_string = 'Unsupported OSMC Alpha release'
+
+        else:
+
+            version = []
+
+            with open('/etc/os-release', 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+
+            tags = ['NAME=', 'VERSION=', 'VERSION_ID=']
+            for line in lines:
+
+                for tag in tags:
+
+                    if line.startswith(tag):
+                        version.append(line[len(tag):].replace('"', '').replace('\n', ''))
+
+            version_string = ' '.join(version)
+
+        log('Current Version: %s' % version_string)
+
+        self.window.setProperty('osmc_version', version_string)
