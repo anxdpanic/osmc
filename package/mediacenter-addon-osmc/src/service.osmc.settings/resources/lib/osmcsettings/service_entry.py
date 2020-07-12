@@ -54,13 +54,6 @@ class Main(object):
         self.window = window
         self.set_version()
 
-        if not os.path.isfile('/walkthrough_completed'):
-            # Tell Kodi that OSMC is running the walkthrough
-            self.window.setProperty("walkthrough_is_running", 'any_value')
-            self.set_walkthrough_status(1)
-        else:
-            self.set_walkthrough_status(2)
-
         # queue for communication with the comm and Main
         self.parent_queue = Queue.Queue()
 
@@ -89,210 +82,37 @@ class Main(object):
         log('_daemon exited')
 
     def create_gui(self):
-
         self.stored_gui = osmc_settingsGUI.OSMCGui(queue=self.parent_queue)
         self.stored_gui.setDaemon(True)
 
     def _daemon(self):
-
         log('daemon started')
 
-        if not os.path.isfile('/walkthrough_completed'):
-
-            network_module = next(iter(module for module in self.stored_gui.live_modules
-                                       if module.get('id') == 'osmcnetworking'), None)
-
-            if not network_module:
-                log('Networking module not found')
-            else:
-                vendor = self.check_vendor()
-                log("Vendor is %s" % vendor)
-
-                osmc_walkthru.open_gui(network_module['class_instance'])
-
-                with open('/tmp/walkthrough_completed', 'w+', encoding='utf-8') as _:
-                    log('/tmp/walkthrough_completed written')
-
-                subprocess.call(['sudo', 'mv', '/tmp/walkthrough_completed', '/walkthrough_completed'])
-
-                self.set_walkthrough_status(2)
-                self.window.clearProperty('walkthrough_is_running')
-
-                xbmc.executebuiltin('ReloadSkin()')
-
-                log('Skin reloaded')
-
-                # Query user about whether they would like to update now
-                update_check_now = False
-
-                if vendor == 'noobs':
-                    update_check_now = DIALOG.yesno(lang(32026), '[CR]'.join([lang(32027), lang(32028), lang(32029)]))
-
-                elif vendor == 'ts':
-                    update_check_now = DIALOG.yesno(lang(32026), '[CR]'.join([lang(32030), lang(32031), lang(32029)]))
-
-                if update_check_now:
-                    log('User elected to update now')
-
-                    try:
-                        message = ('settings_command', {
-                            'action': 'update'
-                        })
-                        message = json.dumps(message)
-
-                        with closing(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)) as open_socket:
-                            open_socket.connect('/var/tmp/osmc.settings.update.sockfile')
-                            if PY3 and not isinstance(message, (bytes, bytearray)):
-                                message = message.encode('utf-8', 'ignore')
-                            open_socket.sendall(message)
-
-                    except Exception:
-                        log(traceback.format_exc())
+        self._walk_through()  # start walk through
 
         while not self.monitor.abortRequested():
-            # Check the current skin directory, if it is different to the previous one, then
-            # recreate the gui. This is required because reference in the gui left in memory
-            # do not survive a refresh of the skins textures (???)
-            if self.skin_dir != xbmc.getSkinDir():
-
-                log('Old Skin: %s' % self.skin_dir)
-
-                self.skin_dir = xbmc.getSkinDir()
-
-                log('New Skin: %s' % self.skin_dir)
-
-                try:
-                    resp = osmc_ubiquifonts.import_osmc_fonts()
-
-                    log('Ubiquifonts result: %s' % resp)
-
-                    if resp == 'reload_please':
-
-                        while not self.monitor.abortRequested():
-
-                            if self.monitor.waitForAbort(1):
-                                break
-
-                            xml = xbmc.getInfoLabel('Window.Property(xmlfile)')
-
-                            if xml not in ['DialogYesNo.xml', 'Dialogyesno.xml', 'DialogYesno.xml', 'DialogyesNo.xml', 'dialogyesno.xml']:
-                                log('Skin reload requested')
-
-                                xbmc.executebuiltin('ReloadSkin()')
-
-                                break
-
-                except Exception:
-                    log(traceback.format_exc())
-
-                try:
-                    log('skin changed, reloading gui')
-                    del self.stored_gui
-                except:
-                    pass
-
-                self.create_gui()
-
-            # if xbmc is aborting
-            if self.monitor.waitForAbort(1):
-                self.exit()
-                break
-
-            if not self.parent_queue.empty():
-
+            if not self.monitor.abortRequested() and not self.parent_queue.empty():
                 response = self.parent_queue.get()
 
                 log('response : %s' % response)
 
                 self.parent_queue.task_done()
 
-                if response == 'open':
-                    try:
-                        del self.stored_gui  # TESTING: this will mean that the gui is populated and loaded every time it opens
-                    except:
-                        pass
-                    self.open_gui()
-
-                elif response == 'refresh_gui':
-                    ''' 
-                        This may need to be moved to a separate thread, so that it doesnt hold up the other functions.
-                        if the gui calls for its own refresh, then delete the existing one and open a new instance 
-                    '''
-                    self.open_gui()
-
-                elif response == 'exit':
-
-                    self.exit()
+                abort_requested = self._handle_response(response=response)
+                if abort_requested:
                     break
 
-                elif response == 'walkthru':
-                    log('Running manually called walkthru')
+            # sleep for one second, exit if Kodi is shutting down
+            if self.monitor.waitForAbort(1):
+                break
 
-                    osmc_walkthru.open_gui(None, testing=True)
-
-                elif 'new_device:' in response:
-                    # a usb device is attached to the hardware
-
-                    # get the device id
-                    device_id = response[len('new_device:'):]
-
-                    # proceed only if the device_id is not null
-                    if device_id:
-
-                        # get ignore list
-                        ignore_list_raw = __addon__.getSetting('ignored_devices')
-                        ignore_list_initial = ignore_list_raw.split('|')
-                        ignore_list = deepcopy(ignore_list_initial)
-
-                        # get sources list
-                        media_string = self.get_sources_list()
-
-                        # post dialogs to ask the user if they want to add the source, or ignore the device
-                        if device_id not in ignore_list and device_id not in media_string:
-
-                            result = DIALOG.yesno(lang(32002), '[CR]'.join([lang(32003), lang(32004)]))
-
-                            if result:
-                                xbmc.executebuiltin("ActivateWindow(mediasource)")
-
-                            else:
-                                result = DIALOG.yesno(lang(32002), lang(32005))
-
-                                if result:
-                                    ignore_list.append(str(device_id))
-
-                        if ignore_list_initial != ignore_list:
-                            ignore_string = '|'.join(ignore_list)
-                            __addon__.setSetting('ignored_devices', ignore_string)
-
-                else:
-                    # check whether the response is one of the live_modules, if it is then launch that module
-                    for module in self.stored_gui.live_modules:
-
-                        module_id = module.get('id', 'id_not_found')
-                        if response != module_id:
-                            continue
-
-                        class_instance = module.get('class_instance', None)
-                        module_instance = module.get('module_instance', None)
-
-                        if class_instance and class_instance.isAlive():
-                            log('Opening %s from widget' % module_id)
-                            class_instance.run()
-
-                        elif module_instance:
-                            log('Starting %s from widget' % module_id)
-
-                            class_instance = module_instance.OSMCSettingClass()
-                            class_instance.setDaemon(True)
-
-                            module['class_instance'] = class_instance
-
-                            class_instance.start()
-
-                        break
+            abort_requested = self._check_skin()
+            if abort_requested:
+                break
 
         log('_daemon exiting')
+        self.exit()
+        log('_daemon shutdown')
 
     def exit(self):
         # try to kill the gui and comms
@@ -409,3 +229,196 @@ class Main(object):
         log('Current Version: %s' % version_string)
 
         self.window.setProperty('osmc_version', version_string)
+
+    def _check_skin(self):
+        # Check the current skin directory, if it is different to the previous one, then
+        # recreate the gui. This is required because reference in the gui left in memory
+        # do not survive a refresh of the skins textures (???)
+        if self.skin_dir != xbmc.getSkinDir():
+
+            log('Old Skin: %s' % self.skin_dir)
+
+            self.skin_dir = xbmc.getSkinDir()
+
+            log('New Skin: %s' % self.skin_dir)
+
+            try:
+                resp = osmc_ubiquifonts.import_osmc_fonts()
+
+                log('Ubiquifonts result: %s' % resp)
+
+                if resp == 'reload_please':
+
+                    while not self.monitor.abortRequested():
+
+                        if self.monitor.waitForAbort(1):
+                            return True
+
+                        xml = xbmc.getInfoLabel('Window.Property(xmlfile)')
+
+                        if xml not in ['DialogYesNo.xml', 'Dialogyesno.xml', 'DialogYesno.xml', 'DialogyesNo.xml', 'dialogyesno.xml']:
+                            log('Skin reload requested')
+
+                            xbmc.executebuiltin('ReloadSkin()')
+
+                            break
+
+            except Exception:
+                log(traceback.format_exc())
+
+            try:
+                log('skin changed, reloading gui')
+                del self.stored_gui
+            except:
+                pass
+
+            self.create_gui()
+
+        return False
+
+    def _walk_through(self):
+        walk_through = not os.path.isfile('/walkthrough_completed')
+        if not walk_through:
+            self.set_walkthrough_status(2)
+            return
+
+        # Tell Kodi that OSMC is running the walkthrough
+        self.window.setProperty("walkthrough_is_running", 'any_value')
+        self.set_walkthrough_status(1)
+
+        network_module = next(iter(module for module in self.stored_gui.live_modules
+                                   if module.get('id') == 'osmcnetworking'), None)
+
+        if not network_module:
+            log('Networking module not found')
+        else:
+            vendor = self.check_vendor()
+            log("Vendor is %s" % vendor)
+
+            osmc_walkthru.open_gui(network_module['class_instance'])
+
+            with open('/tmp/walkthrough_completed', 'w+', encoding='utf-8') as _:
+                log('/tmp/walkthrough_completed written')
+
+            subprocess.call(['sudo', 'mv', '/tmp/walkthrough_completed', '/walkthrough_completed'])
+
+            self.set_walkthrough_status(2)
+            self.window.clearProperty('walkthrough_is_running')
+            del self.stored_gui
+            xbmc.executebuiltin('ReloadSkin()')
+
+            log('Skin reloaded')
+
+            # Query user about whether they would like to update now
+            update_check_now = False
+
+            if vendor == 'noobs':
+                update_check_now = DIALOG.yesno(lang(32026), '[CR]'.join([lang(32027), lang(32028), lang(32029)]))
+
+            elif vendor == 'ts':
+                update_check_now = DIALOG.yesno(lang(32026), '[CR]'.join([lang(32030), lang(32031), lang(32029)]))
+
+            if update_check_now:
+                log('User elected to update now')
+
+                try:
+                    message = ('settings_command', {
+                        'action': 'update'
+                    })
+                    message = json.dumps(message)
+
+                    with closing(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)) as open_socket:
+                        open_socket.connect('/var/tmp/osmc.settings.update.sockfile')
+                        if PY3 and not isinstance(message, (bytes, bytearray)):
+                            message = message.encode('utf-8', 'ignore')
+                        open_socket.sendall(message)
+
+                except Exception:
+                    log(traceback.format_exc())
+
+    def _handle_response(self, response):
+        if response == 'open':
+            try:
+                del self.stored_gui  # TESTING: this will mean that the gui is populated and loaded every time it opens
+            except:
+                pass
+            self.open_gui()
+
+        elif response == 'refresh_gui':
+            ''' 
+                This may need to be moved to a separate thread, so that it doesnt hold up the other functions.
+                if the gui calls for its own refresh, then delete the existing one and open a new instance 
+            '''
+            self.open_gui()
+
+        elif response == 'exit':
+            return True  # signal abort
+
+        elif response == 'walkthru':
+            log('Running manually called walkthru')
+
+            osmc_walkthru.open_gui(None, testing=True)
+
+        elif 'new_device:' in response:
+            # a usb device is attached to the hardware
+
+            # get the device id
+            device_id = response[len('new_device:'):]
+
+            # proceed only if the device_id is not null
+            if device_id:
+
+                # get ignore list
+                ignore_list_raw = __addon__.getSetting('ignored_devices')
+                ignore_list_initial = ignore_list_raw.split('|')
+                ignore_list = deepcopy(ignore_list_initial)
+
+                # get sources list
+                media_string = self.get_sources_list()
+
+                # post dialogs to ask the user if they want to add the source, or ignore the device
+                if device_id not in ignore_list and device_id not in media_string:
+
+                    result = DIALOG.yesno(lang(32002), '[CR]'.join([lang(32003), lang(32004)]))
+
+                    if result:
+                        xbmc.executebuiltin("ActivateWindow(mediasource)")
+
+                    else:
+                        result = DIALOG.yesno(lang(32002), lang(32005))
+
+                        if result:
+                            ignore_list.append(str(device_id))
+
+                if ignore_list_initial != ignore_list:
+                    ignore_string = '|'.join(ignore_list)
+                    __addon__.setSetting('ignored_devices', ignore_string)
+
+        else:
+            # check whether the response is one of the live_modules, if it is then launch that module
+            for module in self.stored_gui.live_modules:
+
+                module_id = module.get('id', 'id_not_found')
+                if response != module_id:
+                    continue
+
+                class_instance = module.get('class_instance', None)
+                module_instance = module.get('module_instance', None)
+
+                if class_instance and class_instance.isAlive():
+                    log('Opening %s from widget' % module_id)
+                    class_instance.run()
+
+                elif module_instance:
+                    log('Starting %s from widget' % module_id)
+
+                    class_instance = module_instance.OSMCSettingClass()
+                    class_instance.setDaemon(True)
+
+                    module['class_instance'] = class_instance
+
+                    class_instance.start()
+
+                break
+
+        return False
