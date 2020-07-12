@@ -4,6 +4,6 @@
         <setting id="ignored_devices" type="text" default="" visible="false"/>
     </category>
     <category label="32062">
-        <setting action="RunScript($CWD/resources/lib/osmcsettings/call_osmc_parent.py, walkthru)" id="walkthru" label="32062" option="close" type="action" visible="true"/>
+        <setting action="RunScript($CWD/resources/lib/osmcsettings/call_osmc_parent.py, walkthru)" id="walkthru" label="32063" option="close" type="action" visible="true"/>
     </category>
 </settings>

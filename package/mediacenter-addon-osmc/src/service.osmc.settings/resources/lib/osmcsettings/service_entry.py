@@ -338,10 +338,6 @@ class Main(object):
 
     def _handle_response(self, response):
         if response == 'open':
-            try:
-                del self.stored_gui  # TESTING: this will mean that the gui is populated and loaded every time it opens
-            except:
-                pass
             self.open_gui()
 
         elif response == 'refresh_gui':
