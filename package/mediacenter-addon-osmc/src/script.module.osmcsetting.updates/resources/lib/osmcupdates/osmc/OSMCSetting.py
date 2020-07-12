@@ -26,8 +26,10 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
         self.addon_id = addon_id
 
         self.short_name = 'Updates'
+        self.short_name_i18n = 32060
 
-        self.description = ""
+        self.description = 'Manage updates'
+        self.description_i18n = 32061
 
         self.reset_file = '/home/osmc/.factoryreset'
 

@@ -27,8 +27,10 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
         self.addon_id = addon_id
 
         self.short_name = 'App Store'
+        self.short_name_i18n = 32048
 
-        self.description = """This module is where you can grab awesome APFs like ... """
+        self.description = 'This module is where you can grab awesome APFs like...'
+        self.description_i18n = 32049
 
     @clog(log, nowait=True)
     def run(self):

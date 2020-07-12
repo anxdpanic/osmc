@@ -85,6 +85,8 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
 
                 try:
                     short_name = module['SET'].short_name
+                    if isinstance(module['SET'].short_name_i18n, int):
+                        short_name = lang(module['SET'].short_name_i18n)
                 except:
                     short_name = ''
 
@@ -99,11 +101,13 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
                 # grab the modules description for display in the textbox
                 # this is a TRY just in case the module doesnt have a self.description
                 try:
-                    desc = module['SET'].description
+                    description = module['SET'].description
+                    if isinstance(module['SET'].description_i18n, int):
+                        description = lang(module['SET'].description_i18n)
                 except:
-                    desc = ''
+                    description = ''
 
-                list_item.setProperty('description', str(desc))
+                list_item.setProperty('description', str(description))
 
                 controlID = self.order_of_fill[i]
 

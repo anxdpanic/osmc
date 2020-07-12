@@ -39,11 +39,15 @@
 
     The key variables in this class are:
 
-        addon_id							: The id for the addon. This must be the id declared in the addons addon.xml.
+        addon_id						: The id for the addon. This must be the id declared in the addons addon.xml.
 
-        short_name                       : The name for the module, shown in the OSA
+        short_name                      : The name for the module, shown in the OSA
+
+        [optional] short_name_i18n      : The string id in service.osmc.settings of the name for the module
 
         description 					: The description for the module, shown in the OSA
+
+        [optional] description_i18n     : The string id in service.osmc.settings of the description for the module
 
         path                            : The path for the OSMCSettings modules
 
@@ -127,8 +131,10 @@ class OSMCSettingClass(threading.Thread):
 
         # this is what is displayed in the main settings gui
         self.short_name = ''
+        self.short_name_i18n = None
 
         self.description = ''
+        self.description_i18n = None
 
         self.setting_data_method = {}
 

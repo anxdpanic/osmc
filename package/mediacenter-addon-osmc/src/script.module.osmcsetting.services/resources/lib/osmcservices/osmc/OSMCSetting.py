@@ -28,11 +28,10 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
         self.addon_id = addon_id
 
         self.short_name = 'Services'
+        self.short_name_i18n = 32058
 
-        self.description = """
-                                This is the text that is shown on the OSG. It should describe what the settings module is for,
-                                the settings it controls, and anything else you want, I suppose.
-                            """
+        self.description = 'Control OSMC services'
+        self.description_i18n = 32059
 
         self.setting_data_method = {
 

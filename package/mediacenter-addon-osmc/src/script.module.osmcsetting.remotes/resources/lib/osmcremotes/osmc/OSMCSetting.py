@@ -28,8 +28,11 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
         self.addon_id = addon_id
 
         self.short_name = 'Remotes'
+        self.short_name_i18n = 32056
 
-        self.description = """This module allows the user to select the appropriate lirc.conf file for their remote."""
+        self.description = 'This module allows the user to select the appropriate ' \
+                           'lirc.conf file for their remote.'
+        self.description_i18n = 32057
 
     @clog(log, nowait=True)
     def run(self):

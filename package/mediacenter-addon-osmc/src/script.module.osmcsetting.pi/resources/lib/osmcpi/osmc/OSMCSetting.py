@@ -36,25 +36,22 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
         self.addon_id = addon_id
 
         self.short_name = 'Pi Config'
+        self.short_name_i18n = 32054
 
-        self.description = """This is the text that is shown on the OSG. [CR][CR]It should describe:[CR]   - what the settings module is for,[CR]   - the settings it controls,[CR]   - and anything else you want, I suppose."""
-
-        self.description = """The Raspberry Pi doesn't have a conventional BIOS. System configuration parameters are stored in a "config.txt" file. For more detail, visit http://elinux.org/RPiconfig[CR]
-This settings module allows you to edit your config.txt from within OSMC using a graphical interface.
-
-The module includes:
-- display rotation
-- hdmi_safe & hdmi_boost
-- hdmi_group & hdmi_mode
-- function to save edid to file
-- sdtv_mode & sdtv_aspect
-- GPU memory split
-- MPG2 & WVC1 licences (including status)
-- your Pi's serial number
-
-Finally, there is a Config Editor that will allow you to quickly add, edit, or delete lines in your config.txt.
-
-Overclock settings are set using the Pi Overclock module."""
+        self.description = 'The Raspberry Pi doesn\'t have a conventional BIOS. ' \
+                           'System configuration parameters are stored in a "config.txt" file. ' \
+                           'For more detail, visit http://elinux.org/RPiconfig[CR]This settings ' \
+                           'module allows you to edit your config.txt from within OSMC using a ' \
+                           'graphical interface.[CR][CR]The module includes:' \
+                           '[CR]- display rotation[CR]- hdmi_safe & hdmi_boost' \
+                           '[CR]- hdmi_group & hdmi_mode[CR]- function to save edid to file[CR]' \
+                           '- sdtv_mode & sdtv_aspect[CR]- GPU memory split[CR]' \
+                           '- MPG2 & WVC1 licences (including status)[CR]' \
+                           '- your Pi\'s serial number[CR][CR]Finally, there is a Config Editor ' \
+                           'that will allow you to quickly add, edit, or delete lines in your ' \
+                           'config.txt.[CR][CR]Overclock settings are set using the ' \
+                           'Pi Overclock module.'
+        self.description_i18n = 32055
 
         # the location of the config file FOR TESTING ONLY
         try:

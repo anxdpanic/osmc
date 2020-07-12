@@ -36,11 +36,10 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
         self.addon_id = addon_id
 
         self.short_name = 'Network'
+        self.short_name_i18n = 32052
 
-        self.description = """
-                                This is network settings, it contains settings for the network. 
-                                MORE TEXT SHOULD GO HERE
-                            """
+        self.description = 'This is network settings, it contains settings for the network.'
+        self.description_i18n = 32053
 
         self.setting_data_method = {}
 

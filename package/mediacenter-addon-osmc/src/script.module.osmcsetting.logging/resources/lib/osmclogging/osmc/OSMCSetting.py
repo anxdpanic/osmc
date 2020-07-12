@@ -26,10 +26,12 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
         self.addon_id = addon_id
 
         self.short_name = 'Log Uploader'
+        self.short_name_i18n = 32050
 
-        self.description = """This module helps with debugging and troubleshooting by retrieving logs, various xml, and config information from your system and uploading them in a single file.[CR]
-        Once uploading is complete, you are provided with a URL which you can share on the OSMC forums.[CR]
-        The information stored in the URL will help others diagnose your issue and decrease the amount of time it takes to find a resolution. """
+        self.description = 'This module helps with debugging and troubleshooting by retrieving logs, various xml, and config information from your system and uploading them in a single file.[CR]\
+        Once uploading is complete, you are provided with a URL which you can share on the OSMC forums.[CR]\
+        The information stored in the URL will help others diagnose your issue and decrease the amount of time it takes to find a resolution.'
+        self.description_i18n = 32051
 
     @clog(log, nowait=True)
     def run(self):
