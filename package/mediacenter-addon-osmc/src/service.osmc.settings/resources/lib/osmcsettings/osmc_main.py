@@ -108,7 +108,7 @@ class Main(object):
                 vendor = self.check_vendor()
                 log("Vendor is %s" % vendor)
 
-                osmc_walkthru.open_gui(network_module['SET'])
+                osmc_walkthru.open_gui(network_module['class_instance'])
 
                 with open('/tmp/walkthrough_completed', 'w+', encoding='utf-8') as _:
                     log('/tmp/walkthrough_completed written')
@@ -273,8 +273,8 @@ class Main(object):
                         if response != module_id:
                             continue
 
-                        class_instance = module.get('SET', None)
-                        module_instance = module.get('OSMCSetting', None)
+                        class_instance = module.get('class_instance', None)
+                        module_instance = module.get('module_instance', None)
 
                         if class_instance and class_instance.isAlive():
                             log('Opening %s from widget' % module_id)
@@ -286,7 +286,7 @@ class Main(object):
                             class_instance = module_instance.OSMCSettingClass()
                             class_instance.setDaemon(True)
 
-                            module['SET'] = class_instance
+                            module['class_instance'] = class_instance
 
                             class_instance.start()
 

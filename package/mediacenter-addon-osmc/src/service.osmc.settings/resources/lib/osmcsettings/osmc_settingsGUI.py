@@ -84,26 +84,26 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
             for i, module in enumerate(self.live_modules):
 
                 try:
-                    short_name = module['SET'].short_name
-                    if isinstance(module['SET'].short_name_i18n, int):
-                        short_name = lang(module['SET'].short_name_i18n)
+                    short_name = module['class_instance'].short_name
+                    if isinstance(module['class_instance'].short_name_i18n, int):
+                        short_name = lang(module['class_instance'].short_name_i18n)
                 except:
                     short_name = ''
 
                 # set the icon (texturefocus, texturenofocus)
                 list_item = xbmcgui.ListItem(label=short_name, label2='', offscreen=True)
                 list_item.setArt({
-                    'icon': module['SET'].unfocused_icon,
-                    'thumb': module['SET'].unfocused_icon
+                    'icon': module['class_instance'].unfocused_icon,
+                    'thumb': module['class_instance'].unfocused_icon
                 })
-                list_item.setProperty('FO_ICON', module['SET'].focused_icon)
+                list_item.setProperty('FO_ICON', module['class_instance'].focused_icon)
 
                 # grab the modules description for display in the textbox
                 # this is a TRY just in case the module doesnt have a self.description
                 try:
-                    description = module['SET'].description
-                    if isinstance(module['SET'].description_i18n, int):
-                        description = lang(module['SET'].description_i18n)
+                    description = module['class_instance'].description
+                    if isinstance(module['class_instance'].description_i18n, int):
+                        description = lang(module['class_instance'].description_i18n)
                 except:
                     description = ''
 
@@ -211,23 +211,23 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
         else:
 
             module = self.module_holder.get(controlID, {})
-            instance = module.get('SET', None)
+            class_instance = module.get('class_instance', None)
 
-            log('Checking instance: %s ' % str(instance))
+            log('Checking instance: %s ' % str(class_instance))
             try:
-                log(instance.isAlive())
+                log(class_instance.isAlive())
             except AttributeError:
                 return
 
-            if instance.isAlive():
-                instance.run()
+            if class_instance.isAlive():
+                class_instance.run()
             else:
 
-                setting_instance = module['OSMCSetting'].OSMCSettingClass()
-                setting_instance.setDaemon(True)
+                class_instance = module['module_instance'].OSMCSettingClass()
+                class_instance.setDaemon(True)
 
-                module['SET'] = setting_instance
-                setting_instance.start()
+                module['class_instance'] = class_instance
+                class_instance.start()
 
     def left_label_toggle(self, controlID):
         # toggles the left label which displays the focused module name
@@ -350,9 +350,9 @@ class OSMCGui(threading.Thread):
         WINDOW.setProperty('MyOSMC.Module.Script', script_location)
 
         for i, module in enumerate(self.live_modules):
-            WINDOW.setProperty('MyOSMC.Module.%s.name' % i, module['SET'].short_name)
-            WINDOW.setProperty('MyOSMC.Module.%s.fo_icon' % i, module['SET'].focused_widget)
-            WINDOW.setProperty('MyOSMC.Module.%s.fx_icon' % i, module['SET'].unfocused_widget)
+            WINDOW.setProperty('MyOSMC.Module.%s.name' % i, module['class_instance'].short_name)
+            WINDOW.setProperty('MyOSMC.Module.%s.fo_icon' % i, module['class_instance'].focused_widget)
+            WINDOW.setProperty('MyOSMC.Module.%s.fx_icon' % i, module['class_instance'].unfocused_widget)
             WINDOW.setProperty('MyOSMC.Module.%s.id' % i, module['id'])
 
     def close(self):
@@ -373,18 +373,19 @@ class OSMCGui(threading.Thread):
 
         # run the apply_settings method on all modules
         for module in self.live_modules:
-            m = module.get('SET', False)
-            try:
-                m.apply_settings()
-            except:
-                log('apply_settings failed for %s' % m.addon_id)
+            class_instance = module.get('class_instance', False)
+            if class_instance:
+                try:
+                    class_instance.apply_settings()
+                except:
+                    log('apply_settings failed for %s' % class_instance.addon_id)
 
         # check is a reboot is required
         reboot = False
         for module in self.live_modules:
-            m = module.get('SET', False)
+            class_instance = module.get('class_instance', False)
             try:
-                if m.reboot_required:
+                if class_instance.reboot_required:
                     reboot = True
                     break
             except:
@@ -432,9 +433,9 @@ class OSMCGui(threading.Thread):
         # if you got this far then this is almost certainly an OSMC setting
         log('Inspecting OSMC Setting module __ %s __' % module_name)
         try:
-            osmc_setting = __import__('%s.osmc.OSMCSetting' % module_name, fromlist=[''])
-            setting_instance = osmc_setting.OSMCSettingClass()
-            setting_instance.setDaemon(True)
+            module_instance = __import__('%s.osmc.OSMCSetting' % module_name, fromlist=[''])
+            class_instance = module_instance.OSMCSettingClass()
+            class_instance.setDaemon(True)
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             log('OSMCSetting __ %s __ failed to import' % module_name)
@@ -443,8 +444,8 @@ class OSMCGui(threading.Thread):
             log(traceback.format_exc())
             return -1, None
 
-        if not (setting_instance.unfocused_icon and setting_instance.focused_icon and
-                setting_instance.unfocused_widget and setting_instance.focused_widget):
+        if not (class_instance.unfocused_icon and class_instance.focused_icon and
+                class_instance.unfocused_widget and class_instance.focused_widget):
             return -1, None
 
         log('OSMC Setting module __ %s __ found and imported' % module_name)
@@ -458,6 +459,6 @@ class OSMCGui(threading.Thread):
 
         return (order, {
             'id': module_name,
-            'SET': setting_instance,
-            'OSMCSetting': osmc_setting
+            'class_instance': class_instance,
+            'module_instance': module_instance
         })
