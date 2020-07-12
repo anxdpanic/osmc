@@ -10,7 +10,7 @@
 """
 
 import xbmcgui
-from osmcsettings import osmc_main
+from osmcsettings import service_entry
 
 if __name__ == '__main__':
-    osmc_main.Main(window=xbmcgui.Window(10000))
+    service_entry.Main(window=xbmcgui.Window(10000))
