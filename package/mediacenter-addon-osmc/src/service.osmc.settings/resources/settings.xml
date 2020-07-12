@@ -2,6 +2,8 @@
 <settings>
     <category label="32001">
         <setting id="ignored_devices" type="text" default="" visible="false"/>
-        <setting action="RunScript($CWD/resources/lib/osmcsettings/call_osmc_parent.py, walkthru)" id="walkthru" label="TEMP TESTING walkthru" option="close" type="action" visible="false"/>
+    </category>
+    <category label="32062">
+        <setting action="RunScript($CWD/resources/lib/osmcsettings/call_osmc_parent.py, walkthru)" id="walkthru" label="32062" option="close" type="action" visible="true"/>
     </category>
 </settings>
