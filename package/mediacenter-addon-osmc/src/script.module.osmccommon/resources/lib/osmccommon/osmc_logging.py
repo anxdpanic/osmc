@@ -70,15 +70,18 @@ class StandardLogger(object):
             print(logmsg)
 
 
-def ComprehensiveLogger(logger=None, logging=True, maxlength=250, nowait=False):
+def comprehensive_logger(logger=None, logging=True, maxlength=250, nowait=False):
     """
-        Decorator to log the inputs and outputs of functions, as well as the time taken to run the function.
+        Decorator to log the inputs and outputs of functions, as well as the time
+        taken to run the function.
 
         Requires: time, functools
         logger: 	[opt] logging function, if not provided print is used
         logging: 	[opt] boolean, turn logging on and off, default is True
-        maxlength:	[opt] integer, sets the maximum length an argument or returned variable cant take, default 25
-        nowait:		[opt] boolean, instructs the logger not to wait for the function to finish, default is False
+        maxlength:	[opt] integer, sets the maximum length an argument or returned
+        variable cant take, default 25
+        nowait:		[opt] boolean, instructs the logger not to wait for the
+        function to finish, default is False
     """
     standard_logger = StandardLogger()
 
@@ -110,7 +113,8 @@ def ComprehensiveLogger(logger=None, logging=True, maxlength=250, nowait=False):
         def wrapper(*args, **kwargs):
 
             if logging and logger is not None:
-                logger(func.__module__ + '.' + func.__name__ + " received: " + ", ".join(get_args(*args, **kwargs)))
+                logger(func.__module__ + '.' + func.__name__ + " received: " +
+                       ", ".join(get_args(*args, **kwargs)))
 
             if nowait:
 
@@ -129,7 +133,8 @@ def ComprehensiveLogger(logger=None, logging=True, maxlength=250, nowait=False):
                 end = time.time()
 
                 if logging and logger is not None:
-                    logger(func.__module__ + '.' + func.__name__ + " [" + str(end - start) + "] " + ' returns: ' + str(result)[:maxlength])
+                    logger(func.__module__ + '.' + func.__name__ +
+                           " [" + str(end - start) + "] " + ' returns: ' + str(result)[:maxlength])
 
                 return result
 
@@ -138,4 +143,4 @@ def ComprehensiveLogger(logger=None, logging=True, maxlength=250, nowait=False):
     return decorater
 
 
-clog = ComprehensiveLogger
+clog = comprehensive_logger

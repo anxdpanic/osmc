@@ -607,8 +607,8 @@ def right_now(raw=False):
             else:
                 with open('/proc/uptime', 'r', encoding='utf-8') as f:
                     uptime_seconds = f.readline().split()[0]
-
-                return datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " - (Uptime = " + uptime_seconds + ")"
+                uptime = " - (Uptime = " + uptime_seconds + ")"
+                return datetime.now().strftime('%Y-%m-%d %H:%M:%S') + uptime
         except:
             time.sleep(0.2)
 
@@ -625,19 +625,25 @@ def parse_arguments():
         If help is true, then the help dialog is displayed. """
     global SETS
 
-    parser = argparse.ArgumentParser(description='Uploads vital logs to %s. If the network is unavailable, logs are copied to the SD Card.' % UPLOAD_LOC)
+    parser = argparse.ArgumentParser(description='Uploads vital logs to %s. If the network is '
+                                                 'unavailable, logs are copied to the SD Card.' %
+                                                 UPLOAD_LOC)
 
     arguments = [v for k, v in SETS.items()]
     arguments.sort(key=lambda x: x.get('order', 99))
 
     parser.add_argument('-A', '--all', action='store_true', dest='all', help='Include all logs')
-    parser.add_argument('-T', action='store', dest='filename', help='Override default name and location of temporary log file')
-    parser.add_argument('-C', '--copy', action='store_true', dest='copy', help='Copy logs to /boot (SD Card)')
-    parser.add_argument('-P', '--print', action='store_true', dest='termprint', help='Print logs to screen (no upload or copy)')
+    parser.add_argument('-T', action='store', dest='filename',
+                        help='Override default name and location of temporary log file')
+    parser.add_argument('-C', '--copy', action='store_true', dest='copy',
+                        help='Copy logs to /boot (SD Card)')
+    parser.add_argument('-P', '--print', action='store_true', dest='termprint',
+                        help='Print logs to screen (no upload or copy)')
 
     ignored_args = ['copy', 'all', 'termprint', 'filename']
 
-    for a in arguments: parser.add_argument(*a['flags'], action=a['action'], dest=a['dest'], help=a['help'])
+    for a in arguments:
+        parser.add_argument(*a['flags'], action=a['action'], dest=a['dest'], help=a['help'])
 
     args = parser.parse_args()
 
@@ -663,7 +669,8 @@ def parse_arguments():
             if k not in ignored_args:
                 SETS[k]['active'] = arg
 
-    # if a different temporary location is provided, then use that in place of the global TEMP_LOG_FILE
+    # if a different temporary location is provided, then use that in place of the
+    # global TEMP_LOG_FILE
     if args.filename:
         global TEMP_LOG_FILE
         TEMP_LOG_FILE = args.filename
@@ -692,8 +699,8 @@ def retrieve_settings(addon=None):
     return argv()[1] == 'copy', False
 
 
-class Dummy_Progress_Dialog(object):
-    """ Substitute progress dialog class to save having to try/except all pDialog calls. """
+class DummyProgressDialog(object):
+    """ Substitute progress dialog class to save having to try/except all progress_dialog calls. """
 
     def create(self, *args, **kwargs):
         pass
@@ -715,11 +722,15 @@ class Main(object):
 
         self.log_blotter = []  # list to hold all the lines that need to be printed/uploaded
 
+        self.url = ''
+
+        self.progress_dialog = None
+
         self.stage_dialog()
 
         self.number_of_actions = sum(1 for k, v in SETS.items() if v.get('active', False))
 
-        self.pDialog.create(lang(32001), lang(32004))
+        self.progress_dialog.create(lang(32001), lang(32004))
 
         self.arguments = [(k, v) for k, v in SETS.items()]
 
@@ -727,18 +738,18 @@ class Main(object):
 
     def stage_dialog(self):
         try:
-            if self.pDialog:
-                self.pDialog.close()
-                del self.pDialog
+            if self.progress_dialog:
+                self.progress_dialog.close()
+                del self.progress_dialog
         except:
             try:
-                del self.pDialog
+                del self.progress_dialog
             except:
                 pass
         try:
-            self.pDialog = xbmcgui.DialogProgressBG()
+            self.progress_dialog = xbmcgui.DialogProgressBG()
         except:
-            self.pDialog = Dummy_Progress_Dialog()
+            self.progress_dialog = DummyProgressDialog()
 
     def launch_process(self):
 
@@ -760,18 +771,24 @@ class Main(object):
 
         # insert the date at the very top
         self.log_blotter.append('Logs created on: %s\n\n' % right_now())
-
+        default_entry = {
+            'key': '',
+            'name': '',
+        }
         for k, v in self.arguments:
 
             if v.get('active', False):
 
-                for log in v.get('logs', {}):
-                    self.log_blotter.append(log['key'] + '  :  ' + log['name'] + '\n')
+                for log_entry in v.get('logs', default_entry):
+                    self.log_blotter.append(log_entry['key'] + '  :  ' + log_entry['name'] + '\n')
 
         self.log_blotter.append('\n')
 
     def process_logs(self):
-        """ Runs the specific function for the active logs, and appends the contents to the blotter. """
+        """
+            Runs the specific function for the active logs, and appends
+            the contents to the blotter.
+        """
 
         # add the logs themselves
         count = 0
@@ -783,13 +800,14 @@ class Main(object):
 
                 pct = int(100.0 * float(count) / float(self.number_of_actions))
 
-                self.pDialog.update(percent=pct, message='' if not xbmc else lang(32006) % k)
+                self.progress_dialog.update(percent=pct,
+                                            message='' if not xbmc else lang(32006) % k)
 
-                for log in v['logs']:
-                    self.grab_log(**log)
+                for log_entry in v['logs']:
+                    self.grab_log(**log_entry)
 
-        self.pDialog.update(percent=100, message=lang(32005))
-        self.pDialog.close()
+        self.progress_dialog.update(percent=100, message=lang(32005))
+        self.progress_dialog.close()
 
     def grab_log(self, ltyp, actn, name, key):
         """ Method grabs the logs from either a file or the command line."""
@@ -841,11 +859,13 @@ class Main(object):
         self.stage_dialog()
 
         if self.copy_to_boot:
-            self.pDialog.create(lang(32001), '' if not xbmc else lang(32009) % ('/boot/' + TEMP_LOG_FILENAME))
+            self.progress_dialog.create(
+                lang(32001), '' if not xbmc else lang(32009) % ('/boot/' + TEMP_LOG_FILENAME)
+            )
 
             os.popen('sudo cp -rf %s /boot/' % TEMP_LOG_FILE)
 
-            self.pDialog.update(percent=100, message=lang(32008))
+            self.progress_dialog.update(percent=100, message=lang(32008))
 
             if xbmc:
                 _ = DIALOG.ok(lang(32001), lang(32008))
@@ -853,10 +873,10 @@ class Main(object):
             else:
 
                 log('Logs copied to /boot/%s on the SD card FAT partition' % TEMP_LOG_FILENAME)
-            self.pDialog.close()
-            del self.pDialog
+            self.progress_dialog.close()
+            del self.progress_dialog
         else:
-            self.pDialog.create(lang(32001), lang(32010))
+            self.progress_dialog.create(lang(32001), lang(32010))
 
             attempts = [
                 'curl -X POST -s    -T',
@@ -873,16 +893,17 @@ class Main(object):
             for attempt in attempts:
                 pct += step_pct
                 try:
-                    with os.popen('%s "%s" %s/documents' % (attempt, TEMP_LOG_FILE, UPLOAD_LOC)) as f:
+                    with os.popen('%s "%s" %s/documents' %
+                                  (attempt, TEMP_LOG_FILE, UPLOAD_LOC)) as open_file:
 
-                        line = f.readline()
+                        line = open_file.readline()
 
                         key = line.replace('{"key":"', '').replace('"}', '').replace('\n', '')
 
                         if xbmc:
                             log('pastio line: %s' % repr(line))
 
-                    self.pDialog.update(percent=pct, message=lang(32010))
+                    self.progress_dialog.update(percent=pct, message=lang(32010))
 
                     if not key:
                         # the upload returning an empty string is considered a specific Exception
@@ -893,15 +914,15 @@ class Main(object):
                     else:
                         break
 
-                except Exception as e:
-                    self.pDialog.update(percent=pct, message=lang(32010))
+                except Exception:
+                    self.progress_dialog.update(percent=pct, message=lang(32010))
 
                     upload_exception = traceback.format_exc()
 
-            self.pDialog.update(percent=100, message=lang(32011))
+            self.progress_dialog.update(percent=100, message=lang(32011))
             time.sleep(0.5)
-            self.pDialog.close()
-            del self.pDialog
+            self.progress_dialog.close()
+            del self.progress_dialog
 
             if not key:
 
@@ -911,7 +932,8 @@ class Main(object):
 
                 if xbmc:
 
-                    self.copy_to_boot = DIALOG.yesno(lang(32001), '[CR]'.join([lang(32003), lang(32007)]))
+                    self.copy_to_boot = DIALOG.yesno(lang(32001),
+                                                     '[CR]'.join([lang(32003), lang(32007)]))
 
                 else:
 
@@ -939,11 +961,11 @@ class Main(object):
 if __name__ == "__main__":
 
     if not xbmc:
-        copy, termprint = parse_arguments()
+        _copy, _termprint = parse_arguments()
     else:
-        copy, termprint = retrieve_settings()
+        _copy, _termprint = retrieve_settings()
 
-    if copy is not None:
-        m = Main(copy, termprint)
+    if _copy is not None:
+        m = Main(_copy, _termprint)
 
         m.launch_process()

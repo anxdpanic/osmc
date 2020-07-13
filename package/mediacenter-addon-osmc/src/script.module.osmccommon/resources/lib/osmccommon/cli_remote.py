@@ -41,14 +41,16 @@ try:
 except:
 
     print('USAGE     : cli-remote i=Your_ip_address p=your_port u=your_username w=your_password')
-    print('All the settings are optional. The default will be used in their place if you dont specifiy them.')
+    print('All the settings are optional. The default will be used in their place if '
+          'you don\'t specify them.')
     print('Defaults:')
     print('		ip   : 127.0.0.1')
     print('		port : 80')
     print('		user : ""')
     print('		pass : ""')
     print('')
-    print('If you are using this script on the device (via ssh or something) then you dont need to put in the IP address.')
+    print('If you are using this script on the device (via ssh or something) then you dont need '
+          'to put in the IP address.')
     print('The default of 127.0.0.1 already points to the local host.')
     print('')
     print('Alternatively, you can save a file called /home/osmc/cli_remote.conf with this:')

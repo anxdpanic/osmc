@@ -116,9 +116,8 @@ from .osmc_language import LangRetriever
 
 class OSMCSettingClass(threading.Thread):
     """
-        A OSMCSettingClass is way to substantiate the settings of an OSMC settings module, and make them available to the
-        OSMC Settings Addon (OSA).
-
+        A OSMCSettingClass is way to substantiate the settings of an OSMC settings module,
+        and make them available to the OSMC Settings Addon (OSA).
     """
 
     def __init__(self):
@@ -151,7 +150,8 @@ class OSMCSettingClass(threading.Thread):
     @property
     def path(self):
         if not self._path:
-            self._path = os.path.dirname(os.path.abspath(sys.modules[self.__class__.__module__].__file__))
+            self._path = \
+                os.path.dirname(os.path.abspath(sys.modules[self.__class__.__module__].__file__))
         return self._path
 
     @property
@@ -170,8 +170,8 @@ class OSMCSettingClass(threading.Thread):
         """
             The method determines what happens when the item is clicked in the settings GUI.
             Usually this would be __addon__.openSettings(), but it could be any other script.
-            This allows the creation of action buttons in the GUI, as well as allowing developers to script and skin their 
-            own user interfaces.
+            This allows the creation of action buttons in the GUI, as well as allowing developers
+            to script and skin their own user interfaces.
         """
         self.me.openSettings()
 
@@ -179,7 +179,8 @@ class OSMCSettingClass(threading.Thread):
         """ 
             The method to call before all the other setting methods are called.
 
-            For example, this could be a call to stop a service. The final method could then restart the service again. 
+            For example, this could be a call to stop a service. The final method could then
+            restart the service again.
             This can be used to apply the setting changes.
 
         """
@@ -188,9 +189,9 @@ class OSMCSettingClass(threading.Thread):
         """ 
             The method to call after all the other setting methods have been called.
 
-            For example, in the case of the Raspberry Pi's settings module, the final writing to the config.txt can be delayed
-            until all the settings have been updated in the pi_settings_dict. 
-
+            For example, in the case of the Raspberry Pi's settings module, the final writing
+            to the config.txt can be delayed until all the settings have been updated in
+            the pi_settings_dict.
         """
 
     def apply_settings(self):
@@ -202,8 +203,8 @@ class OSMCSettingClass(threading.Thread):
 
     def settings_retriever_xml(self):
         """
-            Reads the stored settings (in settings.xml) and returns a dictionary with the setting_name: setting_value. This
-            method cannot be overwritten.
+            Reads the stored settings (in settings.xml) and returns a dictionary with the
+            setting_name: setting_value. This method cannot be overwritten.
         """
 
     def populate_setting_data_method(self):

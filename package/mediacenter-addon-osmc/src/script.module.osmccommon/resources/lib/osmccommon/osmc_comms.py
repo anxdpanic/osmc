@@ -101,7 +101,7 @@ class Communicator(threading.Thread):
             except socket.timeout:
                 continue
             except:
-                log('An error occured while waiting for a connection.')
+                log('An error occurred while waiting for a connection.')
                 break
 
             log('Connection active.')
