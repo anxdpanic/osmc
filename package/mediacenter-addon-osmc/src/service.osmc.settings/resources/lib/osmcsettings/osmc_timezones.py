@@ -40,10 +40,10 @@ def get_timezones():
     for tz_raw in tmp:
         tz_region, tz_country = tz_raw[:tz_raw.index('/')], tz_raw[tz_raw.index('/') + 1:]
 
-        t = timezones.get(tz_region, [])
+        tz_item = timezones.get(tz_region, [])
 
-        t.append(tz_country)
+        tz_item.append(tz_country)
 
-        timezones[tz_region] = t
+        timezones[tz_region] = tz_item
 
     return timezones
