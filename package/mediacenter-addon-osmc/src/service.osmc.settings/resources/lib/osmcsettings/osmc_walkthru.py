@@ -26,12 +26,12 @@ import xbmcgui
 from osmccommon.osmc_language import LangRetriever
 from osmccommon.osmc_logging import StandardLogger
 
-from . import LICENSE
-from . import WARRANTY
+from . import __LICENSE__
+from . import __WARRANTY__
 from . import osmc_timezones
 
-EULA = LICENSE.license
-WARR = WARRANTY.warranty
+EULA = __LICENSE__.__license__
+WARRANTY = __WARRANTY__.__warranty__
 DIALOG = xbmcgui.Dialog()
 
 addonid = 'service.osmc.settings'
@@ -262,10 +262,6 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         self.prevent_escape = True
 
     def onInit(self):
-
-        global EULA
-        global WARR
-
         self.hide_controls_on_init()
 
         self.populate_language_controls()
@@ -273,7 +269,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
         # populate the terms and conditions and the warranty
         self.getControl(555).setText(EULA)
-        self.getControl(777).setText(WARR)
+        self.getControl(777).setText(WARRANTY)
 
         # set the image for the skin preview control
         self.set_skin_image('OSMC')
