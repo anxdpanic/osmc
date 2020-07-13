@@ -19,15 +19,10 @@ from osmccommon.osmc_language import LangRetriever
 from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_logging import clog
 
-addonid = "script.module.osmcsetting.apfstore"
-__addon__ = xbmcaddon.Addon(addonid)
-__path__ = xbmc.translatePath(__addon__.getAddonInfo('path'))
+ADDON_ID = "script.module.osmcsetting.apfstore"
+ADDON_DATA = xbmc.translatePath('special://userdata/addon_data/%s/' % ADDON_ID)
 
-ADDONART = os.path.join(__path__, 'resources', 'skins', 'Default', 'media')
-USERART = os.path.join(xbmc.translatePath('special://userdata/'), 'addon_data', addonid)
-
-log = StandardLogger(addonid, os.path.basename(__file__)).log
-lang = LangRetriever(__addon__).lang
+log = StandardLogger(ADDON_ID, os.path.basename(__file__)).log
 
 """
 =========================
@@ -50,14 +45,30 @@ APF JSON STRUCTURE
 """
 
 
-class APF_obj(xbmcgui.ListItem):
+class APFListItem(xbmcgui.ListItem):
 
     def __init__(self):
+        super(APFListItem, self).__init__(offscreen=True)
 
-        xbmcgui.ListItem.__init__(self, offscreen=True)
+        self._addon = None
+        self._lang = None
+        self._skin_media_folder = None
+
+        self.id = 'none'
+        self.name = 'none'
+        self.shortdesc = ''
+        self.longdesc = ''
+        self.maintainedby = ''
+        self.version = ''
+        self.lastupdated = ''
+        self.iconurl = '/none'
+        self.iconhash = 0
+        self.retrieve_icon = False
+        self.current_icon = self.iconurl
+
+        self.installed = False
 
     def populate(self, data):
-
         self.id = data.get('id', 'none')
         self.name = data.get('name', 'none')
         self.shortdesc = data.get('shortdesc', '')
@@ -69,6 +80,8 @@ class APF_obj(xbmcgui.ListItem):
         self.iconhash = data.get('iconhash', 0)
         self.retrieve_icon = False
         self.current_icon = self.check_icon(self.iconurl)
+
+        self._addon = data.get('addon', None)
 
         self.installed = False
 
@@ -83,21 +96,38 @@ class APF_obj(xbmcgui.ListItem):
 
         return self
 
-    def set_installed(self, status):
+    @property
+    def addon(self):
+        if not self._addon:
+            self._addon = xbmcaddon.Addon(ADDON_ID)
+        return self._addon
 
+    @property
+    def skin_media_folder(self):
+        if not self._skin_media_folder:
+            self._skin_media_folder = os.path.join(self.addon.getAddonInfo('path'),
+                                                   'resources', 'skins', 'Default', 'media')
+        return self._skin_media_folder
+
+    def lang(self, value):
+        if not self._lang:
+            retriever = LangRetriever(self.addon)
+            self._lang = retriever.lang
+        return self._lang(value)
+
+    def set_installed(self, status):
         if status is True:
             self.installed = True
-            self.setLabel2(lang(32005))
+            self.setLabel2(self.lang(32005))
 
     def refresh_icon(self):
-
         self.current_icon = self.check_icon(self.iconurl)
         self.setArt({
             'icon': self.current_icon
         })
 
     @clog(logger=log)
-    def check_icon(self, iconurl):
+    def check_icon(self, icon_url):
         """ Checks the addon data folder for the icon,
                 if not found, check for an icon stored in the addon/media folder,
                     if not found there, mark the new icon for download by Main in a different thread,
@@ -107,23 +137,23 @@ class APF_obj(xbmcgui.ListItem):
         """
 
         if self.iconhash == 'NA':
-            return os.path.join(ADDONART, 'osmc_osmclogo.png')
+            return os.path.join(self.skin_media_folder, 'osmc_osmclogo.png')
 
-        icon_name = iconurl.split('/')[-1]
+        icon_name = icon_url.split('/')[-1]
 
-        if os.path.isfile(os.path.join(USERART, icon_name)):
+        if os.path.isfile(os.path.join(ADDON_DATA, icon_name)):
             # check userdata folder
 
-            current_icon = os.path.join(USERART, icon_name)
+            current_icon = os.path.join(ADDON_DATA, icon_name)
 
-        elif os.path.isfile(os.path.join(ADDONART, icon_name)):
+        elif os.path.isfile(os.path.join(self.skin_media_folder, icon_name)):
             # check addon art folder
 
-            current_icon = os.path.join(ADDONART, icon_name)
+            current_icon = os.path.join(self.skin_media_folder, icon_name)
 
         else:
 
-            current_icon = os.path.join(ADDONART, 'osmc_osmclogo.png')
+            current_icon = os.path.join(self.skin_media_folder, 'osmc_osmclogo.png')
 
         log('current icon = %s' % current_icon)
 

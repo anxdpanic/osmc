@@ -14,7 +14,7 @@ from osmccommon import osmc_setting
 from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_logging import clog
 
-from ..apf_store import APF_STORE
+from ..apf_store import APFStore
 
 addon_id = "script.module.osmcsetting.apfstore"
 log = StandardLogger(addon_id, os.path.basename(__file__)).log
@@ -34,4 +34,4 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
 
     @clog(log, nowait=True)
     def run(self):
-        _ = APF_STORE()
+        _ = APFStore(self.me)

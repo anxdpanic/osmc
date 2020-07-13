@@ -8,7 +8,7 @@
     See LICENSES/GPL-2.0-or-later for more information.
 """
 
-import datetime as dt
+import datetime
 import json
 import os
 import shutil
@@ -26,24 +26,13 @@ from osmccommon.osmc_language import LangRetriever
 from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_logging import clog
 
-from .apf_class import APF_obj
-from .apf_gui import apf_GUI
+from .apf_class import APFListItem
+from .apf_gui import APFGui
 
 try:
     import queue as Queue
 except ImportError:
     import Queue
-
-addonid = "script.module.osmcsetting.apfstore"
-__addon__ = xbmcaddon.Addon(addonid)
-__path__ = xbmc.translatePath(__addon__.getAddonInfo('path'))
-__setting__ = __addon__.getSetting
-
-ADDONART = os.path.join(__path__, 'resources', 'skins', 'Default', 'media')
-USERART = os.path.join(xbmc.translatePath('special://userdata/'), 'addon_data', addonid)
-
-log = StandardLogger(addonid, os.path.basename(__file__)).log
-lang = LangRetriever(__addon__).lang
 
 """
 =========================
@@ -67,41 +56,37 @@ APF JSON STRUCTURE
 }
 """
 
+ADDON_ID = "script.module.osmcsetting.apfstore"
+ADDON_DATA = xbmc.translatePath('special://userdata/addon_data/%s/' % ADDON_ID)
 
-def check_for_unsupported_version():
-    """ Checks if this version is an Alpha, prevent updates """
-
-    fnull = open(os.devnull, 'w')
-
-    process = subprocess.call(['/usr/bin/dpkg-query', '-l', 'rbp-mediacenter-osmc'], stderr=fnull, stdout=fnull)
-
-    fnull.close()
-
-    if process == 0:
-
-        _ = xbmcgui.Dialog().ok(lang(32017), '[CR]'.join([lang(32018), lang(32019)]))
-
-        return 'alpha'
-
-    else:
-
-        return 'proceed'
+log = StandardLogger(ADDON_ID, os.path.basename(__file__)).log
 
 
-class APF_STORE(object):
+class APFStore(object):
+    CACHE_TIMEOUT = 6
+    TIME_STRING_PATTERN = '%Y/%m/%d %H:%M:%S'
 
-    def __init__(self):
+    def __init__(self, addon=None):
+
+        self._addon = addon
 
         # do not proceed if the version is alpha
-        if check_for_unsupported_version() == 'alpha': return
+        if self.check_for_unsupported_version() == 'alpha':
+            return
 
-        self.CACHETIMEOUT = 6
-
-        self.TIME_STRING_PATTERN = '%Y/%m/%d %H:%M:%S'
+        self._lang = None
+        self.use_cache = False
+        self.json_last_updated_record = 'never'
+        self.json_cache = 'empty'
+        self.package_list = ''
+        self.url = ''
 
         self.touch_addon_data_folder()
 
-        self.install_status_cache = {x.split('=')[0]: x.split('=')[1] for x in __setting__('install_status_cache').split(':_:') if '=' in x}
+        self.install_status_cache = {
+            x.split('=')[0]: x.split('=')[1]
+            for x in self.addon.getSetting('install_status_cache').split(':_:') if '=' in x
+        }
 
         json_data = self.get_apf_data()
 
@@ -112,85 +97,97 @@ class APF_STORE(object):
 
         self.apf_dict = self.generate_apf_dict(json_data)
 
-        self.apf_GUI = self.create_apf_store_gui(self.apf_dict)
+        self.apf_gui = self.create_apf_store_gui(self.apf_dict)
 
         self.retrieve_install_status()
 
         self.retrieve_icons()
 
-        self.apf_GUI.doModal()
+        self.apf_gui.doModal()
+
+    @property
+    def addon(self):
+        if not self._addon:
+            self._addon = xbmcaddon.Addon(ADDON_ID)
+        return self._addon
+
+    def lang(self, value):
+        if not self._lang:
+            retriever = LangRetriever(self.addon)
+            self._lang = retriever.lang
+        return self._lang(value)
+
+    def check_for_unsupported_version(self):
+        """ Checks if this version is an Alpha, prevent updates """
+
+        with open(os.devnull, 'w') as fnull:
+            process = subprocess.call(['/usr/bin/dpkg-query', '-l', 'rbp-mediacenter-osmc'],
+                                      stderr=fnull, stdout=fnull)
+
+        if process == 0:
+            _ = xbmcgui.Dialog().ok(self.lang(32017),
+                                    '[CR]'.join([self.lang(32018), self.lang(32019)]))
+            return 'alpha'
+
+        return 'proceed'
 
     def get_apf_data(self):
-
-        self.use_cache = self.check_lastupdated()
+        self.use_cache = self.check_last_updated()
 
         if self.use_cache is True:
 
-            cache = self.read_jsoncache()
+            cache = self.read_json_cache()
 
             if cache == 'failed':
-
                 return self.get_remote_json()
 
-            else:
+            return cache
 
-                return cache
-
-
-        else:
-
-            return self.get_remote_json()
+        return self.get_remote_json()
 
     def get_remote_json(self):
 
         json_req = self.get_list_from_sam()
 
         if json_req == 'failed':
-
             log('Failed to retrieve osmcdev= from /proc/cmdline')
-
             return 'failed'
 
         elif not json_req:
-
-            log('Failed to retrieve data from %s' % self.URL)
-
+            log('Failed to retrieve data from %s' % self.url)
             return 'failed'
 
-        else:
+        return json_req
 
-            return json_req
+    def read_json_cache(self):
 
-    def read_jsoncache(self):
+        self.json_cache = self.addon.getSetting('json_cache')
 
-        self.json_cache = __setting__('json_cache')
-
-        if self.json_cache == 'empty': return 'failed'
+        if self.json_cache == 'empty':
+            return 'failed'
 
         try:
-
             return json.loads(self.json_cache)
-
         except:
-
             return 'failed'
 
-    def check_lastupdated(self):
-
+    def check_last_updated(self):
         current_time = self.get_current_time()
 
-        if current_time == 'failed': return False
+        if current_time == 'failed':
+            return False
 
-        self.json_lastupdated_record = __setting__('json_lastupdated')
+        self.json_last_updated_record = self.addon.getSetting('json_lastupdated')
 
-        if self.json_lastupdated_record == 'never': return False
+        if self.json_last_updated_record == 'never':
+            return False
 
         try:
-            date_object = dt.strptime(self.json_lastupdated_record, self.TIME_STRING_PATTERN)
+            date_object = datetime.strptime(self.json_last_updated_record, self.TIME_STRING_PATTERN)
         except:
             return False
 
-        trigger = date_object + dt.timedelta(hours=self.CACHETIMEOUT)
+        trigger = date_object + datetime.timedelta(hours=self.CACHE_TIMEOUT)
 
         if trigger > current_time:
             log('JSON Cache is fresh')
@@ -200,21 +197,23 @@ class APF_STORE(object):
 
     @clog(logger=log, maxlength=10000)
     def generate_apf_dict(self, json_req):
-
         apf_list = json_req.get('application', [])
-
-        obj_list = [APF_obj() for x in apf_list if x['id']]
+        for item in apf_list:
+            item.update({
+                'addon': self.addon
+            })
+        obj_list = [APFListItem() for x in apf_list if x['id']]
 
         return {x['id']: obj_list[i - 1].populate(x) for i, x in enumerate(apf_list) if x['id']}
 
-    def get_current_time(self):
-
-        # this method is necessary as datetime.now() has issues with the GIL and throws an error at random
-
+    @staticmethod
+    def get_current_time():
+        # this method is necessary as datetime.now() has issues with the GIL
+        # and throws an error at random
         for x in range(50):
 
             try:
-                return dt.datetime.now()
+                return datetime.datetime.now()
             except:
                 pass
 
@@ -234,53 +233,42 @@ class APF_STORE(object):
             for line in lines:
                 settings = line.split(' ')
 
-                suffix = None
-
                 for setting in settings:
 
                     if setting.startswith('osmcdev='):
-                        self.URL = 'http://download.osmc.tv/apps/%s' % setting[len('osmcdev='):]
-
+                        self.url = 'http://download.osmc.tv/apps/%s' % setting[len('osmcdev='):]
                         break
 
                 else:
-
                     # this is for testing only
-                    self.URL = 'http://download.osmc.tv/apps/rbp2'
-
-                # return 'failed'
+                    self.url = 'http://download.osmc.tv/apps/rbp2'
 
         except:
+            self.url = 'http://download.osmc.tv/apps/rbp2'
 
-            self.URL = 'http://download.osmc.tv/apps/rbp2'
-
-        log('APF data URL: %s' % self.URL)
+        log('APF data URL: %s' % self.url)
 
         try:
-            r = requests.get(self.URL.replace('\n', '').replace('\t', '').replace('\n', ''))
-
+            response = requests.get(self.url.replace('\n', '').replace('\t', '').replace('\n', ''))
         except:
-            log('Connection to %s failed' % self.URL)
+            log('Connection to %s failed' % self.url)
 
             return 'failed'
 
         try:
-
-            q = r.json()
-
-            __addon__.setSetting('json_cache', json.dumps(q))
+            json_payload = response.json()
+            self.addon.setSetting('json_cache', json.dumps(json_payload))
 
             current_time = self.get_current_time()
 
             if current_time != 'failed':
-                __addon__.setSetting('json_lastupdated', current_time.strftime(self.TIME_STRING_PATTERN))
+                self.addon.setSetting('json_lastupdated',
+                                      current_time.strftime(self.TIME_STRING_PATTERN))
 
-            return q
+            return json_payload
 
         except:
-
-            log('JSON couldnt be read: %s' % r.text)
-
+            log('JSON couldn\'t be read: %s' % response.text)
             return 'failed'
 
     @clog(logger=log)
@@ -292,9 +280,6 @@ class APF_STORE(object):
 
             if apf.retrieve_icon:
                 thread_queue.put(apf)
-
-        # spawn some workers
-        # for i in range(1):
 
         t = threading.Thread(target=self.grab_icon_from_sam, args=(thread_queue,))
         t.daemon = True
@@ -312,14 +297,12 @@ class APF_STORE(object):
 
                 thread_queue.task_done()
 
-                # download the icon and save it in USERART
-
+                # download the icon and save it in ADDON_DATA
                 response = requests.get(q_item.iconurl, stream=True)
 
                 icon_name = q_item.iconurl.split('/')[-1]
 
-                with open(os.path.join(USERART, icon_name), 'wb') as out_file:
-
+                with open(os.path.join(ADDON_DATA, icon_name), 'wb') as out_file:
                     shutil.copyfileobj(response.raw, out_file)
 
                 del response
@@ -327,9 +310,7 @@ class APF_STORE(object):
                 q_item.refresh_icon()
 
             except Queue.Empty:
-
                 log('Queue.Empty error')
-
                 break
 
     @clog(logger=log)
@@ -363,9 +344,7 @@ class APF_STORE(object):
                 with open(os.devnull, 'w') as fnull:
                     try:
                         output = subprocess.check_output(install_query, stderr=fnull)
-
                     except subprocess.CalledProcessError as e:
-                        # raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
                         output = e.output
 
                 if isinstance(output, bytes):
@@ -373,11 +352,9 @@ class APF_STORE(object):
 
                 if "ok installed" in output:
                     log('%s IS Installed' % apf.name)
-
                     apf.set_installed(True)
 
                 else:
-
                     log('%s is NOT Installed' % apf.name)
 
                 thread_queue.task_done()
@@ -385,26 +362,24 @@ class APF_STORE(object):
             except Queue.Empty:
 
                 log('Queue.Empty error')
-
                 break
 
-            except Exception as e:
-
+            except Exception:
                 log(traceback.format_exc())
-
                 break
 
     @clog(logger=log)
     def touch_addon_data_folder(self):
+        if not os.path.isdir(ADDON_DATA):
+            os.makedirs(ADDON_DATA)
 
-        if not os.path.isdir(USERART):
-            os.makedirs(USERART)
-
-        return USERART
+        return ADDON_DATA
 
     @clog(logger=log)
     def create_apf_store_gui(self, apf_dict):
+        xml = "APFBrowser_720OSMC.xml" \
+            if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' \
+            else "APFBrowser_OSMC.xml"
 
-        xml = "APFBrowser_720OSMC.xml" if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' else "APFBrowser_OSMC.xml"
-
-        return apf_GUI(xml, __path__, 'Default', apf_dict=apf_dict)
+        return APFGui(xml, self.addon.getAddonInfo('path'), 'Default',
+                      apf_dict=apf_dict, addon=self.addon)

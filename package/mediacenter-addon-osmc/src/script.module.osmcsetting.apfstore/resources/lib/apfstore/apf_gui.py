@@ -14,31 +14,32 @@ import socket
 import sys
 from contextlib import closing
 
-import xbmc
 import xbmcaddon
 import xbmcgui
 from osmccommon.osmc_language import LangRetriever
 from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_logging import clog
 
-addonid = "script.module.osmcsetting.apfstore"
-__addon__ = xbmcaddon.Addon(addonid)
-__path__ = xbmc.translatePath(__addon__.getAddonInfo('path'))
-
-ADDONART = os.path.join(__path__, 'resources', 'skins', 'Default', 'media')
-USERART = os.path.join(xbmc.translatePath('special://userdata/'), 'addon_data ', addonid)
-
+ADDON_ID = "script.module.osmcsetting.apfstore"
 PY3 = sys.version_info.major == 3
 
-lang = LangRetriever(__addon__).lang
-log = StandardLogger(addonid, os.path.basename(__file__)).log
+log = StandardLogger(ADDON_ID, os.path.basename(__file__)).log
 
 
-class apf_GUI(xbmcgui.WindowXMLDialog):
+class APFGui(xbmcgui.WindowXMLDialog):
 
-    def __init__(self, strXMLname, strFallbackPath, strDefaultName, apf_dict):
-
+    def __init__(self, strXMLname, strFallbackPath, strDefaultName, apf_dict, addon=None):
+        super(APFGui, self).__init__(xmlFilename=strXMLname,
+                                     scriptPath=strFallbackPath,
+                                     defaultSkin=strDefaultName)
         self.apf_dict = apf_dict
+
+        self._addon = addon
+        self._lang = None
+        self._path = ''
+
+        self.list_control = None
+        self.addon_gui = None
 
         self.apf_order_list = []
 
@@ -46,13 +47,12 @@ class apf_GUI(xbmcgui.WindowXMLDialog):
 
     def onInit(self):
 
-        self.list = self.getControl(500)
-        self.list.setVisible(True)
-        for x, y in self.apf_dict.items():
-            # self.current_icon = '/home/kubkev/.kodi/addons/script.module.osmcsetting.apfstore/resources/skins/Default/media/osmc_osmclogo.png'
+        self.list_control = self.getControl(500)
+        self.list_control.setVisible(True)
 
-            self.list.addItem(y)
-            self.apf_order_list.append(x)
+        for key, value in self.apf_dict.items():
+            self.list_control.addItem(value)
+            self.apf_order_list.append(key)
 
         try:
             self.getControl(50).setVisible(False)
@@ -61,100 +61,105 @@ class apf_GUI(xbmcgui.WindowXMLDialog):
 
         self.check_action_dict()
 
+    @property
+    def addon(self):
+        if not self._addon:
+            self._addon = xbmcaddon.Addon(ADDON_ID)
+        return self._addon
+
+    def lang(self, value):
+        if not self._lang:
+            retriever = LangRetriever(self.addon)
+            self._lang = retriever.lang
+        return self._lang(value)
+
+    @property
+    def path(self):
+        if not self._path:
+            self._path = self.addon.getAddonInfo('path')
+        return self._path
+
     @clog(logger=log)
     def check_action_dict(self):
 
         install = 0
         removal = 0
 
-        for x, y in self.action_dict.items():
-
-            if y == 'Install':
-
+        for _, value in self.action_dict.items():
+            if value == 'Install':
                 install += 1
 
-            elif y == 'Uninstall':
-
+            elif value == 'Uninstall':
                 removal += 1
 
         if not install and not removal:
             self.getControl(6).setVisible(False)
             self.getControl(61).setVisible(False)
             self.getControl(62).setVisible(False)
-
             return
 
         if install:
-
-            self.getControl(61).setLabel(lang(32001) % install)
+            self.getControl(61).setLabel(self.lang(32001) % install)
             self.getControl(6).setVisible(True)
             self.getControl(61).setVisible(True)
 
         else:
-
             self.getControl(61).setVisible(False)
 
         if removal:
-
-            self.getControl(62).setLabel(lang(32002) % removal)
+            self.getControl(62).setLabel(self.lang(32002) % removal)
             self.getControl(6).setVisible(True)
             self.getControl(62).setVisible(True)
 
         else:
-
             self.getControl(62).setVisible(False)
 
     @clog(logger=log)
     def onClick(self, controlID):
 
         if controlID == 500:
-
             container = self.getControl(500)
 
             sel_pos = container.getSelectedPosition()
-
             sel_item = self.apf_dict[self.apf_order_list[sel_pos]]
 
-            xml = "APFAddonInfo_720OSMC.xml" if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' else "APFAddonInfo_OSMC.xml"
+            xml = "APFAddonInfo_720OSMC.xml" \
+                if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' \
+                else "APFAddonInfo_OSMC.xml"
 
-            self.addon_gui = addon_info_gui(xml, __path__, 'Default', sel_item=sel_item)
-
+            self.addon_gui = AddonInfoGui(xml, self.path, 'Default',
+                                          sel_item=sel_item, addon=self.addon)
             self.addon_gui.doModal()
 
             ending_action = self.addon_gui.action
 
             if ending_action == 'Install':
-
                 self.action_dict[sel_item.id] = 'Install'
 
             elif ending_action == 'Uninstall':
-
                 self.action_dict[sel_item.id] = 'Uninstall'
 
             elif sel_item.id in self.action_dict:
-
                 del self.action_dict[sel_item.id]
 
             self.check_action_dict()
-
             del self.addon_gui
-
             log(self.action_dict)
 
         elif controlID == 7:
-
             self.close()
 
         elif controlID == 6:
-
             # send install and removal list to Update Service
-
-            action_list = ['install_' + k if v == 'Install' else 'removal_' + k for k, v in self.action_dict.items()]
-
+            action_list = [
+                'install_' + k
+                if v == 'Install'
+                else 'removal_' + k
+                for k, v in self.action_dict.items()
+            ]
             action_string = '|=|'.join(action_list)
 
             self.contact_update_service(action_string)
-
             self.close()
 
     @clog(logger=log)
@@ -172,7 +177,7 @@ class apf_GUI(xbmcgui.WindowXMLDialog):
             open_socket.sendall(message)
 
 
-class addon_info_gui(xbmcgui.WindowXMLDialog):
+class AddonInfoGui(xbmcgui.WindowXMLDialog):
     """
     Controls
     ==============================
@@ -185,14 +190,17 @@ class addon_info_gui(xbmcgui.WindowXMLDialog):
     50007	Name
     """
 
-    def __init__(self, strXMLname, strFallbackPath, strDefaultName, sel_item):
+    def __init__(self, strXMLname, strFallbackPath, strDefaultName, sel_item, addon=None):
+        super(AddonInfoGui, self).__init__(xmlFilename=strXMLname,
+                                           scriptPath=strFallbackPath,
+                                           defaultSkin=strDefaultName)
 
+        self._addon = addon
+        self._lang = None
         self.action = False
-
         self.sel_item = sel_item
 
     def onInit(self):
-
         self.getControl(50001).setLabel(self.sel_item.shortdesc)
         self.getControl(50002).setText(self.sel_item.longdesc)
         self.getControl(50003).setLabel(self.sel_item.version)
@@ -202,20 +210,28 @@ class addon_info_gui(xbmcgui.WindowXMLDialog):
         self.getControl(50007).setLabel(self.sel_item.name)
 
         if self.sel_item.installed:
-
-            self.getControl(6).setLabel(lang(32004))
+            self.getControl(6).setLabel(self.lang(32004))
 
         else:
+            self.getControl(6).setLabel(self.lang(32003))
 
-            self.getControl(6).setLabel(lang(32003))
+    @property
+    def addon(self):
+        if not self._addon:
+            self._addon = xbmcaddon.Addon(ADDON_ID)
+        return self._addon
+
+    def lang(self, value):
+        if not self._lang:
+            retriever = LangRetriever(self.addon)
+            self._lang = retriever.lang
+        return self._lang(value)
 
     def onClick(self, controlID):
-
         if controlID == 6:
-
             lbl = self.getControl(6).getLabel()
 
-            if lbl == lang(32003):
+            if lbl == self.lang(32003):
                 self.action = 'Install'
             else:
                 self.action = 'Uninstall'
@@ -223,5 +239,4 @@ class addon_info_gui(xbmcgui.WindowXMLDialog):
             self.close()
 
         elif controlID == 7:
-
             self.close()
