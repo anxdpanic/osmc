@@ -65,10 +65,10 @@ Slideshow JSON STRUCTURE
 """
 
 
-class OSMC_Slideshow(object):
+class OSMCSlideshow(object):
 
     def __init__(self, json_data):
-        pass
+        _ = json_data
 
     def download_images(self):
         pass
@@ -80,7 +80,7 @@ class OSMC_Slideshow(object):
     def create_slideshow(image_list):
         xml = "osmc_slideshow_720.xml" if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' else "osmc_slideshow.xml"
 
-        return OSMC_Slideshow_GUI(xml, __path__, 'Default', image_list=image_list)
+        return OSMCSlideshowGUI(xml, __path__, 'Default', image_list=image_list)
 
 
 class ConditionCallBack(threading.Thread):
@@ -105,10 +105,12 @@ class ConditionCallBack(threading.Thread):
             log('ConditionCallBack failed')
 
 
-class OSMC_Slideshow_GUI(xbmcgui.WindowXMLDialog):
+class OSMCSlideshowGUI(xbmcgui.WindowXMLDialog):
 
     def __init__(self, strXMLname, strFallbackPath, strDefaultName, **kwargs):
-
+        super(OSMCSlideshowGUI, self).__init__(xmlFilename=strXMLname,
+                                               scriptPath=strFallbackPath,
+                                               defaultSkin=strDefaultName)
         # images is a list of image path strings
         self.images = kwargs.get('images', [])
         self.image_list = None
@@ -144,13 +146,13 @@ class OSMC_Slideshow_GUI(xbmcgui.WindowXMLDialog):
 
     def onAction(self, action):
 
-        actionID = action.getId()
+        action_id = action.getId()
 
-        if (actionID in (10, 92)):
+        if action_id in (10, 92):
 
             self.close()
 
-        elif actionID in LEFT_ACTIONS:
+        elif action_id in LEFT_ACTIONS:
             # user is trying to move to the previous image
             pos = int(xbmc.getInfoLabel('Container(1).Position'))
 
@@ -160,7 +162,7 @@ class OSMC_Slideshow_GUI(xbmcgui.WindowXMLDialog):
             else:
                 xbmc.executebuiltin('SetFocus(1,%d)' % (pos - 1))
 
-        elif actionID in RIGHT_ACTIONS:
+        elif action_id in RIGHT_ACTIONS:
             # user is trying to move to the next image
             pos = int(xbmc.getInfoLabel('Container(1).Position'))
 
