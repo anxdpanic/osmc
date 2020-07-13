@@ -21,28 +21,24 @@ from osmccommon.osmc_language import LangRetriever
 from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_logging import clog
 
-addonid = 'service.osmc.settings'
-__addon__ = xbmcaddon.Addon(addonid)
-scriptPath = __addon__.getAddonInfo('path')
+ADDON_ID = 'service.osmc.settings'
 
-lib = os.path.join(scriptPath, 'resources', 'lib')
-media = os.path.join(scriptPath, 'resources', 'skins', 'Default', 'media')
-
-WINDOW = xbmcgui.Window(10000)
-
-log = StandardLogger(addonid, os.path.basename(__file__)).log
-lang = LangRetriever(__addon__).lang
+log = StandardLogger(ADDON_ID, os.path.basename(__file__)).log
 
 
-class OSMC_gui(xbmcgui.WindowXMLDialog):
+class OSMCGui(xbmcgui.WindowXMLDialog):
 
     def __init__(self, strXMLname, strFallbackPath, strDefaultName, **kwargs):
-        super(OSMC_gui, self).__init__(xmlFilename=strXMLname,
-                                       scriptPath=strFallbackPath,
-                                       defaultSkin=strDefaultName)
+        super(OSMCGui, self).__init__(xmlFilename=strXMLname,
+                                      scriptPath=strFallbackPath,
+                                      defaultSkin=strDefaultName)
         self.order_of_fill = kwargs.get('order_of_fill', [])
         self.apply_buttons = kwargs.get('apply_buttons', [])
         self.live_modules = kwargs.get('live_modules', [])
+
+        self._addon = kwargs.get('addon')
+        self.window = kwargs.get('window', xbmcgui.Window(10000))
+        self._lang = None
 
         log(kwargs)
 
@@ -52,8 +48,22 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
 
         self.first_run = True
 
+        self.visible_left_label = 4915
+
         self.number_of_pages = len(self.apply_buttons)
         self.active_page = 1
+
+    @property
+    def addon(self):
+        if not self._addon:
+            self._addon = xbmcaddon.Addon(ADDON_ID)
+        return self._addon
+
+    def lang(self, value):
+        if not self._lang:
+            retriever = LangRetriever(self.addon)
+            self._lang = retriever.lang
+        return self._lang(value)
 
     def onInit(self):
 
@@ -70,12 +80,12 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
                     break
 
             # hide the left labels
-            self.getControl(4915).setLabel(lang(32002))
+            self.getControl(4915).setLabel(self.lang(32002))
             self.getControl(4915).setVisible(True)
             self.visible_left_label = 4915
             self.getControl(4916).setVisible(False)
 
-            # hide next and prev if they arent needed
+            # hide next and prev if they aren't needed
             if self.number_of_pages < 2:
                 self.getControl(4444).setVisible(False)
                 self.getControl(6666).setVisible(False)
@@ -86,7 +96,7 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
                 try:
                     short_name = module['class_instance'].short_name
                     if isinstance(module['class_instance'].short_name_i18n, int):
-                        short_name = lang(module['class_instance'].short_name_i18n)
+                        short_name = self.lang(module['class_instance'].short_name_i18n)
                 except:
                     short_name = ''
 
@@ -103,17 +113,17 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
                 try:
                     description = module['class_instance'].description
                     if isinstance(module['class_instance'].description_i18n, int):
-                        description = lang(module['class_instance'].description_i18n)
+                        description = self.lang(module['class_instance'].description_i18n)
                 except:
                     description = ''
 
                 list_item.setProperty('description', str(description))
 
-                controlID = self.order_of_fill[i]
+                control_id = self.order_of_fill[i]
 
-                self.getControl(controlID).addItem(list_item)
+                self.getControl(control_id).addItem(list_item)
 
-                self.module_holder[controlID] = module
+                self.module_holder[control_id] = module
 
             # set up the apply buttons
             for apply_button in self.apply_buttons:
@@ -131,10 +141,10 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
 
         # log(action)
 
-        actionID = action.getId()
+        action_id = action.getId()
         focused_control = self.getFocusId()
 
-        if (actionID in (10, 92)):
+        if action_id in (10, 92):
             self.close()
 
         elif focused_control == 4444:
@@ -168,8 +178,6 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
 
             self.setFocusId((self.active_page * 100) + 5)
 
-        # self.next_prev_direction_changer()
-
     def onClick(self, controlID):
 
         if not (controlID - 5) % 100:
@@ -179,34 +187,6 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
         elif controlID == 909:
             # open the advanced settings beta addon
             xbmc.executebuiltin("RunAddon(script.advancedsettingsetter)")
-
-        # elif controlID == 4444:
-        # 	# previous menu
-        # 	if self.active_page - 1 == 0:
-        # 		new_page = self.number_of_pages
-        # 	else:
-        # 		new_page = self.active_page - 1
-
-        # 	self.getControl(self.active_page * 100).setVisible(False)
-        # 	self.getControl(new_page * 100).setVisible(True)
-
-        # 	self.active_page = new_page
-
-        # 	self.next_prev_direction_changer()
-
-        # elif controlID == 6666:
-        # 	# next menu
-        # 	if ( self.active_page + 1 ) > self.number_of_pages:
-        # 		new_page = 1
-        # 	else:
-        # 		new_page = self.active_page + 1
-
-        # 	self.getControl(self.active_page * 100).setVisible(False)
-        # 	self.getControl(new_page * 100).setVisible(True)
-
-        # 	self.active_page = new_page
-
-        # 	self.next_prev_direction_changer()
 
         else:
 
@@ -229,10 +209,10 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
                 module['class_instance'] = class_instance
                 class_instance.start()
 
-    def left_label_toggle(self, controlID):
+    def left_label_toggle(self, control_id):
         # toggles the left label which displays the focused module name
         controls = cycle([4915, 4916])
-        new_label = self.getControl(controlID).getListItem(0).getLabel()
+        new_label = self.getControl(control_id).getListItem(0).getLabel()
 
         for control_id in controls:
             if control_id != self.visible_left_label:
@@ -280,13 +260,15 @@ class OSMC_gui(xbmcgui.WindowXMLDialog):
         next_button.setNavigation(pos5, pos5, pos6, prev_button)
 
 
-class OSMCGui(threading.Thread):
+class GuiThread(threading.Thread):
 
     def __init__(self, **kwargs):
+        super(GuiThread, self).__init__()
 
         self.queue = kwargs['queue']
-
-        super(OSMCGui, self).__init__()
+        self._addon = kwargs.get('addon')
+        self.window = kwargs.get('window', xbmcgui.Window(10000))
+        self.script_path = self.addon.getAddonInfo('path')
 
         self.known_modules_order = {
             "osmcpi": 0,
@@ -298,7 +280,27 @@ class OSMCGui(threading.Thread):
             "osmcremotes": 6,
         }
 
+        self.live_modules = []
+        self.number_of_pages_needed = 1
+        self.order_of_fill = []
+        self.apply_buttons = []
+
+        self.module_tally = 1000
+
+        # order of addon hierarchy
+        # 105 is Apply
+        self.item_order = [104, 106, 102, 108, 101, 109, 103, 107]
+        self.apply_button = [105]
+
+        self.gui = None
+
         self.create_gui()
+
+    @property
+    def addon(self):
+        if not self._addon:
+            self._addon = xbmcaddon.Addon(ADDON_ID)
+        return self._addon
 
     @clog(log)
     def create_gui(self):
@@ -307,12 +309,6 @@ class OSMCGui(threading.Thread):
             (module name, order): the order is the hierarchy of addons (which is used to
             determine the positions of addon in the gui)
         """
-
-        # order of addon hierarchy
-        # 105 is Apply
-        self.item_order = [104, 106, 102, 108, 101, 109, 103, 107]
-        self.apply_button = [105]
-
         # window xml to use
         try:
             skin_height = int(xbmcgui.Window(10000).getProperty("SkinHeight"))
@@ -321,9 +317,9 @@ class OSMCGui(threading.Thread):
         xml = "settings_gui_720.xml" if skin_height < 1080 else "settings_gui.xml"
 
         # check if modules and services exist, add the ones that exist to the live_modules list
-        self.ordered_live_modules = self.retrieve_modules()
-        self.ordered_live_modules.sort()
-        self.live_modules = [x[1] for x in self.ordered_live_modules]
+        ordered_live_modules = self.retrieve_modules()
+        ordered_live_modules.sort()
+        self.live_modules = [x[1] for x in ordered_live_modules]
 
         # load the modules as widget entries
         self.load_widget_info()
@@ -338,29 +334,30 @@ class OSMCGui(threading.Thread):
         self.apply_buttons = [item + (100 * x) for x in range(self.number_of_pages_needed) for item in self.apply_button]
 
         # instantiate the window
-        self.GUI = OSMC_gui(xml, scriptPath, 'Default', order_of_fill=self.order_of_fill,
-                            apply_buttons=self.apply_buttons, live_modules=self.live_modules)
+        self.gui = OSMCGui(xml, self.script_path, 'Default', addon=self.addon, window=self.window,
+                           order_of_fill=self.order_of_fill, apply_buttons=self.apply_buttons,
+                           live_modules=self.live_modules)
 
     def load_widget_info(self):
         """ Takes each live_module and loads the information required for it to be included in the MyOSMC widget into the Home window.
         """
 
-        script_location = os.path.join(scriptPath, 'resources', 'lib', 'osmcsettings', 'call_osmc_parent.py')
+        script_location = os.path.join(self.script_path, 'resources', 'lib', 'osmcsettings', 'call_osmc_parent.py')
 
-        WINDOW.setProperty('MyOSMC.Module.Script', script_location)
+        self.window.setProperty('MyOSMC.Module.Script', script_location)
 
         for i, module in enumerate(self.live_modules):
-            WINDOW.setProperty('MyOSMC.Module.%s.name' % i, module['class_instance'].short_name)
-            WINDOW.setProperty('MyOSMC.Module.%s.fo_icon' % i, module['class_instance'].focused_widget)
-            WINDOW.setProperty('MyOSMC.Module.%s.fx_icon' % i, module['class_instance'].unfocused_widget)
-            WINDOW.setProperty('MyOSMC.Module.%s.id' % i, module['id'])
+            self.window.setProperty('MyOSMC.Module.%s.name' % i, module['class_instance'].short_name)
+            self.window.setProperty('MyOSMC.Module.%s.fo_icon' % i, module['class_instance'].focused_widget)
+            self.window.setProperty('MyOSMC.Module.%s.fx_icon' % i, module['class_instance'].unfocused_widget)
+            self.window.setProperty('MyOSMC.Module.%s.id' % i, module['id'])
 
     def close(self):
         """
             Closes the gui
         """
 
-        self.GUI.close()
+        self.gui.close()
 
     def run(self):
         """
@@ -369,7 +366,7 @@ class OSMCGui(threading.Thread):
 
         log('Opening GUI')
         # display the window
-        self.GUI.doModal()
+        self.gui.doModal()
 
         # run the apply_settings method on all modules
         for module in self.live_modules:
@@ -398,12 +395,12 @@ class OSMCGui(threading.Thread):
 
         # set the GUI back to the default first page view
         try:
-            self.GUI.getControl(self.GUI.active_page * 100).setVisible(False)
-            self.GUI.getControl(100).setVisible(True)
+            self.gui.getControl(self.gui.active_page * 100).setVisible(False)
+            self.gui.getControl(100).setVisible(True)
 
-            self.GUI.active_page = 1
-            self.GUI.next_prev_direction_changer()
-            self.GUI.setFocusId(105)
+            self.gui.active_page = 1
+            self.gui.next_prev_direction_changer()
+            self.gui.setFocusId(105)
         except:
             pass
 
@@ -433,7 +430,7 @@ class OSMCGui(threading.Thread):
         # if you got this far then this is almost certainly an OSMC setting
         log('Inspecting OSMC Setting module __ %s __' % module_name)
         try:
-            module_instance = __import__('%s.osmc.OSMCSetting' % module_name, fromlist=[''])
+            module_instance = __import__('%s.osmc.osmc_setting' % module_name, fromlist=[''])
             class_instance = module_instance.OSMCSettingClass()
             class_instance.setDaemon(True)
         except:

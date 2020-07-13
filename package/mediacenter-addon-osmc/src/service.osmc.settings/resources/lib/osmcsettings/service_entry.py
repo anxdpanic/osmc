@@ -27,7 +27,7 @@ from osmccommon.osmc_comms import Communicator
 from osmccommon.osmc_language import LangRetriever
 from osmccommon.osmc_logging import StandardLogger
 
-from . import osmc_settingsGUI
+from . import osmc_settings_gui
 from . import osmc_ubiquifonts
 from . import osmc_walkthru
 
@@ -85,7 +85,8 @@ class Main(object):
         log('_daemon exited')
 
     def create_gui(self):
-        self.stored_gui = osmc_settingsGUI.OSMCGui(queue=self.parent_queue)
+        self.stored_gui = osmc_settings_gui.GuiThread(queue=self.parent_queue,
+                                                      addon=ADDON, window=self.window)
         self.stored_gui.setDaemon(True)
 
     def _daemon(self):
