@@ -63,6 +63,7 @@ class Main(object):
 
         # the gui is created and stored in memory for quick access
         # after a few hours, the gui should be removed from memory
+        self.stored_gui = None
         self.create_gui()
         self.gui_last_accessed = datetime.datetime.now()
         self.skip_check = True
