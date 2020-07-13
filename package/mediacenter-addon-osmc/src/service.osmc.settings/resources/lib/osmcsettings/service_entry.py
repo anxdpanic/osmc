@@ -298,7 +298,7 @@ class Main(object):
             vendor = self.check_vendor()
             log("Vendor is %s" % vendor)
 
-            osmc_walkthru.open_gui(network_module['class_instance'])
+            osmc_walkthru.open_gui(ADDON, networking_instance=network_module['class_instance'])
 
             with open('/tmp/walkthrough_completed', 'w+', encoding='utf-8') as _:
                 log('/tmp/walkthrough_completed written')
@@ -356,7 +356,7 @@ class Main(object):
         elif response == 'walkthru':
             log('Running manually called walkthru')
 
-            osmc_walkthru.open_gui(None, testing=True)
+            osmc_walkthru.open_gui(ADDON, networking_instance=None, testing=True)
 
         elif 'new_device:' in response:
             # a usb device is attached to the hardware

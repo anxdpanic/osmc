@@ -13,10 +13,9 @@ import random
 import subprocess
 import threading
 import traceback
-import xml.etree.ElementTree as ET
-# STANDARD library modules
 from collections import OrderedDict
 from io import open
+from xml.etree import ElementTree
 
 import requests
 
@@ -32,11 +31,10 @@ from . import osmc_timezones
 
 EULA = __LICENSE__.__license__
 WARRANTY = __WARRANTY__.__warranty__
-DIALOG = xbmcgui.Dialog()
 
-addonid = 'service.osmc.settings'
-__addon__ = xbmcaddon.Addon(addonid)
-scriptPath = __addon__.getAddonInfo('path')
+ADDON_ID = 'service.osmc.settings'
+DIALOG = xbmcgui.Dialog()
+MONITOR = xbmc.Monitor()
 
 PANEL_MAP = {
     'language': {
@@ -101,15 +99,15 @@ PANEL_MAP = {
     },
 }
 
-log = StandardLogger(addonid, os.path.basename(__file__)).log
-lang = LangRetriever(__addon__).lang
+log = StandardLogger(ADDON_ID, os.path.basename(__file__)).log
 
 
-class mock_Networking_caller(object):
+class MockNetworkingCaller(object):
 
     def __init__(self, parent, net_call):
         self.ftr_running = False
         self.timeout = 0
+        self.net_call = net_call
         self.parent = parent
         self.parent.internet_connected = True
 
@@ -120,11 +118,11 @@ class mock_Networking_caller(object):
         pass
 
 
-class Networking_caller(threading.Thread):
+class NetworkingCaller(threading.Thread):
 
     def __init__(self, parent, net_call):
 
-        super(Networking_caller, self).__init__()
+        super(NetworkingCaller, self).__init__()
 
         self.daemon = True
         self.cancelled = False
@@ -137,7 +135,6 @@ class Networking_caller(threading.Thread):
         """Calls Barkers method to check for network connection"""
 
         log('checking internet connection')
-
         while self.ftr_running and self.timeout < 12:
 
             self.ftr_running = self.net_call.is_ftr_running()
@@ -148,7 +145,8 @@ class Networking_caller(threading.Thread):
 
             self.timeout += 1
 
-            xbmc.sleep(10000)
+            if MONITOR.waitForAbort(10):
+                return
 
         if not self.ftr_running:
 
@@ -167,40 +165,41 @@ def close_walkthru_on_error(func):
 
         try:
             return func(parent, *args, **kwargs)
-        except Exception:
 
-            log('============= Walkthru Error ====================', xbmc.LOGERROR)
+        except Exception:
+            log('=' * 12 + ' Walkthru Error ' + '=' * 12, xbmc.LOGERROR)
             log(traceback.format_exc(), xbmc.LOGERROR)
-            log('=================================', xbmc.LOGERROR)
+            log('=' * 40, xbmc.LOGERROR)
 
             parent.close()
 
     return wrapper
 
 
-class walkthru_gui(xbmcgui.WindowXMLDialog):
+class WalkthruGui(xbmcgui.WindowXMLDialog):
 
-    def __init__(self,
-                 strXMLname,
-                 strFallbackPath,
-                 strDefaultName,
-                 networking_instance,
-                 lang_rerun,
-                 selected_language,
-                 testing=False):
+    def __init__(self, strXMLname, strFallbackPath, strDefaultName, addon,
+                 networking_instance, lang_rerun, selected_language, testing=False):
+
+        super(WalkthruGui, self).__init__(xmlFilename=strXMLname,
+                                          scriptPath=strFallbackPath,
+                                          defaultSkin=strDefaultName)
+        self._addon = addon
+        self._lang = None
 
         self.testing = testing
 
         # the order of the panels, this list can be changed depending on the specific need
         self.panel_order = sorted(PANEL_MAP.keys(), key=lambda x: PANEL_MAP[x]['order'])
 
-        # the specific controlIDs for the main menu items and others, this is used by onFocus and saves recreating the list every time
+        # the specific controlIDs for the main menu items and others, this is used by onFocus
+        # and saves recreating the list every time
         self.menu_controls = [v['panel_menu_item_id'] for v in PANEL_MAP.values()]
         self.tz_controls = [3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009]
         self.skin_controls = [80010, 80020]
 
-        # switch that identifies whether the internet is connected, there is also a flag to determine if the
-        # networking panel has already been revealed.
+        # switch that identifies whether the internet is connected, there is also a flag to
+        # determine if the networking panel has already been revealed.
         self.internet_connected = False
         self.networking_panel_revealed = False
 
@@ -250,16 +249,39 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         self.selected_country = None
 
         # textures for the skin image
-        media_path = xbmc.translatePath(os.path.join(scriptPath, 'resources', 'skins', 'Default', 'media'))
+        media_path = xbmc.translatePath(os.path.join(strFallbackPath, 'resources',
+                                                     'skins', 'Default', 'media'))
         self.osmc_skin_image = os.path.join(media_path, 'osmc_preview.jpg')
         self.conf_skin_image = os.path.join(media_path, 'conf_preview.jpg')
 
-        # if the device is not recognised as a vero, then remove the warranty panel from the walkthrough
-        if not self.is_Vero():
+        # if the device is not recognised as a vero, then remove the warranty panel
+        # from the walkthrough
+        if not self.is_vero():
             self.panel_order.remove('warranty')
 
-        # this attribute is used to determine when the user is allowed to exit the walkthru using the Esc or Back buttons
+        # this attribute is used to determine when the user is allowed to exit the walkthru using
+        # the Esc or Back buttons
         self.prevent_escape = True
+
+        self.net_call = None
+        self.internet_check = False
+        self.internet_checker = None
+
+        self.previous_language = None
+
+        self.progress_dialog = None
+
+    @property
+    def addon(self):
+        if not self._addon:
+            self._addon = xbmcaddon.Addon(ADDON_ID)
+        return self._addon
+
+    def lang(self, value):
+        if not self._lang:
+            retriever = LangRetriever(self.addon)
+            self._lang = retriever.lang
+        return self._lang(value)
 
     def onInit(self):
         self.hide_controls_on_init()
@@ -290,16 +312,18 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
         self.internet_check = False
         if not self.testing:
-            self.internet_checker = Networking_caller(self, self.net_call)
+            self.internet_checker = NetworkingCaller(self, self.net_call)
         else:
-            self.internet_checker = mock_Networking_caller(self, self.net_call)
+            self.internet_checker = MockNetworkingCaller(self, self.net_call)
         self.internet_checker.setDaemon(True)
         self.internet_checker.start()
 
     def remove_coversheet(self):
-        """ When the window is first loaded, this coversheet (repeated of the background) covers everything.
-            This allows the controls in the background to be hidden discretely. This method simply removes the cover
-            sheet as the final step of the Init. """
+        """
+            When the window is first loaded, this coversheet (repeated of the background)
+            covers everything. This allows the controls in the background to be hidden discretely.
+            This method simply removes the cover sheet as the final step of the Init.
+        """
 
         self.getControl(123456789).setVisible(False)
 
@@ -321,9 +345,8 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
         # populate the language control
         for language_name, language_id in self.languages.items():
-            self.tmp = xbmcgui.ListItem(label=language_name, label2='', offscreen=True)
-
-            self.getControl(20010).addItem(self.tmp)
+            list_item = xbmcgui.ListItem(label=language_name, label2='', offscreen=True)
+            self.getControl(20010).addItem(list_item)
 
     def populate_timezone_controls(self):
 
@@ -337,8 +360,8 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
                 if not ctl_id:
                     continue
 
-                self.tmp = xbmcgui.ListItem(label=country, label2='', offscreen=True)
-                self.getControl(ctl_id).addItem(self.tmp)
+                list_item = xbmcgui.ListItem(label=country, label2='', offscreen=True)
+                self.getControl(ctl_id).addItem(list_item)
 
     def get_languages(self):
         # try and find language files (Kodi 14.x)
@@ -371,10 +394,12 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         for folder in language_folder_contents:
             if folder.startswith('resource.language.'):
                 try:
-                    tree = ET.parse(os.path.join('/home/osmc/.kodi/addons/', folder, 'addon.xml'))
+                    tree = ElementTree.parse(os.path.join('/home/osmc/.kodi/addons/',
+                                                          folder, 'addon.xml'))
                 except Exception:
                     try:
-                        tree = ET.parse(os.path.join('/usr/share/kodi/addons/', folder, 'addon.xml'))
+                        tree = ElementTree.parse(os.path.join('/usr/share/kodi/addons/',
+                                                              folder, 'addon.xml'))
                     except Exception:
                         log('Failed to read language addon.xml for %s' % folder)
                         continue
@@ -401,7 +426,8 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         else:
             self.getControl(88888).setImage(self.osmc_skin_image)
 
-    def is_Vero(self):
+    @staticmethod
+    def is_vero():
         """
             Checks whether this is a Vero and whether the warranty info should be shown
         """
@@ -426,7 +452,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
         return False
 
-    def apply_SSH_state_password(self):
+    def apply_ssh_state_password(self):
 
         try:
 
@@ -460,11 +486,11 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
             log(traceback.format_exc())
 
     @close_walkthru_on_error
-    def exit_proceedure(self):
+    def exit_procedure(self):
 
         self.apply_hostname_change()
 
-        self.apply_SSH_state_password()
+        self.apply_ssh_state_password()
 
         if self.selected_country is not None:
 
@@ -498,8 +524,8 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
         if self.internet_checker.ftr_running is True:
             # only display Please Wait Progress Bar if the ftr is still running
-            self.pDialog = xbmcgui.DialogProgress()
-            self.pDialog.create(lang(32025), lang(32024))
+            self.progress_dialog = xbmcgui.DialogProgress()
+            self.progress_dialog.create(self.lang(32025), self.lang(32024))
 
         # the starting point of the progress bar is the current cycle on the ftr_running loop * 10
         # this will allow more frequent updates to the progress bar than using the timeout value would permit
@@ -513,18 +539,19 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
             prog = int(min(max(int(cnt / 120.0 * 100), 1), 100))
 
-            self.pDialog.update(percent=prog)
+            self.progress_dialog.update(percent=prog)
 
             # break early if the user instructs to do so
-            if self.pDialog.iscanceled():
+            if self.progress_dialog.iscanceled():
                 self.internet_checker.ftr_running = False
                 break
 
-            xbmc.sleep(1000)
+            if MONITOR.waitForAbort(1):
+                break
 
         try:
-            # wrapped in a Try as pDialog is not always created
-            self.pDialog.close()
+            # wrapped in a Try as progress_dialog is not always created
+            self.progress_dialog.close()
         except:
             pass
 
@@ -535,7 +562,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         # show keyboard for the first password
         kb = xbmc.Keyboard()
         kb.setDefault(pass_store)
-        kb.setHeading(lang(32038))
+        kb.setHeading(self.lang(32038))
         kb.setHiddenInput(hidden)
         kb.doModal()
 
@@ -559,7 +586,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
                 # show keyboard
                 kb = xbmc.Keyboard()
                 kb.setDefault(passhint)
-                kb.setHeading(lang(32039))
+                kb.setHeading(self.lang(32039))
                 kb.setHiddenInput(hidden)
                 kb.doModal()
 
@@ -576,7 +603,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
                     # if the passwords dont match, then give the user the option of entering via hidden or plain text kayboards
                     if pass1 != pass2 and hidden is True:
 
-                        plain_text_pass = DIALOG.yesno(lang(32040), lang(32041))
+                        plain_text_pass = DIALOG.yesno(self.lang(32040), self.lang(32041))
 
                         if plain_text_pass:
 
@@ -589,7 +616,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
                     # if the passwords dont match and they aren't hidden then alert the user and reshow the entry dialog
                     elif pass1 != pass2:
 
-                        _ = DIALOG.ok(lang(32040), lang(32042))
+                        _ = DIALOG.ok(self.lang(32040), self.lang(32042))
 
                         mypass = self.enter_password(pass_store, confirm=confirm, hidden=hidden)
 
@@ -606,7 +633,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         self.selected_language = self.getControl(controlID).getSelectedItem().getLabel()
 
         # display confirmation dialog
-        user_confirmation = DIALOG.yesno(lang(32046), self.selected_language, autoclose=10000)
+        user_confirmation = DIALOG.yesno(self.lang(32046), self.selected_language, autoclose=10000)
 
         if user_confirmation is True:
             # if user CONFIRMS, check whether a skin reload is required
@@ -630,7 +657,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         # show keyboard
         kb = xbmc.Keyboard()
         kb.setDefault(self.device_name.replace('current name: ', ''))
-        kb.setHeading(lang(32043))
+        kb.setHeading(self.lang(32043))
         kb.doModal()
 
         # only move on if the device has been given a name
@@ -656,13 +683,13 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         if ctl.isSelected():
             # change to ENABLED
             self.ssh_state = True
-            ctl.setLabel(lang(32036))
+            ctl.setLabel(self.lang(32036))
             self.setFocusId(370012)
 
         else:
             # change to DISABLED
             self.ssh_state = False
-            ctl.setLabel(lang(32037))
+            ctl.setLabel(self.lang(32037))
             self.setFocusId(370012)
 
     def enter_ssh_password(self):
@@ -673,7 +700,8 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
         if user_pass is not None:
             self.ssh_pass = user_pass
 
-            self.getControl(370011).setLabel(lang(32044) + '    ' + self.ssh_pass.replace('_', ''))
+            self.getControl(370011).setLabel(self.lang(32044) + '    ' +
+                                             self.ssh_pass.replace('_', ''))
 
             self.getControl(370012).setVisible(True)
 
@@ -684,7 +712,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
             # show keyboard
             kb = xbmc.Keyboard()
             kb.setDefault(self.email)
-            kb.setHeading(lang(32045))
+            kb.setHeading(self.lang(32045))
             kb.doModal()
             if kb.isConfirmed():
                 self.email = kb.getText()
@@ -706,7 +734,7 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
         if controlID == 1005:  # Exit control
 
-            self.exit_proceedure()
+            self.exit_procedure()
 
         elif controlID == 20010:  # language container
 
@@ -786,13 +814,15 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
             # allow the user to exit
             self.prevent_escape = False
 
-    def random_name(self):
+    @staticmethod
+    def random_name():
 
         names = [
-            "Alfonse", "Barnaby", "Aloysius", "Archibald", "Algernon", "Basil", "Bertram", "Carston", "Cavendish", "Cecil",
-            "Cyril", "Danforth", "Cuthbert", "Alastair", "Preston", "Giles", "Cortland", "Atticus",
-            "Edmund", "Gilbert", "Ethelbert", "Frederick", "Geoffrey", "Gideon", "Giggleswick", "Grumbole", "Hamilton",
-            "Ignatius", "Ebenezer", "Herbert", "Clement", "Humphrey", "Ian", "Ichabod", "Jonathan", "Malcolm",
+            "Alfonse", "Barnaby", "Aloysius", "Archibald", "Algernon", "Basil", "Bertram",
+            "Carston", "Cavendish", "Cecil", "Cyril", "Danforth", "Cuthbert", "Alastair",
+            "Preston", "Giles", "Cortland", "Atticus", "Edmund", "Gilbert", "Ethelbert",
+            "Frederick", "Geoffrey", "Gideon", "Giggleswick", "Grumbole", "Hamilton", "Ignatius",
+            "Ebenezer", "Herbert", "Clement", "Humphrey", "Ian", "Ichabod", "Jonathan", "Malcolm",
             "Mervyn", "Mortimer", "Nigel", "Percy", "Prentis", "Reginald", "Ridgewell", "Royston",
             "Theophilus", "Tobias", "Tristram", "Ulysses", "Ulrich", "Virgil", "Vivian", "Waldo",
             "Wesley", "Wilbur", "Wilfred", "Willard", "Willoughby",
@@ -815,15 +845,16 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
             if self.internet_connected:
 
-                # if the internet is connected and the networking panel has not already been revealed, then just jump to the
-                # next panel after networking
+                # if the internet is connected and the networking panel has not already been
+                # revealed, then just jump to the next panel after networking
                 next_panel = self.panel_order[self.panel_order.index('networking') + 1]
                 self.panel_order.remove('networking')
 
             else:
-                # if the internet is NOT connected, and the networking panel has NOT been revealed then show the internet checker progress bar.
-                # Once that is complete (or cancelled) then check for the internet connection again
-                # and show the networking panel if negative, or jump to the next panel if positive.
+                # if the internet is NOT connected, and the networking panel has NOT been revealed
+                # then show the internet checker progress bar. Once that is complete (or cancelled)
+                # then check for the internet connection again and show the networking panel
+                # if negative, or jump to the next panel if positive.
                 self.still_checking_for_network()
 
                 if self.internet_connected:
@@ -845,7 +876,8 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
 
         log('Changing from %s to %s' % (current_panel, next_panel))
 
-        # special workaround to only show the networking panel if we havent been able to connect to the internet
+        # special workaround to only show the networking panel if we havent been able to
+        # connect to the internet
         if next_panel == 'networking':
             next_panel = self.networking_special_handling(next_panel)
 
@@ -911,8 +943,10 @@ class walkthru_gui(xbmcgui.WindowXMLDialog):
                 self.set_skin_image('CONF')
 
 
-def open_gui(networking_instance, testing=False):
-    xml = "walkthru_720.xml" if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' else "walkthru.xml"
+def open_gui(addon=None, networking_instance=None, testing=False):
+    xml = "walkthru_720.xml" if \
+        xbmcgui.Window(10000).getProperty("SkinHeight") == '720' \
+        else "walkthru.xml"
 
     lang_rerun = False
     first_run = True
@@ -920,29 +954,37 @@ def open_gui(networking_instance, testing=False):
     selected_language = None
     skin_choice = None
 
+    if not addon:
+        addon = xbmcaddon.Addon(ADDON_ID)
+
+    script_path = addon.getAddonInfo('path')
+
     while first_run or lang_rerun:
 
         first_run = False
         try:
-            GUI = walkthru_gui(xml, scriptPath, 'Default', networking_instance=networking_instance, lang_rerun=lang_rerun, selected_language=selected_language, testing=testing)
-            GUI.doModal()
+            gui = WalkthruGui(xml, script_path, 'Default', addon=addon,
+                              networking_instance=networking_instance, lang_rerun=lang_rerun,
+                              selected_language=selected_language, testing=testing)
+            gui.doModal()
         except:
             log(traceback.format_exc(), xbmc.LOGERROR)
             return
 
-        selected_language = GUI.selected_language
-        skin_choice = GUI.selected_skin
-        lang_rerun = GUI.lang_rerun
+        selected_language = gui.selected_language
+        skin_choice = gui.selected_skin
+        lang_rerun = gui.lang_rerun
 
-        # set language
-        language_id = GUI.languages.get(selected_language, None)
+        language_id = gui.languages.get(selected_language, None)
         if language_id:
-            xbmc.executebuiltin('xbmc.SetGUILanguage(%s)' % language_id)
+            xbmc.executebuiltin('SetGUILanguage(%s)' % language_id)
         else:
-            log('Failed SetGUILanguage using key:%s, language_id: %s' % (selected_language, language_id))
-            # xbmc.executebuiltin('xbmc.SetGUILanguage(%s)' % default_language_id)
+            log('Failed SetGUILanguage using key:%s, language_id: %s' %
+                (selected_language, language_id))
 
-        xbmc.sleep(1000)
+        if MONITOR.waitForAbort(1):
+            log('Exiting GUI')
+            return
 
         log('users language: %s' % selected_language)
         log('lang_rerun: %s' % lang_rerun)
@@ -950,7 +992,6 @@ def open_gui(networking_instance, testing=False):
 
     # -- THIS SECTION SHOULD BE SUPPRESSED WHILE THE SKIN CHANGE METHOD IS WORKED ON  --
     if skin_choice != 'OSMC':
-
         log('Loading Estuary')
         try:
             xbmc.setskin('skin.estuary')
