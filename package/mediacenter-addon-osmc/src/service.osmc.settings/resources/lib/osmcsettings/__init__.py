@@ -10,4 +10,4 @@
 
 __all__ = ['__LICENSE__', '__WARRANTY__', 'call_osmc_parent', 'osmc_settingsGUI',
            'osmc_slideshow', 'osmc_timezones', 'osmc_ubiquifonts', 'osmc_walkthru',
-           'script_entry', 'service_entry', 'wifiscanner']
+           'script_entry', 'service_entry', 'wifi_scanner']
