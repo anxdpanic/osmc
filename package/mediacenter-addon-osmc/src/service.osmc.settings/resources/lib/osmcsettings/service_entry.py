@@ -36,14 +36,14 @@ try:
 except ImportError:
     import Queue
 
-addonid = 'service.osmc.settings'
-__addon__ = xbmcaddon.Addon(addonid)
+ADDON_ID = 'service.osmc.settings'
+ADDON = xbmcaddon.Addon(ADDON_ID)
 
 DIALOG = xbmcgui.Dialog()
 PY3 = sys.version_info.major == 3
 
-log = StandardLogger(addonid, os.path.basename(__file__)).log
-lang = LangRetriever(__addon__).lang
+log = StandardLogger(ADDON_ID, os.path.basename(__file__)).log
+lang = LangRetriever(ADDON).lang
 
 
 class Main(object):
@@ -73,8 +73,10 @@ class Main(object):
         # current skin directory, used to detect when the user has changed skins and prompts a reconstruction of the gui
         self.skin_dir = xbmc.getSkinDir()
 
+        self.fonts = osmc_ubiquifonts.UbiquiFonts(ADDON_ID, ADDON, self.window)
+
         # run the ubiquifonts script to import the needed fonts into the Font.xml
-        _ = osmc_ubiquifonts.import_osmc_fonts()
+        _ = self.fonts.import_osmc_fonts()
 
         # daemon
         self._daemon()
@@ -243,7 +245,7 @@ class Main(object):
             log('New Skin: %s' % self.skin_dir)
 
             try:
-                resp = osmc_ubiquifonts.import_osmc_fonts()
+                resp = self.fonts.import_osmc_fonts()
 
                 log('Ubiquifonts result: %s' % resp)
 
@@ -365,7 +367,7 @@ class Main(object):
             if device_id:
 
                 # get ignore list
-                ignore_list_raw = __addon__.getSetting('ignored_devices')
+                ignore_list_raw = ADDON.getSetting('ignored_devices')
                 ignore_list_initial = ignore_list_raw.split('|')
                 ignore_list = deepcopy(ignore_list_initial)
 
@@ -388,7 +390,7 @@ class Main(object):
 
                 if ignore_list_initial != ignore_list:
                     ignore_string = '|'.join(ignore_list)
-                    __addon__.setSetting('ignored_devices', ignore_string)
+                    ADDON.setSetting('ignored_devices', ignore_string)
 
         else:
             # check whether the response is one of the live_modules, if it is then launch that module

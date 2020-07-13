@@ -13,172 +13,180 @@ import subprocess
 import sys
 import traceback
 from io import open
-from xml.etree import ElementTree as ET
+from xml.etree import ElementTree
 
 import xbmc
 import xbmcaddon
 import xbmcgui
+from osmccommon.osmc_logging import StandardLogger
 
-WINDOW = xbmcgui.Window(10000)
-
-addonid = 'service.osmc.settings'
-FOLDER = xbmc.translatePath(os.path.join(xbmcaddon.Addon(addonid).getAddonInfo('path'), 'resources'))
-
-FONT_FOLDER = xbmc.translatePath(os.path.join(FOLDER, 'skins', 'Default', 'fonts'))
-
-FONT_PARTIALS = os.path.join(FOLDER, 'lib', 'osmcsettings', 'fonts.txt')
-
+ADDON_ID = 'service.osmc.settings'
 PY2 = sys.version_info.major == 2
 
 
-def log(message):
-    try:
-        message = str(message)
-    except UnicodeEncodeError:
-        message = message.encode('utf-8', 'ignore')
+class UbiquiFonts:
 
-    xbmc.log('UBIQUIFONTS ' + str(message), level=xbmc.LOGDEBUG)
+    def __init__(self, addon_id=None, addon=None, window=None):
+        self._addon_id = addon_id
+        self._addon = addon
+        self._window = window
 
+        _logger = StandardLogger(addon_id, os.path.basename(__file__))
+        self.log = _logger.log
 
-def get_addon_folder(alien_skin_folder):
-    folder = None
-    height = None
-    width = None
+        self.resource_folder = xbmc.translatePath(
+            os.path.join(addon.getAddonInfo('path'), 'resources')
+        )
 
-    try:
-        # first check the addon for the folder location
-        tree = ET.parse(os.path.join(alien_skin_folder, 'addon.xml'))
-        root = tree.getroot()
+        self.font_folder = xbmc.translatePath(
+            os.path.join(self.resource_folder, 'skins', 'Default', 'fonts')
+        )
 
-        for ext in root.iter('extension'):
-            res = ext.find('res')
-            if res is None:
-                continue
-            height = res.attrib['height']
-            width = res.attrib['width']
-            folder = res.attrib['folder']
-            break
+        self.font_partials = os.path.join(
+            self.resource_folder, 'lib', 'osmcsettings', 'fonts.txt'
+        )
 
-    except Exception as e:
-        log(e.args)
-        log(traceback.format_exc())
+    @property
+    def addon_id(self):
+        if not self._addon_id:
+            self._addon_id = ADDON_ID
+        return self._addon_id
 
-    # failing that, use the folder search option
-    if not folder:
+    @property
+    def addon(self):
+        if not self._addon:
+            self._addon = xbmcaddon.Addon(self.addon_id)
+        return self._addon
 
-        possible_xml_locations = [('1080i', 1080, 1920), ('720p', 720, 1280), ('1080p', 1080, 1920), ('16x9', None, None)]
+    @property
+    def window(self):
+        if not self._window:
+            self._window = xbmcgui.Window(10000)
+        return self._window
 
-        for pos_loc in possible_xml_locations:
+    def _get_addon_folder(self, skin_folder):
+        folder = None
+        height = None
+        width = None
 
-            folder = os.path.join(alien_skin_folder, pos_loc[0])
+        try:
+            # first check the addon for the folder location
+            tree = ElementTree.parse(os.path.join(skin_folder, 'addon.xml'))
+            root = tree.getroot()
 
-            log('POSSIBLE XML LOCATION = %s' % folder)
-
-            try:
-
-                _ = os.listdir(folder)
-                height = pos_loc[1]
-                width = pos_loc[2]
+            for ext in root.iter('extension'):
+                res = ext.find('res')
+                if res is None:
+                    continue
+                height = res.attrib['height']
+                width = res.attrib['width']
+                folder = res.attrib['folder']
                 break
 
-            except:
+        except Exception as e:
+            self.log(e.args)
+            self.log(traceback.format_exc())
 
-                pass
+        # failing that, use the folder search option
+        if not folder:
 
-            log('ISNT A FOLDER')
+            possible_xml_locations = [('1080i', 1080, 1920), ('720p', 720, 1280),
+                                      ('1080p', 1080, 1920), ('16x9', None, None)]
 
-        else:
+            for location_folder, location_height, location_width in possible_xml_locations:
+                folder = os.path.join(skin_folder, location_folder)
+                self.log('POSSIBLE XML LOCATION = %s' % folder)
+                if not os.path.isdir(folder):
+                    continue
 
-            log('BREAKEN')
+                height = location_height
+                width = location_width
+                break
 
-            return
+            else:
+                self.log('FAILED')
+                return
 
-        log('ACTUAL XML LOCATION = %s' % folder)
+            self.log('ACTUAL XML LOCATION = %s' % folder)
 
-    if height and width:
-        WINDOW.setProperty("SkinHeight", str(height))
-        WINDOW.setProperty("SkinWidth", str(width))
+        if height and width:
+            self.window.setProperty("SkinHeight", str(height))
+            self.window.setProperty("SkinWidth", str(width))
 
-    return os.path.join(alien_skin_folder, folder)
+        return os.path.join(skin_folder, folder)
 
+    def import_osmc_fonts(self):
+        skin_folder = xbmc.translatePath('special://skin')
 
-def import_osmc_fonts():
-    alien_skin_folder = xbmc.translatePath('special://skin')
+        self.log('skin_folder: %s' % skin_folder)
 
-    log('alien_skin_folder: %s' % alien_skin_folder)
+        fonts_folder = os.path.join(skin_folder, 'fonts/')
 
-    alien_fonts_folder = os.path.join(alien_skin_folder, 'fonts/')
-    alien_fonts = set(os.listdir(alien_fonts_folder))
+        xml_folder = self._get_addon_folder(skin_folder)
+        self.log('ACTUAL XML LOCATION = %s' % xml_folder)
 
-    alien_xml_folder = get_addon_folder(alien_skin_folder)
-    log('ACTUAL XML LOCATION = %s' % alien_xml_folder)
+        if not xml_folder:
+            return 'failed'
 
-    if not alien_xml_folder:
-        return 'failed'
+        font_xml = os.path.join(xml_folder, 'Font.xml')
+        self.log('font_xml = %s' % font_xml)
 
-    alien_font_xml = os.path.join(alien_xml_folder, 'Font.xml')
-    log('alien_font_xml = %s' % alien_font_xml)
+        # check whether the fonts are already in the font xml, if they are then simply return.
+        # the previous solution of checking for a backup fonts file is pointless as an update
+        # of the skin would overwrite the Font.xml and leave the backup in place
+        lines = []
+        with open(font_xml, 'r', encoding='utf-8') as open_file:
+            line = open_file.readline()
+            if 'osmc_addon_XLarge' in line:
+                return 'ubiquited'
+            lines.append(line)
 
-    # check whether the fonts are already in the font xml, if they are then simply return.
-    # the previous solution of checking for a backup fonts file is pointless as an update of the skin
-    # would overwrite the Font.xml and leave the backup in place
-    with open(alien_font_xml, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
+        # copy fonts to skins font folder
+        fonts = set(os.listdir(fonts_folder))
+        unique_files = set(os.listdir(self.font_folder)) - fonts
 
-    for line in lines:
-        if 'osmc_addon_XLarge' in line:
-            return 'ubiquited'
+        for filename in unique_files:
+            subprocess.call(["sudo", "cp",
+                             os.path.join(self.font_folder, filename), fonts_folder])
 
-    # copy fonts to skins font folder
-    unique_files = set(os.listdir(FONT_FOLDER)) - alien_fonts
+        with open(self.font_partials, 'r', encoding='utf-8') as open_file:
+            font_partials_lines = open_file.readlines()
 
-    for filename in unique_files:
-        subprocess.call(["sudo", "cp", os.path.join(FONT_FOLDER, filename), alien_fonts_folder])
+        with open(font_xml, 'r', encoding='utf-8') as open_file:
+            font_xml_lines = open_file.readlines()
 
-    with open(FONT_PARTIALS, 'r', encoding='utf-8') as f:
-        osmc_lines = f.readlines()
+        new_lines = []
+        fonts_added = False
 
-    with open(alien_font_xml, 'r', encoding='utf-8') as af:
-        alien_lines = af.readlines()
+        for line in font_xml_lines:
 
-    new_lines = []
+            if '</fontset>' in line and not fonts_added:
+                fonts_added = True
+                new_lines += font_partials_lines
+                new_lines.append(line)
 
-    count = 0
+            else:
+                new_lines.append(line)
 
-    for line in alien_lines:
+        if PY2:
+            new_lines = [
+                x.decode('utf-8') if isinstance(x, str) else x for x in new_lines
+            ]
 
-        if '</fontset>' in line and count == 0:
+        # make backup of original Font.xml
+        backup_file = os.path.join(fonts_folder, 'backup_Font.xml')
 
-            count += 1
+        self.log('BACKUP FILE: %s' % backup_file)
 
-            for osmc_line in osmc_lines:
-                new_lines.append(osmc_line)
+        subprocess.call(["sudo", "cp", font_xml, backup_file])
 
-            new_lines.append(line)
+        with open('/tmp/Font.xml', 'w', encoding='utf-8') as open_file:
+            open_file.writelines(new_lines)
 
-        else:
+        subprocess.call(["sudo", "mv", '/tmp/Font.xml', font_xml])
 
-            new_lines.append(line)
-
-    if PY2:
-        new_lines = [
-            x.decode('utf-8') if isinstance(x, str) else x for x in new_lines
-        ]
-
-    # make backup of original Font.xml
-    backup_file = os.path.join(alien_fonts_folder, 'backup_Font.xml')
-
-    log('BACKUP FILE: %s' % backup_file)
-
-    subprocess.call(["sudo", "cp", alien_font_xml, backup_file])
-
-    with open('/tmp/Font.xml', 'w', encoding='utf-8') as bf:
-        bf.writelines(new_lines)
-
-    subprocess.call(["sudo", "mv", '/tmp/Font.xml', alien_font_xml])
-
-    return 'reload_please'
+        return 'reload_please'
 
 
 if __name__ == "__main__":
-    import_osmc_fonts()
+    UbiquiFonts().import_osmc_fonts()
