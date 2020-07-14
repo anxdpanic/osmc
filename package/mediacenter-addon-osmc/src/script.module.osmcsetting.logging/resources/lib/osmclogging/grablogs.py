@@ -20,14 +20,13 @@ except ImportError:
 
 if __name__ == "__main__":
 
-    addonid = "script.module.osmcsetting.logging"
+    addon_id = "script.module.osmcsetting.logging"
 
     if not xbmc:
-        copy, termprint = grablogs.parse_arguments()
+        copy, term_print = grablogs.parse_arguments()
     else:
-        copy, termprint = grablogs.retrieve_settings(xbmcaddon.Addon(addonid))
+        copy, term_print = grablogs.retrieve_settings(xbmcaddon.Addon(addon_id))
 
     if copy is not None:
-        m = grablogs.Main(copy, termprint)
-
-        m.launch_process()
+        main = grablogs.Main(copy, term_print)
+        main.launch_process()
