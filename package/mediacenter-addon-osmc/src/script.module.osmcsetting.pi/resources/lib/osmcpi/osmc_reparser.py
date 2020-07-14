@@ -6,72 +6,66 @@
 
     SPDX-License-Identifier: GPL-2.0-or-later
     See LICENSES/GPL-2.0-or-later for more information.
-"""
 
-"""
-DICT OF ITEMS IN CONFIG WHICH AFFECT THIS KODI SETTING
+    DICT OF ITEMS IN CONFIG WHICH AFFECT THIS KODI SETTING
 
-kodi_setting_id:    {
+    kodi_setting_id:    {
 
-    KODI_ITEM:
-            {
-            config_get_patterns: [  LIST OF DICTS WITH AN IDENTIFY REGEX AND AN EXTRACT REGEX
-
-                            IDENTIFY REGEX'S ARE THERE TO SPECIFICALLY FIND THE LINES
-                            EXTRACT REGEXES ARE THERE TO GET THE SPECIFIC SETTING VALUE
-                        ],
+        KODI_ITEM:
+                {
+                config_get_patterns: [
+                                LIST OF DICTS WITH AN IDENTIFY REGEX AND AN EXTRACT REGEX
+                                IDENTIFY REGEX'S ARE THERE TO SPECIFICALLY FIND THE LINES
+                                EXTRACT REGEXES ARE THERE TO GET THE SPECIFIC SETTING VALUE
+                            ],
 
 
-            config_set : FUNCTION TO CHANGE THE SETTING IN THE CONFIG,
-                            # this code should cycle through the config line list, search for each config_key, then substitute that line with the new one
+                config_set :    FUNCTION TO CHANGE THE SETTING IN THE CONFIG,
+                                this code should cycle through the config line list, search for
+                                each config_key, then substitute that line with the new one
 
-            config_validation: FUNCTION TO VALIDATE THE VALUE FROM THE CONFIG, this also converts the value into a form kodi settings will recognise
-                                i.e. it should convert binary 0:1 to 'false'|'true'
+                config_validation:  FUNCTION TO VALIDATE THE VALUE FROM THE CONFIG,
+                                    this also converts the value into a form kodi settings
+                                    will recognise
+                                    i.e. it should convert binary 0:1 to 'false'|'true'
 
-            kodi_set: additional function that can be used to do more specific conversion from the config to kodi.
-                for instance, if a single setting in kodi relies upon two different settings in the config, this can combine them
+                kodi_set:   additional function that can be used to do more specific conversion
+                            from the config to kodi. for instance, if a single setting in kodi
+                            relies upon two different settings in the config, this can combine them
 
-            setting_stub: a stub of the string that will replace the lines in the config.txt, the value is inserted into it
-            },
-
+                setting_stub:   a stub of the string that will replace the lines in the config.txt,
+                                the value is inserted into it
+                },
     # ...
 
-
-NEEDS A REMOVE LIST
-NEEDS A FINAL CHECK FOR HDMI_SAFE to make sure the entries related to it are removed if it is on
-        hdmi_safe can be checked in the dict immediately after the settings are extracted from kodi
-        that way the other values can be set and override the ones taken from kodi
+    NEEDS A REMOVE LIST
+    NEEDS A FINAL CHECK FOR HDMI_SAFE to make sure the entries related to it are removed if
+    it is on hdmi_safe can be checked in the dict immediately after the settings are extracted
+    from kodi that way the other values can be set and override the ones taken from kodi
 
 """
 
 import re
+import subprocess
 import sys
 from io import open
 
 PY2 = sys.version_info.major == 2
 
 
-def config_to_kodi(MASTER_SETTINGS, config):
-    """ Takes the existing config and uses the protocols in the MASTER_SETTINGS to extract the settings
-        for use in kodi.
+def config_to_kodi(settings, config):
+    """
+        Takes the existing config and uses the protocols in the MASTER_SETTINGS to
+        extract the settings for use in kodi.
 
-        Returns a dictionary of kodi settings and kodi values."""
+        Returns a dictionary of kodi settings and kodi values.
+    """
 
     extracted_settings_for_kodi = {}
 
-    # print "==--==--"*20
-    # print "Settings being extracted from config.txt"
-    # print "==--==--"*20
-
-    for setting, protocols in MASTER_SETTINGS.items():
+    for setting, protocols in settings.items():
         value = general_config_get(config, **protocols)
-
-        # print "%s: %s" % (setting, value)
-
         extracted_settings_for_kodi[setting] = value
-
-        # print "Setting"
-    # print "==--==--"*20
 
     # The gpio_pin_in has a default value of 17 when the lirc-rpi overlay is present.
     # Some configs may not report a gpio_in_pin for this reason.
@@ -87,71 +81,76 @@ def config_to_kodi(MASTER_SETTINGS, config):
 
 
 def general_config_get(config, config_get_patterns, config_validation, kodi_set, default, **kwargs):
-    """ Searches the config.txt for specific settings and returns the values when they are found.
+    """
+        Searches the config.txt for specific settings and returns the values when they are found.
+        Uses the validation and kodi_set protocols to convert the config settings into
+        kodi settings.
 
-        Uses the validation and kodi_set protocols to convert the config settings into kodi settings.
-
-        Returns a valid kodi setting value. """
-
+        Returns a valid kodi setting value.
+    """
     results = []
 
-    # the config is reviewed in reverse order so that the final of any duplicate settings is first in the results list
-    # this is consistent with how the rPi does it's config parsing
+    # the config is reviewed in reverse order so that the final of any duplicate settings is
+    # first in the results list this is consistent with how the rPi does it's config parsing
     for line in config[::-1]:
-
         # ignore blank lines
         if not line.strip():
             continue
+
         # ignore commented out lines
         if line.strip().startswith("#"):
             continue
+
         # strip the line of any inline comments
         if "#" in line:
             line = line[: line.index("#")]
-        for pair in config_get_patterns:
 
+        for pair in config_get_patterns:
             matched = re.search(pair["identify"], line, re.IGNORECASE)
 
             if matched:
-
                 raw_value = re.search(pair["extract"], line, re.IGNORECASE)
 
                 if raw_value:
-
                     result = config_validation(raw_value.group(1))
 
                     if result is not None:
                         results.append(result)
-    kodi_setting = kodi_set(results)
 
+    kodi_setting = kodi_set(results)
     if kodi_setting is None:
         kodi_setting = retrieve_default(**default)
+
     return kodi_setting
 
 
 def retrieve_default(function, value):
     if function is not None:
         value = function()
+
     return value
 
 
-def kodi_to_config(MASTER_SETTINGS, config, new_settings):
-    """ Takes the existing config.txt (as a list of lines) and constructs a new one using the settings
-        from kodi.
+def kodi_to_config(settings, config, new_settings):
+    """
+        Takes the existing config.txt (as a list of lines) and constructs a new one using the
+        settings from kodi.
 
-        Returns a brand new config (list of lines)"""
+        Returns a brand new config (list of lines)
+    """
 
     # print "==--==--"*20 
 
     # print "Settings being sent to config.txt"
 
     # print "==--==--"*20
-
-    # It is vital for gpio-ir entry to come AFTER the gpio-ir-overlay entry,
-    # as the overlay entry is simply there to pick up legacy entries and eliminate
-    # them. The non-overlay entry is the one used to put them back into the config.txt
-    # file. Dictionaries aren't order in python 2, so we have to do the ordering
-    # using a sorted list of keys. (!!!!) 
+    '''
+        It is vital for gpio-ir entry to come AFTER the gpio-ir-overlay entry,
+        as the overlay entry is simply there to pick up legacy entries and eliminate
+        them. The non-overlay entry is the one used to put them back into the config.txt
+        file. Dictionaries aren't order in python 2, so we have to do the ordering
+        using a sorted list of keys. (!!!!)
+    '''
     new_setting_keys = new_settings.keys()
     new_setting_keys = sorted(new_setting_keys)
 
@@ -160,44 +159,40 @@ def kodi_to_config(MASTER_SETTINGS, config, new_settings):
 
         # print "%s: %s" % (setting, new_value)
 
-        setting_protocols = MASTER_SETTINGS.get(setting, None)
-
+        setting_protocols = settings.get(setting, None)
         if setting_protocols is None:
             # print "No setting protocol for %s" % setting
             continue
+
         # print "RUNNING CONFIG SET FOR %s" % setting
         config = general_config_set(config, new_settings, new_value, **setting_protocols)
 
     return config
 
 
-def general_config_set(
-        config,
-        new_settings,
-        new_value,
-        config_get_patterns,
-        config_set,
-        already_set,
-        setting_stub,
-        **kwargs
-):
-    """ Runs through the config.txt looking for a specific setting and replaces the existing
-        values when they are found. If there are duplicate entries, the last entry is kept, the others
-        are commented out.
+def general_config_set(config, new_settings, new_value, config_get_patterns,
+                       config_set, already_set, setting_stub, **kwargs):
+    """
+        Runs through the config.txt looking for a specific setting and replaces the existing
+        values when they are found. If there are duplicate entries, the last entry is kept,
+        the others are commented out.
 
         If not found, then the setting value is added to the end.
 
-        Returns a new list of config lines. """
+        Returns a new list of config lines.
+    """
 
     new_config = []
 
-    # pass the new_value through the config_set protocol to prepare it for inclusion in the config.txt
+    # pass the new_value through the config_set protocol to prepare it for inclusion in
+    # the config.txt
     new_value = config_set(new_value, new_settings)
 
     # print config
     # print " \n"
 
-    # the original config is run through backwards so that the last setting of any duplicates is kept
+    # the original config is run through backwards so that the last setting of any
+    # duplicates is kept
     for line in config[::-1]:
 
         # print 'Examining line : %s ' % line.strip()
@@ -207,11 +202,13 @@ def general_config_set(
             new_config.append(line)
             # print '\tLine is passed through as it is blank'
             continue
+
         # pass commented out lines straight through
         if line.strip().startswith("#"):
             new_config.append(line)
             # print '\tLine is passed through as it is a comment'
             continue
+
         # ignore inline comments on the line
         try:
             cf_line = line[: line.index("#")]
@@ -219,39 +216,44 @@ def general_config_set(
         except ValueError:
             cf_line = line
             comment = ""
+
         line_matches = False
 
-        for i, pair in enumerate(config_get_patterns):
-
+        for idx, pair in enumerate(config_get_patterns):
             matched = re.search(pair["identify"], cf_line, re.IGNORECASE)
 
-            # print '\tAttempting to match line to pattern %s' % i
+            # print '\tAttempting to match line to pattern %s' % idx
 
             if matched:
-
                 line_matches = True
 
                 # print '\t\t match found'
 
-                # if a match happens but the value is 'remove_this_line', then dont add the line to the
-                # new config.txt
+                # if a match happens but the value is 'remove_this_line',
+                # then dont add the line to the new config.txt
                 if new_value == "remove_this_line":
                     # print '\t\tSetting value says to remove this line'
                     continue
+
                 # if the value has been set already, then comment out this line
                 if already_set:
-                    # comment out any duplicated entries (this could be changed to removal if we want)
+                    # comment out any duplicated entries
+                    # (this could be changed to removal if we want)
                     new_config.append("#" + line.replace("\n", "") + " # DUPLICATE")
-                    # print '\t\tSetting has already been set, skipping subsequent matches and marking as DUPLICATE'
+                    # print '\t\tSetting has already been set, skipping subsequent matches
+                    # and marking as DUPLICATE'
                     continue
+
                 # otherwise update the line
                 new_config.append(setting_stub % new_value + "  %s" % comment)
                 # print '\tLine has been update with the new value: %s' % new_value
                 already_set = True
+
         # if no match actually occured then pass the line through to the new config
         if not line_matches:
             new_config.append(line)
             # print '\t-- NO MATCH --'
+
     # flip the config back around the other way, so new entries are added at the end
     new_config = new_config[::-1]
 
@@ -266,17 +268,11 @@ def general_config_set(
     return new_config
 
 
-"""
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@
-                                        VALIDATION FUNCTIONS
-                                                                                       @@@@@@@@@@@@@@@@@@@@@@@@
-Settings coming FROM the config.txt pass through one of these.                         @@@@@@@@@@@@@@@@@@@@@@@@
-They can be tested for accuracy, valid ranges, and (if it is a simple 1 for 1)         @@@@@@@@@@@@@@@@@@@@@@@@
-converted to what is recognised by the settings in Kodi.                               @@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-"""
+'''
+Validation functions, settings coming FROM the config.txt pass through one of these. They can be 
+tested for accuracy, valid ranges, and (if it is a simple 1 for 1) converted to what is recognised 
+by the settings in Kodi.
+'''
 
 
 def generic_bool_validation(config_value):
@@ -292,8 +288,7 @@ def generic_range_validation(config_value, myrange):
     try:
         if int(config_value) in myrange:
             return config_value
-        else:
-            raise ValueError
+        raise ValueError
     except (TypeError, ValueError):
         return None
 
@@ -412,57 +407,44 @@ def hdmi_ignore_edid_validation(config_value):
         return "true"
 
 
-"""
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@
-                                CUSTOM DEFAULT FUNCTIONS
-                                                                                       @@@@@@@@@@@@@@@@@@@@@@@@
-Allows for customisable default values, i.e. default values determined by some         @@@@@@@@@@@@@@@@@@@@@@@@
-external analysis                                                                      @@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-"""
+'''
+Custom default functions, allows for customisable default values, 
+i.e. default values determined by some external analysis
+'''
 
 
 def hdmi_boost_custom_default():
-    """ Tests the users system to see which hdmi_boost figure should be used. """
-    """ Yet to be implemented """
-
+    """
+        Tests the users system to see which hdmi_boost figure should be used.
+        *** Yet to be implemented
+    """
     return "0"
 
 
-"""
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@
-                                CUSTOM CONFIG SET FUNCTIONS
-                                                                                       @@@@@@@@@@@@@@@@@@@@@@@@
-Converts the kodi settings into the settings values required in the config.txt         @@@@@@@@@@@@@@@@@@@@@@@@
-                                                                                       @@@@@@@@@@@@@@@@@@@@@@@@
-Takes both the new value of the setting and all the other settings for reference       @@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-"""
+'''
+Custom Config set functions, converts the kodi settings into the settings values required 
+in the config.txt. Takes both the new value of the setting and all the other settings for reference.
+'''
 
 
 def generic_bool_config_set(kodi_setting, all_settings):
     if kodi_setting == "true":
         return "1"
+
     else:
         return "remove_this_line"
 
 
 def generic_passthrough_config_set(kodi_setting, all_settings):
     if kodi_setting:
-
         return kodi_setting
-    else:
 
+    else:
         return "remove_this_line"
 
 
 def start_x_config_set(kodi_setting, all_settings):
     """ Always return 1. This setting should be in every config.txt """
-
     return "1"
 
 
@@ -471,10 +453,9 @@ def config_hdmi_boost_config_set(kodi_setting, all_settings):
     kodi_setting = hdmi_safe_group_removal(kodi_setting, all_settings)
 
     if kodi_setting in [str(x) for x in range(1, 12)]:
-
         return kodi_setting
-    else:
 
+    else:
         return "remove_this_line"
 
 
@@ -483,22 +464,21 @@ def display_rotate_config_set(kodi_setting, all_settings):
 
     if kodi_setting in permitted:
         return kodi_setting
+
     else:
         return "remove_this_line"
 
 
 def store_hdmi_to_file_config_set(kodi_setting, all_settings):
     # "hdmi_force_hotplug=%s\nhdmi_edid_file=%s"
-
     # if hdmi_safe is active, then remove this conflicting line
     kodi_setting = hdmi_safe_group_removal(kodi_setting, all_settings)
 
     if kodi_setting == "true":
+        return "1", "1"
 
-        return ("1", "1")
     else:
-
-        return ("remove_this_line", "remove_this_line")
+        return "remove_this_line", "remove_this_line"
 
 
 def hdmi_group_config_set(kodi_setting, all_settings):
@@ -506,10 +486,9 @@ def hdmi_group_config_set(kodi_setting, all_settings):
     kodi_setting = hdmi_safe_group_removal(kodi_setting, all_settings)
 
     if kodi_setting in [str(x) for x in range(1, 3)]:
-
         return kodi_setting
-    else:
 
+    else:
         return "remove_this_line"
 
 
@@ -518,28 +497,25 @@ def hdmi_mode_config_set(kodi_setting, all_settings):
     kodi_setting = hdmi_safe_group_removal(kodi_setting, all_settings)
 
     if kodi_setting in [str(x) for x in range(1, 87)]:
-
         return kodi_setting
-    else:
 
+    else:
         return "remove_this_line"
 
 
 def hdmi_pixel_config_set(kodi_setting, all_settings):
     if kodi_setting in [str(x) for x in range(1, 5)]:
-
         return kodi_setting
-    else:
 
+    else:
         return "remove_this_line"
 
 
 def hdmi_safe_group_removal(kodi_setting, all_settings):
     if all_settings.get("hdmi_safe", None) == "true":
-
         return "remove_this_line"
-    else:
 
+    else:
         return kodi_setting
 
 
@@ -548,37 +524,33 @@ def hdmi_ignore_edid_config_set(kodi_setting, all_settings):
     kodi_setting = hdmi_safe_group_removal(kodi_setting, all_settings)
 
     if kodi_setting == "true":
-
         return "0xa5000080"
-    else:
 
+    else:
         return "remove_this_line"
 
 
 def sdtv_aspect_config_set(kodi_setting, all_settings):
     if kodi_setting in [str(x) for x in range(1, 4)]:
-
         return kodi_setting
-    else:
 
+    else:
         return "remove_this_line"
 
 
 def sdtv_mode_config_set(kodi_setting, all_settings):
     if kodi_setting in [str(x) for x in range(1, 4)]:
-
         return kodi_setting
-    else:
 
+    else:
         return "remove_this_line"
 
 
 def bcm2835_config_set(kodi_setting, all_settings):
     if kodi_setting == "true":
-
         return "spi-bcm2835-overlay"
-    else:
 
+    else:
         return "remove_this_line"
 
 
@@ -586,10 +558,8 @@ def w1gpio_config_set(kodi_setting, all_settings):
     permitted = ["remove_this_line", "w1-gpio-overlay", "w1-gpio-pullup-overlay"]
 
     try:
-
         return permitted[int(kodi_setting)]
     except (ValueError, IndexError):
-
         return "remove_this_line"
 
 
@@ -609,15 +579,14 @@ def soundcard_dac_config_set(kodi_setting, all_settings):
     ]
 
     try:
-
         return permitted[int(kodi_setting)]
     except (ValueError, IndexError):
-
         return "remove_this_line"
 
 
 def legacy_gpio_removal(kodi_setting, all_settings):
-    """ This entry is deprecated and should always be removed from the config.txt.
+    """
+        This entry is deprecated and should always be removed from the config.txt.
     """
 
     return "remove_this_line"
@@ -651,53 +620,44 @@ def audio_config_set(kodi_setting, all_settings):
 
 
 def hdmi_force_hotplug_config_set(kodi_setting, all_settings):
-    """hdmi_edid_file needs hdmi_force_hotplug but hdmi_force_hotplug doesnt need hdmi_edid_file"""
-
+    """
+        hdmi_edid_file needs hdmi_force_hotplug but hdmi_force_hotplug doesnt need hdmi_edid_file
+    """
     if kodi_setting == "true":
-
         return "1"
+
     elif all_settings.get("hdmi_edid_file", None) == "true":
-        # if hdmi_edid_file is true in the kodi settings, then force hdmi_force_hotplug to be active in
-        # the config.txt
-
+        # if hdmi_edid_file is true in the kodi settings, then
+        # force hdmi_force_hotplug to be active in the config.txt
         return "1"
-    else:
 
+    else:
         return "remove_this_line"
 
 
-"""
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@
-                                CUSTOM KODI SET FUNCTIONS
-                                                                                       @@@@@@@@@@@@@@@@@@@@@@@@
-Allows for more complex conversion of config settings (including multiple settings)    @@@@@@@@@@@@@@@@@@@@@@@@
-into specific kodi settings.                                                           @@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-"""
+'''
+Custom Kodi set functions, allows for more complex conversion of config settings 
+(including multiple settings) into specific kodi settings.
+'''
 
 
 def generic_passthrough_kodi_set(results):
-    """ Takes a results list, and simply returns the first value. """
+    """
+        Takes a results list, and simply returns the first value.
+    """
 
     try:
         setting_value = results[0]
     except IndexError:
         setting_value = None
+
     return setting_value
 
 
-"""
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@
-                                KODI SETTINGS DICTIONARY
-                                                                                       @@@@@@@@@@@@@@@@@@@@@@@@
-Houses the protocols for the settings in Kodi which come from the config.txt           @@@@@@@@@@@@@@@@@@@@@@@@
-                                                                                       @@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-"""
+'''
+Kodi Settings dictionary, houses the protocols for the settings in Kodi which come 
+from the config.txt
+'''
 
 MASTER_SETTINGS = {
     "audio": {
@@ -707,8 +667,10 @@ MASTER_SETTINGS = {
         },
         "config_get_patterns": [
             {
-                "identify": r"\s*(?:dtparam|dtparams|device_tree_param|device_tree_params)\s*=.*audio\s*=",
-                "extract": r"\s*(?:dtparam|dtparams|device_tree_param|device_tree_params)\s*=.*audio\s*=\s*(\w+)",
+                "identify": r"\s*(?:dtparam|dtparams|device_tree_param|device_tree_params)"
+                            r"\s*=.*audio\s*=",
+                "extract": r"\s*(?:dtparam|dtparams|device_tree_param|device_tree_params)"
+                           r"\s*=.*audio\s*=\s*(\w+)",
             }
         ],
         "config_set": audio_config_set,
@@ -1042,8 +1004,10 @@ MASTER_SETTINGS = {
         },
         "config_get_patterns": [
             {
-                "identify": r"\s*(?:dtoverlay|device_tree_overlay)\s*=\s*[-\w\d]*spi-bcm2835[-\w\d]*",
-                "extract": r"\s*(?:dtoverlay|device_tree_overlay)\s*=\s*([-\w\d]*spi-bcm2835[-\w\d]*)",
+                "identify": r"\s*(?:dtoverlay|device_tree_overlay)"
+                            r"\s*=\s*[-\w\d]*spi-bcm2835[-\w\d]*",
+                "extract": r"\s*(?:dtoverlay|device_tree_overlay)"
+                           r"\s*=\s*([-\w\d]*spi-bcm2835[-\w\d]*)",
             }
         ],
         "config_set": bcm2835_config_set,
@@ -1076,8 +1040,12 @@ MASTER_SETTINGS = {
         },
         "config_get_patterns": [
             {
-                "identify": r"\s*(?:dtoverlay|device_tree_overlay)\s*=\s*[-\w\d]*(?:hifiberry-d|iqaudio-d|justboom-d|allo-piano-d|allo-boss-d|allo-digione-d)",
-                "extract": r"\s*(?:dtoverlay|device_tree_overlay)\s*=\s*([-\w\d]*(?:hifiberry-d|iqaudio-d|justboom-d|allo-piano-d|allo-boss-d|allo-digione-d)[-\w\d]*)",
+                "identify": r"\s*(?:dtoverlay|device_tree_overlay)\s*=\s*[-\w\d]*"
+                            r"(?:hifiberry-d|iqaudio-d|justboom-d|allo-piano-d|"
+                            r"allo-boss-d|allo-digione-d)",
+                "extract": r"\s*(?:dtoverlay|device_tree_overlay)\s*=\s*([-\w\d]*"
+                           r"(?:hifiberry-d|iqaudio-d|justboom-d|allo-piano-d|"
+                           r"allo-boss-d|allo-digione-d)[-\w\d]*)",
             }
         ],
         "config_set": soundcard_dac_config_set,
@@ -1128,8 +1096,12 @@ MASTER_SETTINGS = {
         },
         "config_get_patterns": [
             {
-                "identify": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|device_tree_param|device_tree_params)\s*=(?:lirc-rpi:)?.*gpio_in_pull[-\w\d]*=",
-                "extract": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|device_tree_param|device_tree_params)\s*=(?:lirc-rpi:)?.*gpio_in_pull[-\w\d]*=\s*(\w*)",
+                "identify": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|"
+                            r"device_tree_param|device_tree_params)\s*=(?:lirc-rpi:)?"
+                            r".*gpio_in_pull[-\w\d]*=",
+                "extract": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|"
+                           r"device_tree_param|device_tree_params)\s*=(?:lirc-rpi:)?"
+                           r".*gpio_in_pull[-\w\d]*=\s*(\w*)",
             }
         ],
         "config_set": legacy_gpio_removal,
@@ -1165,8 +1137,12 @@ MASTER_SETTINGS = {
         },
         "config_get_patterns": [
             {
-                "identify": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|device_tree_param|device_tree_params)\s*=(?:lirc-rpi:)?.*gpio_out_pin[-\w\d]*=",
-                "extract": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|device_tree_param|device_tree_params)\s*=(?:lirc-rpi:)?.*gpio_out_pin[-\w\d]*=\s*(\w*)",
+                "identify": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|"
+                            r"device_tree_param|device_tree_params)\s*=(?:lirc-rpi:)?"
+                            r".*gpio_out_pin[-\w\d]*=",
+                "extract": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|"
+                           r"device_tree_param|device_tree_params)\s*=(?:lirc-rpi:)?"
+                           r".*gpio_out_pin[-\w\d]*=\s*(\w*)",
             }
         ],
         "config_set": legacy_gpio_removal,
@@ -1182,8 +1158,12 @@ MASTER_SETTINGS = {
         },
         "config_get_patterns": [
             {
-                "identify": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|device_tree_param|device_tree_params)\s*=(?:lirc-rpi:)?.*gpio_in_pin[-\w\d]*=",
-                "extract": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|device_tree_param|device_tree_params)\s*=(?:lirc-rpi:)?.*gpio_in_pin[-\w\d]*=\s*(\w*)",
+                "identify": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|"
+                            r"device_tree_param|device_tree_params)\s*=(?:lirc-rpi:)?"
+                            r".*gpio_in_pin[-\w\d]*=",
+                "extract": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|"
+                           r"device_tree_param|device_tree_params)\s*=(?:lirc-rpi:)?"
+                           r".*gpio_in_pin[-\w\d]*=\s*(\w*)",
             }
         ],
         "config_set": legacy_gpio_removal,  # Coming from Kodi to the config.txt
@@ -1199,12 +1179,20 @@ MASTER_SETTINGS = {
         },
         "config_get_patterns": [
             {
-                "identify": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|device_tree_param|device_tree_params)\s*=(?:gpio-ir:)?.*gpio_pin[-\w\d]*=",
-                "extract": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|device_tree_param|device_tree_params)\s*=(?:gpio-ir:)?.*gpio_pin[-\w\d]*=\s*(\w*)",
+                "identify": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|"
+                            r"device_tree_param|device_tree_params)\s*=(?:gpio-ir:)?"
+                            r".*gpio_pin[-\w\d]*=",
+                "extract": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|"
+                           r"device_tree_param|device_tree_params)\s*=(?:gpio-ir:)?"
+                           r".*gpio_pin[-\w\d]*=\s*(\w*)",
             },
             {  # Legacy pin in extraction
-                "identify": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|device_tree_param|device_tree_params)\s*=(?:lirc-rpi:)?.*gpio_in_pin[-\w\d]*=",
-                "extract": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|device_tree_param|device_tree_params)\s*=(?:lirc-rpi:)?.*gpio_in_pin[-\w\d]*=\s*(\w*)",
+                "identify": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|"
+                            r"device_tree_param|device_tree_params)\s*=(?:lirc-rpi:)?"
+                            r".*gpio_in_pin[-\w\d]*=",
+                "extract": r"\s*(?:dtoverlay|device_tree_overlay|dtparam|dtparams|"
+                           r"device_tree_param|device_tree_params)\s*=(?:lirc-rpi:)?"
+                           r".*gpio_in_pin[-\w\d]*=\s*(\w*)",
             },
         ],
         "config_set": gpio_pin_config_set,
@@ -1236,40 +1224,41 @@ def write_config_file(location, new_config):
 
 
 def clean_config(config, patterns):
-    """ Reads the users config file and comments out lines that are problematic.
-    This is determined using regex patterns.
     """
-
+        Reads the users config file and comments out lines that are problematic.
+        This is determined using regex patterns.
+    """
     comment_out_list = []
 
     for line in config:
-
         # ignore commented out lines
         if line.strip().startswith("#"):
             continue
-        # prune the line to exlude inline comments
+        # prune the line to exclude inline comments
         if "#" in line:
             pure_line = line[: line.index("#")]
         else:
             pure_line = line
-        # eliminate lines that endwith a comma
+        # eliminate lines that ends with a comma
         if pure_line.strip().endswith(","):
             comment_out_list.append(line)
             continue
         # eliminate lines that match any of the patterns
         if any([re.search(pat, pure_line) for pat in patterns]):
             comment_out_list.append(line)
+
     new_config = [line if line not in comment_out_list else "#" + line for line in config]
 
     return new_config
 
 
 if __name__ == "__main__":
-    import subprocess
+    _config_txt = read_config_file('/boot/config.txt')
+    _original_config = _config_txt[::]
 
-    config = read_config_file('/boot/config.txt')
-    original_config = config[::]
-    extracted_settings = config_to_kodi(MASTER_SETTINGS, config)
-    new_settings = kodi_to_config(MASTER_SETTINGS, original_config, extracted_settings)
-    write_config_file('/var/tmp/config.txt', new_settings)
+    _extracted_settings = config_to_kodi(MASTER_SETTINGS, _config_txt)
+    _new_settings = kodi_to_config(MASTER_SETTINGS, _original_config, _extracted_settings)
+
+    write_config_file('/var/tmp/config.txt', _new_settings)
+
     subprocess.call(["sudo", "mv", '/var/tmp/config.txt', '/boot/config.txt'])

@@ -50,7 +50,7 @@ then
 	chmod +x /usr/bin/remote-cli
 	if is_rbp && [ -n "$2" ] && dpkg --compare-versions "$2" lt "3.0.678"
 	then
-		/usr/bin/env python /usr/share/kodi/addons/script.module.osmcsetting.pi/resources/lib/OSMC_REparser.py
+		/usr/bin/env python /usr/share/kodi/addons/script.module.osmcsetting.pi/resources/lib/osmcpi/osmc_reparser.py
 		touch /tmp/reboot-needed
 	fi
 fi

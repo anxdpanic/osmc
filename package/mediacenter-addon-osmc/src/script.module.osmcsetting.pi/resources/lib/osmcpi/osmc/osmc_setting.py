@@ -18,14 +18,13 @@ import xbmcgui
 from osmccommon import osmc_setting
 from osmccommon.osmc_logging import StandardLogger
 
-from .. import OSMC_REparser as parser
+from .. import osmc_reparser
 
-addon_id = "script.module.osmcsetting.pi"
+ADDON_ID = "script.module.osmcsetting.pi"
 DIALOG = xbmcgui.Dialog()
-
 PY3 = sys.version_info.major == 3
 
-log = StandardLogger(addon_id, os.path.basename(__file__)).log
+log = StandardLogger(ADDON_ID, os.path.basename(__file__)).log
 
 
 class OSMCSettingClass(osmc_setting.OSMCSettingClass):
@@ -33,7 +32,7 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
     def __init__(self):
         super(OSMCSettingClass, self).__init__()
 
-        self.addon_id = addon_id
+        self.addon_id = ADDON_ID
 
         self.short_name = 'Pi Config'
         self.short_name_i18n = 32054
@@ -53,17 +52,8 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
                            'Pi Overclock module.'
         self.description_i18n = 32055
 
-        # the location of the config file FOR TESTING ONLY
-        try:
-            self.config_location = '/boot/config.txt'
-
-            self.populate_misc_info()
-
-        except:
-
-            # if anything fails above, assume we are testing and look for the config
-            # in the testing location
-            self.config_location = '/home/plaskev/Documents/config.txt'
+        self.config_location = '/boot/config.txt'
+        self.populate_misc_info()
 
         try:
             self.clean_user_config()
@@ -73,11 +63,12 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
             log(traceback.format_exc())
 
     def run(self):
-        # read the config.txt file everytime the settings are opened. This is unavoidable because it is possible for
-        # the user to have made manual changes to the config.txt while OSG is active.
-        config = parser.read_config_file(self.config_location)
+        # read the config.txt file every time the settings are opened. This is unavoidable because
+        # it is possible for the user to have made manual changes to the config.txt while
+        # OSG is active.
+        config = osmc_reparser.read_config_file(self.config_location)
 
-        extracted_settings = parser.config_to_kodi(parser.MASTER_SETTINGS, config)
+        extracted_settings = osmc_reparser.config_to_kodi(osmc_reparser.MASTER_SETTINGS, config)
 
         # load the settings into kodi
         log('Settings extracted from the config.txt')
@@ -96,13 +87,14 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
             log("%s : %s" % (k, v))
 
         # read the config into a list of lines again
-        config = parser.read_config_file(self.config_location)
+        config = osmc_reparser.read_config_file(self.config_location)
 
         # construct the new set of config lines using the protocols and the new settings
-        new_settings = parser.kodi_to_config(parser.MASTER_SETTINGS, config, new_settings)
+        new_settings = osmc_reparser.kodi_to_config(osmc_reparser.MASTER_SETTINGS,
+                                                    config, new_settings)
 
         # write the new lines to the temporary config file
-        parser.write_config_file('/var/tmp/config.txt', new_settings)
+        osmc_reparser.write_config_file('/var/tmp/config.txt', new_settings)
 
         # copy over the temp config.txt to /boot/ as superuser
         subprocess.call(["sudo", "mv", '/var/tmp/config.txt', self.config_location])
@@ -114,7 +106,7 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
 
         addon = xbmcaddon.Addon(self.addon_id)
 
-        for key in parser.MASTER_SETTINGS.keys():
+        for key in osmc_reparser.MASTER_SETTINGS.keys():
             latest_settings[key] = addon.getSetting(key)
 
         return latest_settings
@@ -134,7 +126,8 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
                 serial_raw = serial_raw.decode('utf-8', 'ignore')
 
         # grab just the serial number
-        serial = serial_raw[serial_raw.index('Serial') + len('Serial'):].replace('\n', '').replace(':', '').replace(' ', '').replace('\t', '')
+        serial = serial_raw[serial_raw.index('Serial') + len('Serial'):].replace('\n', '') \
+            .replace(':', '').replace(' ', '').replace('\t', '')
 
         # load the values into the settings gui
         self.me.setSetting('codec_check', mpg.replace('\n', '') + ', ' + wvc.replace('\n', ''))
@@ -142,19 +135,16 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
 
     def clean_user_config(self):
         """ Comment out problematic lines in the users config.txt """
-
         patterns = [
-
             r".*=.*\[remove\].*",
             r".*=remove",
         ]
 
-        config = parser.read_config_file(self.config_location)
-
-        new_config = parser.clean_config(config, patterns)
+        config = osmc_reparser.read_config_file(self.config_location)
+        new_config = osmc_reparser.clean_config(config, patterns)
 
         # write the new lines to the temporary config file
-        parser.write_config_file('/var/tmp/config.txt', new_config)
+        osmc_reparser.write_config_file('/var/tmp/config.txt', new_config)
 
         # copy over the temp config.txt to /boot/ as superuser
         subprocess.call(["sudo", "mv", '/var/tmp/config.txt', self.config_location])

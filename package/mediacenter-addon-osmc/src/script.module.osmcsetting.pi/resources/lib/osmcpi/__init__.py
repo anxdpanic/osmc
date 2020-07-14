@@ -8,4 +8,4 @@
     See LICENSES/GPL-2.0-or-later for more information.
 """
 
-__all__ = ['config_editor', 'OSMC_REparser', 'osmc']
+__all__ = ['config_editor', 'osmc_reparser', 'osmc']
