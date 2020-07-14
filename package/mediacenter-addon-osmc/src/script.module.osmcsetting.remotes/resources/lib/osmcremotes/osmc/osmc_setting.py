@@ -34,7 +34,9 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
                            'lirc.conf file for their remote.'
         self.description_i18n = 32057
 
+        self.gui = None
+
     @clog(log, nowait=True)
     def run(self):
-        self.GUI = remote_gui.remote_gui_launcher()
-        self.GUI.open_gui()
+        self.gui = remote_gui.RemoteGuiLauncher(self.me)
+        self.gui.open_gui()

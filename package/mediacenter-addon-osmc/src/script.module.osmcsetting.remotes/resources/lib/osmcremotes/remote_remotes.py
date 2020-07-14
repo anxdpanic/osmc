@@ -15,16 +15,15 @@ URL_BASE = 'http://lirc.sourceforge.net/remotes/'
 
 def get_base():
     """
-        Returns a list of subpages for remotes
+        Returns a list of sub pages for remotes
     """
-    r = requests.get(URL_BASE)
+    response = requests.get(URL_BASE)
+    text = response.text
 
-    t = r.text
-
-    return [x[:x.index('/"')] for x in t.split('<a href="') if '/"' in x]
+    return [x[:x.index('/"')] for x in text.split('<a href="') if '/"' in x]
 
 
-def get_subpages(stub):
+def get_sub_pages():
     """
         Returns a dictionary of conf files (keys) found in the sub-menu along with images (values) if there are any
     """
@@ -37,17 +36,16 @@ def get_subpages(stub):
 
     subs = []
 
-    r = requests.get(URL_BASE)
-
-    t = r.text
+    response = requests.get(URL_BASE)
+    text = response.text
 
     # create a list of links from the sub page
-    subs_raw = [x[:x.index('"')] for x in t.split('<a href="') if '"' in x]
+    subs_raw = [x[:x.index('"')] for x in text.split('<a href="') if '"' in x]
 
     # remove the links with those specific characters
     for sub in subs_raw:
-        for ig in ignore_chars:
-            if ig in sub:
+        for ignored in ignore_chars:
+            if ignored in sub:
                 break
         else:
             subs.append(sub)
