@@ -8,4 +8,4 @@
     See LICENSES/GPL-2.0-or-later for more information.
 """
 
-__all__ = ['service_selection_gui', 'osmc']
+__all__ = ['services_gui', 'osmc']

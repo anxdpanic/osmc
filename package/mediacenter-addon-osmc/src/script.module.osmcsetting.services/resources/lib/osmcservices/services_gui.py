@@ -26,37 +26,46 @@ SAVE = 5
 HEADING = 1
 ACTION_SELECT_ITEM = 7
 
-addonid = "script.module.osmcsetting.services"
-__addon__ = xbmcaddon.Addon(addonid)
+ADDON_ID = "script.module.osmcsetting.services"
 
-lang = LangRetriever(__addon__).lang
-log = StandardLogger(addonid, os.path.basename(__file__)).log
+log = StandardLogger(ADDON_ID, os.path.basename(__file__)).log
 
 
 class MaitreD(object):
 
-    def __init__(self):
+    def __init__(self, addon=None):
+        self._addon = addon
+        self._lang = None
+
         self.services = {}
+
+    @property
+    def addon(self):
+        if not self._addon:
+            self._addon = xbmcaddon.Addon(ADDON_ID)
+        return self._addon
+
+    def lang(self, value):
+        if not self._lang:
+            retriever = LangRetriever(self.addon)
+            self._lang = retriever.lang
+        return self._lang(value)
 
     @clog(log)
     def enable_service(self, s_entry):
-
         for service in s_entry:
             os.system("sudo /bin/systemctl enable " + service)
             os.system("sudo /bin/systemctl start " + service)
 
     @clog(log)
     def disable_service(self, s_entry):
-
         for service in s_entry:
             os.system("sudo /bin/systemctl disable " + service)
             os.system("sudo /bin/systemctl stop " + service)
 
     @clog(log)
     def is_running(self, s_entry):
-
         for service in s_entry:
-
             p = subprocess.call(["sudo", "/bin/systemctl", "is-active", service])
 
             if p != 0:
@@ -66,9 +75,7 @@ class MaitreD(object):
 
     @clog(log)
     def is_enabled(self, s_entry):
-
         for service in s_entry:
-
             p = subprocess.call(["sudo", "/bin/systemctl", "is-enabled", service])
 
             if p != 0:
@@ -88,9 +95,12 @@ class MaitreD(object):
 
         for service_name in os.listdir("/etc/osmc/apps.d"):
             service_name = service_name.replace('\n', '')
+
             if os.path.isfile("/etc/osmc/apps.d/" + service_name):
-                with open("/etc/osmc/apps.d/" + service_name, encoding='utf-8') as f:
-                    lines = f.readlines()
+
+                with open("/etc/osmc/apps.d/" + service_name, encoding='utf-8') as open_file:
+                    lines = open_file.readlines()
+
                 s_name = lines.pop(0).replace('\n', '')
                 s_entry = [line.replace('\n', '') for line in lines]
 
@@ -98,12 +108,12 @@ class MaitreD(object):
                 log("MaitreD: Service Entry Point(s): %s" % s_entry)
 
                 enabled = self.is_enabled(s_entry)
-                runcheck = self.is_running(s_entry)
+                run_check = self.is_running(s_entry)
 
-                if runcheck:
-                    running = lang(32003)
+                if run_check:
+                    running = self.lang(32003)
                 else:
-                    running = lang(32005)
+                    running = self.lang(32005)
 
                 svcs[s_name] = (s_entry, service_name, running, enabled)
 
@@ -125,24 +135,42 @@ class MaitreD(object):
             self.disable_service(s_entry)
 
 
-class service_selection(xbmcgui.WindowXMLDialog):
+class ServiceSelectionGui(xbmcgui.WindowXMLDialog):
 
     def __init__(self, strXMLname, strFallbackPath, strDefaultName, **kwargs):
+        super(ServiceSelectionGui, self).__init__(xmlFilename=strXMLname,
+                                                  scriptPath=strFallbackPath,
+                                                  defaultSkin=strDefaultName)
 
-        # self.service_list = kwargs.get('service_list', [])
+        self._addon = kwargs.get('addon')
+        self._lang = None
+
+        self.name_list = None
 
         # the lists to hold the services to start, and to finish
         self.initiants = []
         self.finitiants = []
 
-        self.garcon = MaitreD()
+        self.garcon = MaitreD(self.addon)
         self.service_list = self.garcon.discover_services()
 
-    def dummy(self):
+    @property
+    def addon(self):
+        if not self._addon:
+            self._addon = xbmcaddon.Addon(ADDON_ID)
+        return self._addon
+
+    def lang(self, value):
+        if not self._lang:
+            retriever = LangRetriever(self.addon)
+            self._lang = retriever.lang
+        return self._lang(value)
+
+    @staticmethod
+    def dummy():
         print('logger not provided')
 
     def onInit(self):
-
         # Populate the list frame
         self.name_list = self.getControl(500)
         self.name_list.setEnabled(True)
@@ -153,35 +181,30 @@ class service_selection(xbmcgui.WindowXMLDialog):
             # populate the list
             s_entry, service_name, running, enabled = service_tup
 
-            if running != lang(32003):
+            if running != self.lang(32003):
                 if enabled is True:
-                    sundry = lang(32004)
+                    sundry = self.lang(32004)
                 else:
-                    sundry = lang(32005)
+                    sundry = self.lang(32005)
 
             else:
-                sundry = lang(32003)
+                sundry = self.lang(32003)
 
-            sublabel = ','.join(s_entry)
+            sub_label = ','.join(s_entry)
 
-            self.tmp = xbmcgui.ListItem(label=s_name + sundry, label2=sublabel, offscreen=True)
-            self.name_list.addItem(self.tmp)
-
-            # highlight the already selection randos
-            # if enabled:
-            #     self.name_list.getListItem(item_pos).select(True)
+            list_item = xbmcgui.ListItem(label=s_name + sundry, label2=sub_label, offscreen=True)
+            self.name_list.addItem(list_item)
 
             item_pos += 1
 
         self.setFocus(self.name_list)
 
     def onAction(self, action):
-        actionID = action.getId()
-        if (actionID in (ACTION_PREVIOUS_MENU, ACTION_NAV_BACK)):
+        action_id = action.getId()
+        if action_id in (ACTION_PREVIOUS_MENU, ACTION_NAV_BACK):
             self.close()
 
     def onClick(self, controlID):
-
         if controlID == 7:
             self.close()
 
@@ -190,27 +213,26 @@ class service_selection(xbmcgui.WindowXMLDialog):
             self.close()
 
         elif controlID == 500:
-
-            selItem = self.name_list.getSelectedItem().getLabel()
-            # s_entry is a comma seperated string of the services, this changes it into a list
+            selected_item = self.name_list.getSelectedItem().getLabel()
+            # s_entry is a comma separated string of the services, this changes it into a list
             s_entry = self.name_list.getSelectedItem().getLabel2().split(',')
-            clean_name = selItem.replace(lang(32003), '').replace(lang(32004), '').replace(lang(32005), '').replace('\n', '')
+            clean_name = selected_item.replace(self.lang(32003), '')
+            clean_name = clean_name.replace(self.lang(32004), '')
+            clean_name = clean_name.replace(self.lang(32005), '')
+            clean_name = clean_name.replace('\n', '')
 
             item_tup = (clean_name, s_entry)
 
-            if selItem.endswith(lang(32003)) or selItem.endswith(lang(32004)):
-
+            if (selected_item.endswith(self.lang(32003)) or
+                    selected_item.endswith(self.lang(32004))):
                 # if the item is currently enabled or running
-
                 if item_tup in self.finitiants:
                     self.finitiants.remove(item_tup)
                 else:
                     self.finitiants.append(item_tup)
 
             else:
-
                 # if the item is not enabled
-
                 if item_tup in self.initiants:
                     self.initiants.remove(item_tup)
                 else:
@@ -221,7 +243,6 @@ class service_selection(xbmcgui.WindowXMLDialog):
             self.update_checklist()
 
     def update_checklist(self):
-
         if not self.initiants and not self.finitiants:
             self.getControl(1102).setText(' ')
             return
@@ -240,5 +261,4 @@ class service_selection(xbmcgui.WindowXMLDialog):
         self.getControl(1102).setText(todo_list)
 
     def process(self):
-
         self.garcon.process_user_changes(self.initiants, self.finitiants)
