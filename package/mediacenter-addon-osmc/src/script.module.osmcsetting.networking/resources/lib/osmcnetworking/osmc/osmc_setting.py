@@ -17,7 +17,7 @@ from osmccommon import osmc_setting
 from osmccommon.osmc_logging import StandardLogger
 
 from .. import osmc_network
-from ..networking_gui import networking_gui
+from ..networking_gui import NetworkingGui
 from ..osmc_advset_editor import AdvancedSettingsEditor
 
 addon_id = "script.module.osmcsetting.networking"
@@ -53,24 +53,29 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
         advset_dict = self.ASE.parse_advanced_settings()
 
         # check whether the advanced settings dict contains valid MySQL information
-        valid_advset_dict, _ = self.ASE.validate_advset_dict(advset_dict, reject_empty=True, exclude_name=True)
+        valid_advset_dict, _ = self.ASE.validate_advset_dict(advset_dict,
+                                                             reject_empty=True,
+                                                             exclude_name=True)
 
-        # when a valid MySQL advanced settings file is found, toggle the Wait_for_Network setting to ON
+        # when a valid MySQL advanced settings file is found, toggle the
+        # Wait_for_Network setting to ON
         if valid_advset_dict:
-
             # only proceed if the (either) server is not on the localhost
             if self.ASE.server_not_localhost(advset_dict):
-
                 # confirm that wait_for_network is not already enabled
                 if not osmc_network.is_connman_wait_for_network_enabled():
-
-                    undo_change = DIALOG.yesno('MyOSMC', self.lang(32078), nolabel=self.lang(32080), yeslabel=self.lang(32079), autoclose=10000)
+                    undo_change = DIALOG.yesno('MyOSMC', self.lang(32078),
+                                               nolabel=self.lang(32080),
+                                               yeslabel=self.lang(32079),
+                                               autoclose=10000)
 
                     if not undo_change:
                         osmc_network.toggle_wait_for_network(True)
 
         # a flag to determine whether a setting change requires a reboot to take effect
         self.reboot_required = False
+
+        self.gui = None
 
         log('START')
         for x, k in self.setting_data_method.items():
@@ -84,40 +89,36 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
         for key in self.setting_data_method.keys():
 
             # grab the translate method (if there is one)
-            translate_method = self.setting_data_method.get(key, {}).get('translate', {})
+            translate_method = self.setting_data_method.get(key, {}).get('translate', None)
 
             # get the setting value, translate it if needed
+            setting_value = latest_settings[key]
             if translate_method:
                 setting_value = translate_method(latest_settings[key])
-            else:
-                setting_value = latest_settings[key]
 
             # add it to the dictionary
             self.setting_data_method[key]['setting_value'] = setting_value
 
-    def run(self, usePreseed=False):
+    def run(self, use_preseed=False):
         log(self.addon_id)
-        scriptPath = self.me.getAddonInfo('path')
 
-        xml = "network_gui_720.xml" if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' else "network_gui.xml"
+        xml = "network_gui_720.xml" \
+            if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' \
+            else "network_gui.xml"
 
-        self.GUI = networking_gui(xml, scriptPath, 'Default')
-        self.GUI.setUsePreseed(usePreseed)
-        self.GUI.doModal()
+        self.gui = NetworkingGui(xml, self.me.getAddonInfo('path'), 'Default', addon=self.me)
+        self.gui.set_use_preseed(use_preseed)
+        self.gui.doModal()
 
-        del self.GUI
-
+        del self.gui
         log('END')
 
     def apply_settings(self):
-        # retrieve the current settings from the settings.xml (this is where the user has made changes)
+        # retrieve the current settings from the settings.xml
+        # (this is where the user has made changes)
         new_settings = self.settings_retriever_xml()
 
-        # call the first method, if there is one
-        try:
-            self.first_method()
-        except:
-            pass
+        self.first_method()
 
         # apply the individual settings changes
         for k, v in self.setting_data_method.items():
@@ -126,7 +127,8 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
             method = v.get('apply', False)
             value = v.get('setting_value', '')
 
-            # if the new setting is different to the stored setting then change the dict and run the 'apply' method
+            # if the new setting is different to the stored setting then change the
+            # dict and run the 'apply' method
             if new_settings[k] != value:
 
                 # change stored setting_value to the new value
@@ -138,11 +140,7 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
                 except:
                     pass
 
-        # call the final method if there is one
-        try:
-            self.final_method()
-        except:
-            pass
+        self.final_method()
 
     def settings_retriever_xml(self):
         latest_settings = {}
@@ -154,30 +152,31 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
 
         return latest_settings
 
-    def check_network(self, online):
+    @staticmethod
+    def check_network(online):
         return osmc_network.has_network_connection(online)
 
-    def is_ftr_running(self):
+    @staticmethod
+    def is_ftr_running():
         return osmc_network.is_ftr_running()
 
-    def method_to_apply_changes_X(self, data):
-
+    @staticmethod
+    def method_to_apply_changes_X(data):
         """
             Method for implementing changes to setting x.
-
         """
+        log('method_to_apply_changes_X ' + data)
 
-        log('method_to_apply_changes_X')
-
-    def translate_on_populate_X(self, data, reverse=False):
-
+    @staticmethod
+    def translate_on_populate_X(data, reverse=False):
         """
             Method to translate the data before adding to the setting_data_method dict.
 
-            This is useful if you are getting the populating from an external source like the Pi's config.txt.
-            This method could end with a call to another method to populate the settings.xml from that same source.
+            This is useful if you are getting the populating from an external source like
+            the Pi's config.txt.
+            This method could end with a call to another method to populate the settings.xml
+            from that same source.
         """
-
         # this is how you would negate the translating of the data when the settings window closes.
         if reverse:
             return data

@@ -1,10 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-#
-# /usr/bin/net-agent
-#
-#  Copyright 2007-2012 Intel Corporation
-#  Copyright 2014 Sam Nazarko <email@samnazarko.co.uk>
+"""
+    Copyright (C) 2014-2020 OSMC (KodeKarnage)
+
+    This file is part of script.module.osmcsetting.networking
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+    See LICENSES/GPL-2.0-or-later for more information.
+"""
 
 import sys
 
@@ -40,8 +43,7 @@ class Agent(dbus.service.Object):
     username = None
     password = None
 
-    @dbus.service.method("net.connman.Agent",
-                         in_signature='', out_signature='')
+    @dbus.service.method("net.connman.Agent", in_signature='', out_signature='')
     def Release(self):
         print("Release")
         mainloop.quit()
@@ -116,6 +118,7 @@ class Agent(dbus.service.Object):
                     ssid = arg.replace("SSID", "", 1)
                     response["SSID"] = ssid
                     break
+
         else:
             if self.name:
                 response["Name"] = self.name
@@ -124,19 +127,17 @@ class Agent(dbus.service.Object):
 
         return response
 
-    @dbus.service.method("net.connman.Agent",
-                         in_signature='oa{sv}',
-                         out_signature='a{sv}')
+    @dbus.service.method("net.connman.Agent", in_signature='oa{sv}', out_signature='a{sv}')
     def RequestInput(self, path, fields):
         print("RequestInput (%s,%s)" % (path, fields))
 
         response = {}
 
-        if fields.has_key("Name"):
+        if "Name" in fields:
             response.update(self.input_hidden())
-        if fields.has_key("Passphrase"):
+        if "Passphrase" in fields:
             response.update(self.input_passphrase())
-        if fields.has_key("Username"):
+        if "Username" in fields:
             response.update(self.input_username())
 
         if "Error" in response:
@@ -145,13 +146,11 @@ class Agent(dbus.service.Object):
             if response["Error"] == "browser":
                 raise LaunchBrowser("launch browser")
 
-        print("returning (%s)" % (response))
+        print("returning (%s)" % response)
 
         return response
 
-    @dbus.service.method("net.connman.Agent",
-                         in_signature='os',
-                         out_signature='')
+    @dbus.service.method("net.connman.Agent", in_signature='os', out_signature='')
     def RequestBrowser(self, path, url):
         print("RequestBrowser (%s,%s)" % (path, url))
 
@@ -165,22 +164,20 @@ class Agent(dbus.service.Object):
 
         return
 
-    @dbus.service.method("net.connman.Agent",
-                         in_signature='os',
-                         out_signature='')
+    @dbus.service.method("net.connman.Agent", in_signature='os', out_signature='')
     def ReportError(self, path, error):
         print("ReportError %s, %s" % (path, error))
         retry = input("Retry service (yes/no): ")
-        if (retry == "yes"):
+        if retry == "yes":
             class Retry(dbus.DBusException):
                 _dbus_error_name = "net.connman.Agent.Error.Retry"
 
             raise Retry("retry service")
+
         else:
             return
 
-    @dbus.service.method("net.connman.Agent",
-                         in_signature='', out_signature='')
+    @dbus.service.method("net.connman.Agent", in_signature='', out_signature='')
     def Cancel(self):
         print("Cancel")
 
@@ -190,22 +187,20 @@ def argv():
 
 
 if __name__ == '__main__':
-
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
     bus = dbus.SystemBus()
-    manager = dbus.Interface(bus.get_object('net.connman', "/"),
-                             'net.connman.Manager')
+    manager = dbus.Interface(bus.get_object('net.connman', "/"), 'net.connman.Manager')
 
-    path = "/test/agent"
-    obj = Agent(bus, path)
+    _path = "/test/agent"
+    obj = Agent(bus, _path)
 
     if len(argv()) >= 2:
-        for arg in argv()[1:]:
-            if arg.startswith("fromfile"):
-                keyfile = open("/tmp/preseed_data")
-                data = keyfile.read()
-                keyfile.close()
+        for _arg in argv()[1:]:
+            if _arg.startswith("fromfile"):
+                with open("/tmp/preseed_data") as key_file:
+                    data = key_file.read()
+
                 lines = data.split('\n')
                 if len(lines) > 0 and len(lines[0]) > 0:
                     obj.passphrase = lines[0]
@@ -213,10 +208,10 @@ if __name__ == '__main__':
                     obj.name = lines[1]
                     obj.ssid = lines[1]
 
-try:
-    manager.RegisterAgent(path)
-except:
-    print("Cannot register connman agent.")
+    try:
+        manager.RegisterAgent(_path)
+    except:
+        print("Cannot register connman agent.")
 
-mainloop = GObject.MainLoop()
-mainloop.run()
+    mainloop = GObject.MainLoop()
+    mainloop.run()

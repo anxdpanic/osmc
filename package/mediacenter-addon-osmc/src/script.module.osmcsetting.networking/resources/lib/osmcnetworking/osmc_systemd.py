@@ -29,34 +29,43 @@ def toggle_service(service_name, enable):
 
 
 def is_service_enabled(service_name):
-    fnull = open(os.devnull, 'w')
-    process = subprocess.call(['/bin/systemctl', 'is-enabled', service_name], stderr=fnull, stdout=fnull)
-    fnull.close()
+    with open(os.devnull, 'w') as fnull:
+        process = subprocess.call(['/bin/systemctl', 'is-enabled', service_name],
+                                  stderr=fnull, stdout=fnull)
+
     if process == 0:
         return True
+
     return False
 
 
 def is_service_active(service_name):
-    fnull = open(os.devnull, 'w')
-    process = subprocess.call(['/bin/systemctl', 'is-active', service_name], stderr=fnull, stdout=fnull)
-    fnull.close()
+    with open(os.devnull, 'w') as fnull:
+        process = subprocess.call(['/bin/systemctl', 'is-active', service_name],
+                                  stderr=fnull, stdout=fnull)
+
     if process == 0:
         return True
+
     return False
 
 
 def update_service(service_name, service_status):
-    fnull = open(os.devnull, 'w')
-    subprocess.call(['sudo', '/bin/systemctl', service_status, service_name], stderr=fnull, stdout=fnull)
-    fnull.close()
+    with open(os.devnull, 'w') as fnull:
+        subprocess.call(['sudo', '/bin/systemctl', service_status, service_name],
+                        stderr=fnull, stdout=fnull)
+
     time.sleep(1)
 
 
+'''
 def is_service_running(service_name):
-    fnull = open(os.devnull, 'w')
-    process = subprocess.call(['/bin/systemctl', 'status', service_name], stderr=fnull, stdout=fnull)
-    fnull.close()
+    with open(os.devnull, 'w') as fnull:
+        process = subprocess.call(['/bin/systemctl', 'status', service_name],
+                                  stderr=fnull, stdout=fnull)
+
     if process == 0:
         return True
+
     return False
+'''
