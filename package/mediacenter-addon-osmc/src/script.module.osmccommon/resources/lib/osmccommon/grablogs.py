@@ -19,29 +19,29 @@ import traceback
 from datetime import datetime
 from io import open
 
-addonid = "script.module.osmccommon"
+ADDON_ID = "script.module.osmccommon"
 try:
 
     import xbmc
     import xbmcgui
     import xbmcaddon
 
-    __addon__ = xbmcaddon.Addon(addonid)
+    ADDON = xbmcaddon.Addon(ADDON_ID)
     DIALOG = xbmcgui.Dialog()
 except ImportError:
     xbmc = None
     xbmcgui = None
     xbmcaddon = None
 
-    __addon__ = None
+    ADDON = None
     DIALOG = None
 
 try:
     from .osmc_language import LangRetriever
     from .osmc_logging import StandardLogger
 
-    log = StandardLogger(addonid, os.path.basename(__file__)).log
-    lang = LangRetriever(__addon__).lang
+    log = StandardLogger(ADDON_ID, os.path.basename(__file__)).log
+    lang = LangRetriever(ADDON).lang
 except ValueError:
     def lang(value):
         return value
@@ -684,7 +684,7 @@ def retrieve_settings(addon=None):
     global SETS
 
     if addon is None:
-        addon = __addon__
+        addon = ADDON
 
     excluded_from_all = []
 

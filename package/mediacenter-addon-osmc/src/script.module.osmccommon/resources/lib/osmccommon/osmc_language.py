@@ -10,12 +10,14 @@
 
 import sys
 
+PY2 = sys.version_info.major == 2
+
 
 class LangRetriever(object):
     """ Used to retrieve localised strings from the addons po files.
 
         Requires the parent addon object. This takes the form in that parent script of:
-            __addon__ = xbmcaddon.Addon()
+            addon = xbmcaddon.Addon()
 
         Best usage:
             from osmc_language import LangRetriever
@@ -25,19 +27,17 @@ class LangRetriever(object):
         """
 
     def __init__(self, addon=None):
-
-        self.__addon__ = addon
-        self._py2 = sys.version_info.major == 2
+        self.addon = addon
 
     def lang(self, string_id):
-        if self.__addon__ is None:
+        if self.addon is None:
             return str(string_id)
 
-        if self.__addon__ is not None:
+        if self.addon is not None:
 
-            if self._py2:
-                return self.__addon__.getLocalizedString(string_id).encode('utf-8', 'ignore')
+            if PY2:
+                return self.addon.getLocalizedString(string_id).encode('utf-8', 'ignore')
 
-            return self.__addon__.getLocalizedString(string_id)
+            return self.addon.getLocalizedString(string_id)
 
         return ''
