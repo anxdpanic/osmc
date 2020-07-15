@@ -21,7 +21,7 @@ class LangRetriever(object):
 
         Best usage:
             from osmc_language import LangRetriever
-            LangRet = LangRetriever(__addon__)
+            LangRet = LangRetriever(addon)
             lang    = LangRet.lang
 
         """

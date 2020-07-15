@@ -29,13 +29,13 @@ class StandardLogger(object):
     """ Standard kodi logger. Used to add entries to the Kodi.log.
         Best usage:
             from osmc_logging import StandardLogger
-            standard_logger = StandardLogger(__addonid__)
+            standard_logger = StandardLogger(addon_id)
             log = standard_logger.log
 
         """
 
-    def __init__(self, addonid='osmc', module=''):
-        self.addonid = addonid
+    def __init__(self, addon_id='osmc', module=''):
+        self.addon_id = addon_id
         try:
             self.module = module.replace('.pyo', '').replace('.pyc', '').replace('.py', '')
         except:
@@ -56,13 +56,13 @@ class StandardLogger(object):
             label = label.encode('utf-8')
 
         if label and self.module:
-            logmsg = '%s[%s] : %s - %s ' % (self.addonid, self.module, label, message)
+            logmsg = '%s[%s] : %s - %s ' % (self.addon_id, self.module, label, message)
         elif label:
-            logmsg = '%s : %s - %s ' % (self.addonid, label, message)
+            logmsg = '%s : %s - %s ' % (self.addon_id, label, message)
         elif self.module:
-            logmsg = '%s[%s] : %s ' % (self.addonid, self.module, message)
+            logmsg = '%s[%s] : %s ' % (self.addon_id, self.module, message)
         else:
-            logmsg = '%s : %s ' % (self.addonid, message)
+            logmsg = '%s : %s ' % (self.addon_id, message)
 
         if xbmc:
             xbmc.log(msg=logmsg, level=xbmc.LOGDEBUG)

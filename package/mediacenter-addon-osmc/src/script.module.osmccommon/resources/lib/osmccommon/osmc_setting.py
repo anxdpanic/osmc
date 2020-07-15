@@ -67,7 +67,7 @@
     The key methods of this class are:
 
         run                 			: This is called by the OSG when the icon is clicked. This will open the settings window.
-                                          Usually this would be __addon__.OpenSettings(), but it could be any other script.
+                                          Usually this would be addon.OpenSettings(), but it could be any other script.
                                           This allows the creation of action buttons in the GUI, as well as allowing developers
                                           to script and skin their own user interfaces.
 
@@ -169,7 +169,7 @@ class OSMCSettingClass(threading.Thread):
     def run(self):
         """
             The method determines what happens when the item is clicked in the settings GUI.
-            Usually this would be __addon__.openSettings(), but it could be any other script.
+            Usually this would be addon.openSettings(), but it could be any other script.
             This allows the creation of action buttons in the GUI, as well as allowing developers
             to script and skin their own user interfaces.
         """

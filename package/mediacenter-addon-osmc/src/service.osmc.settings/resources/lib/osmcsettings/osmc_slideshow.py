@@ -8,7 +8,6 @@
     See LICENSES/GPL-2.0-or-later for more information.
 """
 
-# STANDARD library modules
 import os
 import threading
 
@@ -18,12 +17,8 @@ import xbmcgui
 from osmccommon.osmc_language import LangRetriever
 from osmccommon.osmc_logging import StandardLogger
 
-addonid = 'service.osmc.settings'
-__addon__ = xbmcaddon.Addon(addonid)
-scriptPath = __addon__.getAddonInfo('path')
-
-lib = os.path.join(scriptPath, 'resources', 'lib')
-media = os.path.join(scriptPath, 'resources', 'skins', 'Default', 'media')
+ADDON_ID = 'service.osmc.settings'
+ADDON = xbmcaddon.Addon(ADDON_ID)
 
 WINDOW = xbmcgui.Window(10000)
 
@@ -44,8 +39,8 @@ ACTION_CHANNEL_UP = 184
 LEFT_ACTIONS = [ACTION_MOVE_LEFT, ACTION_PAGE_DOWN, ACTION_MOUSE_WHEEL_DOWN, ACTION_SCROLL_DOWN, ACTION_CHANNEL_DOWN]
 RIGHT_ACTIONS = [ACTION_MOVE_RIGHT, ACTION_PAGE_UP, ACTION_MOUSE_WHEEL_UP, ACTION_SCROLL_UP, ACTION_CHANNEL_UP]
 
-log = StandardLogger(addonid, os.path.basename(__file__)).log
-lang = LangRetriever(__addon__).lang
+log = StandardLogger(ADDON_ID, os.path.basename(__file__)).log
+lang = LangRetriever(ADDON).lang
 
 """
 =========================
