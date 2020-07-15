@@ -22,13 +22,11 @@ def argv():
 
 if len(argv()) > 1:
     msg = argv()[1]
-
     print('OSMC settings sending response, %s' % msg)
 
     message = ('settings_command', {
         'action': msg
     })
-
     message = json.dumps(message)
 
     with closing(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)) as open_socket:

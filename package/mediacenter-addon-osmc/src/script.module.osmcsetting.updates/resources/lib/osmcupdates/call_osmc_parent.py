@@ -21,7 +21,6 @@ def argv():
 
 if len(argv()) > 1:
     message = argv()[1]
-
     print('OSMC settings sending response, %s' % message)
 
     with closing(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)) as open_socket:

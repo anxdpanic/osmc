@@ -22,40 +22,32 @@ import xbmcgui
 from osmccommon.osmc_language import LangRetriever
 from osmccommon.osmc_logging import StandardLogger
 
-addonid = 'script.module.osmcsetting.updates'
-__addon__ = xbmcaddon.Addon(addonid)
-__scriptPath__ = __addon__.getAddonInfo('path')
-__setting__ = __addon__.getSetting
-
+ADDON_ID = 'script.module.osmcsetting.updates'
+DIALOG = xbmcgui.Dialog()
 PY2 = sys.version_info.major == 2
 
-DIALOG = xbmcgui.Dialog()
-
-log = StandardLogger(addonid, os.path.basename(__file__)).log
-lang = LangRetriever(__addon__).lang
+log = StandardLogger(ADDON_ID, os.path.basename(__file__)).log
 
 
 class HotFix(object):
 
-    def __init__(self):
+    def __init__(self, addon=None):
+        self._addon = addon
+        self._lang = None
 
         self.tmp_hfo_location = '/var/tmp/uploadHotFixOutput.txt'
 
         hf_key = self.user_enters_key()
-
         hf_cypher = self.convert_key_to_cypher(hf_key)
-
-        hf_rawtext = self.retrieve_hotfix(hf_cypher)
-
-        hf_parsed = self.parse_hotfix(hf_rawtext)
-
+        hf_raw_text = self.retrieve_hotfix(hf_cypher)
+        hf_parsed = self.parse_hotfix(hf_raw_text)
         user_confirmation = self.confirm_instruction()
 
         self.display_description(hf_parsed['description'])
-
         self.display_instruction(hf_parsed['instruction'])
 
-        if not user_confirmation: return
+        if not user_confirmation:
+            return
 
         results = self.apply_instruction(hf_parsed['instruction'])
 
@@ -63,50 +55,59 @@ class HotFix(object):
 
         self.resolution_dispatcher(results, hf_parsed['resolution'])
 
+    @property
+    def addon(self):
+        if not self._addon:
+            self._addon = xbmcaddon.Addon(ADDON_ID)
+        return self._addon
+
+    def lang(self, value):
+        if not self._lang:
+            retriever = LangRetriever(self.addon)
+            self._lang = retriever.lang
+        return self._lang(value)
+
     def user_enters_key(self):
-
-        """ Provides a dialog through which the user enters a 5-digit key code """
-
+        """
+            Provides a dialog through which the user enters a 5-digit key code
+        """
         # DEFAULT VALUE ONLY USED FOR TESTING
-        hf_key = DIALOG.input(lang(32115), 'lanevudaqu', type=xbmcgui.INPUT_ALPHANUM)
-        # hf_key = DIALOG.input('Enter HotFix ID', type=xbmcgui.INPUT_ALPHANUM)
-
+        hf_key = DIALOG.input(self.lang(32115), '', type=xbmcgui.INPUT_ALPHANUM)
         log(label='User entered hotfix ID', message=hf_key)
 
         return hf_key
 
-    def convert_key_to_cypher(self, hf_key):
-
-        """ Takes a 5-digit key code and converts it to the cypher used in retrieving the HotFix from paste.osmc.io """
-
-        # YET TO BE IMPLEMENTED
-
-        hf_cypher = ''
-
+    @staticmethod
+    def convert_key_to_cypher(hf_key):
+        """
+            Takes a 5-digit key code and converts it to the cypher used in retrieving
+            the HotFix from paste.osmc.io
+            *** YET TO BE IMPLEMENTED
+        """
         return hf_key
 
-    def retrieve_hotfix(self, hf_cypher):
+    @staticmethod
+    def retrieve_hotfix(hf_cypher):
+        """
+            Takes a five-digit hotfix key and retrieve the hotfix from paste.osmc.io.
+            Returns the raw contents at that location as a string.
+        """
+        url = 'https://paste.osmc.tv/raw/%s' % hf_cypher
+        log(label='Retrieving hotfix from', message=url)
 
-        """ Takes a five-digit hotfix key and retrieve the hotfix from paste.osmc.io.
-            Returns the raw contents at that location as a string. """
+        raw_result = requests.get(url)
+        raw_text = raw_result.text
 
-        URL = 'https://paste.osmc.tv/raw/%s' % hf_cypher
+        log(label='HotFix Result', message=raw_text)
+        return raw_text
 
-        log(label='Retrieving hotfix from', message=URL)
-
-        raw_result = requests.get(URL)
-
-        hf_rawtext = raw_result.text
-
-        log(label='HotFix Result', message=hf_rawtext)
-
-        return hf_rawtext
-
-    def parse_hotfix(self, hf_result):
-
-        """ Takes the raw string from the paste.osmc.io location and parses it.
-            Returns a dictionary with the DESCRIPTION of the hotfix, the INSTRUCTION (what is run on the command line)
-            and the RESOLUTION as a list (the actions to take after the INSTRUCTION is run).
+    @staticmethod
+    def parse_hotfix(hf_result):
+        """
+            Takes the raw string from the paste.osmc.io location and parses it.
+            Returns a dictionary with the DESCRIPTION of the hotfix, the INSTRUCTION
+            (what is run on the command line) and the RESOLUTION as a list
+            (the actions to take after the INSTRUCTION is run).
 
             The structure of the file is as follows:
 
@@ -123,12 +124,13 @@ class HotFix(object):
                     - one line string with resolution actions
                     - can be comma, space, bar, colon, or semi-colon delimited
                     - must be the last line in the result
-                    - and must start with "RESOLUTION:", otherwise it will be treated as part of the INSTRUCTION SET
-                    - UPLOAD: upload the results of the INSTRUCTION to paste.osmc.io and provide the user with the link
+                    - and must start with "RESOLUTION:", otherwise it will be treated as part of
+                      the INSTRUCTION SET
+                    - UPLOAD: upload the results of the INSTRUCTION to paste.osmc.io and provide
+                      the user with the link
                     - SAVE: to save the results to a specific file
                     - LOG: write the results to the kodi log
-                    - LOG is a mandatory RESOLUTION and is done everytime by default
-
+                    - LOG is a mandatory RESOLUTION and is done every time by default
              """
 
         description = 'No description available'
@@ -140,7 +142,6 @@ class HotFix(object):
         result_list = hf_result.split('\n')
 
         for i, line in enumerate(result_list):
-
             if i == 0:
                 if line.startswith('DESCRIPTION:'):
                     description = line.replace('DESCRIPTION:', '').strip()
@@ -170,43 +171,39 @@ class HotFix(object):
         return hf_parsed
 
     def display_description(self, description):
-
-        """ Displays a description of the hotfix on-screen for the user """
-
-        # YET TO BE IMPLEMENTED
-
-        pass
+        """
+            Displays a description of the hotfix on-screen for the user
+            *** YET TO BE IMPLEMENTED
+        """
 
     def display_instruction(self, instruction):
-
-        """ Displays the specific instructions on-screen for the user """
-
-        # YET TO BE IMPLEMENTED
-
-        pass
+        """
+            Displays the specific instructions on-screen for the user
+            *** YET TO BE IMPLEMENTED
+        """
 
     def confirm_instruction(self):
-
-        """ Asks the user to confirm that they wish to apply the instruction.
-            Returns TRUE, only if user clicks Yes. """
-
-        user_confirmation = DIALOG.yesno(lang(32116), '[CR]'.join([lang(32117), lang(32118), lang(32119)]))
+        """
+            Asks the user to confirm that they wish to apply the instruction.
+            Returns TRUE, only if user clicks Yes.
+        """
+        user_confirmation = DIALOG.yesno(self.lang(32116),
+                                         '[CR]'.join([self.lang(32117),
+                                                      self.lang(32118),
+                                                      self.lang(32119)]))
 
         return user_confirmation
 
-    def apply_instruction(self, instruction):
-
-        """ Applies the instruction via the command line.
-            Returns the resulting output in a list of lines."""
-
+    @staticmethod
+    def apply_instruction(instruction):
+        """
+            Applies the instruction via the command line.
+            Returns the resulting output in a list of lines.
+        """
         dangerous = ['rm -rf /', ]
-
         results = []
-
         for line in instruction:
-
             try:
-
                 instruct = shlex.split(line)
                 results.append('>>>>> INSTRUCTION >>>>> %s\n' % ' '.join(instruct))
 
@@ -214,77 +211,74 @@ class HotFix(object):
                     results.append(subprocess.check_output(instruct))
 
                 except subprocess.CalledProcessError as e:
-                    # raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
+                    # raise RuntimeError("command '{}' return with error (code {}): {}"
+                    # .format(e.cmd, e.returncode, e.output))
                     log(label='Non-zero exit code from line', message=e.output)
                     results.append(e.output)
                     break
 
             except Exception as e:
-
-                results.append('Error: %s\n%s' % (e.message, traceback.format_exc()))
-
+                results.append('Error: %s\n%s' % (str(e), traceback.format_exc()))
                 break
 
         return results
 
-    def resolution_dispatcher(self, results, resolutions=[]):
-
-        """ Applies the stated resolutions in the file.
-            If LOG is not in resolutions, then add it in."""
+    def resolution_dispatcher(self, results, resolutions=None):
+        """
+            Applies the stated resolutions in the file.
+            If LOG is not in resolutions, then add it in.
+        """
+        if resolutions is None:
+            resolutions = []
 
         resolution_map = {
-
             'UPLOAD': self.resolution_upload,
             'SAVE': self.resolution_save,
             'LOG': self.resolution_log,
-
         }
 
-        if 'LOG' not in resolutions: resolutions.append('LOG')
+        if 'LOG' not in resolutions:
+            resolutions.append('LOG')
 
         for resolution in resolutions:
             func = resolution_map.get(resolution, self.missing_resolution)
-
             func(results)
 
-    def missing_resolution(self, results):
-
-        """ Method that is run when the dispatcher recieves a resolution it doesnt understand """
-
+    @staticmethod
+    def missing_resolution(results):
+        """
+            Method that is run when the dispatcher receives a resolution it doesnt understand
+        """
         log('Unknown request received by dispatcher.')
 
     def resolution_upload(self, results):
-
-        """ Uploads the results stored in the temporary file to paste.osmc.io and provide the user with the URL """
-
-        with os.popen('curl -X POST -s -T "%s" https://paste.osmc.tv/documents' % self.tmp_hfo_location) as f:
-
-            line = f.readline()
-
+        """
+            Uploads the results stored in the temporary file to paste.osmc.io and
+            provide the user with the URL
+        """
+        with os.popen('curl -X POST -s -T "%s" https://paste.osmc.tv/documents' %
+                      self.tmp_hfo_location) as open_file:
+            line = open_file.readline()
             key = line.replace('{"key":"', '').replace('"}', '').replace('\n', '')
-
             log('pastio line: %s' % repr(line))
 
         if not key:
-
             log("OSMC HotFix upload failed.")
-
-            save = DIALOG.yesno(lang(32120), '[CR]'.join([lang(32121), lang(32122)]))
+            save = DIALOG.yesno(self.lang(32120),
+                                '[CR]'.join([self.lang(32121), self.lang(32122)]))
 
             if save:
                 self.resolution_save(results=None)
 
         else:
-
             url = 'https://paste.osmc.tv/ %s' % key
-
             log(label="HotFix output uploaded to", message=url.replace(' ', ''))
-
-            _ = DIALOG.ok(lang(32120), '[CR]'.join([lang(32123), "URL: %s" % url]))
+            _ = DIALOG.ok(self.lang(32120), '[CR]'.join([self.lang(32123), "URL: %s" % url]))
 
     def save_temp_hotfix_output(self, results):
-
-        """ Saves the hotfix output to a temporary file """
+        """
+            Saves the hotfix output to a temporary file
+        """
         if PY2:
             results = [
                 x.decode('utf-8') if isinstance(x, str) else x for x in results
@@ -294,17 +288,17 @@ class HotFix(object):
             f.writelines(results)
 
     def resolution_save(self, results):
-
-        """ Save the results to a file at the SD card """
-
+        """
+            Save the results to a file at the SD card
+        """
         log('Copying HotFix output to /boot/')
-
         os.popen('sudo cp -rf %s /boot/' % self.tmp_hfo_location)
 
-    def resolution_log(self, results):
-
-        """ Write the results to the kodi log file. Debug is not required."""
-
+    @staticmethod
+    def resolution_log(results):
+        """
+            Write the results to the kodi log file. Debug is not required.
+        """
         for line in results:
             log(label='HotFix Output', message=line)
 

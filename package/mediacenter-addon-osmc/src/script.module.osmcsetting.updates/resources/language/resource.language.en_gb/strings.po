@@ -661,3 +661,19 @@ msgstr""
 msgctxt "#32161"
 msgid "Removing old backup file: %s"
 msgstr""
+
+msgctxt "#32162"
+msgid "Select items to restore"
+msgstr""
+
+msgctxt "#32163"
+msgid "Overwrite existing files"
+msgstr""
+
+msgctxt "#32164"
+msgid "Select new restore folder"
+msgstr""
+
+msgctxt "#32165"
+msgid "Browse to restore location"
+msgstr""
