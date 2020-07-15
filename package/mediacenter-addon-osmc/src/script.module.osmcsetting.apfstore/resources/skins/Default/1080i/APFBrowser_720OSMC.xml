@@ -2,7 +2,6 @@
 <window>
     <!-- addonbrowser -->
     <backgroundcolor>ff203b4c</backgroundcolor>
-    <!--former_line<backgroundcolor>0xff18394a</backgroundcolor>-->
     <defaultcontrol always="true">500</defaultcontrol>
     <controls>
         <!-- Background -->
@@ -42,17 +41,6 @@
                 <bordersize>0,0,0,66</bordersize>
                 <!-- <visible>!SubString(ListItem.Icon,Default)</visible>-->
             </control>
-            <!-- 			<control type="label">
-                            <left>120</left>
-                            <top>500</top>
-                            <width>1018</width>
-                            <height>90</height>
-                            <font>osmc_addon_720_font13</font> -->
-            <!--former_line<font>osmc_addon_720_font13</font>-->
-            <!-- 				<label>$INFO[ListItem.Icon]</label>
-                            <textcolor>66ffffff</textcolor>
-                        </control> -->
-            <!-- List -->
             <control id="500" type="fixedlist">
                 <left>750</left>
                 <centertop>50%</centertop>
@@ -75,7 +63,6 @@
                         <width>1018</width>
                         <height>90</height>
                         <font>osmc_addon_720_Med</font>
-                        <!--former_line<font>osmc_addon_720_OLD_Font36</font>-->
                         <label>$INFO[ListItem.Label]</label>
                         <textcolor>66ffffff</textcolor>
                     </control>
@@ -87,10 +74,8 @@
                         <width>1018</width>
                         <height>180</height>
                         <font>osmc_addon_720_XLarge</font>
-                        <!--former_line<font>osmc_addon_720_OLD_Font72</font>-->
                         <label>$INFO[ListItem.Label]</label>
                         <textcolor>ffe0b074</textcolor>
-                        <!--former_line<textcolor>ffffffff</textcolor>-->
                         <shadowcolor>44000000</shadowcolor>
                         <visible>IsEmpty(ListItem.Label2)</visible>
                     </control>
@@ -102,10 +87,8 @@
                             <width>1018</width>
                             <height>48</height>
                             <font>osmc_addon_720_XLarge</font>
-                            <!--former_line<font>osmc_addon_720_OLD_Font48</font>-->
                             <label>$INFO[ListItem.Label]</label>
                             <textcolor>ffe0b074</textcolor>
-                            <!--former_line<textcolor>ffffffff</textcolor>-->
                             <shadowcolor>44000000</shadowcolor>
                         </control>
                         <control type="label">
@@ -114,7 +97,6 @@
                             <width>1018</width>
                             <height>27</height>
                             <font>osmc_addon_720_XSmall</font>
-                            <!--former_line<font>osmc_addon_720_OLD_Font27</font>-->
                             <label>$INFO[ListItem.Label2]</label>
                             <!-- <textcolor>66ffffff</textcolor>-->
                             <textcolor>ffe0b074</textcolor>
@@ -159,7 +141,6 @@
                     <height>44</height>
                     <label>$ADDON[script.module.osmcsetting.apfstore 32006]</label>
                     <font>osmc_addon_720_Small</font>
-                    <!--former_line<font>osmc_addon_720_OLD_Font33</font>-->
                     <texturefocus>TextShade.png</texturefocus>
                     <texturenofocus>single_pixel.png</texturenofocus>
                     <focusedcolor>ffe0b074</focusedcolor>
@@ -173,7 +154,6 @@
                     <align>center</align>
                     <label>$ADDON[script.module.osmcsetting.apfstore 32007]</label>
                     <font>osmc_addon_720_Small</font>
-                    <!--former_line<font>osmc_addon_720_OLD_Font33</font>-->
                     <textcolor>66ffffff</textcolor>
                 </control>
                 <!-- remove count -->
@@ -182,7 +162,6 @@
                     <height>44</height>
                     <label>$ADDON[script.module.osmcsetting.apfstore 32008]</label>
                     <font>osmc_addon_720_Small</font>
-                    <!--former_line<font>osmc_addon_720_OLD_Font33</font>-->
                     <textcolor>66ffffff</textcolor>
                     <focusedcolor>ffe0b074</focusedcolor>
                     <align>center</align>
@@ -193,7 +172,6 @@
                     <height>44</height>
                     <label>$ADDON[script.module.osmcsetting.apfstore 32009]</label>
                     <font>osmc_addon_720_Small</font>
-                    <!--former_line<font>osmc_addon_720_OLD_Font33</font>-->
                     <texturefocus>TextShade.png</texturefocus>
                     <texturenofocus>single_pixel.png</texturenofocus>
                     <textcolor>66ffffff</textcolor>

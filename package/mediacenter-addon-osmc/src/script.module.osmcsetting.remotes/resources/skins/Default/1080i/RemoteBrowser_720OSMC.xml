@@ -2,7 +2,6 @@
 <window>
     <!-- addonbrowser -->
     <backgroundcolor>ff203b4c</backgroundcolor>
-    <!--former_line<backgroundcolor>0xff18394a</backgroundcolor>-->
     <defaultcontrol always="true">500</defaultcontrol>
     <controls>
         <!-- Background -->
@@ -66,11 +65,9 @@
                         <width>1018</width>
                         <height>90</height>
                         <font>osmc_addon_720_Med</font>
-                        <!--former_line<font>osmc_addon_720_OLD_Font36</font>-->
                         <!-- <font>osmc_addon_720_font13</font>-->
                         <label>$INFO[ListItem.Label]</label>
                         <selectedcolor>ffffffff</selectedcolor>
-                        <!--former_line<selectedcolor>ffffa500</selectedcolor>-->
                         <textcolor>66ffffff</textcolor>
                     </control>
                 </itemlayout>
@@ -81,13 +78,10 @@
                         <width>1018</width>
                         <height>180</height>
                         <font>osmc_addon_720_XLarge</font>
-                        <!--former_line<font>osmc_addon_720_OLD_Font72</font>-->
                         <!-- <font>osmc_addon_720_font13</font>-->
                         <label>$INFO[ListItem.Label]</label>
                         <textcolor>ffe0b074</textcolor>
-                        <!--former_line<textcolor>ffffffff</textcolor>-->
                         <selectedcolor>ffe0b074</selectedcolor>
-                        <!--former_line<selectedcolor>ffffa500</selectedcolor>-->
                         <shadowcolor>44000000</shadowcolor>
                         <!-- <animation condition="!Control.HasFocus(500)" easing="out" effect="fade" end="50" reversible="true" start="100" time="200" tween="cubic">Conditional</animation>-->
                         <visible>IsEmpty(ListItem.Label2)</visible>
@@ -100,13 +94,10 @@
                             <width>1018</width>
                             <height>48</height>
                             <font>osmc_addon_720_XLarge</font>
-                            <!--former_line<font>osmc_addon_720_OLD_Font48</font>-->
                             <!-- <font>osmc_addon_720_font13</font>-->
                             <label>$INFO[ListItem.Label]</label>
                             <textcolor>ffe0b074</textcolor>
-                            <!--former_line<textcolor>ffffffff</textcolor>-->
                             <selectedcolor>ffe0b074</selectedcolor>
-                            <!--former_line<selectedcolor>ffffa500</selectedcolor>-->
                             <shadowcolor>44000000</shadowcolor>
                             <!-- <animation condition="!Control.HasFocus(500)" easing="out" effect="fade" end="50" reversible="true" start="100" time="200" tween="cubic">Conditional</animation>-->
                         </control>
@@ -116,13 +107,11 @@
                             <width>1018</width>
                             <height>27</height>
                             <font>osmc_addon_720_XSmall</font>
-                            <!--former_line<font>osmc_addon_720_OLD_Font27</font>-->
                             <!-- <font>osmc_addon_720_font13</font>-->
                             <label>$INFO[ListItem.Label2]</label>
                             <!-- <textcolor>66ffffff</textcolor>-->
                             <textcolor>fff1f1f1</textcolor>
                             <selectedcolor>ffe0b074</selectedcolor>
-                            <!--former_line<selectedcolor>ffffa500</selectedcolor>-->
                             <shadowcolor>44000000</shadowcolor>
                             <!-- <animation condition="!Control.HasFocus(500)" easing="out" effect="fade" end="50" reversible="true" start="100" time="200" tween="cubic">Conditional</animation>-->
                         </control>
@@ -161,7 +150,6 @@
                 <width>430</width>
                 <height>640</height>
                 <font>osmc_addon_720_XSmall</font>
-                <!--former_line<font>osmc_addon_720_OLD_Font25</font>-->
                 <label>$INFO[Container(500).ListItem.Title]</label>
                 <pagecontrol>69</pagecontrol>
             </control>
@@ -222,7 +210,6 @@
                     <!-- <label>$ADDON[script.module.osmcsetting.remotes 32003]</label>-->
                     <label>Browse</label>
                     <font>osmc_addon_720_Small</font>
-                    <!--former_line<font>osmc_addon_720_OLD_Font33</font>-->
                     <texturefocus>TextShade.png</texturefocus>
                     <texturenofocus>single_pixel.png</texturenofocus>
                     <focusedcolor>FFFFFFFF</focusedcolor>
@@ -236,7 +223,6 @@
                     <!-- <label>$ADDON[script.module.osmcsetting.remotes 32004]</label>-->
                     <label>Exit</label>
                     <font>osmc_addon_720_Small</font>
-                    <!--former_line<font>osmc_addon_720_OLD_Font33</font>-->
                     <texturefocus>TextShade.png</texturefocus>
                     <texturenofocus>single_pixel.png</texturenofocus>
                     <focusedcolor>FFFFFFFF</focusedcolor>

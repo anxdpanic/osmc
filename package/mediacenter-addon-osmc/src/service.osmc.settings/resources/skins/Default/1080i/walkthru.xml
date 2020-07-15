@@ -300,7 +300,6 @@
                         <width>1280</width>
                         <height>90</height>
                         <font>osmc_addon_Med</font>
-                        <!--former_line<font>osmc_addon_OLD_Font36</font>-->
                         <label>$INFO[ListItem.Label]</label>
                         <textcolor>66ffffff</textcolor>
                     </control>
