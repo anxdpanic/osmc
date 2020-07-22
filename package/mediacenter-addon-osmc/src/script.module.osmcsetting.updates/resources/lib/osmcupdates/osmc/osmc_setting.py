@@ -14,6 +14,8 @@ import subprocess
 from osmccommon import osmc_setting
 from osmccommon.osmc_logging import StandardLogger
 
+from ..osmc_repositories import OSMCRepositories
+
 addon_id = "script.module.osmcsetting.updates"
 log = StandardLogger(addon_id, os.path.basename(__file__)).log
 
@@ -81,18 +83,28 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
 
     def run(self):
         # check if kodi_reset file is present, if it is then set the bool as true, else set as false
-
         if os.path.isfile(self.reset_file):
             log('Kodi reset file found')
-            self.me.setSetting('kodi_reset', 'true')
+            self.me.setSettingBool('kodi_reset', True)
         else:
             log('Kodi reset file not found')
-            self.me.setSetting('kodi_reset', 'false')
+            self.me.setSettingBool('kodi_reset', False)
+
+        if OSMCRepositories(self.me).nightly_repository_exists():
+            log('Nightly repository file found')
+            self.me.setSettingBool('to_nightly_enable', False)
+            self.me.setSettingBool('to_stable_enable', True)
+
+        else:
+            log('Nightly repository file not found')
+            self.me.setSettingBool('to_nightly_enable', True)
+            self.me.setSettingBool('to_stable_enable', False)
 
         self.me.openSettings()
+        self._me = None
 
         # check the kodi reset setting, if it is true then create the kodi_reset file, otherwise remove that file
-        if self.me.getSetting('kodi_reset') == 'true':
+        if self.me.getSettingBool('kodi_reset'):
             log('creating kodi reset file')
             subprocess.call(['sudo', 'touch', self.reset_file])
         else:

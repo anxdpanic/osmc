@@ -30,6 +30,7 @@ from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_scheduler import SimpleScheduler
 
 from .osmc_backups import OSMCBackup
+from .osmc_repositories import OSMCRepositories
 
 try:
     import queue as Queue
@@ -934,6 +935,12 @@ class Main(object):
         elif action == 'install':
             result = self.settings_command_install()
 
+        elif action == 'to_nightly':
+            result = self.settings_command_switch_repositories('nightly')
+
+        elif action == 'to_stable':
+            result = self.settings_command_switch_repositories('stable')
+
         return result
 
     def settings_command_action(self):
@@ -1021,6 +1028,22 @@ class Main(object):
             subprocess.Popen(['sudo', 'systemctl', 'start', 'manual-update'])
 
             return "Calling external update"
+
+    def settings_command_switch_repositories(self, branch):
+        result = None
+
+        if branch == 'nightly':
+            result = DIALOG.yesno(self.lang(32171), self.lang(32172))
+
+        elif branch == 'stable':
+            result = DIALOG.yesno(self.lang(32171), self.lang(32173))
+
+        if result:
+            repositories = OSMCRepositories(self.addon)
+            repositories.switch(branch)
+            self.call_child_script('update_manual')
+
+        return 'Called SWITCH REPOSITORY script complete'
 
     def check_for_broken_installs(self):
         try:

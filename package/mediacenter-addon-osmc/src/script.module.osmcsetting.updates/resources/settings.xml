@@ -104,4 +104,12 @@
         <setting default="false" label="32134" id="kodi_reset" type="bool"/>
         <setting label="32135" type="lsep" visible="eq(-1,true)"/>
     </category>
+    <category label="32166">
+        <setting label="32166" type="lsep" visible="true"/>
+        <setting visible="false" default="true" id="to_nightly_enable" label="" type="bool"/>
+        <setting action="RunScript($CWD/resources/lib/osmcupdates/call_parent.py, to_nightly)" id="to_nightly" label="32168" option="close" type="action" enable="eq(-1,true)"/>
+        <setting label="32170" type="lsep" visible="true"/>
+        <setting visible="false" default="false" id="to_stable_enable" label="" type="bool"/>
+        <setting action="RunScript($CWD/resources/lib/osmcupdates/call_parent.py, to_stable)" id="to_stable" label="32169" option="close" type="action" enable="eq(-1,true)"/>
+    </category>
 </settings>

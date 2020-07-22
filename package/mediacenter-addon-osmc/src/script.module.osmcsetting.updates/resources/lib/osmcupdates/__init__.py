@@ -9,4 +9,4 @@
 """
 
 __all__ = ['apt_cache_action', 'call_osmc_parent', 'call_parent', 'osmc_backups', 'osmc_hotfix',
-           'service_entry', 'osmc', 'tests']
+           'osmc_repositories', 'service_entry', 'osmc', 'tests']

@@ -677,3 +677,35 @@ msgstr""
 msgctxt "#32165"
 msgid "Browse to restore location"
 msgstr""
+
+msgctxt "#32166"
+msgid "Nightly"
+msgstr""
+
+msgctxt "#32167"
+msgid "[B]If you are looking for a stable system then these builds are not for you![/B][CR]Before proceeding make sure you have a backup of your installation. As these are test builds there could well be some unexpected problems.[CR]Database upgrades could also be an issue. Please make a backup of the Kodi database before installing, especially if you are running a remote MySQL database. Going back from nightly to stable might be difficult especially if there have been upgrades to the Kodi databases."
+msgstr""
+
+msgctxt "#32168"
+msgid "Update to nightly branch"
+msgstr""
+
+msgctxt "#32169"
+msgid "Revert to stable branch"
+msgstr""
+
+msgctxt "#32170"
+msgid "There is no guarantee that reverting to stable branch will be successful."
+msgstr""
+
+msgctxt "#32171"
+msgid "Warning"
+msgstr""
+
+msgctxt "#32172"
+msgid "Before proceeding make sure you have a backup of your device, and Kodi database before installing. As these are test builds there could be some unexpected problems.[CR]Are you sure you want to proceed?"
+msgstr""
+
+msgctxt "#32173"
+msgid "There is no guarantee that reverting to stable branch will be successful.[CR]Are you sure you want to proceed?"
+msgstr""
