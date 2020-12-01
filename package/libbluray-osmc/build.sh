@@ -33,11 +33,11 @@ then
 	handle_dep "pkg-config"
 	handle_dep "autoconf"
         handle_dep "automake"
+	handle_dep "libtool"
 	echo "Package: ${1}-libbluray-osmc" >> files/DEBIAN/control && echo "Package: ${1}-libbluray-dev-osmc" >> files-dev/DEBIAN/control
 	pushd src/libbluray-*
 	install_patch "../../patches" "all"
-	aclocal
-	autoconf
+	autoreconf -vif .
 	./configure --prefix=/usr/osmc --disable-bdjava-jar --with-freetype --with-fontconfig --with-libxml2 --disable-examples
 	$BUILD
 	make install DESTDIR=${out}

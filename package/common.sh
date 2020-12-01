@@ -44,22 +44,6 @@ function strip_libs()
 	strip "*.a" > /dev/null 2>&1
 }
 
-function configure_build_env()
-{
-	if [ -f "/etc/resolv.conf" ]
-	then
-		echo -e "Installing /etc/resolv.conf"
-		cp /etc/resolv.conf ${1}/etc/resolv.conf
-	fi
-	if [ -f "/etc/network/interfaces" ]
-	then
-		echo -e "Installing /etc/network/interfaces"
-		cp /etc/network/interfaces ${1}/etc/network/interfaces
-	fi
-	HOSTNAME=$(cat /etc/hostname)
-	echo "127.0.0.1 $HOSTNAME" > ${1}/etc/hosts
-}
-
 function build_in_env()
 {
 	if [ -n "$4" ]
@@ -142,6 +126,8 @@ function build_in_env()
 	test $DEP == vero2 && DEP="armv7"
 	test $DEP == vero3 && DEP="armv7"
 	test $DEP == vero364 && DEP="aarch64"
+	test $DEP == rbp4 && DEP="armv7"
+	test $DEP == rbp464 && DEP="aarch64"
 	test $DEP == rbp1 && DEP="armv6l"
 	test $DEP == atv && DEP="i386"
 	test $DEP == pc && DEP="amd64"
@@ -160,7 +146,7 @@ function build_in_env()
 	export use_faster_apt=0 # This is only exported if in chroot, so we need to guard handle_dep for TC
 	handle_dep "$DEP-toolchain-osmc"
 	if [ $? != 0 ]; then echo -e "Can't get upstream toolchain. Is apt.osmc.tv in your sources.list?" && exit 1; fi
-	configure_build_env "$TCDIR"
+	configure_build_env_nw "$TCDIR"
 	umount ${TCDIR}/mnt >/dev/null 2>&1 # May be dirty
 	umount ${TCDIR}/root/.ccache >/dev/null 2>&1 # Shouldn't be dirty, as 1.1, but play it safe and ensure we mount right thing later
 	mount --bind "$2/../../" "$TCDIR"/mnt

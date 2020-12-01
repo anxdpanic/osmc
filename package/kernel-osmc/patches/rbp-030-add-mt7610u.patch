@@ -131470,10 +131470,10 @@ index 0000000..640955c
 +#endif // _RT_TXBF_H_
 diff --git a/mt7610u/include/rtmp.h b/drivers/net/wireless/mt7610u/include/rtmp.h
 new file mode 100644
-index 0000000..fe6b6d1
+index 0000000..1dc436f
 --- /dev/null
 +++ b/drivers/net/wireless/mt7610u/include/rtmp.h
-@@ -0,0 +1,8117 @@
+@@ -0,0 +1,8119 @@
 +/*
 + *************************************************************************
 + * Ralink Tech Inc.
@@ -138561,6 +138561,7 @@ index 0000000..fe6b6d1
 +					 */
 +}ieee80211_radiotap_header ;
 +
++#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0))
 +enum ieee80211_radiotap_type {
 +    IEEE80211_RADIOTAP_TSFT = 0,
 +    IEEE80211_RADIOTAP_FLAGS = 1,
@@ -138577,6 +138578,7 @@ index 0000000..fe6b6d1
 +    IEEE80211_RADIOTAP_DB_ANTSIGNAL = 12,
 +    IEEE80211_RADIOTAP_DB_ANTNOISE = 13
 +};
++#endif
 +
 +#define WLAN_RADIOTAP_PRESENT (			\
 +	(1 << IEEE80211_RADIOTAP_TSFT)	|	\
@@ -174582,10 +174584,10 @@ index 0000000..280d2de
 +
 diff --git a/mt7610u/os/linux/sta_ioctl.c b/drivers/net/wireless/mt7610u/os/linux/sta_ioctl.c
 new file mode 100644
-index 0000000..50afb88
+index 0000000..d4562c1
 --- /dev/null
 +++ b/drivers/net/wireless/mt7610u/os/linux/sta_ioctl.c
-@@ -0,0 +1,2651 @@
+@@ -0,0 +1,2659 @@
 +/*
 + *************************************************************************
 + * Ralink Tech Inc.
@@ -177168,7 +177170,11 @@ index 0000000..50afb88
 +		case SIOCGIWPRIV:
 +			if (wrqin->u.data.pointer) 
 +			{
++#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0))
++				if ( access_ok(wrqin->u.data.pointer, sizeof(privtab)) != TRUE)
++#else
 +				if ( access_ok(VERIFY_WRITE, wrqin->u.data.pointer, sizeof(privtab)) != TRUE)
++#endif
 +					break;
 +				if ((sizeof(privtab) / sizeof(privtab[0])) <= wrq->u.data.length)
 +				{
@@ -177181,7 +177187,11 @@ index 0000000..50afb88
 +			}
 +			break;
 +		case RTPRIV_IOCTL_SET:
++#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0))
++			if(access_ok(wrqin->u.data.pointer, wrqin->u.data.length) != TRUE)   
++#else
 +			if(access_ok(VERIFY_READ, wrqin->u.data.pointer, wrqin->u.data.length) != TRUE)   
++#endif
 +					break;
 +			return rt_ioctl_setparam(net_dev, NULL, NULL, wrqin->u.data.pointer);
 +			break;

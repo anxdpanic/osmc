@@ -4,9 +4,10 @@
 #!/bin/bash
 
 . ../common.sh
-if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ] || [ "$1" == "pc" ] || [ "$1" == "vero2" ] || [ "$1" == "vero3" ]
+
+if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ] || [ "$1" == "rbp4" ] || [ "$1" == "pc" ] || [ "$1" == "vero2" ] || [ "$1" == "vero3" ]
 then
-pull_source "https://github.com/xbmc/xbmc/archive/8f9ff4c11f7f8acdf609484d61b82b25f875c21a.tar.gz" "$(pwd)/src"
+pull_source "https://github.com/xbmc/xbmc/archive/0655c2c71821567e4c21c1c5a508a39ab72f0ef1.tar.gz" "$(pwd)/src"
 API_VERSION="18"
 else
 pull_source "https://github.com/xbmc/xbmc/archive/master.tar.gz" "$(pwd)/kodi"
@@ -16,7 +17,7 @@ if [ $? != 0 ]; then echo -e "Error fetching Kodi source" && exit 1; fi
 # Build in native environment
 BUILD_OPTS=$BUILD_OPTION_DEFAULTS
 BUILD_OPTS=$(($BUILD_OPTS - $BUILD_OPTION_USE_CCACHE))
-if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ] || [ "$1" == "vero2" ] || [ "$1" == "vero3" ]
+if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ] || [ "$1" == "rbp4" ] || [ "$1" == "vero2" ] || [ "$1" == "vero3" ]
 then
     BUILD_OPTS=$(($BUILD_OPTS + $BUILD_OPTION_NEEDS_SWAP))
 fi
@@ -62,14 +63,14 @@ then
 	handle_dep "libmad0-dev"
 	handle_dep "libmicrohttpd-dev"
 	handle_dep "libmodplug-dev"
-	handle_dep "libmariadbclient-dev-compat"
+	handle_dep "libmariadbd-dev"
 	handle_dep "libpcre3-dev"
 	handle_dep "libplist-dev"
 	handle_dep "libpng-dev"
 	handle_dep "libsmbclient-dev"
 	handle_dep "libssh-dev"
 	handle_dep "libavahi-client-dev"
-	handle_dep "libssl-dev"
+	handle_dep "libssl-dev" # We need this as well as libcurl4-openssl-dev because openssl libs are only suggestions
 	handle_dep "libtinyxml-dev"
 	handle_dep "libtool"
 	handle_dep "libudev-dev"
@@ -83,7 +84,7 @@ then
 	handle_dep "nasm"
 	handle_dep "pmount"
 	handle_dep "python-dev"
-	handle_dep "python-imaging"
+	handle_dep "python-pil"
 	handle_dep "python-sqlite"
 	handle_dep "swig"
 	handle_dep "unzip"
@@ -99,7 +100,10 @@ then
 	handle_dep "libcrossguid-dev"
 	handle_dep "cmake"
 	handle_dep "rapidjson-dev"
-        handle_dep "libgcrypt11-dev"
+        handle_dep "libgcrypt20-dev"
+        handle_dep "libnfs-dev"
+        handle_dep "libass-dev"
+	handle_dep "libunistring-dev"
 	if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ]
 	then
 		handle_dep "rbp-userland-dev-osmc"
@@ -109,54 +113,45 @@ then
 		handle_dep "rbp1-libcec-dev-osmc"
 		handle_dep "armv6l-libshairplay-dev-osmc"
 		handle_dep "armv6l-librtmp-dev-osmc"
-		handle_dep "armv6l-libnfs-dev-osmc"
 		handle_dep "armv6l-libplatform-dev-osmc"
 		handle_dep "armv6l-libbluray-dev-osmc"
 		handle_dep "armv6l-libsqlite-dev-osmc"
-		handle_dep "armv6l-libass-dev-osmc"
 	fi
 	if [ "$1" == "rbp2" ]
 	then
 		handle_dep "rbp2-libcec-dev-osmc"
 		handle_dep "armv7-libshairplay-dev-osmc"
 		handle_dep "armv7-librtmp-dev-osmc"
-		handle_dep "armv7-libnfs-dev-osmc"
 		handle_dep "armv7-libplatform-dev-osmc"
 		handle_dep "armv7-libbluray-dev-osmc"
 		handle_dep "armv7-libsqlite-dev-osmc"
-		handle_dep "armv7-libass-dev-osmc"
 	fi
         if [ "$1" == "vero2" ]
         then
 		handle_dep "vero2-libcec-dev-osmc"
 		handle_dep "vero2-userland-dev-osmc"
-		handle_dep "vero2-libamcodec-dev-osmc"
                 handle_dep "armv7-libshairplay-dev-osmc"
                 handle_dep "armv7-librtmp-dev-osmc"
-                handle_dep "armv7-libnfs-dev-osmc"
                 handle_dep "armv7-libplatform-dev-osmc"
                 handle_dep "armv7-libbluray-dev-osmc"
                 handle_dep "armv7-libsqlite-dev-osmc"
-		handle_dep "armv7-libass-dev-osmc"
+		handle_dep "libamcodec-dev-osmc"
         fi
 	if [ "$1" == "vero3" ]
 	then
 		handle_dep "vero3-libcec-dev-osmc"
 		handle_dep "vero3-userland-dev-osmc"
-		handle_dep "vero3-libamcodec-dev-osmc"
 		handle_dep "armv7-libshairplay-dev-osmc"
                 handle_dep "armv7-librtmp-dev-osmc"
-                handle_dep "armv7-libnfs-dev-osmc"
                 handle_dep "armv7-libplatform-dev-osmc"
                 handle_dep "armv7-libbluray-dev-osmc"
                 handle_dep "armv7-libsqlite-dev-osmc"
-                handle_dep "armv7-libass-dev-osmc"
+		handle_dep "libamcodec-dev-osmc"
 	fi
 	if [ "$1" == "pc" ]
 	then
 		handle_dep "amd64-libshairplay-dev-osmc"
 		handle_dep "amd64-librtmp-dev-osmc"
-		handle_dep "amd64-libnfs-dev-osmc"
 		handle_dep "amd64-libplatform-dev-osmc"
 		handle_dep "amd64-libbluray-dev-osmc"
 		handle_dep "amd64-libsqlite-dev-osmc"
@@ -165,7 +160,11 @@ then
 		handle_dep "x11proto-randr-dev"
 		handle_dep "libegl1-mesa-dev"
 		handle_dep "libglew-dev"
-		handle_dep "amd64-libass-dev-osmc"
+	fi
+	if [ "$1" == "rbp4" ] # Later includes rbp2/rbp3 too
+	then
+		handle_dep "libdrm-dev"
+		handle_dep "rbp2-mesa-dev-osmc"
 	fi
 	sed '/Package/d' -i files/DEBIAN/control
 	sed '/Depends/d' -i files/DEBIAN/control
@@ -247,7 +246,40 @@ then
             -DENABLE_PULSEAUDIO=OFF \
             -DENABLE_LCMS2=OFF \
             -DENABLE_SNDIO=OFF \
-            -DENABLE_MARIADBCLIENT=OFF \
+            -DENABLE_MARIADBCLIENT=ON \
+        .
+	fi
+	# Raspberry Pi 4 config, can be consolidated above when all on same target.
+	if [ "$1" == "rbp4" ]; then
+        COMPFLAGS+="-I/usr/osmc/include/ -I/usr/osmc/include/EGL -Wl,-rpath=/usr/osmc/lib -L/usr/osmc/lib" && \
+        export CFLAGS+=${COMPFLAGS} && \
+        export CXXFLAGS+=${COMPFLAGS} && \
+        export CPPFLAGS+=${COMPFLAGS} && \
+	cmake -DCMAKE_INSTALL_PREFIX=/usr \
+            -DCMAKE_INSTALL_LIBDIR=/usr/lib \
+            -DCMAKE_INCLUDE_PATH=/usr/osmc/include \
+            -DCMAKE_LIBRARY_PATH=/usr/osmc/lib \
+            -DASS_INCLUDE_DIR=/usr/osmc/lib \
+            -DSHAIRPLAY_INCLUDE_DIR=/usr/osmc/include/shairplay/ \
+            -DENABLE_OPENGLES=ON \
+            -DENABLE_OPENGL=OFF \
+            -DENABLE_OPTICAL=1 \
+            -DENABLE_DVDCSS=1 \
+            -DCORE_SYSTEM_NAME=linux \
+            -DCORE_PLATFORM_NAME=gbm \
+            -DGBM_RENDER_SYSTEM=gles \
+            -DWITH_ARCH=arm \
+            -DENABLE_APP_AUTONAME=OFF \
+            -DENABLE_INTERNAL_FMT=ON \
+            -DENABLE_INTERNAL_FLATBUFFERS=ON \
+            -DENABLE_MDNS=OFF \
+            -DENABLE_BLUETOOTH=OFF \
+            -DENABLE_PULSEAUDIO=OFF \
+            -DENABLE_LCMS2=OFF \
+            -DENABLE_SNDIO=OFF \
+            -DENABLE_MARIADBCLIENT=ON \
+	    -DENABLE_VAAPI=OFF \
+	    -DENABLE_VDPAU=OFF \
         .
 	fi
         if [ "$1" == "vero2" ]; then
@@ -282,7 +314,7 @@ then
             -DENABLE_PULSEAUDIO=OFF \
             -DENABLE_LCMS2=OFF \
             -DENABLE_SNDIO=OFF \
-            -DENABLE_MARIADBCLIENT=OFF \
+            -DENABLE_MARIADBCLIENT=ON \
         .
 	fi
         if [ "$1" == "vero3" ]; then
@@ -318,7 +350,7 @@ then
 	    -DENABLE_PULSEAUDIO=OFF \
 	    -DENABLE_LCMS2=OFF \
 	    -DENABLE_SNDIO=OFF \
-	    -DENABLE_MARIADBCLIENT=OFF \
+	    -DENABLE_MARIADBCLIENT=ON \
         .
         fi
 	if [ $? != 0 ]; then echo -e "Configure failed!" && exit 1; fi
@@ -337,9 +369,9 @@ then
 	#ADDONS_SCREENSAVERS="screensaver.shadertoy screensaver.spectrum screensaver.waveform"
 	ADDONS_VFS="vfs.libarchive vfs.rar vfs.sftp vfs.sacd"
         #ADDONS_VISUALIZATIONS="visualization.fishbmc visualization.goom visualization.projectm visualization.shadertoy visualization.spectrum visualization.vsxu visualization.waveform"
-	ADDONS_GAME="game.libretro game.libretro.2048 game.libretro.beetle-gba game.libretro.fceumm game.libretro.gw game.libretro.beetle-pce-fast game.libretro.bnes game.libretro.nestopia game.libretro.bsnes-mercury-balanced game.libretro.mame2000 game.libretro.mame2003 game.libretro.bluemsx game.libretro.vecx game.libretro.mame2003_plus game.libretro.gambatte game.libretro.beetle-bsnes game.libretro.meteor game.libretro.mgba game.libretro.vba-next game.libretro.quicknes game.libretro.scummvm game.libretro.snes9x game.libretro.stella game.libretro.dosbox game.libretro.vbam game.libretro.genplus"
+	ADDONS_GAME="game.libretro game.libretro.2048 game.libretro.beetle-gba game.libretro.fceumm game.libretro.gw game.libretro.beetle-pce-fast game.libretro.bnes game.libretro.nestopia game.libretro.bsnes-mercury-balanced game.libretro.mame2000 game.libretro.mame2003 game.libretro.bluemsx game.libretro.mame2003_plus game.libretro.gambatte game.libretro.beetle-bsnes game.libretro.meteor game.libretro.mgba game.libretro.vba-next game.libretro.quicknes game.libretro.snes9x game.libretro.stella game.libretro.dosbox game.libretro.vbam game.libretro.genplus"
 	ADDONS_IMAGE_DECODERS="imagedecoder.raw imagedecoder.mpo"
-	if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ]
+	if [ "$1" == "rbp1" ] || [ "$1" == "rbp2" ] || [ "$1" == "rbp4" ]
 	then
 	    ADDONS_TO_BUILD="${ADDONS_AUDIO_DECODERS} ${ADDONS_AUDIO_ENCODERS} ${ADDONS_INPUTSTREAM} ${ADDONS_PERIPHERAL} ${ADDONS_PVR} ${ADDONS_SCREENSAVERS} ${ADDONS_VFS} ${ADDONS_VISUALIZATIONS} ${ADDONS_GAME} ${ADDONS_IMAGE_DECODERS}"
 	    PLATFORM="-DCMAKE_INCLUDE_PATH=/opt/vc/include:/opt/vc/include/interface:/opt/vc/include/interface/vcos/pthreads:/opt/vc/include/interface/vmcs_host/linux -DCMAKE_LIBRARY_PATH=/opt/vc/lib"
@@ -391,12 +423,13 @@ then
 	mkdir -p files-debug/usr/lib/kodi
 	cp -ar ${out}/usr/lib/kodi/kodi.bin files-debug/usr/lib/kodi/kodi.bin
 	strip -s ${out}/usr/lib/kodi/kodi.bin
-	COMMON_DEPENDS="niceprioritypolicy-osmc, mediacenter-send-osmc, libssh-4, libavahi-client3, python, python-imaging, python-unidecode, libsmbclient, libjpeg62-turbo, libsqlite3-0, libtinyxml2.6.2v5, libmad0, libmicrohttpd12, libyajl2, libmariadbclient18, libasound2, libxml2, liblzo2-2, libxslt1.1, libpng16-16, libsamplerate0, libtag1v5-vanilla, libfribidi0, libgif7, libcdio13, libpcrecpp0v5, libfreetype6, libvorbis0a, libvorbisenc2, libcurl3, libssl1.1, libplist3, avahi-daemon, policykit-1, mediacenter-addon-osmc (>= 3.0.39), mediacenter-skin-osmc, libcrossguid0, libcap2-bin, libfstrcmp0, libxkbcommon0, libinput10, xz-utils, libiso9660-8, libnss3, libnspr4"
-	test "$1" == pc && echo "Depends: ${COMMON_DEPENDS}, amd64-libnfs-osmc, amd64-librtmp-osmc, amd64-libshairplay-osmc, amd64-libbluray-osmc, amd64-libsqlite-osmc, libxrandr2, libglew1.10, libglu1-mesa, xserver-xorg-core, xserver-xorg, xinit, xfonts-base, x11-xserver-utils, xauth, alsa-utils, xserver-xorg-video-intel, amd64-libass-osmc" >> files/DEBIAN/control
-	test "$1" == rbp1 && echo "Depends: ${COMMON_DEPENDS}, rbp1-libcec-osmc, armv6l-libnfs-osmc, armv6l-librtmp-osmc, armv6l-libshairplay-osmc, armv6l-libbluray-osmc, armv6l-libsqlite-osmc, rbp-userland-osmc, armv6l-splash-osmc, armv6l-libass-osmc" >> files/DEBIAN/control
-	test "$1" == rbp2 && echo "Depends: ${COMMON_DEPENDS}, rbp2-libcec-osmc, armv7-libnfs-osmc, armv7-librtmp-osmc, armv7-libshairplay-osmc, armv7-libbluray-osmc, armv7-libsqlite-osmc, rbp-userland-osmc, armv7-splash-osmc, armv7-libass-osmc" >> files/DEBIAN/control
-	test "$1" == vero2 && echo "Depends: ${COMMON_DEPENDS}, vero2-libcec-osmc, armv7-libnfs-osmc, armv7-librtmp-osmc, armv7-libshairplay-osmc, armv7-libbluray-osmc, armv7-libsqlite-osmc, vero2-userland-osmc, armv7-splash-osmc, vero2-libamcodec-osmc, armv7-libass-osmc" >> files/DEBIAN/control
-	test "$1" == vero3 && echo "Depends: ${COMMON_DEPENDS}, vero3-libcec-osmc, armv7-libnfs-osmc, armv7-librtmp-osmc, armv7-libshairplay-osmc, armv7-libbluray-osmc, armv7-libsqlite-osmc, vero3-userland-osmc, armv7-splash-osmc, vero3-libamcodec-osmc, armv7-libass-osmc" >> files/DEBIAN/control
+	COMMON_DEPENDS="niceprioritypolicy-osmc, mediacenter-send-osmc, libssh-4, libavahi-client3, python, python-pil, python-unidecode, libsmbclient, libjpeg62-turbo, libsqlite3-0, libtinyxml2.6.2v5, libmad0, libmicrohttpd12, libyajl2, libmariadb3, libasound2, libxml2, liblzo2-2, libxslt1.1, libpng16-16, libsamplerate0, libtag1v5-vanilla, libfribidi0, libgif7, libcdio18, libpcrecpp0v5, libfreetype6, libvorbis0a, libvorbisenc2, libcurl4, libssl1.1, libplist3, avahi-daemon, policykit-1, mediacenter-addon-osmc (>= 3.0.39), mediacenter-skin-osmc, libcrossguid0, libcap2-bin, libfstrcmp0, libxkbcommon0, libinput10, xz-utils, libiso9660-11, libnss3, libnspr4, libnfs12, libass9, libunistring2, libatomic1"
+	test "$1" == pc && echo "Depends: ${COMMON_DEPENDS}, libnfs12, amd64-librtmp-osmc, amd64-libshairplay-osmc, amd64-libbluray-osmc, amd64-libsqlite-osmc, libxrandr2, libglew1.10, libglu1-mesa, xserver-xorg-core, xserver-xorg, xinit, xfonts-base, x11-xserver-utils, xauth, alsa-utils, xserver-xorg-video-intel" >> files/DEBIAN/control
+	test "$1" == rbp1 && echo "Depends: ${COMMON_DEPENDS}, rbp1-libcec-osmc, armv6l-librtmp-osmc, armv6l-libshairplay-osmc, armv6l-libbluray-osmc, armv6l-libsqlite-osmc, rbp-userland-osmc, armv6l-splash-osmc" >> files/DEBIAN/control
+	test "$1" == rbp2 && echo "Depends: ${COMMON_DEPENDS}, rbp2-libcec-osmc, armv7-librtmp-osmc, armv7-libshairplay-osmc, armv7-libbluray-osmc, armv7-libsqlite-osmc, rbp-userland-osmc, armv7-splash-osmc" >> files/DEBIAN/control
+	test "$1" == rbp4 && echo "Depends: ${COMMON_DEPENDS}, rbp2-libcec-osmc, armv7-librtmp-osmc, armv7-libshairplay-osmc, armv7-libbluray-osmc, armv7-libsqlite-osmc, rbp-userland-osmc, armv7-splash-osmc, rbp2-mesa-osmc" >> files/DEBIAN/control
+	test "$1" == vero2 && echo "Depends: ${COMMON_DEPENDS}, vero2-libcec-osmc, armv7-librtmp-osmc, armv7-libshairplay-osmc, armv7-libbluray-osmc, armv7-libsqlite-osmc, vero2-userland-osmc, armv7-splash-osmc, libamcodec-osmc" >> files/DEBIAN/control
+	test "$1" == vero3 && echo "Depends: ${COMMON_DEPENDS}, vero3-libcec-osmc, armv7-librtmp-osmc, armv7-libshairplay-osmc, armv7-libbluray-osmc, armv7-libsqlite-osmc, vero3-userland-osmc, armv7-splash-osmc, libamcodec-osmc" >> files/DEBIAN/control
 	cp patches/${1}-watchdog ${out}/usr/bin/mediacenter
 	cp patches/${1}-advancedsettings.xml ${out}/usr/share/kodi/system/advancedsettings.xml
 	chmod +x ${out}/usr/bin/mediacenter
