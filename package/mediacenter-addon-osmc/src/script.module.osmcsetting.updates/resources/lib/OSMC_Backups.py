@@ -42,11 +42,13 @@ LOCATIONS = {
 			'backup_profiles'			:	'{kodi_folder}userdata/profiles.xml',
 			'backup_RssFeeds'			:	'{kodi_folder}userdata/RssFeeds.xml',
 			'backup_sources'			:	'{kodi_folder}userdata/sources.xml',
+			'backup_mediasources'		:	'{kodi_folder}userdata/mediasources.xml',
 			'backup_upnpserver'			:	'{kodi_folder}userdata/upnpserver.xml',
 			'backup_peripheral_data'	:	'{kodi_folder}userdata/peripheral_data.xml',
 			'backup_guisettings'		:	'{kodi_folder}userdata/guisettings.xml',
 			'backup_fstab'				:	'{kodi_folder}userdata/fstab',
 			'backup_advancedsettings'	:	'{kodi_folder}userdata/advancedsettings.xml',
+			'backup_passwords'			:	'{kodi_folder}userdata/passwords.xml',
 
 			}
 
@@ -65,6 +67,7 @@ LABELS = 	{
 			'{kodi_folder}/userdata/guisettings.xml'		: 'File - guisettings.xml',
 			'{kodi_folder}/userdata/fstab'					: 'File - fstab',
 			'{kodi_folder}/userdata/sources.xml'			: 'File - sources.xml',
+			'{kodi_folder}/userdata/mediasources.xml'		: 'File - mediasources.xml',
 			'{kodi_folder}/userdata/profiles.xml'			: 'File - profiles.xml',
 			'{kodi_folder}/userdata/favourites.xml' 		: 'File - favourites.xml',
 			'{kodi_folder}/userdata/keyboard.xml'			: 'File - keyboard.xml',
@@ -73,6 +76,7 @@ LABELS = 	{
 			'{kodi_folder}/userdata/RssFeeds.xml'			: 'File - RssFeeds.xml',
 			'{kodi_folder}/userdata/upnpserver.xml'			: 'File - upnpserver.xml',
 			'{kodi_folder}/userdata/peripheral_data.xml'	: 'File - peripheral_data.xml',
+			'{kodi_folder}/userdata/passwords.xml'			: 'File - passwords.xml',
 
 			}
 

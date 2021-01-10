@@ -639,11 +639,13 @@ class Main(object):
 			self.s['backup_profiles']         = True if 	__setting__('backup_profiles')			== 'true' else False
 			self.s['backup_RssFeeds']         = True if 	__setting__('backup_RssFeeds')			== 'true' else False
 			self.s['backup_sources']          = True if 	__setting__('backup_sources')			== 'true' else False
+			self.s['backup_mediasources']     = True if 	__setting__('backup_mediasources')		== 'true' else False
 			self.s['backup_upnpserver']       = True if 	__setting__('backup_upnpserver')		== 'true' else False
 			self.s['backup_peripheral_data']  = True if 	__setting__('backup_peripheral_data')	== 'true' else False
 			self.s['backup_guisettings']      = True if 	__setting__('backup_guisettings')		== 'true' else False
 			self.s['backup_fstab']     	  = True if 	__setting__('backup_fstab')				== 'true' else False
 			self.s['backup_advancedsettings'] = True if 	__setting__('backup_advancedsettings')	== 'true' else False
+			self.s['backup_passwords']        = True if 	__setting__('backup_passwords')			== 'true' else False
 
 
 			return "initial run", self.s
@@ -697,11 +699,13 @@ class Main(object):
 			tmp_s['backup_profiles']         = True if 		__setting__('backup_profiles')			== 'true' else False
 			tmp_s['backup_RssFeeds']         = True if 		__setting__('backup_RssFeeds')			== 'true' else False
 			tmp_s['backup_sources']          = True if 		__setting__('backup_sources')			== 'true' else False
+			tmp_s['backup_mediasources']     = True if 		__setting__('backup_mediasources')		== 'true' else False
 			tmp_s['backup_upnpserver']       = True if 		__setting__('backup_upnpserver')		== 'true' else False
 			tmp_s['backup_peripheral_data']  = True if 		__setting__('backup_peripheral_data')	== 'true' else False
 			tmp_s['backup_guisettings']      = True if 		__setting__('backup_guisettings')		== 'true' else False
 			tmp_s['backup_fstab']      		 = True if 		__setting__('backup_fstab')				== 'true' else False
 			tmp_s['backup_advancedsettings'] = True if 		__setting__('backup_advancedsettings')	== 'true' else False			
+			tmp_s['backup_passwords']        = True if 		__setting__('backup_passwords')			== 'true' else False
 
 		# flags to determine whether the update scheduler needs to be reconstructed or icon repositioned
 		update_scheduler = False
