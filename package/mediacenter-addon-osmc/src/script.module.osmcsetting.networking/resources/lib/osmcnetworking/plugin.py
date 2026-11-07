@@ -11,10 +11,14 @@
         ?module=osmcnetworking                     Wi-Fi, Bluetooth, Settings
         ?module=osmcnetworking&folder=wifi         the Wi-Fi networks
         ?module=osmcnetworking&wifi=<path>         connect to, or disconnect from, a network
+        ?module=osmcnetworking&folder=bluetooth    the Bluetooth devices (bluetooth_folder.py)
+        ?module=osmcnetworking&bt=<address>        pair, connect or disconnect a device
         ?module=osmcnetworking&action=<action>     wifi_on, wifi_off, search, other, forget,
+                                                   bt_on, bt_off, bt_search, bt_remove,
                                                    settings, gui
 
-    The settings service refreshes the Wi-Fi folder while it is showing (see watcher.py).
+    The settings service refreshes the Wi-Fi and Bluetooth folders while they show,
+    and searches for devices while Bluetooth shows (see watcher.py).
 """
 
 import os
@@ -33,6 +37,7 @@ ADDON_ID = 'script.module.osmcsetting.networking'
 MODULE_ID = 'osmcnetworking'
 BASE_URL = 'plugin://service.osmc.settings/'
 WIFI_FOLDER = 'wifi'
+BLUETOOTH_FOLDER = 'bluetooth'
 
 # the module's icon, the art for every item in these folders
 ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'osmc', 'FO_Icon.png')
@@ -80,14 +85,27 @@ class NetworkPlugin(object):
         self.addon = addon or xbmcaddon.Addon(ADDON_ID)
         self.lang = LangRetriever(self.addon).lang
         self.dialog = xbmcgui.Dialog()
+        self.url = url
+        self._bluetooth = None
+
+    @property
+    def bluetooth(self):
+        if self._bluetooth is None:
+            from .bluetooth_folder import BluetoothFolder
+            self._bluetooth = BluetoothFolder(self)
+        return self._bluetooth
 
     def run(self):
         if 'wifi' in self.params:
             self.select_network(self.params['wifi'])
+        elif 'bt' in self.params:
+            self.bluetooth.select_device(self.params['bt'])
         elif 'action' in self.params:
             self.do_action(self.params['action'])
         elif self.params.get('folder') == WIFI_FOLDER:
             self.list_wifi()
+        elif self.params.get('folder') == BLUETOOTH_FOLDER:
+            self.end_directory(self.bluetooth.list_items(), self.lang(32003))
         else:
             self.list_root()
 
@@ -134,10 +152,14 @@ class NetworkPlugin(object):
                           xbmcgui.ListItem(self.label(self.lang(32107), status), offscreen=True),
                           True))
 
-        # Bluetooth and the wired, tethering and MySQL settings still open the
-        # Network window until they are rebuilt
-        items.append((url(action='gui'),
-                      xbmcgui.ListItem(self.lang(32003), offscreen=True), False))
+        if self.bluetooth.osmc_bt.is_bluetooth_available():
+            items.append((url(folder=BLUETOOTH_FOLDER),
+                          xbmcgui.ListItem(self.label(self.lang(32003), self.bluetooth.status()),
+                                           offscreen=True),
+                          True))
+
+        # the wired, tethering and MySQL settings still open the Network window
+        # until they move to the add-on settings
 
         wired = osmc_network.get_ethernet_settings() or {}
         wired_status = self.lang(32133) if wired.get('State') in ('ready', 'online') \
@@ -204,7 +226,10 @@ class NetworkPlugin(object):
     # ---- actions -------------------------------------------------------------------------
 
     def do_action(self, action):
-        if action == 'wifi_on':
+        if action.startswith('bt_'):
+            self.bluetooth.do_action(action, self.params)
+
+        elif action == 'wifi_on':
             osmc_network.toggle_wifi_state(True)
             self.busy(True)
             try:

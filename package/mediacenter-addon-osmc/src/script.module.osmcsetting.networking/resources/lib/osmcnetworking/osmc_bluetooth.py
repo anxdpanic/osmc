@@ -284,7 +284,7 @@ class OSMCBluetooth:
             dialog.notification(heading, message, time=10000, sound=False)
 
         if command == 'YESNO_INPUT':
-            if dialog.yesno(heading, message):
+            if dialog.yesno(heading, message, defaultbutton=xbmcgui.DLG_YESNO_NO_BTN):
                 return 'YES'
 
             return 'NO'
