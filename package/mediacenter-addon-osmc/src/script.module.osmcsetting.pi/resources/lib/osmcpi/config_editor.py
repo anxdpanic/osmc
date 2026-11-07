@@ -1,14 +1,24 @@
 # -*- coding: utf-8 -*-
 """
-    Copyright (C) 2014-2020 OSMC (KodeKarnage)
+    Copyright (C) 2014-2026 OSMC (KodeKarnage)
 
     This file is part of script.module.osmcsetting.pi
 
     SPDX-License-Identifier: GPL-2.0-or-later
     See LICENSES/GPL-2.0-or-later for more information.
+
+    The config-user.txt editor, built from Kodi's own dialogs:
+    Dialog().select of the file (New Entry first); a line opens Dialog().yesnocustom
+    (Edit, Delete, Cancel); Edit and New Entry use the keyboard. Each change is
+    written at once, after one backup copy per session. Back returns to Pi Config
+    on its Config Editor category.
+
+    Run from the Config Editor action in the Pi Config settings:
+        RunScript($CWD/resources/lib/osmcpi/config_editor.py)
 """
 
 import os
+import socket
 import subprocess
 import time
 from io import open
@@ -19,35 +29,69 @@ import xbmcgui
 from osmccommon.osmc_language import LangRetriever
 from osmccommon.osmc_logging import StandardLogger
 
-ACTION_PREVIOUS_MENU = 10
-ACTION_NAV_BACK = 92
-SAVE = 5
-HEADING = 1
-ACTION_SELECT_ITEM = 7
+ADDON_ID = 'script.module.osmcsetting.pi'
 
-ADDON_ID = "script.module.osmcsetting.pi"
-DIALOG = xbmcgui.Dialog()
+CONFIG = '/boot/config-user.txt'
+TEMP_CONFIG = '/var/tmp/config-user.txt'
+BACKUP_FOLDER = '/home/pi/'
+
+# keys that may appear more than once
+IGNORE_DUPLICATES = ['dtoverlay', 'device_tree', 'device_tree_param',
+                     'device_tree_overlay', 'dtparam']
+
+# returning to Pi Config: the settings service opens the module again, then the
+# Config Editor category button gets focus (Kodi numbers category buttons from -200)
+SETTINGS_SOCKET = '/var/tmp/osmc.settings.sockfile'
+PI_MODULE_ID = 'osmcpi'
+WINDOW_DIALOG_ADDON_SETTINGS = 10140
+CONFIG_EDITOR_CATEGORY = -197
+
+# Dialog().yesnocustom: nolabel, yeslabel and customlabel are drawn in that order
+EDIT = 0
+DELETE = 1
 
 log = StandardLogger(ADDON_ID, os.path.basename(__file__)).log
 
 
-class ConfigEditorGui(xbmcgui.WindowXMLDialog):
-    def __init__(self, strXMLname, strFallbackPath, strDefaultName, addon=None):
-        super(ConfigEditorGui, self).__init__(xmlFilename=strXMLname,
-                                              scriptPath=strFallbackPath,
-                                              defaultSkin=strDefaultName)
+def read_lines(config=CONFIG):
+    try:
+        with open(config, 'r', encoding='utf-8') as open_file:
+            lines = open_file.readlines()
+    except (IOError, OSError):
+        log('Unable to read %s' % config)
+        return []
+
+    return [line.rstrip('\r\n') for line in lines if line.strip()]
+
+
+def key_of(line):
+    if '=' not in line or line.lstrip().startswith('#'):
+        return None
+    return line.split('=', 1)[0].strip()
+
+
+def duplicate_keys(lines):
+    keys = [key for key in (key_of(line) for line in lines)
+            if key and key not in IGNORE_DUPLICATES]
+    return {key for key in keys if keys.count(key) > 1}
+
+
+def is_duplicate(entry, lines):
+    """ True if entry's key is already set by one of lines """
+    key = key_of(entry)
+    if not key or key in IGNORE_DUPLICATES:
+        return False
+    return any(key_of(line) == key for line in lines)
+
+
+class ConfigEditor(object):
+
+    def __init__(self, addon=None, config=CONFIG):
         self._addon = addon
         self._lang = None
-
-        self.ignore_list = ['dtoverlay', 'device_tree', 'device_tree_param',
-                            'device_tree_overlay', 'dtparam']
-        self.del_string = ' [' + self.lang(32056) + ']'
-
-        self.config = '/boot/config-user.txt'
-
-        self.list_control = None
-        self.changed = False
-        self.item_count = 0
+        self.config = config
+        self.dialog = xbmcgui.Dialog()
+        self.backed_up = False
 
     @property
     def addon(self):
@@ -57,214 +101,114 @@ class ConfigEditorGui(xbmcgui.WindowXMLDialog):
 
     def lang(self, value):
         if not self._lang:
-            retriever = LangRetriever(self.addon)
-            self._lang = retriever.lang
+            self._lang = LangRetriever(self.addon).lang
         return self._lang(value)
 
-    def onInit(self):
-        # give the settings enough time to be saved to the config-user.txt
-        xbmc.sleep(150)
+    def warn_duplicate(self):
+        _ = self.dialog.ok(self.lang(32051), '[CR]'.join([self.lang(32067), self.lang(32066)]))
 
-        # list of settings that are ignored in the duplicate check
-        with open(self.config, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
+    def backup(self):
+        """ Today's backup copy, once per editing session """
+        if self.backed_up:
+            return
+        suffix = '_' + str(int(time.time()))
+        subprocess.call(['sudo', 'cp', self.config,
+                         os.path.join(BACKUP_FOLDER, 'config-user%s.txt' % suffix)])
+        self.backed_up = True
 
-        log('lines = %s' % lines)
+    def write(self, lines):
+        self.backup()
 
-        lines = [line.replace('\n', '') for line in lines if line not in ['\n', '', '\t']]
+        with open(TEMP_CONFIG, 'w', encoding='utf-8') as open_file:
+            for line in lines:
+                open_file.write(line.replace(' = ', '=') + '\n')
 
-        # Save button
-        ok_control = self.getControl(SAVE)
-        ok_control.setLabel(self.lang(32050))
+        subprocess.call(['sudo', 'mv', TEMP_CONFIG, self.config])
+        log('%s written' % self.config)
 
-        # Heading
-        heading_control = self.getControl(HEADING)
-        heading_control.setLabel(self.lang(32051))
-        heading_control.setVisible(True)
+    def run(self):
+        lines = read_lines(self.config)
 
-        # Hide unused list frame
-        list_frame = self.getControl(3)
-        list_frame.setVisible(False)
+        if duplicate_keys(lines):
+            _ = self.dialog.ok(self.lang(32051), '[CR]'.join([self.lang(32065), self.lang(32066)]))
 
-        # Populate the list frame
-        self.list_control = self.getControl(6)
-        self.list_control.setEnabled(True)
+        preselect = 0
+        while not xbmc.Monitor().abortRequested():
+            # the file is the record: Pi Config may have written it as its settings closed
+            lines = read_lines(self.config)
+            items = [self.lang(32052)] + lines
+            index = self.dialog.select(self.lang(32051), items, preselect=preselect)
 
-        items = [self.lang(32052)]
-        items.extend(lines)
+            if index < 0:
+                break
 
-        self.item_count = len(items)
-
-        # Start the window with the first item highlighted
-        # self.list_control.getListItem(0).select(True)
-
-        # Set action when clicking right from the Save button
-        ok_control.controlRight(self.list_control)
-
-        for item in items:
-            # populate the random list
-            list_item = xbmcgui.ListItem(item, offscreen=True)
-            self.list_control.addItem(list_item)
-
-        self.changed = False
-        self.setFocus(self.list_control)
-
-        # check for duplications, warn the user if there are duplicates
-        dup_check = [y for y in
-                     [x.split('=')[0] for x in self.grab_item_strings() if '=' in x]
-                     if y not in self.ignore_list]
-
-        if len(dup_check) != len(set(dup_check)):
-            _ = DIALOG.ok(self.lang(32051), '[CR]'.join([self.lang(32065), self.lang(32066)]))
-
-    def onAction(self, action):
-
-        action_id = action.getId()
-        if action_id in (ACTION_PREVIOUS_MENU, ACTION_NAV_BACK):
-            log('CLOSE')
-            self.close()
-
-    def onClick(self, controlID):
-        log('%s' % controlID)
-
-        if controlID == SAVE:
-            log('SAVE')
-
-            if self.changed:
-                final_action = DIALOG.yesno(self.lang(32052), self.lang(32053),
-                                            nolabel=self.lang(32054), yeslabel=self.lang(32055))
-
-                if final_action:
-                    log('final action')
-
-                    new_config = self.grab_item_strings()
-
-                    # temporary location for the config-user.txt
-                    tmp_loc = '/var/tmp/config-user.txt'
-
-                    # write the long_string_file to the config-user.txt
-                    with open(tmp_loc, 'w', encoding='utf-8') as open_file:
-                        for line in new_config:
-                            _line = line.replace(" = ", "=") + '\n'
-                            open_file.write(_line)
-                            log('' + _line)
-
-                    # backup existing config
-                    suffix = '_' + str(time.time()).split('.')[0]
-                    subprocess.call(["sudo", "cp", self.config, '/home/pi/'])
-                    subprocess.call(["sudo", "mv", '/home/pi/config-user.txt',
-                                     '/home/pi/config-user' + suffix + '.txt'])
-
-                    # copy over the temp config-user.txt to /boot/ as superuser
-                    subprocess.call(["sudo", "mv", tmp_loc, self.config])
-
-                    # THIS IS JUST FOR TESTING, LAPTOP DOESNT LIKE SUDO HERE
-                    try:
-                        subprocess.call(["mv", tmp_loc, self.config])
-                    except:
-                        pass
-
-                    log('writing ended')
-
-            self.close()
-
-        else:
-            selected_entry = self.list_control.getSelectedPosition()
-            item = self.list_control.getSelectedItem()
-            current_label = item.getLabel()
-
-            if selected_entry != 0:
-
-                if self.del_string not in current_label:
-                    action = DIALOG.yesno(self.lang(32051), self.lang(32057),
-                                          nolabel=self.lang(32058), yeslabel=self.lang(32059))
-
-                    if action:
-                        # delete
-                        item.setLabel(current_label + self.del_string)
-                        self.changed = True
-
-                    else:
-                        # edit
-                        result = DIALOG.input(self.lang(32060), current_label,
-                                              type=xbmcgui.INPUT_ALPHANUM)
-
-                        if result:
-                            self.check_for_duplicates(result, True)
-
-                            item.setLabel(result)
-                            self.changed = True
-
-                else:
-                    action = DIALOG.yesno(self.lang(32051), self.lang(32061),
-                                          nolabel=self.lang(32058), yeslabel=self.lang(32062))
-
-                    if action:
-                        # delete
-                        item.setLabel(current_label[:len(current_label) - len(self.del_string)])
-                        self.changed = True
-
-                    else:
-                        # edit
-                        result = DIALOG.input(self.lang(32060), current_label,
-                                              type=xbmcgui.INPUT_ALPHANUM)
-
-                        if result:
-                            self.check_for_duplicates(result, edit=True)
-
-                            item.setLabel(result)
-                            self.changed = True
-
+            if index == 0:
+                preselect = self.new_entry(lines)
             else:
-                result = DIALOG.input(self.lang(32064), type=xbmcgui.INPUT_ALPHANUM)
+                preselect = self.edit_or_delete(lines, index - 1)
 
-                if result:
-                    self.check_for_duplicates(result)
+        self.back_to_settings()
 
-                    # add the new item to the list
-                    list_item = xbmcgui.ListItem(result, offscreen=True)
-                    self.list_control.addItem(list_item)
+    def new_entry(self, lines):
+        entry = self.dialog.input(self.lang(32064), type=xbmcgui.INPUT_ALPHANUM)
+        if not entry:
+            return 0
 
-                    self.changed = True
+        if is_duplicate(entry, lines):
+            self.warn_duplicate()
 
-                    self.item_count += 1
+        lines.append(entry)
+        self.write(lines)
+        return len(lines)  # the new line, after New Entry
 
-    def check_for_duplicates(self, d, edit=False):
-        if '=' in d:
-            dupe_check_raw = self.grab_item_strings()
-            dupe_check = [x.split('=')[0] for x in dupe_check_raw
-                          if not x.split('=')[0].startswith('#')]
+    def edit_or_delete(self, lines, line_index):
+        line = lines[line_index]
+        choice = self.dialog.yesnocustom(line, self.lang(32057),
+                                         customlabel=xbmc.getLocalizedString(222),  # Cancel
+                                         nolabel=self.lang(32058),  # Edit
+                                         yeslabel=self.lang(32059),  # Delete
+                                         defaultbutton=xbmcgui.DLG_YESNO_NO_BTN)
 
-            dupe = d.split('=')[0]
+        if choice == DELETE:
+            del lines[line_index]
+            self.write(lines)
+            return min(line_index + 1, len(lines))
 
-            if (dupe not in self.ignore_list and
-                    ((edit and dupe_check.count(dupe) > 1) or (not edit and dupe in dupe_check))):
-                _ = DIALOG.ok(self.lang(32051), '[CR]'.join([self.lang(32067), self.lang(32066)]))
+        if choice == EDIT:
+            entry = self.dialog.input(self.lang(32060), line, type=xbmcgui.INPUT_ALPHANUM)
+            if entry and entry != line:
+                others = lines[:line_index] + lines[line_index + 1:]
+                if is_duplicate(entry, others):
+                    self.warn_duplicate()
+                lines[line_index] = entry
+                self.write(lines)
 
-    def grab_item_strings(self):
-        new_config = []
+        return line_index + 1
 
-        for i in range(self.item_count):
-            if i == 0:
-                continue
+    @staticmethod
+    def back_to_settings():
+        """ Opens Pi Config again through the settings service, on Config Editor """
+        try:
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as open_socket:
+                open_socket.connect(SETTINGS_SOCKET)
+                open_socket.sendall(PI_MODULE_ID.encode('utf-8'))
+        except Exception:
+            log('My OSMC service did not answer, not reopening Pi Config')
+            return
 
-            item = self.list_control.getListItem(i)
+        monitor = xbmc.Monitor()
+        for _ in range(50):
+            if xbmcgui.getCurrentWindowDialogId() == WINDOW_DIALOG_ADDON_SETTINGS:
+                xbmc.executebuiltin('SetFocus(%d)' % CONFIG_EDITOR_CATEGORY)
+                return
+            if monitor.waitForAbort(0.1):
+                return
+        log('Pi Config did not reopen')
 
-            current_label = item.getLabel()
 
-            if self.del_string not in current_label:
-                new_config.append(current_label)
-
-        return new_config
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     log('OPEN')
-
-    _addon = xbmcaddon.Addon(ADDON_ID)
-    gui = ConfigEditorGui("DialogSelect.xml", _addon.getAddonInfo('path'), 'Default', addon=_addon)
-    gui.doModal()
-    del gui
-
-    log('CLOSED')
+    # give Pi Config time to write its own changes to config-user.txt as it closes
     xbmc.sleep(150)
+    ConfigEditor().run()
+    log('CLOSED')
