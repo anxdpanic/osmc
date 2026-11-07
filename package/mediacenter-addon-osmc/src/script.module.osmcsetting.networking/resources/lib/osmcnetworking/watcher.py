@@ -17,6 +17,7 @@ import os
 import time
 
 import xbmc
+import xbmcaddon
 from osmccommon.osmc_logging import StandardLogger
 
 from . import osmc_network
@@ -63,6 +64,14 @@ def bluetooth_signature(osmc_bt):
                  for d in sort_devices(devices(osmc_bt)))
 
 
+def search_bluetooth_on_open():
+    """ Network's setting: Search for devices when the list opens """
+    try:
+        return xbmcaddon.Addon(ADDON_ID).getSettingBool('bt_search_on_open')
+    except Exception:
+        return True
+
+
 class Watcher(object):
 
     def __init__(self, osmc_bt=None):
@@ -95,7 +104,8 @@ class Watcher(object):
             signature = wifi_signature()
 
         elif showing == plugin.BLUETOOTH_FOLDER:
-            self.keep_bluetooth_searching()
+            if search_bluetooth_on_open():
+                self.keep_bluetooth_searching()
             signature = bluetooth_signature(self.osmc_bt)
 
         else:

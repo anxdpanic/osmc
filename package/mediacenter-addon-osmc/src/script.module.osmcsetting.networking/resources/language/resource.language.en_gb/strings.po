@@ -583,3 +583,27 @@ msgstr ""
 msgctxt "#32143"
 msgid "1 device connected"
 msgstr ""
+
+msgctxt "#32144"
+msgid "Configuration"
+msgstr ""
+
+msgctxt "#32145"
+msgid "DHCP"
+msgstr ""
+
+msgctxt "#32146"
+msgid "Manual"
+msgstr ""
+
+msgctxt "#32147"
+msgid "Search for devices when the list opens"
+msgstr ""
+
+msgctxt "#32148"
+msgid "Share"
+msgstr ""
+
+msgctxt "#32149"
+msgid "Wi-Fi to Ethernet: do not connect this device to a wired network with a DHCP server."
+msgstr ""

@@ -15,7 +15,7 @@
         ?module=osmcnetworking&bt=<address>        pair, connect or disconnect a device
         ?module=osmcnetworking&action=<action>     wifi_on, wifi_off, search, other, forget,
                                                    bt_on, bt_off, bt_search, bt_remove,
-                                                   settings, gui
+                                                   settings (&category=<button id>)
 
     The settings service refreshes the Wi-Fi and Bluetooth folders while they show,
     and searches for devices while Bluetooth shows (see watcher.py).
@@ -57,6 +57,19 @@ def wifi_folder_url():
     return url(folder=WIFI_FOLDER)
 
 
+def settings_url(category):
+    """ Network's add-on settings, on a category (Kodi numbers category buttons from -200) """
+    return url(action='settings', category=category)
+
+
+def wifi_settings_url():
+    return settings_url(-199)  # Wireless
+
+
+def bluetooth_settings_url():
+    return settings_url(-198)  # Bluetooth
+
+
 def signal_level(strength):
     """ The string id for a signal strength: Strong, Good or Weak """
     if strength > 60:
@@ -86,6 +99,7 @@ class NetworkPlugin(object):
         self.lang = LangRetriever(self.addon).lang
         self.dialog = xbmcgui.Dialog()
         self.url = url
+        self.bluetooth_settings_url = bluetooth_settings_url
         self._bluetooth = None
 
     @property
@@ -158,13 +172,11 @@ class NetworkPlugin(object):
                                            offscreen=True),
                           True))
 
-        # the wired, tethering and MySQL settings still open the Network window
-        # until they move to the add-on settings
-
+        # Network's add-on settings, on Wired
         wired = osmc_network.get_ethernet_settings() or {}
         wired_status = self.lang(32133) if wired.get('State') in ('ready', 'online') \
             else self.lang(32134)
-        items.append((url(action='gui'),
+        items.append((url(action='settings'),
                       xbmcgui.ListItem(self.label(self.lang(32132), wired_status), offscreen=True),
                       False))
 
@@ -180,7 +192,7 @@ class NetworkPlugin(object):
         if network and network['saved']:
             menu.append((self.lang(32120), 'RunPlugin(%s)' % url(action='forget', path=network['path'])))
         menu.append((self.lang(32117), 'RunPlugin(%s)' % url(action='wifi_off')))
-        menu.append((self.lang(32121), 'RunPlugin(%s)' % url(action='settings')))
+        menu.append((self.lang(32121), 'RunPlugin(%s)' % wifi_settings_url()))
         menu.append((self.lang(32118), 'RunPlugin(%s)' % url(action='search')))
         return menu
 
@@ -190,7 +202,7 @@ class NetworkPlugin(object):
         if not osmc_network.is_wifi_enabled():
             list_item = xbmcgui.ListItem(self.lang(32116), offscreen=True)  # Turn on Wi-Fi
             list_item.addContextMenuItems([(self.lang(32121),
-                                            'RunPlugin(%s)' % url(action='settings'))])
+                                            'RunPlugin(%s)' % wifi_settings_url())])
             items.append((url(action='wifi_on'), list_item, False))
             self.end_directory(items, self.lang(32107))
             return
@@ -257,10 +269,10 @@ class NetworkPlugin(object):
         elif action == 'other':
             self.other_network()
 
-        elif action in ('settings', 'gui'):
-            # the wired, wireless, tethering and MySQL settings are still in the
-            # Network window until they move to the add-on settings
-            open_network_window(self.addon)
+        elif action == 'settings':
+            from .network_settings import open_settings
+            category = self.params.get('category')
+            open_settings(self.addon, self.lang, int(category) if category else None)
             self.refresh()
 
     def select_network(self, path):
@@ -360,17 +372,6 @@ def mysql_wait_for_network_check(lang):
                                          autoclose=10000)
     if not undo_change:
         osmc_network.toggle_wait_for_network(True)
-
-
-def open_network_window(addon):
-    from .networking_gui import NetworkingGui
-
-    xml = 'network_gui_720.xml' \
-        if xbmcgui.Window(10000).getProperty('SkinHeight') == '720' else 'network_gui.xml'
-    gui = NetworkingGui(xml, addon.getAddonInfo('path'), 'Default', addon=addon)
-    gui.set_use_preseed(False)
-    gui.doModal()
-    del gui
 
 
 def run(handle, params):

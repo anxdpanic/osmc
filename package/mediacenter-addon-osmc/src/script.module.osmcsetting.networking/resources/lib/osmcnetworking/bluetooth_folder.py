@@ -81,7 +81,7 @@ class BluetoothFolder(object):
         if device and device['paired']:
             menu.append((self.lang(32021), 'RunPlugin(%s)' % url(action='bt_remove', address=device['address'])))
         menu.append((self.lang(32138), 'RunPlugin(%s)' % url(action='bt_off')))
-        menu.append((self.lang(32139), 'RunPlugin(%s)' % url(action='settings')))
+        menu.append((self.lang(32139), 'RunPlugin(%s)' % self.plugin.bluetooth_settings_url()))
         menu.append((self.lang(32118), 'RunPlugin(%s)' % url(action='bt_search')))
         return menu
 
@@ -91,7 +91,8 @@ class BluetoothFolder(object):
 
         if not self.osmc_bt.is_bluetooth_enabled():
             list_item = xbmcgui.ListItem(self.lang(32137), offscreen=True)  # Turn on Bluetooth
-            list_item.addContextMenuItems([(self.lang(32139), 'RunPlugin(%s)' % url(action='settings'))])
+            list_item.addContextMenuItems([(self.lang(32139),
+                                            'RunPlugin(%s)' % self.plugin.bluetooth_settings_url())])
             items.append((url(action='bt_on'), list_item, False))
             return items
 

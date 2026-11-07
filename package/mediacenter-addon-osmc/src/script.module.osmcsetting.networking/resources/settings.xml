@@ -1,4 +1,79 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!--
+    My OSMC Network settings. network_settings.py writes the live values into these
+    before the dialog opens and applies what changed when it is closed with OK.
+    Category buttons, for SetFocus: Wired -200, Wireless -199, Bluetooth -198,
+    Tethering -197, MySQL -196.
+-->
 <settings>
+    <!-- 32060: Wired -->
+    <category label="32060">
+        <setting id="wired_present" type="bool" default="false" visible="false"/>
+        <!-- 32039: Enable adapter -->
+        <setting id="wired_enabled" type="bool" label="32039" default="true"/>
+        <!-- 32044: Status -->
+        <setting id="wired_status" type="text" label="32044" default="" enable="false"/>
+        <!-- 32144: Configuration, 32145: DHCP, 32146: Manual -->
+        <setting id="wired_method" type="enum" label="32144" lvalues="32145|32146" default="0" enable="eq(-3,true)+eq(-2,true)"/>
+        <setting id="wired_address" type="ipaddress" label="32007" default="" subsetting="true" enable="eq(-4,true)+eq(-1,1)"/>
+        <setting id="wired_netmask" type="ipaddress" label="32008" default="" subsetting="true" enable="eq(-5,true)+eq(-2,1)"/>
+        <setting id="wired_gateway" type="ipaddress" label="32009" default="" subsetting="true" enable="eq(-6,true)+eq(-3,1)"/>
+        <setting id="wired_dns1" type="ipaddress" label="32010" default="" subsetting="true" enable="eq(-7,true)+eq(-4,1)"/>
+        <setting id="wired_dns2" type="ipaddress" label="32011" default="" subsetting="true" enable="eq(-8,true)+eq(-5,1)"/>
+        <!-- 32054: Wait for Network -->
+        <setting id="wait_for_network" type="bool" label="32054" default="false"/>
+    </category>
 
+    <!-- 32041: Wireless -->
+    <category label="32041">
+        <setting id="wireless_present" type="bool" default="false" visible="false"/>
+        <setting id="wireless_status" type="text" label="32044" default="" enable="false"/>
+        <setting id="wireless_method" type="enum" label="32144" lvalues="32145|32146" default="0" enable="eq(-2,true)"/>
+        <setting id="wireless_address" type="ipaddress" label="32007" default="" subsetting="true" enable="eq(-3,true)+eq(-1,1)"/>
+        <setting id="wireless_netmask" type="ipaddress" label="32008" default="" subsetting="true" enable="eq(-4,true)+eq(-2,1)"/>
+        <setting id="wireless_gateway" type="ipaddress" label="32009" default="" subsetting="true" enable="eq(-5,true)+eq(-3,1)"/>
+        <setting id="wireless_dns1" type="ipaddress" label="32010" default="" subsetting="true" enable="eq(-6,true)+eq(-4,1)"/>
+        <setting id="wireless_dns2" type="ipaddress" label="32011" default="" subsetting="true" enable="eq(-7,true)+eq(-5,1)"/>
+    </category>
+
+    <!-- 32003: Bluetooth -->
+    <category label="32003">
+        <!-- 32015: Enable Bluetooth -->
+        <setting id="bt_enabled" type="bool" label="32015" default="false"/>
+        <!-- 32147: Search for devices when the list opens -->
+        <setting id="bt_search_on_open" type="bool" label="32147" default="true"/>
+    </category>
+
+    <!-- 32001: Tethering -->
+    <category label="32001">
+        <!-- 32061: Hotspot SSID, 32062: Hotspot passphrase -->
+        <setting id="hotspot_ssid" type="text" label="32061" default="osmc_wifi"/>
+        <setting id="hotspot_passphrase" type="text" label="32062" default="h0tsp0t0smc"/>
+        <!-- 32148: Share, 32064: Ethernet to WiFi, 32065: WiFi to Ethernet -->
+        <setting id="tethering_share" type="enum" label="32148" lvalues="32064|32065" default="0"/>
+        <!-- 32063: Portable Hotspot -->
+        <setting id="tethering_enabled" type="bool" label="32063" default="false"/>
+        <!-- 32149: Wi-Fi to Ethernet: do not connect this device to a wired network with a DHCP server. -->
+        <setting type="lsep" label="32149" visible="eq(-2,1)"/>
+    </category>
+
+    <!-- 32077: MySQL -->
+    <category label="32077">
+        <!-- 32095: Enable MySQL Video Database -->
+        <setting id="mysql_video" type="bool" label="32095" default="false"/>
+        <setting id="mysql_video_name" type="text" label="32096" default="MyVideos" subsetting="true" visible="eq(-1,true)"/>
+        <setting id="mysql_video_host" type="ipaddress" label="32098" default="" subsetting="true" visible="eq(-2,true)"/>
+        <setting id="mysql_video_port" type="number" label="32099" default="3306" subsetting="true" visible="eq(-3,true)"/>
+        <setting id="mysql_video_user" type="text" label="32100" default="kodi" subsetting="true" visible="eq(-4,true)"/>
+        <setting id="mysql_video_pass" type="text" label="32101" default="kodi" option="hidden" subsetting="true" visible="eq(-5,true)"/>
+        <setting id="mysql_import_watched" type="bool" label="32102" default="true" subsetting="true" visible="eq(-6,true)"/>
+        <setting id="mysql_import_resume" type="bool" label="32103" default="true" subsetting="true" visible="eq(-7,true)"/>
+        <!-- 32104: Enable MySQL MusicDB -->
+        <setting id="mysql_music" type="bool" label="32104" default="false"/>
+        <setting id="mysql_music_name" type="text" label="32096" default="MyMusic" subsetting="true" visible="eq(-1,true)"/>
+        <setting id="mysql_music_host" type="ipaddress" label="32098" default="" subsetting="true" visible="eq(-2,true)"/>
+        <setting id="mysql_music_port" type="number" label="32099" default="3306" subsetting="true" visible="eq(-3,true)"/>
+        <setting id="mysql_music_user" type="text" label="32100" default="kodi" subsetting="true" visible="eq(-4,true)"/>
+        <setting id="mysql_music_pass" type="text" label="32101" default="kodi" option="hidden" subsetting="true" visible="eq(-5,true)"/>
+    </category>
 </settings>
