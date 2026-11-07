@@ -17,6 +17,7 @@ import threading
 import traceback
 from io import open
 
+import xbmc
 import xbmcaddon
 import xbmcgui
 from osmccommon.osmc_language import LangRetriever
@@ -40,6 +41,9 @@ KNOWN_MODULES_ORDER = {
 
 PROPERTY_PREFIX = 'MyOSMC.Module'
 
+# seconds between calls to the modules' folder watchers
+WATCH_INTERVAL = 2.5
+
 
 class ModuleRegistry(object):
 
@@ -53,7 +57,11 @@ class ModuleRegistry(object):
         self.module_tally = 1000
 
         self.live_modules = []
+        self.watchers = []
         self.refresh()
+
+        # folder modules may keep their folder current while it shows: <module>.watcher.Watcher
+        threading.Thread(target=self._watch, name='osmc_module_watchers', daemon=True).start()
 
     @property
     def addon(self):
@@ -74,6 +82,29 @@ class ModuleRegistry(object):
         self.live_modules = [x[1] for x in ordered_live_modules]
 
         self.publish()
+
+    def load_watchers(self):
+        watchers = []
+        for module in self.live_modules:
+            if not getattr(module['class_instance'], 'plugin_folder', False):
+                continue
+            try:
+                watcher_module = __import__('%s.watcher' % module['id'], fromlist=[''])
+            except ImportError:
+                continue
+            log('Watching the %s folder' % module['id'])
+            watchers.append(watcher_module.Watcher())
+        return watchers
+
+    def _watch(self):
+        monitor = xbmc.Monitor()
+        self.watchers = self.load_watchers()
+        while self.watchers and not monitor.waitForAbort(WATCH_INTERVAL):
+            for watcher in self.watchers:
+                try:
+                    watcher.poll()
+                except Exception:
+                    log(traceback.format_exc())
 
     def get(self, module_id):
         return next(iter(module for module in self.live_modules

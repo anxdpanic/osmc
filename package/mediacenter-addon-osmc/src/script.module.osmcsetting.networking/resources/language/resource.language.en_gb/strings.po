@@ -435,3 +435,123 @@ msgstr ""
 msgctxt "#32106"
 msgid "Unhandled Exception caught - See log for details"
 msgstr ""
+
+msgctxt "#32107"
+msgid "Wi-Fi"
+msgstr ""
+
+msgctxt "#32108"
+msgid "Connected to %s"
+msgstr ""
+
+msgctxt "#32109"
+msgid "Connected"
+msgstr ""
+
+msgctxt "#32110"
+msgid "Saved"
+msgstr ""
+
+msgctxt "#32111"
+msgid "Secured"
+msgstr ""
+
+msgctxt "#32112"
+msgid "Open"
+msgstr ""
+
+msgctxt "#32113"
+msgid "Strong"
+msgstr ""
+
+msgctxt "#32114"
+msgid "Good"
+msgstr ""
+
+msgctxt "#32115"
+msgid "Weak"
+msgstr ""
+
+msgctxt "#32116"
+msgid "Turn on Wi-Fi"
+msgstr ""
+
+msgctxt "#32117"
+msgid "Turn off Wi-Fi"
+msgstr ""
+
+msgctxt "#32118"
+msgid "Search again"
+msgstr ""
+
+msgctxt "#32119"
+msgid "Other network…"
+msgstr ""
+
+msgctxt "#32120"
+msgid "Forget"
+msgstr ""
+
+msgctxt "#32121"
+msgid "Wi-Fi settings"
+msgstr ""
+
+msgctxt "#32122"
+msgid "Disconnect from “%s” and connect to “%s”?"
+msgstr ""
+
+msgctxt "#32123"
+msgid "Disconnect from “%s”?"
+msgstr ""
+
+msgctxt "#32124"
+msgid "Password for %s"
+msgstr ""
+
+msgctxt "#32125"
+msgid "Connection to %s failed"
+msgstr ""
+
+msgctxt "#32126"
+msgid "Network name (SSID)"
+msgstr ""
+
+msgctxt "#32127"
+msgid "Security for %s"
+msgstr ""
+
+msgctxt "#32128"
+msgid "None (open network)"
+msgstr ""
+
+msgctxt "#32129"
+msgid "WEP"
+msgstr ""
+
+msgctxt "#32130"
+msgid "WPA/WPA2 Personal"
+msgstr ""
+
+msgctxt "#32131"
+msgid "WPA3 Personal"
+msgstr ""
+
+msgctxt "#32132"
+msgid "Settings"
+msgstr ""
+
+msgctxt "#32133"
+msgid "Wired: connected"
+msgstr ""
+
+msgctxt "#32134"
+msgid "Wired: not connected"
+msgstr ""
+
+msgctxt "#32135"
+msgid "Off"
+msgstr ""
+
+msgctxt "#32136"
+msgid "Not connected"
+msgstr ""

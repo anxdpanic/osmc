@@ -399,6 +399,35 @@ def get_wifi_networks():
     return interfaces
 
 
+def wifi_services():
+    """ The Wi-Fi networks connman knows, one dict per network:
+        path, ssid, strength (0-100), state, security ('none', 'wep', 'psk', 'sae', ...),
+        saved (connman's Favorite), hidden, connected
+    """
+    services = []
+    manager = connman.get_manager_interface()
+    for entry in manager.GetServices():
+        path = str(entry[0])
+        if not path.startswith(WIFI_PATH):
+            continue
+
+        properties = entry[1]
+        security = [str(item) for item in properties.get('Security', [])]
+        state = str(properties.get('State', 'idle'))
+        services.append({
+            'path': path,
+            'ssid': str(properties.get('Name', '')),
+            'strength': int(properties.get('Strength', 0)),
+            'state': state,
+            'security': security[0] if security else 'none',
+            'saved': bool(properties.get('Favorite', False)),
+            'hidden': '_hidden_' in path,
+            'connected': state in ('ready', 'online'),
+        })
+
+    return services
+
+
 def wifi_connect(path, password=None, ssid=None, script_base_path=None):
     agent_needed = False
     process = None

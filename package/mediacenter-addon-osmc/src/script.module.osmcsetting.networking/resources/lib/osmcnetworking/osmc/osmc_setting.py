@@ -10,6 +10,7 @@
 
 import os
 
+import xbmc
 import xbmcaddon
 import xbmcgui
 from osmccommon import osmc_setting
@@ -22,6 +23,8 @@ from ..osmc_advset_editor import AdvancedSettingsEditor
 addon_id = "script.module.osmcsetting.networking"
 
 DIALOG = xbmcgui.Dialog()
+
+PLUGIN_URL = 'plugin://service.osmc.settings/?module=osmcnetworking'
 
 log = StandardLogger(addon_id, os.path.basename(__file__)).log
 
@@ -75,6 +78,9 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
 
         self.gui = None
 
+        # My OSMC lists Network as a folder, see osmcnetworking/plugin.py
+        self.plugin_folder = True
+
         log('START')
         for x, k in self.setting_data_method.items():
             log("%s = %s" % (x, k.get('setting_value', 'no setting value')))
@@ -97,8 +103,15 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
             # add it to the dictionary
             self.setting_data_method[key]['setting_value'] = setting_value
 
-    def run(self, use_preseed=False):
+    def run(self, use_preseed=None):
         log(self.addon_id)
+
+        if use_preseed is None:
+            # opened from My OSMC or the skin's widget: show the Network folder
+            xbmc.executebuiltin('ActivateWindow(Programs,%s,return)' % PLUGIN_URL)
+            return
+
+        # the first-run walkthrough opens the Network window itself
 
         xml = "network_gui_720.xml" \
             if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' \
