@@ -38,6 +38,14 @@ except ImportError:
 ADDON_ID = 'script.module.osmcsetting.updates'
 DIALOG = xbmcgui.Dialog()
 
+APP_STORE_PATH = 'plugin://service.osmc.settings/?module=apfstore'
+
+
+def refresh_app_store():
+    """ Refreshes the App Store folder if it is showing, so it reflects what dpkg now reports """
+    if xbmc.getInfoLabel('Container.FolderPath').startswith(APP_STORE_PATH):
+        xbmc.executebuiltin('Container.Refresh')
+
 log = StandardLogger(ADDON_ID, os.path.basename(__file__)).log
 
 
@@ -155,6 +163,9 @@ class Main(object):
 
         self.cache = None
         self.progress_dialog = None
+
+        # what the App Store asked to show once its install or uninstall completes
+        self.action_list_notification = ('', '')
 
         # queue for communication with the comm and Main
         self.parent_queue = Queue.Queue()
@@ -705,7 +716,12 @@ class Main(object):
         # notify the user that an error has occured with an update
         _ = DIALOG.ok(self.lang(32087), '[CR]'.join([self.lang(32112), '', self.lang(32113)]))
 
-    def action_list(self, action):
+        self.action_list_notification = ('', '')
+        refresh_app_store()
+
+    def action_list(self, action, notification='', notification_heading=''):
+        self.action_list_notification = (notification_heading, notification)
+
         # check whether the install is an alpha version
         if self.check_for_unsupported_version() == 'alpha':
             return
@@ -735,8 +751,15 @@ class Main(object):
                 xbmc.sleep(1000)
                 xbmc.executebuiltin('Reboot')
 
+        elif all(self.action_list_notification):
+            # the App Store folder shows the change; a notification says what it was
+            DIALOG.notification(*self.action_list_notification)
+
         else:
             _ = DIALOG.ok(self.lang(32090), self.lang(32091))
+
+        self.action_list_notification = ('', '')
+        refresh_app_store()
 
     def progress_bar(self, **kwargs):
         """

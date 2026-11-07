@@ -110,6 +110,7 @@ class Plugin(object):
                 'label': self.window.getProperty('%s.label' % prefix),
                 'description': self.window.getProperty('%s.description' % prefix),
                 'icon': self.window.getProperty('%s.icon' % prefix),
+                'folder': self.window.getProperty('%s.folder' % prefix) == 'true',
             }
 
     def list_modules(self):
@@ -132,12 +133,19 @@ class Plugin(object):
             list_item.getVideoInfoTag().setPlot(module['description'])
 
             url = '%s?%s' % (BASE_URL, urlencode({'module': module['id']}))
-            items.append((url, list_item, False))
+            items.append((url, list_item, module['folder']))
 
         xbmcplugin.addDirectoryItems(self.handle, items, len(items))
         xbmcplugin.endOfDirectory(self.handle, succeeded=True, cacheToDisc=False)
 
     def open_module(self, module_id):
+        module = next(iter(m for m in self.modules() if m['id'] == module_id), None)
+        if module and module['folder']:
+            # the module draws its own folder (or acts on one of its items)
+            plugin = __import__('%s.plugin' % module_id, fromlist=[''])
+            plugin.run(self.handle, self.params)
+            return
+
         if not self.send(module_id):
             self.service_unavailable()
 

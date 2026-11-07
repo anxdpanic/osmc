@@ -107,3 +107,23 @@ msgstr ""
 msgctxt "#32024"
 msgid "Long description"
 msgstr ""
+
+msgctxt "#32025"
+msgid "App Store"
+msgstr ""
+
+msgctxt "#32026"
+msgid "%s installed"
+msgstr ""
+
+msgctxt "#32027"
+msgid "%s uninstalled"
+msgstr ""
+
+msgctxt "#32028"
+msgid "Unable to retrieve the list of apps. Please try again later."
+msgstr ""
+
+msgctxt "#32029"
+msgid "The update service is unavailable. Please try again later."
+msgstr ""

@@ -103,7 +103,7 @@ class ModuleRegistry(object):
         # clear any modules published before that are now gone
         index = len(self.live_modules)
         while self.window.getProperty('%s.%s.id' % (PROPERTY_PREFIX, index)):
-            for name in ('id', 'name', 'label', 'description', 'icon', 'fo_icon', 'fx_icon'):
+            for name in ('id', 'name', 'label', 'description', 'icon', 'folder', 'fo_icon', 'fx_icon'):
                 self.window.clearProperty('%s.%s.%s' % (PROPERTY_PREFIX, index, name))
             index += 1
 
@@ -121,6 +121,9 @@ class ModuleRegistry(object):
             self.window.setProperty('%s.label' % prefix, self.short_name(class_instance))
             self.window.setProperty('%s.description' % prefix, self.description(class_instance))
             self.window.setProperty('%s.icon' % prefix, class_instance.focused_icon)
+            # modules that are folders in the plugin provide <module>.plugin.run(handle, params)
+            self.window.setProperty('%s.folder' % prefix,
+                                    'true' if getattr(class_instance, 'plugin_folder', False) else '')
 
         self.window.setProperty('MyOSMC.Module.Count', str(len(self.live_modules)))
 

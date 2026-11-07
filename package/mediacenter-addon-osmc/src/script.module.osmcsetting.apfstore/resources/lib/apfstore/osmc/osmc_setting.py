@@ -10,13 +10,14 @@
 
 import os
 
+import xbmc
+
 from osmccommon import osmc_setting
 from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_logging import clog
 
-from ..apf_store import APFStore
-
 addon_id = "script.module.osmcsetting.apfstore"
+PLUGIN_URL = 'plugin://service.osmc.settings/?module=apfstore'
 log = StandardLogger(addon_id, os.path.basename(__file__)).log
 
 
@@ -32,6 +33,10 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
         self.description = 'This module is where you can grab awesome APFs like...'
         self.description_i18n = 32049
 
+        # My OSMC lists the App Store as a folder, see apfstore/plugin.py
+        self.plugin_folder = True
+
     @clog(log, nowait=True)
     def run(self):
-        _ = APFStore(self.me)
+        # opened from elsewhere, e.g. the skin's My OSMC widget: show the folder
+        xbmc.executebuiltin('ActivateWindow(Programs,%s,return)' % PLUGIN_URL)
