@@ -43,3 +43,35 @@ msgstr ""
 msgctxt "#32008"
 msgid "Disable"
 msgstr ""
+
+msgctxt "#32009"
+msgid "running"
+msgstr ""
+
+msgctxt "#32010"
+msgid "enabled"
+msgstr ""
+
+msgctxt "#32011"
+msgid "stopped"
+msgstr ""
+
+msgctxt "#32012"
+msgid "Services"
+msgstr ""
+
+msgctxt "#32013"
+msgid "%s started"
+msgstr ""
+
+msgctxt "#32014"
+msgid "%s stopped"
+msgstr ""
+
+msgctxt "#32015"
+msgid "Could not start %s"
+msgstr ""
+
+msgctxt "#32016"
+msgid "Could not stop %s"
+msgstr ""
