@@ -9,7 +9,6 @@
     See LICENSES/GPL-2.0-or-later for more information.
 """
 
-import datetime
 import json
 import os
 import socket
@@ -26,7 +25,7 @@ from osmccommon.osmc_comms import Communicator
 from osmccommon.osmc_language import LangRetriever
 from osmccommon.osmc_logging import StandardLogger
 
-from . import osmc_settings_gui
+from . import osmc_modules
 from . import osmc_ubiquifonts
 from . import osmc_walkthru
 
@@ -36,6 +35,7 @@ except ImportError:
     import Queue
 
 ADDON_ID = 'service.osmc.settings'
+PLUGIN_URL = 'plugin://%s/' % ADDON_ID
 ADDON = xbmcaddon.Addon(ADDON_ID)
 
 DIALOG = xbmcgui.Dialog()
@@ -59,17 +59,13 @@ class Main(object):
         self.listener = Communicator(self.parent_queue, socket_file='/var/tmp/osmc.settings.sockfile')
         self.listener.start()
 
-        # the gui is created and stored in memory for quick access
-        # after a few hours, the gui should be removed from memory
-        self.stored_gui = None
-        self.create_gui()
-        self.gui_last_accessed = datetime.datetime.now()
-        self.skip_check = True
+        # the installed My OSMC modules, published to the Home window for the plugin folder
+        self.modules = osmc_modules.ModuleRegistry(addon=ADDON, window=self.window)
 
         # monitor created to check for xbmc abort requests
         self.monitor = xbmc.Monitor()
 
-        # current skin directory, used to detect when the user has changed skins and prompts a reconstruction of the gui
+        # current skin directory, used to detect when the user has changed skins and the fonts need importing again
         self.skin_dir = xbmc.getSkinDir()
 
         self.fonts = osmc_ubiquifonts.UbiquiFonts(ADDON_ID, ADDON, self.window)
@@ -94,11 +90,6 @@ class Main(object):
         self._daemon()
 
         log('_daemon exited')
-
-    def create_gui(self):
-        self.stored_gui = osmc_settings_gui.GuiThread(queue=self.parent_queue,
-                                                      addon=ADDON, window=self.window)
-        self.stored_gui.daemon = True
 
     def _daemon(self):
         log('daemon started')
@@ -163,21 +154,10 @@ class Main(object):
 
         return media_string
 
-    def open_gui(self):
-        log('Opening OSMC settings GUI')
-
-        self.gui_last_accessed = datetime.datetime.now()
-        self.skip_check = False
-        try:
-            # try opening the gui
-            self.stored_gui.start()
-        except:
-            # if that doesnt work then it is probably because the gui was too old and has been deleted
-            # so recreate the gui and open it
-            self.create_gui()
-            self.stored_gui.start()
-
-        log('gui threading finished')
+    @staticmethod
+    def open_my_osmc():
+        log('Opening My OSMC')
+        xbmc.executebuiltin('ActivateWindow(Programs,%s,return)' % PLUGIN_URL)
 
     @staticmethod
     def set_walkthrough_status(value):
@@ -252,8 +232,7 @@ class Main(object):
 
     def _check_skin(self):
         # Check the current skin directory, if it is different to the previous one, then
-        # recreate the gui. This is required because reference in the gui left in memory
-        # do not survive a refresh of the skins textures (???)
+        # import the OSMC fonts into the new skin
         if self.skin_dir != xbmc.getSkinDir():
 
             log('Old Skin: %s' % self.skin_dir)
@@ -286,14 +265,6 @@ class Main(object):
             except Exception:
                 log(traceback.format_exc())
 
-            try:
-                log('skin changed, reloading gui')
-                del self.stored_gui
-            except:
-                pass
-
-            self.create_gui()
-
         return False
 
     def _walk_through(self):
@@ -301,8 +272,7 @@ class Main(object):
         self.window.setProperty("walkthrough_is_running", 'any_value')
         self.set_walkthrough_status(1)
 
-        network_module = next(iter(module for module in self.stored_gui.live_modules
-                                   if module.get('id') == 'osmcnetworking'), None)
+        network_module = self.modules.get('osmcnetworking')
 
         if not network_module:
             log('Networking module not found')
@@ -319,7 +289,6 @@ class Main(object):
 
             self.set_walkthrough_status(2)
             self.window.clearProperty('walkthrough_is_running')
-            del self.stored_gui
             xbmc.executebuiltin('ReloadSkin()')
 
             log('Skin reloaded')
@@ -352,15 +321,12 @@ class Main(object):
                     log(traceback.format_exc())
 
     def _handle_response(self, response):
-        if response == 'open':
-            self.open_gui()
+        if response in ('open', 'refresh_gui'):
+            self.open_my_osmc()
 
-        elif response == 'refresh_gui':
-            ''' 
-                This may need to be moved to a separate thread, so that it doesnt hold up the other functions.
-                if the gui calls for its own refresh, then delete the existing one and open a new instance 
-            '''
-            self.open_gui()
+        elif response == 'ping':
+            # the My OSMC plugin checks the service is answering
+            pass
 
         elif response == 'exit':
             return True  # signal abort
@@ -407,29 +373,7 @@ class Main(object):
 
         else:
             # check whether the response is one of the live_modules, if it is then launch that module
-            for module in self.stored_gui.live_modules:
-
-                module_id = module.get('id', 'id_not_found')
-                if response != module_id:
-                    continue
-
-                class_instance = module.get('class_instance', None)
-                module_instance = module.get('module_instance', None)
-
-                if class_instance and class_instance.is_alive():
-                    log('Opening %s from widget' % module_id)
-                    class_instance.run()
-
-                elif module_instance:
-                    log('Starting %s from widget' % module_id)
-
-                    class_instance = module_instance.OSMCSettingClass()
-                    class_instance.setDaemon(True)
-
-                    module['class_instance'] = class_instance
-
-                    class_instance.start()
-
-                break
+            if not self.modules.launch(response):
+                log('Unknown response: %s' % response)
 
         return False

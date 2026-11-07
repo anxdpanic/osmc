@@ -8,7 +8,15 @@
     See LICENSES/GPL-2.0-or-later for more information.
 """
 
-from osmcsettings import script_entry
+import sys
 
 if __name__ == '__main__':
-    script_entry.run()
+    if sys.argv and sys.argv[0].startswith('plugin://'):
+        from osmcsettings import plugin_entry
+
+        plugin_entry.run(sys.argv)
+
+    else:
+        from osmcsettings import script_entry
+
+        script_entry.run()
