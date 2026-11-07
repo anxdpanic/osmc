@@ -25,11 +25,11 @@
     </category>
     <category label="32093">
         <!-- 32064: Action when updates are found -->
-        <setting default="0" id="on_upd_detected" label="32059" lvalues="32057|32058|32095|32060" type="enum"/>
+        <setting default="0" id="on_upd_detected" label="32059" lvalues="32057|32194|32095|32195" type="enum"/>
         <!-- 32057: "Prompt for all actions" -->
-        <!-- 32058: "Display icon on home screen only" -->
+        <!-- 32194: "Show a notification only" -->
         <!-- 32095: "Download updates, then prompt" -->
-        <!-- 32060: "Download and display icon" -->
+        <!-- 32195: "Download, then show a notification" -->
         <!-- 32061: "Download and install automatically" *********deprecated -->
         <!-- 32062: "Download, install, auto-restart if needed" *********deprecated-->
         <!-- . -->
@@ -37,12 +37,6 @@
         <setting default="false" id="home_prompts_only" label="32065" type="bool" visible="eq(-1, 0)"/>
         <!-- 32046: Suppress on-screen progress updates -->
         <setting default="false" id="suppress_progress" label="32046" type="bool"/>
-        <!-- 32068: Do not show icon on home screen -->
-        <setting default="false" id="suppress_icon" label="32068" type="bool"/>
-        <!-- 32066: Icon Position X (% of screen) -->
-        <setting default="4" id="pos_x" label="32066" option="int" range="0,1,100" type="slider" visible="!eq(-1,true)"/>
-        <!-- 32067: Icon Position Y (% of screen) -->
-        <setting default="95" id="pos_y" label="32067" option="int" range="0,1,100" type="slider" visible="!eq(-2,true)"/>
     </category>
     <category label="32109">
         <!-- backup before updating -->

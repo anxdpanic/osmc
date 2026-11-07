@@ -8,7 +8,6 @@
     See LICENSES/GPL-2.0-or-later for more information.
 """
 
-import decimal
 import json
 import os
 import random
@@ -156,7 +155,6 @@ class Main(object):
 
         }
 
-        self.icon_settings = []
         self.on_upd = []
         self.scheduler_settings = []
         self.setting_dict = {}
@@ -197,17 +195,8 @@ class Main(object):
         # window onto which to paste the update notification
         self.window = xbmcgui.Window(10000)
 
-        # property which determines whether the notification should be pasted to the window
+        # Home window property any skin can use to show that updates are waiting
         self.window.setProperty('OSMC_notification', 'false')
-
-        image = os.path.join(self.path, 'resources', 'media', 'update_available.png')
-        self.update_image = xbmcgui.ControlImage(50, 1695, 175, 75, image)
-        self.try_image_position_again = False
-        self.try_count = 0
-        self.position_icon()
-        self.window.addControl(self.update_image)
-        self.update_image.setVisibleCondition('[String.Contains(Window(Home)'
-                                              '.Property(OSMC_notification), true)]')
 
         # this flag is present when updates have been downloaded but the user wants to
         # choose when to install using the manual control in the settings
@@ -217,10 +206,8 @@ class Main(object):
         if os.path.isfile(self.block_update_file):
             self.skip_update_check = True
 
-            # if the user has suppressed icon notification of updates and has chosen not
-            # to install the updates it's their own damned fault if osmc never get updated
-            if not self.setting_dict['suppress_icon']:
-                self.window.setProperty('OSMC_notification', 'true')
+            # updates were downloaded before a reboot and are still waiting
+            self.updates_ready_notification()
 
         else:
             self.skip_update_check = False
@@ -290,11 +277,6 @@ class Main(object):
             if self.function_holding_pattern:
                 self.function_holding_pattern()
 
-            # try to position the icon again, ubiquifonts may not have had time to post
-            # the screen height and width to Home yet.
-            if self.try_image_position_again:
-                self.position_icon()
-
             # check for an early exit
             if not self.keep_alive:
                 break
@@ -360,8 +342,7 @@ class Main(object):
             # we put a file there to make sure the suppression carries over after a reboot
             self.skip_future_update_checks()
 
-            if not self.setting_dict['suppress_icon']:
-                self.window.setProperty('OSMC_notification', 'true')
+            self.updates_ready_notification()
 
             return 'skip_update_check= %s' % self.skip_update_check
 
@@ -440,11 +421,12 @@ class Main(object):
 
         return True, ''
 
-    def takedown_notification(self):
-        try:
-            self.window.removeControl(self.update_image)
-        except Exception as e:
-            log(e, 'an EXCEPTION occurred')
+    def updates_ready_notification(self, show=True):
+        """ Says that updates are waiting, where the home screen icon used to appear:
+            a notification, and the OSMC_notification Home property for skins """
+        self.window.setProperty('OSMC_notification', 'true')
+        if show:
+            DIALOG.notification(self.lang(32077), self.lang(32196))  # OSMC Updater
 
     def call_child_script(self, action):
         # check whether the install is an alpha version
@@ -452,81 +434,6 @@ class Main(object):
             return
 
         subprocess.Popen(['sudo', 'python3', os.path.join(self.lib_path, 'apt_cache_action.py'), action])
-
-    def position_icon(self):
-        """
-            Sets the position of the icon.
-            Original image dimensions are 175 wide and 75 tall. This is for 1080p
-        """
-        self.try_image_position_again = False
-
-        pos_horiz = self.setting_dict['pos_x'] / 100.0
-        pos_vertic = self.setting_dict['pos_y'] / 100.0
-
-        width = 175  # as % of 1920: 0.0911458333333
-        height = 75  # as % of 1080: 0.0694444444444
-        width_pct = 0.0911458333333
-        height_pct = 0.0694444444444
-
-        # retrieve the skin height and width (supplied by ubiquifonts and stored in Home)
-        try:
-            screen_height = self.window.getProperty("SkinHeight")
-            screen_width = self.window.getProperty("SkinWidth")
-        except:
-            screen_height = 1080
-            screen_width = 1920
-
-        if screen_height == '':
-            if self.try_count >= 50:
-                self.try_count = 0
-                screen_height = 1080
-                screen_width = 1920
-            else:
-                self.try_image_position_again = True
-                self.try_count += 1
-                return
-
-        try:
-            screen_height = int(screen_height)
-        except ValueError:
-            screen_height = 1080
-
-        # if the screen width is blank (for whatever reason) use the screen height to
-        # estimate the width this should be very, VERY rare, and might only happen
-        # due to freakish timing
-        if screen_width == '':
-            screen_width = screen_height * 1.7777777777
-
-        screen_width = int(screen_width)
-
-        # determine new dimensions of the image
-        img_height = int(round(decimal.Decimal(screen_height * height_pct), 0))
-        img_width = int(round(decimal.Decimal(screen_width * width_pct), 0))
-
-        # determine the new coordinates of the image
-        adj_height = screen_height - img_height
-        adj_width = screen_width - img_width
-
-        pos_top = int(round(decimal.Decimal(adj_height * pos_vertic), 0))
-        pos_left = int(round(decimal.Decimal(adj_width * pos_horiz), 0))
-
-        log('=============================')
-        log(screen_height)
-        log(screen_width)
-        log(adj_height)
-        log(adj_width)
-        log(img_height)
-        log(img_width)
-        log(pos_top)
-        log(pos_left)
-        log('=============================')
-
-        # reposition the image
-        self.update_image.setPosition(pos_left, pos_top)
-
-        # rescale the image
-        self.update_image.setWidth(img_width)
-        self.update_image.setHeight(img_height)
 
     def update_settings(self):
         """
@@ -538,9 +445,7 @@ class Main(object):
 
             self.scheduler_settings = ['check_freq', 'check_weekday', 'check_day',
                                        'check_time', 'check_hour', 'check_minute']
-            self.icon_settings = ['pos_x', 'pos_y']
-
-            self.on_upd = [self.lang(x) for x in [32057, 32058, 32095, 32060, 32061]]
+            self.on_upd = [self.lang(x) for x in [32057, 32194, 32095, 32195, 32061]]
 
             self.setting_dict = {
                 'check_freq': self.addon.getSettingInt('check_freq'),
@@ -549,10 +454,7 @@ class Main(object):
                 'check_time': int(float(self.addon.getSetting('check_time'))),
                 'check_hour': int(float(self.addon.getSetting('check_hour'))),
                 'check_minute': int(float(self.addon.getSetting('check_minute'))),
-                'pos_x': int(float(self.addon.getSetting('pos_x'))),
-                'pos_y': int(float(self.addon.getSetting('pos_y'))),
                 'suppress_progress': self.addon.getSettingBool('suppress_progress'),
-                'suppress_icon': self.addon.getSettingBool('suppress_icon'),
                 'update_on_idle': self.addon.getSettingBool('update_on_idle'),
                 'home_prompts_only': self.addon.getSettingBool('home_prompts_only'),
                 'location_selection': self.addon.getSettingInt('location_selection'),
@@ -610,10 +512,7 @@ class Main(object):
                 'check_time': int(float(self.addon.getSetting('check_time'))),
                 'check_hour': int(float(self.addon.getSetting('check_hour'))),
                 'check_minute': int(float(self.addon.getSetting('check_minute'))),
-                'pos_x': int(float(self.addon.getSetting('pos_x'))),
-                'pos_y': int(float(self.addon.getSetting('pos_y'))),
                 'suppress_progress': self.addon.getSettingBool('suppress_progress'),
-                'suppress_icon': self.addon.getSettingBool('suppress_icon'),
                 'update_on_idle': self.addon.getSettingBool('update_on_idle'),
                 'home_prompts_only': self.addon.getSettingBool('home_prompts_only'),
                 'location_selection': self.addon.getSettingInt('location_selection'),
@@ -648,10 +547,8 @@ class Main(object):
                 'backup_authorized_keys': self.addon.getSettingBool('backup_authorized_keys'),
             }
 
-        # flags to determine whether the update scheduler needs to be
-        # reconstructed or icon repositioned
+        # flag to determine whether the update scheduler needs to be reconstructed
         update_scheduler = False
-        reposition_icon = False
 
         # check the items in the temp dict and if they are different from the current
         # settings, change the current settings, prompt action if certain settings are
@@ -665,9 +562,6 @@ class Main(object):
                 if k in self.scheduler_settings:
                     update_scheduler = True
 
-                elif k in self.icon_settings:
-                    reposition_icon = True
-
         # if the user has elected to type the backup location, then overwrite the
         # backup_location with the typed version
         if self.setting_dict['location_selection'] == 1:
@@ -676,10 +570,6 @@ class Main(object):
         # reconstruct the scheduler if needed
         if update_scheduler:
             self.scheduler = SimpleScheduler(self.setting_dict)
-
-        # reposition the icon on the home screen
-        if reposition_icon:
-            self.position_icon()
 
         log(self.scheduler.trigger_time, 'trigger_time')
 
@@ -903,9 +793,9 @@ class Main(object):
             # the files flagging that an installed package needs a reboot are present
 
             # 0 "Prompt for all actions" -- PROMPT
-            # 1 "Display icon on home screen only" -- PROMPT
+            # 1 "Show a notification only" -- PROMPT
             # 2 "Download updates, then prompt" -- PROMPT
-            # 3 "Download and display icon" -- PROMPT
+            # 3 "Download, then show a notification" -- PROMPT
             # 4 "Download, install, prompt if restart needed" -- PROMPT
 
             # display dialogue saying that osmc needs to reboot
@@ -923,7 +813,7 @@ class Main(object):
                 self.skip_update_check = True
 
     def apt_fetch_complete(self):
-        # Download and display icon
+        # Download, then show a notification
         if self.setting_dict['on_upd_detected'] == 3:
 
             # create the file that will prevent further update checks until
@@ -933,7 +823,9 @@ class Main(object):
 
             # turn on the "install now" setting in Settings.xml
             self.addon.setSettingBool('install_now_visible', True)
-            return 'Download complete, leaving icon displayed'
+
+            self.updates_ready_notification()
+            return 'Download complete, notification shown'
 
         else:
             # Download updates, then prompt
@@ -1138,8 +1030,8 @@ class Main(object):
             # suppress the on-screen update notification
             self.window.setProperty('OSMC_notification', 'false')
 
-            # delete the block_update_file if it exists, so that the icon doesn't
-            # display on next boot
+            # delete the block_update_file if it exists, so that the notification doesn't
+            # show on next boot
             try:
                 os.remove(self.block_update_file)
             except:
@@ -1153,9 +1045,9 @@ class Main(object):
             # changed to force all updates to occur with Kodi closed.
             self.EXTERNAL_UPDATE_REQUIRED = 1
 
-        # display update available notification
-        if not self.setting_dict['suppress_icon']:
-            self.window.setProperty('OSMC_notification', 'true')
+        # updates are available: only "Show a notification only" says so now, the
+        # other choices go on to prompt or download
+        self.updates_ready_notification(show=self.setting_dict['on_upd_detected'] == 1)
 
         # display a warning to the user
         if self.UPDATE_WARNING:
@@ -1235,13 +1127,13 @@ class Main(object):
                 return "Updates are available, no reboot is required"
 
         elif self.setting_dict['on_upd_detected'] == 1:
-            # Display icon on home screen only
-            return 'Displaying icon on home screen only'
+            # Show a notification only
+            return 'Notification shown only'
 
         elif (self.setting_dict['on_upd_detected'] in [2, 3] or
               (self.setting_dict['on_upd_detected'] == 4 and self.EXTERNAL_UPDATE_REQUIRED)):
             # Download updates, then prompt
-            # Download and display icon
+            # Download, then show a notification
             # Download, install, prompt if restart needed (restart is needed)
             # Download, install, auto-restart if needed
             self.call_child_script('fetch')

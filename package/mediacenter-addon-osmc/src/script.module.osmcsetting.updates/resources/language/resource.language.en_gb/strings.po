@@ -667,3 +667,15 @@ msgstr ""
 msgctxt "#32193"
 msgid "This device is no longer supported by OSMC. Learn more at https://osmc.tv"
 msgstr ""
+
+msgctxt "#32194"
+msgid "Show a notification only"
+msgstr ""
+
+msgctxt "#32195"
+msgid "Download, then show a notification"
+msgstr ""
+
+msgctxt "#32196"
+msgid "Updates are ready to install from My OSMC."
+msgstr ""
