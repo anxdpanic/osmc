@@ -1,0 +1,289 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: OSMC setup
+"
+"Report-Msgid-Bugs-To: 
+"
+"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE
+"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>
+"
+"Language-Team: English
+"
+"MIME-Version: 1.0
+"
+"Content-Type: text/plain; charset=UTF-8
+"
+"Content-Transfer-Encoding: 8bit
+"
+"Language: en_gb
+"
+"Plural-Forms: nplurals=2; plural=(n != 1);
+"
+
+msgctxt "#32004"
+msgid "SSH"
+msgstr ""
+
+msgctxt "#32009"
+msgid "Timezone"
+msgstr ""
+
+msgctxt "#32010"
+msgid "License"
+msgstr ""
+
+msgctxt "#32012"
+msgid "Finish"
+msgstr ""
+
+msgctxt "#32023"
+msgid "Warranty"
+msgstr ""
+
+msgctxt "#32080"
+msgid "Accept"
+msgstr ""
+
+msgctxt "#32100"
+msgid "Welcome to OSMC"
+msgstr ""
+
+msgctxt "#32101"
+msgid "Remote"
+msgstr ""
+
+msgctxt "#32102"
+msgid "Language"
+msgstr ""
+
+msgctxt "#32103"
+msgid "Region"
+msgstr ""
+
+msgctxt "#32104"
+msgid "Network"
+msgstr ""
+
+msgctxt "#32105"
+msgid "Wi-Fi"
+msgstr ""
+
+msgctxt "#32106"
+msgid "Wired"
+msgstr ""
+
+msgctxt "#32107"
+msgid "Timezone country"
+msgstr ""
+
+msgctxt "#32108"
+msgid "Device name"
+msgstr ""
+
+msgctxt "#32109"
+msgid "Suggest a random name"
+msgstr ""
+
+msgctxt "#32110"
+msgid "SSH server"
+msgstr ""
+
+msgctxt "#32111"
+msgid "Password"
+msgstr ""
+
+msgctxt "#32112"
+msgid "Newsletter"
+msgstr ""
+
+msgctxt "#32113"
+msgid "Receive the newsletter"
+msgstr ""
+
+msgctxt "#32114"
+msgid "Address"
+msgstr ""
+
+msgctxt "#32115"
+msgid "Summary"
+msgstr ""
+
+msgctxt "#32116"
+msgid "Check for updates now"
+msgstr ""
+
+msgctxt "#32117"
+msgid "Back"
+msgstr ""
+
+msgctxt "#32118"
+msgid "Done"
+msgstr ""
+
+msgctxt "#32119"
+msgid "To pair the OSMC remote with this device, hold OK and HOME on it until this screen changes.[CR][CR]A USB keyboard or the TV's remote (through CEC) works as well.[CR][CR]Pair the OSMC remote or press any button to continue..."
+msgstr ""
+
+msgctxt "#32120"
+msgid "The OSMC remote is paired. Test it by pressing any button."
+msgstr ""
+
+msgctxt "#32121"
+msgid "Waiting for input..."
+msgstr ""
+
+msgctxt "#32122"
+msgid "Input detected!"
+msgstr ""
+
+msgctxt "#32123"
+msgid "Sets the language of the interface, and the region whose formats are used for dates, times and numbers. A new language is applied at once."
+msgstr ""
+
+msgctxt "#32124"
+msgid "A working connection is needed for updates, the timezone and the App Store. This device is connected to %s by Wi-Fi."
+msgstr ""
+
+msgctxt "#32125"
+msgid "A working connection is needed for updates, the timezone and the App Store. This device is connected by cable."
+msgstr ""
+
+msgctxt "#32126"
+msgid "This device is not connected. A working connection is needed for updates, the timezone and the App Store; choose a Wi-Fi network or plug in a cable."
+msgstr ""
+
+msgctxt "#32127"
+msgid "Sets the clock. Country and timezone were detected from the network connection."
+msgstr ""
+
+msgctxt "#32128"
+msgid "The name this device shows on the network: for file sharing, remote apps and SSH. Letters, digits and hyphens only."
+msgstr ""
+
+msgctxt "#32129"
+msgid "SSH allows logging in to this device from a computer on the network, for troubleshooting and advanced changes. The password is osmc until it is changed."
+msgstr ""
+
+msgctxt "#32130"
+msgid "OSMC news by email. The address is used only for the OSMC newsletter and can be removed at any time. Privacy policy: osmc.tv/privacy"
+msgstr ""
+
+msgctxt "#32131"
+msgid "Connected"
+msgstr ""
+
+msgctxt "#32132"
+msgid "Not connected"
+msgstr ""
+
+msgctxt "#32133"
+msgid "No cable"
+msgstr ""
+
+msgctxt "#32134"
+msgid "Not in use"
+msgstr ""
+
+msgctxt "#32135"
+msgid "Configuration"
+msgstr ""
+
+msgctxt "#32136"
+msgid "DHCP"
+msgstr ""
+
+msgctxt "#32137"
+msgid "Manual"
+msgstr ""
+
+msgctxt "#32138"
+msgid "IP address"
+msgstr ""
+
+msgctxt "#32139"
+msgid "Subnet mask"
+msgstr ""
+
+msgctxt "#32140"
+msgid "Default gateway"
+msgstr ""
+
+msgctxt "#32141"
+msgid "Primary DNS"
+msgstr ""
+
+msgctxt "#32142"
+msgid "Secondary DNS"
+msgstr ""
+
+msgctxt "#32143"
+msgid "On"
+msgstr ""
+
+msgctxt "#32144"
+msgid "Off"
+msgstr ""
+
+msgctxt "#32145"
+msgid "Unchanged"
+msgstr ""
+
+msgctxt "#32146"
+msgid "Changed"
+msgstr ""
+
+msgctxt "#32147"
+msgid "Wi-Fi, %s"
+msgstr ""
+
+msgctxt "#32148"
+msgid "A name cannot start or end with a hyphen."
+msgstr ""
+
+msgctxt "#32149"
+msgid "A name has letters, digits and hyphens only."
+msgstr ""
+
+msgctxt "#32150"
+msgid "A name has 63 characters at most."
+msgstr ""
+
+msgctxt "#32151"
+msgid "A name is needed."
+msgstr ""
+
+msgctxt "#32152"
+msgid "That is not an email address."
+msgstr ""
+
+msgctxt "#32153"
+msgid "Not a valid IP address"
+msgstr ""
+
+msgctxt "#32157"
+msgid "Language and region"
+msgstr ""
+
+msgctxt "#32158"
+msgid "New password"
+msgstr ""
+
+msgctxt "#32159"
+msgid "New password, again"
+msgstr ""
+
+msgctxt "#32160"
+msgid "Password unchanged"
+msgstr ""
+
+msgctxt "#32161"
+msgid "The two entries were different, so the password stays as it was."
+msgstr ""
+
+msgctxt "#32162"
+msgid "Email address"
+msgstr ""
+

@@ -8,6 +8,6 @@
     See LICENSES/GPL-2.0-or-later for more information.
 """
 
-__all__ = ['bluetooth', 'bluezutils', 'connman', 'networking_gui',
+__all__ = ['bluetooth', 'bluezutils', 'connman',
            'osmc_advset_editor', 'osmc_bluetooth', 'osmc_bluetooth_agent', 'osmc_network',
            'osmc_systemd', 'osmc_wireless_agent', 'osmc', 'plugin', 'watcher', 'bluetooth_folder', 'network_settings']

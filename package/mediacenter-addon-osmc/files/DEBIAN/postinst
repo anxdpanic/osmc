@@ -44,6 +44,7 @@ then
 	chown -R $OWNER /usr/share/kodi/addons/script.module.xmltodict
 	chown -R $OWNER /usr/share/kodi/addons/script.module.osmcsetting.*
 	chown -R $OWNER /usr/share/kodi/addons/service.osmc.settings
+	chown -R $OWNER /usr/share/kodi/addons/script.osmc.setup
 	chmod +x /usr/bin/grab-logs
 	chmod +x /usr/bin/readgui
 	chmod +x /usr/bin/remote-cli

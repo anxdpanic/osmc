@@ -17,7 +17,6 @@ from osmccommon import osmc_setting
 from osmccommon.osmc_logging import StandardLogger
 
 from .. import osmc_network
-from ..networking_gui import NetworkingGui
 from ..osmc_advset_editor import AdvancedSettingsEditor
 
 addon_id = "script.module.osmcsetting.networking"
@@ -76,8 +75,6 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
         # a flag to determine whether a setting change requires a reboot to take effect
         self.reboot_required = False
 
-        self.gui = None
-
         # My OSMC lists Network as a folder, see osmcnetworking/plugin.py
         self.plugin_folder = True
 
@@ -104,25 +101,9 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
             self.setting_data_method[key]['setting_value'] = setting_value
 
     def run(self, use_preseed=None):
+        """ Opens the Network folder, from My OSMC or the skin's widget """
         log(self.addon_id)
-
-        if use_preseed is None:
-            # opened from My OSMC or the skin's widget: show the Network folder
-            xbmc.executebuiltin('ActivateWindow(Programs,%s,return)' % PLUGIN_URL)
-            return
-
-        # the first-run walkthrough opens the Network window itself
-
-        xml = "network_gui_720.xml" \
-            if xbmcgui.Window(10000).getProperty("SkinHeight") == '720' \
-            else "network_gui.xml"
-
-        self.gui = NetworkingGui(xml, self.me.getAddonInfo('path'), 'Default', addon=self.me)
-        self.gui.set_use_preseed(use_preseed)
-        self.gui.doModal()
-
-        del self.gui
-        log('END')
+        xbmc.executebuiltin('ActivateWindow(Programs,%s,return)' % PLUGIN_URL)
 
     def apply_settings(self):
         # retrieve the current settings from the settings.xml

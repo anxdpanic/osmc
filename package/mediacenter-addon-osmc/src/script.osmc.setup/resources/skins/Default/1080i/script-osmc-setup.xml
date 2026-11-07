@@ -1,0 +1,432 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    OSMC setup, drawn as a skin.osmc dialog laid out like its select dialog: the step's icon
+    and help text on the left, the options on the right, centred on the list area
+    (y 192 to 888), Back and Done at y 914.
+
+    This is the add-on's own copy for 16:9. A skin can replace it with its own
+    xml/script-osmc-setup.xml; window.py lists the control ids and window properties
+    both rely on. It uses skin.osmc's includes, fonts and colours, as setup always runs
+    with skin.osmc.
+-->
+<window>
+	<defaultcontrol always="true">22</defaultcontrol>
+
+	<controls>
+
+		<!-- Background: plain first, then the skin's dialog background over it -->
+		<control type="image">
+			<left>0</left>
+			<top>0</top>
+			<width>1920</width>
+			<height>1080</height>
+			<texture>common/white.png</texture>
+			<colordiffuse>FF1F1F1F</colordiffuse>
+		</control>
+		<include>DialogBackgroundImage</include>
+
+		<!-- Heading: logo, "Welcome to OSMC" and the step's name -->
+		<control type="image">
+			<left>125</left>
+			<top>102</top>
+			<width>50</width>
+			<height>50</height>
+			<texture>logo.png</texture>
+			<aspectratio>keep</aspectratio>
+		</control>
+		<control type="label">
+			<left>190</left>
+			<top>94</top>
+			<width>1100</width>
+			<height>33</height>
+			<aligny>top</aligny>
+			<font>Font33</font>
+			<textcolor>$VAR[TextColorFO]</textcolor>
+			<label>$ADDON[script.osmc.setup 32100]</label>
+		</control>
+		<control type="label">
+			<left>190</left>
+			<top>127</top>
+			<width>1100</width>
+			<height>33</height>
+			<aligny>top</aligny>
+			<font>Font33-light</font>
+			<textcolor>$VAR[TextColorNF]</textcolor>
+			<label>$INFO[Window.Property(Setup.Title)]</label>
+			<animation effect="fade" time="200">Visible</animation>
+			<animation effect="fade" time="200">Hidden</animation>
+			<visible>String.IsEmpty(Window.Property(Setup.Changing))</visible>
+		</control>
+
+		<!-- Clock, once Timezone is done -->
+		<control type="label">
+			<right>120</right>
+			<top>94</top>
+			<width>400</width>
+			<height>33</height>
+			<align>right</align>
+			<aligny>top</aligny>
+			<font>Font33</font>
+			<textcolor>$VAR[TextColorFO]</textcolor>
+			<label>$INFO[System.Time]</label>
+			<visible>!String.IsEmpty(Window.Property(Setup.Clock))</visible>
+		</control>
+
+		<!-- The step: fades out and in between steps -->
+		<control type="group">
+			<animation effect="fade" time="200">Visible</animation>
+			<animation effect="fade" time="200">Hidden</animation>
+			<visible>String.IsEmpty(Window.Property(Setup.Changing))</visible>
+
+			<!-- Icon, centred in the art slot; it never moves -->
+			<control type="image">
+				<left>202</left>
+				<top>190</top>
+				<width>300</width>
+				<height>300</height>
+				<texture>$INFO[Window.Property(Setup.Icon)]</texture>
+				<aspectratio>keep</aspectratio>
+			</control>
+
+			<!-- Help text, left-aligned under the icon -->
+			<control type="textbox">
+				<left>150</left>
+				<top>523</top>
+				<width>405</width>
+				<height>365</height>
+				<font>Font36</font>
+				<textcolor>$VAR[TextColorFO]</textcolor>
+				<label>$INFO[Window.Property(Setup.Help)]</label>
+				<visible>!String.IsEqual(Window.Property(Setup.Mode),remote)</visible>
+			</control>
+
+			<!-- Remote: the text on the right, centred -->
+			<control type="textbox">
+				<left>750</left>
+				<top>192</top>
+				<width>1020</width>
+				<height>696</height>
+				<font>Font36</font>
+				<align>center</align>
+				<aligny>center</aligny>
+				<textcolor>$VAR[TextColorFO]</textcolor>
+				<label>$INFO[Window.Property(Setup.Remote)]</label>
+				<visible>String.IsEqual(Window.Property(Setup.Mode),remote)</visible>
+			</control>
+
+			<!-- Options: a label with its value right-aligned, or a switch -->
+			<control type="list" id="100">
+				<left>750</left>
+				<top>192</top>
+				<width>1020</width>
+				<height>696</height>
+				<onup>100</onup>
+				<ondown>100</ondown>
+				<onleft>9001</onleft>
+				<onright>9001</onright>
+				<orientation>vertical</orientation>
+				<scrolltime tween="sine" easing="out">240</scrolltime>
+				<visible>String.IsEqual(Window.Property(Setup.Mode),options) | String.IsEqual(Window.Property(Setup.Mode),wired) | String.IsEqual(Window.Property(Setup.Mode),summary)</visible>
+				<itemlayout width="1020" height="58">
+					<control type="label">
+						<width>1020</width>
+						<height>58</height>
+						<font>Font36-light</font>
+						<textcolor>$VAR[TextColorNF]</textcolor>
+						<label>$INFO[ListItem.Label]</label>
+					</control>
+					<control type="label">
+						<width>1020</width>
+						<height>58</height>
+						<align>right</align>
+						<font>Font36-light</font>
+						<textcolor>$VAR[TextColorNF]</textcolor>
+						<label>$INFO[ListItem.Label2]</label>
+						<visible>String.IsEmpty(ListItem.Property(disabled))</visible>
+					</control>
+					<control type="label">
+						<width>1020</width>
+						<height>58</height>
+						<align>right</align>
+						<font>Font36-light</font>
+						<textcolor>$VAR[DisabledColor]</textcolor>
+						<label>$INFO[ListItem.Label2]</label>
+						<visible>!String.IsEmpty(ListItem.Property(disabled))</visible>
+					</control>
+					<control type="image">
+						<right>0</right>
+						<top>14</top>
+						<width>30</width>
+						<height>30</height>
+						<texture colordiffuse="$VAR[TextColorNF]">common/radioon.png</texture>
+						<visible>String.IsEqual(ListItem.Property(kind),switch) + !String.IsEmpty(ListItem.Property(on))</visible>
+					</control>
+					<control type="image">
+						<right>0</right>
+						<top>14</top>
+						<width>30</width>
+						<height>30</height>
+						<texture colordiffuse="$VAR[TextColorNF]">common/radiooff.png</texture>
+						<visible>String.IsEqual(ListItem.Property(kind),switch) + String.IsEmpty(ListItem.Property(on))</visible>
+					</control>
+				</itemlayout>
+				<focusedlayout width="1020" height="58">
+					<control type="group">
+						<visible>Control.HasFocus(100)</visible>
+						<control type="label">
+							<width>1020</width>
+							<height>58</height>
+							<font>Font36-bold</font>
+							<textcolor>$VAR[TextColorFO]</textcolor>
+							<label>$INFO[ListItem.Label]</label>
+						</control>
+						<control type="label">
+							<width>1020</width>
+							<height>58</height>
+							<align>right</align>
+							<font>Font36-bold</font>
+							<textcolor>$VAR[TextColorFO]</textcolor>
+							<label>$INFO[ListItem.Label2]</label>
+							<visible>String.IsEmpty(ListItem.Property(disabled))</visible>
+						</control>
+						<control type="label">
+							<width>1020</width>
+							<height>58</height>
+							<align>right</align>
+							<font>Font36-bold</font>
+							<textcolor>$VAR[DisabledColor]</textcolor>
+							<label>$INFO[ListItem.Label2]</label>
+							<visible>!String.IsEmpty(ListItem.Property(disabled))</visible>
+						</control>
+						<control type="image">
+							<right>0</right>
+							<top>14</top>
+							<width>30</width>
+							<height>30</height>
+							<texture colordiffuse="$VAR[TextColorFO]">common/radioon.png</texture>
+							<visible>String.IsEqual(ListItem.Property(kind),switch) + !String.IsEmpty(ListItem.Property(on))</visible>
+						</control>
+						<control type="image">
+							<right>0</right>
+							<top>14</top>
+							<width>30</width>
+							<height>30</height>
+							<texture colordiffuse="$VAR[TextColorFO]">common/radiooff.png</texture>
+							<visible>String.IsEqual(ListItem.Property(kind),switch) + String.IsEmpty(ListItem.Property(on))</visible>
+						</control>
+						<control type="image">
+							<width>1020</width>
+							<height>58</height>
+							<texture colordiffuse="$VAR[TextColorFO]">$VAR[focus58]</texture>
+						</control>
+					</control>
+					<!-- unfocused list: the row looks like every other -->
+					<control type="group">
+						<visible>!Control.HasFocus(100)</visible>
+						<control type="label">
+							<width>1020</width>
+							<height>58</height>
+							<font>Font36-light</font>
+							<textcolor>$VAR[TextColorNF]</textcolor>
+							<label>$INFO[ListItem.Label]</label>
+						</control>
+						<control type="label">
+							<width>1020</width>
+							<height>58</height>
+							<align>right</align>
+							<font>Font36-light</font>
+							<textcolor>$VAR[TextColorNF]</textcolor>
+							<label>$INFO[ListItem.Label2]</label>
+						</control>
+						<control type="image">
+							<right>0</right>
+							<top>14</top>
+							<width>30</width>
+							<height>30</height>
+							<texture colordiffuse="$VAR[TextColorNF]">common/radioon.png</texture>
+							<visible>String.IsEqual(ListItem.Property(kind),switch) + !String.IsEmpty(ListItem.Property(on))</visible>
+						</control>
+						<control type="image">
+							<right>0</right>
+							<top>14</top>
+							<width>30</width>
+							<height>30</height>
+							<texture colordiffuse="$VAR[TextColorNF]">common/radiooff.png</texture>
+							<visible>String.IsEqual(ListItem.Property(kind),switch) + String.IsEmpty(ListItem.Property(on))</visible>
+						</control>
+					</control>
+				</focusedlayout>
+			</control>
+
+			<!-- A list in place: languages, regions, Wi-Fi networks, countries, timezones -->
+			<control type="list" id="200">
+				<left>750</left>
+				<top>192</top>
+				<width>1020</width>
+				<height>696</height>
+				<onup>200</onup>
+				<ondown>200</ondown>
+				<onleft>9001</onleft>
+				<onright>9001</onright>
+				<orientation>vertical</orientation>
+				<scrolltime tween="sine" easing="out">240</scrolltime>
+				<visible>String.IsEqual(Window.Property(Setup.Mode),picker)</visible>
+				<itemlayout width="1020" height="58">
+					<control type="label">
+						<width>1020</width>
+						<height>58</height>
+						<align>center</align>
+						<font>Font36-light</font>
+						<textcolor>$VAR[TextColorNF]</textcolor>
+						<label>$INFO[ListItem.Label]</label>
+					</control>
+				</itemlayout>
+				<focusedlayout width="1020" height="58">
+					<control type="label">
+						<width>1020</width>
+						<height>58</height>
+						<align>center</align>
+						<font>Font36-bold</font>
+						<textcolor>$VAR[TextColorFO]</textcolor>
+						<label>$INFO[ListItem.Label]</label>
+						<scroll>true</scroll>
+						<visible>Control.HasFocus(200)</visible>
+					</control>
+					<control type="label">
+						<width>1020</width>
+						<height>58</height>
+						<align>center</align>
+						<font>Font36-light</font>
+						<textcolor>$VAR[TextColorNF]</textcolor>
+						<label>$INFO[ListItem.Label]</label>
+						<visible>!Control.HasFocus(200)</visible>
+					</control>
+					<control type="image">
+						<width>1020</width>
+						<height>58</height>
+						<texture colordiffuse="$VAR[TextColorFO]">$VAR[focus58]</texture>
+						<visible>Control.HasFocus(200)</visible>
+					</control>
+				</focusedlayout>
+			</control>
+
+			<!-- Warranty and License: the text from the top of the list area; Up scrolls it -->
+			<control type="textbox" id="300">
+				<left>750</left>
+				<top>192</top>
+				<width>1020</width>
+				<height>696</height>
+				<font>Font27</font>
+				<textcolor>$VAR[TextColorFO]</textcolor>
+				<pagecontrol>301</pagecontrol>
+				<visible>String.IsEqual(Window.Property(Setup.Mode),text)</visible>
+			</control>
+			<control type="scrollbar" id="301">
+				<left>710</left>
+				<top>192</top>
+				<width>20</width>
+				<height>696</height>
+				<onleft>9001</onleft>
+				<onright>9001</onright>
+				<ondown>9001</ondown>
+				<showonepage>false</showonepage>
+				<orientation>vertical</orientation>
+				<texturesliderbackground border="0,5,0,5" colordiffuse="$VAR[OverlayColorNF]">common/scrollbackground.png</texturesliderbackground>
+				<texturesliderbar border="0,5,0,5" colordiffuse="$VAR[OverlayColorNF]">common/scrollbargripnf.png</texturesliderbar>
+				<texturesliderbarfocus border="0,5,0,5" colordiffuse="$VAR[OverlayColorFO]">common/scrollbargripfo.png</texturesliderbarfocus>
+				<visible>String.IsEqual(Window.Property(Setup.Mode),text)</visible>
+			</control>
+
+			<!-- Summary: title right-aligned, a 20 px gap, the choice left-aligned -->
+			<control type="list" id="400">
+				<left>750</left>
+				<top>192</top>
+				<width>1020</width>
+				<height>464</height>
+				<orientation>vertical</orientation>
+				<visible>String.IsEqual(Window.Property(Setup.Mode),summary)</visible>
+				<itemlayout width="1020" height="58">
+					<control type="label">
+						<width>330</width>
+						<height>58</height>
+						<align>right</align>
+						<font>Font33-light</font>
+						<textcolor>$VAR[TextColorNF]</textcolor>
+						<label>$INFO[ListItem.Label]</label>
+					</control>
+					<control type="label">
+						<left>350</left>
+						<width>670</width>
+						<height>58</height>
+						<font>Font33</font>
+						<textcolor>$VAR[TextColorFO]</textcolor>
+						<label>$INFO[ListItem.Label2]</label>
+					</control>
+				</itemlayout>
+				<focusedlayout width="1020" height="58">
+					<control type="label">
+						<width>330</width>
+						<height>58</height>
+						<align>right</align>
+						<font>Font33-light</font>
+						<textcolor>$VAR[TextColorNF]</textcolor>
+						<label>$INFO[ListItem.Label]</label>
+					</control>
+					<control type="label">
+						<left>350</left>
+						<width>670</width>
+						<height>58</height>
+						<font>Font33</font>
+						<textcolor>$VAR[TextColorFO]</textcolor>
+						<label>$INFO[ListItem.Label2]</label>
+					</control>
+				</focusedlayout>
+			</control>
+
+			<!-- Back and Done; a list in place shows Back only, Remote shows neither -->
+			<control type="grouplist" id="9001">
+				<left>120</left>
+				<top>914</top>
+				<width>1680</width>
+				<height>66</height>
+				<itemgap>30</itemgap>
+				<orientation>horizontal</orientation>
+				<align>center</align>
+				<onup condition="String.IsEqual(Window.Property(Setup.Mode),picker)">200</onup>
+				<onup condition="String.IsEqual(Window.Property(Setup.Mode),text)">301</onup>
+				<onup condition="!String.IsEqual(Window.Property(Setup.Mode),picker) + !String.IsEqual(Window.Property(Setup.Mode),text)">100</onup>
+				<!-- window.py shows and hides the buttons (none on Remote, Back only over a list) -->
+				<control type="button" id="21">
+					<width>auto</width>
+					<height>66</height>
+					<font>Font33</font>
+					<align>center</align>
+					<aligny>center</aligny>
+					<textoffsetx>20</textoffsetx>
+					<textcolor>$VAR[TextColorNF]</textcolor>
+					<focusedcolor>$VAR[TextColorFO]</focusedcolor>
+					<texturefocus colordiffuse="$VAR[buttonfocus]">common/focus.png</texturefocus>
+					<texturenofocus />
+				</control>
+				<control type="button" id="22">
+					<width>auto</width>
+					<height>66</height>
+					<font>Font33</font>
+					<align>center</align>
+					<aligny>center</aligny>
+					<textoffsetx>20</textoffsetx>
+					<textcolor>$VAR[TextColorNF]</textcolor>
+					<focusedcolor>$VAR[TextColorFO]</focusedcolor>
+					<texturefocus colordiffuse="$VAR[buttonfocus]">common/focus.png</texturefocus>
+					<texturenofocus />
+				</control>
+			</control>
+
+			<!-- The side arrows while an option or a list item has focus -->
+			<include content="dialogButtonIndicator">
+				<param name="visibility">[Control.HasFocus(100) | Control.HasFocus(200) | Control.HasFocus(301)] + !String.IsEqual(Window.Property(Setup.Mode),remote)</param>
+			</include>
+		</control>
+
+	</controls>
+</window>

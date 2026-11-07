@@ -11,10 +11,8 @@
 
 import json
 import os
-import socket
 import subprocess
 import traceback
-from contextlib import closing
 from copy import deepcopy
 from io import open
 
@@ -27,7 +25,6 @@ from osmccommon.osmc_logging import StandardLogger
 
 from . import osmc_modules
 from . import osmc_ubiquifonts
-from . import osmc_walkthru
 
 try:
     import queue as Queue
@@ -36,6 +33,10 @@ except ImportError:
 
 ADDON_ID = 'service.osmc.settings'
 PLUGIN_URL = 'plugin://%s/' % ADDON_ID
+
+# the first-run setup, and the skin it is drawn in
+SETUP_ID = 'script.osmc.setup'
+SKIN_ID = 'skin.osmc'
 ADDON = xbmcaddon.Addon(ADDON_ID)
 
 DIALOG = xbmcgui.Dialog()
@@ -167,33 +168,6 @@ class Main(object):
         except Exception:
             log(traceback.format_exc())
 
-    def check_vendor(self):
-        """ Checks whether OSMC is being installed via N00bs or ts.
-            Returns None if the vendor file is not present or does not contain 'noobs' or 'ts'.
-            Vendor is pass to the Main settings service, which then asks the user whether they would like
-            to update (noobs or ts only).
-        """
-        current_vendor = self.window.getProperty('osmc_vendor')
-        if current_vendor:
-            return current_vendor
-
-        current_vendor = None
-        if os.path.isfile('/vendor'):
-            with open('/vendor', 'r', encoding='utf-8') as f:
-                line = f.readline()
-
-            vendors = ['noobs', 'ts']
-            for vendor in vendors:
-                if vendor in line:
-                    current_vendor = vendor
-                    break
-
-        self.window.clearProperty('osmc_vendor')
-        if current_vendor:
-            self.window.setProperty('osmc_vendor', current_vendor)
-
-        return current_vendor
-
     def set_version(self, overwrite=False):
         """ Loads the current OSMC version into the Home window for display in MyOSMC """
 
@@ -268,57 +242,42 @@ class Main(object):
         return False
 
     def _walk_through(self):
-        # Tell Kodi that OSMC is running the walkthrough
+        # Tell Kodi that OSMC is running the first-run setup; script.osmc.setup marks it done
         self.window.setProperty("walkthrough_is_running", 'any_value')
         self.set_walkthrough_status(1)
+        self.run_setup()
 
-        network_module = self.modules.get('osmcnetworking')
+    def run_setup(self):
+        """ Makes skin.osmc the skin, without asking, then starts script.osmc.setup """
+        for addon_id in (SKIN_ID, SETUP_ID):
+            self.jsonrpc('Addons.SetAddonEnabled', {'addonid': addon_id, 'enabled': True})
 
-        if not network_module:
-            log('Networking module not found')
-        else:
-            vendor = self.check_vendor()
-            log("Vendor is %s" % vendor)
+        if xbmc.getSkinDir() != SKIN_ID:
+            log('Setting the skin to %s' % SKIN_ID)
+            try:
+                xbmc.setskin(SKIN_ID)  # OSMC's Kodi: no "keep this skin?" question
+            except Exception:
+                self.jsonrpc('Settings.SetSettingValue', {'setting': 'lookandfeel.skin',
+                                                          'value': SKIN_ID})
+                # Kodi asks whether to keep the new skin; setup answers for the user
+                if self.monitor.waitForAbort(2):
+                    return
+                if xbmc.getCondVisibility('Window.IsActive(yesnodialog)'):
+                    xbmc.executebuiltin('SendClick(yesnodialog,11)')
+            if self.monitor.waitForAbort(2):
+                return
+            self.skin_dir = xbmc.getSkinDir()
 
-            osmc_walkthru.open_gui(ADDON, networking_instance=network_module['class_instance'])
+        log('Starting %s' % SETUP_ID)
+        xbmc.executebuiltin('RunScript(%s)' % SETUP_ID)
 
-            with open('/tmp/walkthrough_completed', 'w+', encoding='utf-8') as _:
-                log('/tmp/walkthrough_completed written')
-
-            subprocess.call(['sudo', 'mv', '/tmp/walkthrough_completed', '/walkthrough_completed'])
-
-            self.set_walkthrough_status(2)
-            self.window.clearProperty('walkthrough_is_running')
-            xbmc.executebuiltin('ReloadSkin()')
-
-            log('Skin reloaded')
-
-            # Query user about whether they would like to update now
-            update_check_now = False
-
-            if vendor == 'noobs':
-                update_check_now = DIALOG.yesno(lang(32026), '[CR]'.join([lang(32027), lang(32028), lang(32029)]))
-
-            elif vendor == 'ts':
-                update_check_now = DIALOG.yesno(lang(32026), '[CR]'.join([lang(32030), lang(32031), lang(32029)]))
-
-            if update_check_now:
-                log('User elected to update now')
-
-                try:
-                    message = ('settings_command', {
-                        'action': 'update'
-                    })
-                    message = json.dumps(message)
-
-                    with closing(socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)) as open_socket:
-                        open_socket.connect('/var/tmp/osmc.settings.update.sockfile')
-                        if not isinstance(message, (bytes, bytearray)):
-                            message = message.encode('utf-8', 'ignore')
-                        open_socket.sendall(message)
-
-                except Exception:
-                    log(traceback.format_exc())
+    @staticmethod
+    def jsonrpc(method, params):
+        request = {'jsonrpc': '2.0', 'id': 1, 'method': method, 'params': params}
+        response = json.loads(xbmc.executeJSONRPC(json.dumps(request)))
+        if 'error' in response:
+            log('%s failed: %s' % (method, response['error']))
+        return response.get('result')
 
     def _handle_response(self, response):
         if response in ('open', 'refresh_gui'):
@@ -332,9 +291,9 @@ class Main(object):
             return True  # signal abort
 
         elif response == 'walkthru':
-            log('Running manually called walkthru')
+            log('Running manually called setup')
 
-            osmc_walkthru.open_gui(ADDON, networking_instance=None, testing=True)
+            self.run_setup()
 
         elif 'new_device:' in response:
             # a usb device is attached to the hardware
