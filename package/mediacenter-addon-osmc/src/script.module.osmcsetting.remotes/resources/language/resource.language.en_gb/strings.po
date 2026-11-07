@@ -63,3 +63,27 @@ msgstr ""
 msgctxt "#32013"
 msgid "Service failed to restart."
 msgstr ""
+
+msgctxt "#32014"
+msgid "Changes will revert in %s seconds"
+msgstr ""
+
+msgctxt "#32015"
+msgid "On"
+msgstr ""
+
+msgctxt "#32016"
+msgid "Off"
+msgstr ""
+
+msgctxt "#32017"
+msgid "Browse for a .conf file…"
+msgstr ""
+
+msgctxt "#32018"
+msgid "Any lircd.conf on this device or the network"
+msgstr ""
+
+msgctxt "#32019"
+msgid "Remotes"
+msgstr ""

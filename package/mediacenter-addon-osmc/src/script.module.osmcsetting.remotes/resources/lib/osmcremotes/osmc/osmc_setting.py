@@ -14,7 +14,7 @@ from osmccommon import osmc_setting
 from osmccommon.osmc_logging import StandardLogger
 from osmccommon.osmc_logging import clog
 
-from .. import remote_gui
+from .. import remotes
 
 addon_id = "script.module.osmcsetting.remotes"
 log = StandardLogger(addon_id, os.path.basename(__file__)).log
@@ -34,9 +34,7 @@ class OSMCSettingClass(osmc_setting.OSMCSettingClass):
                            'lirc.conf file for their remote.'
         self.description_i18n = 32057
 
-        self.gui = None
 
     @clog(log, nowait=True)
     def run(self):
-        self.gui = remote_gui.RemoteGuiLauncher(self.me)
-        self.gui.open_gui()
+        remotes.run(addon=self.me)
