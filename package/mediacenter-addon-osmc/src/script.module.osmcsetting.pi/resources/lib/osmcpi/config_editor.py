@@ -33,7 +33,7 @@ ADDON_ID = 'script.module.osmcsetting.pi'
 
 CONFIG = '/boot/config-user.txt'
 TEMP_CONFIG = '/var/tmp/config-user.txt'
-BACKUP_FOLDER = '/home/pi/'
+BACKUP_FOLDER = '/home/osmc/'
 
 # keys that may appear more than once
 IGNORE_DUPLICATES = ['dtoverlay', 'device_tree', 'device_tree_param',
@@ -112,9 +112,11 @@ class ConfigEditor(object):
         if self.backed_up:
             return
         suffix = '_' + str(int(time.time()))
-        subprocess.call(['sudo', 'cp', self.config,
-                         os.path.join(BACKUP_FOLDER, 'config-user%s.txt' % suffix)])
-        self.backed_up = True
+        backup = os.path.join(BACKUP_FOLDER, 'config-user%s.txt' % suffix)
+        if subprocess.call(['sudo', 'cp', self.config, backup]) == 0:
+            self.backed_up = True
+        else:
+            log('Could not back %s up to %s' % (self.config, backup))
 
     def write(self, lines):
         self.backup()
