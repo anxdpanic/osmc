@@ -22,6 +22,7 @@ from io import open
 import xbmc
 import xbmcaddon
 import xbmcgui
+import xbmcvfs
 from osmccommon.osmc_language import LangRetriever
 from osmccommon.osmc_logging import StandardLogger
 
@@ -36,6 +37,9 @@ RC6_PAYLOAD = 'blacklist ir_rc6_decoder\ninstall ir_rc6_decoder /bin/true'
 
 SERVICE_TIMEOUT = 10  # seconds for lircd_helper to come back
 CONFIRM_TIMEOUT = 20  # seconds before an unconfirmed remote reverts
+
+# lircd.conf as it was, when it is a file of its own and not a link to a conf
+REVERT_COPY = '/var/tmp/lircd.conf.before-test'
 
 BROWSE = 'browse'
 RC6 = 'rc6'
@@ -87,6 +91,39 @@ def local_confs(directory=ETC_LIRC):
         confs.append(conf)
 
     return confs
+
+
+def fetch_conf(path):
+    """ A browsed conf as a file on this device: one on the network is copied here first.
+        Returns None if there is no such file. """
+    if os.path.isfile(path):
+        return path
+    if not xbmcvfs.exists(path):
+        return None
+
+    folder = os.path.join(xbmcvfs.translatePath(xbmcaddon.Addon(ADDON_ID).getAddonInfo('profile')),
+                          'remotes')
+    xbmcvfs.mkdirs(folder)
+    name = os.path.basename(path.rstrip('/').split('/')[-1]) or 'lircd.conf'
+    local = os.path.join(folder, name)
+    if not xbmcvfs.copy(path, local) or not os.path.isfile(local):
+        log('Could not copy %s to %s' % (path, local))
+        return None
+    return local
+
+
+def keep_copy():
+    """ Copies a lircd.conf that is a file of its own, so a test can be reverted """
+    if subprocess.call(['sudo', 'cp', '-p', LIRCD_PATH, REVERT_COPY]) == 0:
+        return REVERT_COPY
+    log('Could not copy %s' % LIRCD_PATH)
+    return None
+
+
+def restore_copy(copy):
+    # the link goes first: cp would write through it, into the conf under test
+    subprocess.call(['sudo', 'rm', '-f', LIRCD_PATH])
+    subprocess.call(['sudo', 'cp', '-p', copy, LIRCD_PATH])
 
 
 def active_conf():
@@ -188,7 +225,8 @@ class Remotes(object):
 
             if choice == BROWSE:
                 choice = self.dialog.browse(1, self.lang(32005), 'files', '.conf')
-                if not choice or not os.path.isfile(choice):
+                choice = fetch_conf(choice) if choice else None
+                if not choice:
                     continue
 
             if choice == active:
@@ -206,6 +244,7 @@ class Remotes(object):
         """
         log('Testing remote conf: %s' % conf)
         original = os.readlink(LIRCD_PATH) if os.path.islink(LIRCD_PATH) else None
+        saved = keep_copy() if original is None and os.path.isfile(LIRCD_PATH) else None
 
         link_conf(conf)
         result = self.wait_for_service()
@@ -224,6 +263,8 @@ class Remotes(object):
 
         if original:
             link_conf(original)
+        elif saved:
+            restore_copy(saved)
         restart_service().wait()
 
         if result == 'dead':
