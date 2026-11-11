@@ -129,17 +129,9 @@ msgctxt "#32057"
 msgid "Prompt for all actions"
 msgstr "Poziv za vsa dejanja"
 
-msgctxt "#32058"
-msgid "Display icon on home screen only"
-msgstr "Prikaz ikone samo na domačem zaslonu"
-
 msgctxt "#32059"
 msgid "When updating..."
 msgstr "Pri posodabljanju..."
-
-msgctxt "#32060"
-msgid "Download and display icon"
-msgstr "Prenos in prikaz ikone"
 
 msgctxt "#32061"
 msgid "Download and install automatically"
@@ -160,18 +152,6 @@ msgstr "Ukrep, ko so najdene posodobitve"
 msgctxt "#32065"
 msgid "Only show prompts on the home screen"
 msgstr "Pokaži pozive samo na začetnem zaslonu"
-
-msgctxt "#32066"
-msgid "Icon Position Horizontal (% of screen)"
-msgstr "Vodoravni položaj ikone (% zaslona)"
-
-msgctxt "#32067"
-msgid "Icon Position Vertical (% of screen)"
-msgstr "Navpični položaj ikone (% zaslona)"
-
-msgctxt "#32068"
-msgid "Do not show icon on home screen"
-msgstr "Ne prikaži ikone na začetnem zaslonu"
 
 msgctxt "#32069"
 msgid "Only check for updates if system is idle for 1 minute"

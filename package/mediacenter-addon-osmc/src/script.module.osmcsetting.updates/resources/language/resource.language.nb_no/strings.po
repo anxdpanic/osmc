@@ -129,17 +129,9 @@ msgctxt "#32057"
 msgid "Prompt for all actions"
 msgstr "Spør om alle handlinger"
 
-msgctxt "#32058"
-msgid "Display icon on home screen only"
-msgstr "Vis ikon kun på hjemskjermen"
-
 msgctxt "#32059"
 msgid "When updating..."
 msgstr "Ved oppdatering..."
-
-msgctxt "#32060"
-msgid "Download and display icon"
-msgstr "Last ned og vis vis ikon"
 
 msgctxt "#32061"
 msgid "Download and install automatically"
@@ -160,18 +152,6 @@ msgstr "Handling når oppdateringer er tilgjengelig"
 msgctxt "#32065"
 msgid "Only show prompts on the home screen"
 msgstr ""
-
-msgctxt "#32066"
-msgid "Icon Position Horizontal (% of screen)"
-msgstr "Ikon position horisontalt (% av skjerm)"
-
-msgctxt "#32067"
-msgid "Icon Position Vertical (% of screen)"
-msgstr "Ikon position vertikalt (% av skjerm)"
-
-msgctxt "#32068"
-msgid "Do not show icon on home screen"
-msgstr "Ikke vis ikon på hjemskjerm"
 
 msgctxt "#32069"
 msgid "Only check for updates if system is idle for 1 minute"

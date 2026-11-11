@@ -129,17 +129,9 @@ msgctxt "#32057"
 msgid "Prompt for all actions"
 msgstr "Vraag bij alle acties"
 
-msgctxt "#32058"
-msgid "Display icon on home screen only"
-msgstr "Toon icoon alleen op het startscherm"
-
 msgctxt "#32059"
 msgid "When updating..."
 msgstr "Bij het updaten..."
-
-msgctxt "#32060"
-msgid "Download and display icon"
-msgstr "Download en toon icoon"
 
 msgctxt "#32061"
 msgid "Download and install automatically"
@@ -160,18 +152,6 @@ msgstr "Actie als updates zijn gevonden"
 msgctxt "#32065"
 msgid "Only show prompts on the home screen"
 msgstr "Prompts alleen tonen op het startscherm"
-
-msgctxt "#32066"
-msgid "Icon Position Horizontal (% of screen)"
-msgstr "Icoonpositie horizontaal (% van scherm)"
-
-msgctxt "#32067"
-msgid "Icon Position Vertical (% of screen)"
-msgstr "Icoonpositie verticaal (% van scherm)"
-
-msgctxt "#32068"
-msgid "Do not show icon on home screen"
-msgstr "Toon geen icoon op startscherm"
 
 msgctxt "#32069"
 msgid "Only check for updates if system is idle for 1 minute"

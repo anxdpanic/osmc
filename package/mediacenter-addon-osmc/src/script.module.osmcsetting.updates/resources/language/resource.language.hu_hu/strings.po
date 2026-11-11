@@ -129,17 +129,9 @@ msgctxt "#32057"
 msgid "Prompt for all actions"
 msgstr "Kérjen megerősítést minden műveletnél"
 
-msgctxt "#32058"
-msgid "Display icon on home screen only"
-msgstr "Az ikon csak a kezdőképernyőn jelenjen meg"
-
 msgctxt "#32059"
 msgid "When updating..."
 msgstr "Frissítés közben..."
-
-msgctxt "#32060"
-msgid "Download and display icon"
-msgstr "Letöltés és ikon megjelenítése"
 
 msgctxt "#32061"
 msgid "Download and install automatically"
@@ -160,18 +152,6 @@ msgstr "Művelet frissítések észlelésekor"
 msgctxt "#32065"
 msgid "Only show prompts on the home screen"
 msgstr "Csak a kezdőképernyőn jelenítse meg az utasításokat"
-
-msgctxt "#32066"
-msgid "Icon Position Horizontal (% of screen)"
-msgstr "Az ikon vízszintes pozíciója (a képernyő %-ában)"
-
-msgctxt "#32067"
-msgid "Icon Position Vertical (% of screen)"
-msgstr "Az ikon függőleges pozíciója (a képernyő %-ában)"
-
-msgctxt "#32068"
-msgid "Do not show icon on home screen"
-msgstr "Ne jelenjen meg az ikon a kezdőképernyőn"
 
 msgctxt "#32069"
 msgid "Only check for updates if system is idle for 1 minute"

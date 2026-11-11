@@ -129,17 +129,9 @@ msgctxt "#32057"
 msgid "Prompt for all actions"
 msgstr "Perklausti visų veiksmų"
 
-msgctxt "#32058"
-msgid "Display icon on home screen only"
-msgstr "Rodyti piktogramą tik pradiniame ekrane"
-
 msgctxt "#32059"
 msgid "When updating..."
 msgstr "Atnaujinant..."
-
-msgctxt "#32060"
-msgid "Download and display icon"
-msgstr "Atsisiųsti ir rodyti piktogramą"
 
 msgctxt "#32061"
 msgid "Download and install automatically"
@@ -160,18 +152,6 @@ msgstr "Veiksmas radus naujinių"
 msgctxt "#32065"
 msgid "Only show prompts on the home screen"
 msgstr "Rodyti perklausimą tik pradiniame ekrane"
-
-msgctxt "#32066"
-msgid "Icon Position Horizontal (% of screen)"
-msgstr "Piktogramos padėtis horizontali (% ekrano)"
-
-msgctxt "#32067"
-msgid "Icon Position Vertical (% of screen)"
-msgstr "Piktogramos padėtis vertikali (% ekrano)"
-
-msgctxt "#32068"
-msgid "Do not show icon on home screen"
-msgstr "Nerodyti piktogramos pradiniame ekrane"
 
 msgctxt "#32069"
 msgid "Only check for updates if system is idle for 1 minute"

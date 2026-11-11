@@ -128,16 +128,8 @@ msgctxt "#32057"
 msgid "Prompt for all actions"
 msgstr ""
 
-msgctxt "#32058"
-msgid "Display icon on home screen only"
-msgstr ""
-
 msgctxt "#32059"
 msgid "When updating..."
-msgstr ""
-
-msgctxt "#32060"
-msgid "Download and display icon"
 msgstr ""
 
 msgctxt "#32061"
@@ -158,18 +150,6 @@ msgstr ""
 
 msgctxt "#32065"
 msgid "Only show prompts on the home screen"
-msgstr ""
-
-msgctxt "#32066"
-msgid "Icon Position Horizontal (% of screen)"
-msgstr ""
-
-msgctxt "#32067"
-msgid "Icon Position Vertical (% of screen)"
-msgstr ""
-
-msgctxt "#32068"
-msgid "Do not show icon on home screen"
 msgstr ""
 
 msgctxt "#32069"
@@ -678,4 +658,12 @@ msgstr ""
 
 msgctxt "#32196"
 msgid "Updates are ready to install from My OSMC."
+msgstr ""
+
+msgctxt "#32197"
+msgid "Do not show the updates notification"
+msgstr ""
+
+msgctxt "#32198"
+msgid "Still working on another app. Try again when it has finished."
 msgstr ""

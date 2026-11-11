@@ -37,6 +37,8 @@
         <setting default="false" id="home_prompts_only" label="32065" type="bool" visible="eq(-1, 0)"/>
         <!-- 32046: Suppress on-screen progress updates -->
         <setting default="false" id="suppress_progress" label="32046" type="bool"/>
+        <!-- 32197: Do not show the updates notification (the id is the old home screen icon's) -->
+        <setting default="false" id="suppress_icon" label="32197" type="bool"/>
     </category>
     <category label="32109">
         <!-- backup before updating -->

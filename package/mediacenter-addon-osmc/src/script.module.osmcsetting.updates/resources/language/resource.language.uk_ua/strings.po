@@ -129,17 +129,9 @@ msgctxt "#32057"
 msgid "Prompt for all actions"
 msgstr "Підтверджувати кожну дію"
 
-msgctxt "#32058"
-msgid "Display icon on home screen only"
-msgstr "Лише показати піктограму на головному екрані"
-
 msgctxt "#32059"
 msgid "When updating..."
 msgstr "Під час оновлення..."
-
-msgctxt "#32060"
-msgid "Download and display icon"
-msgstr "Завантажити та показати піктограму"
 
 msgctxt "#32061"
 msgid "Download and install automatically"
@@ -160,18 +152,6 @@ msgstr "Дія при виявленні оновлень"
 msgctxt "#32065"
 msgid "Only show prompts on the home screen"
 msgstr "Лише показати підказку на головному екрані"
-
-msgctxt "#32066"
-msgid "Icon Position Horizontal (% of screen)"
-msgstr "Розташування піктограми по горизонталі (% екрана)"
-
-msgctxt "#32067"
-msgid "Icon Position Vertical (% of screen)"
-msgstr "Розташування піктограми по вертикалі (% екрана)"
-
-msgctxt "#32068"
-msgid "Do not show icon on home screen"
-msgstr "Не показувати піктограму на головному екрані"
 
 msgctxt "#32069"
 msgid "Only check for updates if system is idle for 1 minute"

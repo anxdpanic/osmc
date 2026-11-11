@@ -129,17 +129,9 @@ msgctxt "#32057"
 msgid "Prompt for all actions"
 msgstr "Fråga om alla åtgärder"
 
-msgctxt "#32058"
-msgid "Display icon on home screen only"
-msgstr "Visa ikonen enbart på huvudmenyn"
-
 msgctxt "#32059"
 msgid "When updating..."
 msgstr "Vid uppdatering..."
-
-msgctxt "#32060"
-msgid "Download and display icon"
-msgstr "Ladda ner och visa ikonen"
 
 msgctxt "#32061"
 msgid "Download and install automatically"
@@ -160,18 +152,6 @@ msgstr "Att göra vid nya uppdateringar"
 msgctxt "#32065"
 msgid "Only show prompts on the home screen"
 msgstr "Visa bara frågor på huvudmenyn"
-
-msgctxt "#32066"
-msgid "Icon Position Horizontal (% of screen)"
-msgstr "Horisontell Ikonposition (% av skärmen)"
-
-msgctxt "#32067"
-msgid "Icon Position Vertical (% of screen)"
-msgstr "Vertikal Ikonposition (% av skärmen)"
-
-msgctxt "#32068"
-msgid "Do not show icon on home screen"
-msgstr "Visa inte ikon på huvudmenyn"
 
 msgctxt "#32069"
 msgid "Only check for updates if system is idle for 1 minute"

@@ -164,6 +164,7 @@ class Main(object):
 
         # what the App Store asked to show once its install or uninstall completes
         self.action_list_notification = ('', '')
+        self.action_list_process = None
 
         # queue for communication with the comm and Main
         self.parent_queue = Queue.Queue()
@@ -425,7 +426,7 @@ class Main(object):
         """ Says that updates are waiting, where the home screen icon used to appear:
             a notification, and the OSMC_notification Home property for skins """
         self.window.setProperty('OSMC_notification', 'true')
-        if show:
+        if show and not self.addon.getSettingBool('suppress_icon'):
             DIALOG.notification(self.lang(32077), self.lang(32196))  # OSMC Updater
 
     def call_child_script(self, action):
@@ -610,6 +611,11 @@ class Main(object):
         refresh_app_store()
 
     def action_list(self, action, notification='', notification_heading=''):
+        if self.action_list_process is not None and self.action_list_process.poll() is None:
+            # apt is still working on the last app; a second apt would stop at dpkg's lock
+            DIALOG.notification(notification_heading or self.lang(32077), self.lang(32198))
+            return
+
         self.action_list_notification = (notification_heading, notification)
 
         # check whether the install is an alpha version
@@ -619,8 +625,9 @@ class Main(object):
         # check for sufficient space, only proceed if it is available
         root_space, _ = self.check_target_location_for_size(location='/', requirement=300)
         if root_space:
-            subprocess.Popen(['sudo', 'python3', os.path.join(self.lib_path, 'apt_cache_action.py'),
-                              'action_list', action])
+            self.action_list_process = subprocess.Popen(
+                ['sudo', 'python3', os.path.join(self.lib_path, 'apt_cache_action.py'),
+                 'action_list', action])
 
         else:
             _ = DIALOG.ok(self.lang(32077), '[CR]'.join([self.lang(32129), self.lang(32130)]))

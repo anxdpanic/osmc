@@ -129,17 +129,9 @@ msgctxt "#32057"
 msgid "Prompt for all actions"
 msgstr "Upozornit na všechny akce"
 
-msgctxt "#32058"
-msgid "Display icon on home screen only"
-msgstr "Pouze zobrazit ikonu na výchozí obrazovce"
-
 msgctxt "#32059"
 msgid "When updating..."
 msgstr "Při aktualizaci..."
-
-msgctxt "#32060"
-msgid "Download and display icon"
-msgstr "Stáhnout a zobrazit ikonu"
 
 msgctxt "#32061"
 msgid "Download and install automatically"
@@ -160,18 +152,6 @@ msgstr "Při aktualizaci byly nalezeny akce"
 msgctxt "#32065"
 msgid "Only show prompts on the home screen"
 msgstr "Pouze zobrazit upozornění na hlavní obrazovce"
-
-msgctxt "#32066"
-msgid "Icon Position Horizontal (% of screen)"
-msgstr "Vodorovná pozice ikony (% z obrazovky)"
-
-msgctxt "#32067"
-msgid "Icon Position Vertical (% of screen)"
-msgstr "Svislá pozice ikony (% z obrazovky)"
-
-msgctxt "#32068"
-msgid "Do not show icon on home screen"
-msgstr "Nezobrazovat ikonu na hlavní obrazovce"
 
 msgctxt "#32069"
 msgid "Only check for updates if system is idle for 1 minute"

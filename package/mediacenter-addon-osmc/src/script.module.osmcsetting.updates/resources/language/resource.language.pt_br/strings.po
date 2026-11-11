@@ -129,17 +129,9 @@ msgctxt "#32057"
 msgid "Prompt for all actions"
 msgstr "Perguntar para todas ações"
 
-msgctxt "#32058"
-msgid "Display icon on home screen only"
-msgstr "Exibir ícone somente na tela inicial"
-
 msgctxt "#32059"
 msgid "When updating..."
 msgstr "Quando estiver atualizando..."
-
-msgctxt "#32060"
-msgid "Download and display icon"
-msgstr "Fazer download e exibir ícone"
 
 msgctxt "#32061"
 msgid "Download and install automatically"
@@ -160,18 +152,6 @@ msgstr "Ação quando atualizações são encontradas"
 msgctxt "#32065"
 msgid "Only show prompts on the home screen"
 msgstr "Somente exibir diálogos na tela inicial"
-
-msgctxt "#32066"
-msgid "Icon Position Horizontal (% of screen)"
-msgstr "Posição Horizontal do Ícone (% da tela)"
-
-msgctxt "#32067"
-msgid "Icon Position Vertical (% of screen)"
-msgstr "Posição Vertical do Ícone (% da tela)"
-
-msgctxt "#32068"
-msgid "Do not show icon on home screen"
-msgstr "Não exibir ícone na tela inicial"
 
 msgctxt "#32069"
 msgid "Only check for updates if system is idle for 1 minute"
