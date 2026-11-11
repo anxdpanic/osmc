@@ -8,5 +8,5 @@
     See LICENSES/GPL-2.0-or-later for more information.
 """
 
-__all__ = ['call_osmc_parent', 'osmc_modules', 'plugin_entry', 'osmc_slideshow',
-           'osmc_ubiquifonts', 'script_entry', 'service_entry', 'wifi_scanner']
+__all__ = ['call_osmc_parent', 'osmc_modules', 'plugin_entry',
+           'osmc_ubiquifonts', 'script_entry', 'service_entry']
