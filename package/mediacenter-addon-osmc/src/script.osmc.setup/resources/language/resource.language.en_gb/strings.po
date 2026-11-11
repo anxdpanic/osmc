@@ -290,3 +290,7 @@ msgstr ""
 msgctxt "#32163"
 msgid "Sets the clock. Choose the country and timezone for where this device is."
 msgstr ""
+
+msgctxt "#32164"
+msgid "The password could not be changed, so it stays as it was."
+msgstr ""

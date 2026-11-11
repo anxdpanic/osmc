@@ -293,7 +293,9 @@ class Main(object):
         elif response == 'walkthru':
             log('Running manually called setup')
 
-            self.run_setup()
+            # a test: the skin stays, setup can be left, and Finish applies nothing
+            self.jsonrpc('Addons.SetAddonEnabled', {'addonid': SETUP_ID, 'enabled': True})
+            xbmc.executebuiltin('RunScript(%s,test)' % SETUP_ID)
 
         elif 'new_device:' in response:
             # a usb device is attached to the hardware

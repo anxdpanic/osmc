@@ -26,7 +26,9 @@ ADDON_ID = 'script.osmc.setup'
 COMPLETED_FLAG = '/walkthrough_completed'
 
 # looked up once, when Timezone is first shown and the device is online
-TIMEZONE_LOOKUP_URL = 'http://ip-api.com/json/?fields=status,country,timezone'
+TIMEZONE_LOOKUP_URL = 'http://ip-api.com/json/?fields=status,country,countryCode,timezone'
+# Kodi's timezone countries are tzdata's names ("Britain (UK)"), listed here by country code
+COUNTRY_NAMES = '/usr/share/zoneinfo/iso3166.tab'
 
 NEWSLETTER_URL = 'https://osmc.tv/osmc/api/newsletter/?p=subscribe&id=1'
 
@@ -111,6 +113,21 @@ def timezones(country):
     return setting['options'], setting['value']
 
 
+def country_name(code):
+    """ tzdata's name for a two-letter country code, or None """
+    try:
+        with open(COUNTRY_NAMES, 'r', encoding='utf-8') as names:
+            for line in names:
+                if line.startswith('#') or '\t' not in line:
+                    continue
+                line_code, name = line.rstrip('\n').split('\t')[:2]
+                if line_code == code:
+                    return name
+    except Exception:
+        log(traceback.format_exc())
+    return None
+
+
 def detect_timezone(country_options):
     """ (country, timezone) from the connection's location, or (None, None) """
     try:
@@ -123,7 +140,8 @@ def detect_timezone(country_options):
     if found.get('status') != 'success':
         return None, None
 
-    country = found.get('country')
+    # the lookup's own names differ from Kodi's for some countries ("United Kingdom")
+    country = country_name(found.get('countryCode')) or found.get('country')
     if country not in [value for _, value in country_options]:
         log('Unknown timezone country %s' % country)
         return None, None
@@ -210,6 +228,18 @@ def mark_done():
     except Exception:
         log(traceback.format_exc())
 
+    try:
+        xbmc.setosmcwalkthroughstatus(2)
+    except Exception:
+        log(traceback.format_exc())
+
+    import xbmcgui
+    xbmcgui.Window(10000).clearProperty('walkthrough_is_running')
+
+
+def release_walkthrough_status():
+    """ Setup is not showing any more, though it is not done: Kodi holds add-on updates
+        back while it believes setup is running """
     try:
         xbmc.setosmcwalkthroughstatus(2)
     except Exception:

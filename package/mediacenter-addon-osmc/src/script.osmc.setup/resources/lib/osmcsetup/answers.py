@@ -82,6 +82,8 @@ class Answers(object):
 
         self.timezone_country = ''
         self.timezone = ''
+        self.testing = False  # "Test walk through" from My OSMC: Finish applies nothing
+        self.failed = False  # the window could not be drawn
         self.timezone_detected = False  # the lookup was tried
         self.timezone_found = False  # and it gave the country and timezone
 

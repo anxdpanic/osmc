@@ -8,7 +8,10 @@
     See LICENSES/GPL-2.0-or-later for more information.
 
     RunScript(script.osmc.setup): the first-run setup. The settings service starts it on
-    first run and from My OSMC's "Test walk through", after making skin.osmc the skin.
+    first run, after making skin.osmc the skin.
+
+    RunScript(script.osmc.setup,test): My OSMC's "Test walk through". The same steps, but
+    Back leaves from the first one and Finish applies nothing.
 """
 
 import os
@@ -50,19 +53,33 @@ def run(argv=None):
         log('Setup is already showing')
         return
 
+    testing = 'test' in (argv or [])[1:]
+
     home.setProperty(RUNNING, 'true')
+    state = None
     try:
-        state = show()
+        state = show(testing)
+    except Exception:
+        log(traceback.format_exc(), xbmc.LOGERROR)
     finally:
         home.clearProperty(RUNNING)
 
-    if state and state.finished:
+    if testing:
+        return
+
+    if not (state and state.finished):
+        # setup failed or Kodi is closing: it runs again at the next start, and until
+        # then Kodi must not go on believing that setup is showing
+        system.release_walkthrough_status()
+        return
+
+    if state.finished:
         xbmc.executebuiltin('ActivateWindow(Home)')
         if state.check_updates and state.online:
             system.request_update_check()
 
 
-def show():
+def show(testing=False):
     from .window import SetupWindow
 
     addon = xbmcaddon.Addon(ADDON_ID)
@@ -73,6 +90,7 @@ def show():
         state.ssh = system.is_ssh_enabled()
     except Exception:
         log(traceback.format_exc())
+    state.testing = testing
 
     while not monitor.abortRequested():
         # strings are read again each time, as a new language changes them
@@ -82,7 +100,7 @@ def show():
         window.doModal()
         del window
 
-        if state.finished:
+        if state.finished or state.failed:
             break
 
         if state.pending_language:
@@ -92,6 +110,9 @@ def show():
             if monitor.waitForAbort(LANGUAGE_RELOAD_WAIT):
                 break
             continue
+
+        if state.testing:
+            break
 
         # setup cannot be left before Finish: anything else that closed it reopens it
         log('Setup closed before Finish; reopening')

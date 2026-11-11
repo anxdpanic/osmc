@@ -125,12 +125,17 @@ class SetupWindow(xbmcgui.WindowXMLDialog):
 
     # ---- Kodi callbacks ------------------------------------------------------------------
 
-    @close_on_error
     def onInit(self):
-        self.list_x = {OPTIONS: self.getControl(OPTIONS).getX(),
-                       PICKER: self.getControl(PICKER).getX(),
-                       SUMMARY: self.getControl(SUMMARY).getX()}
-        self.show_step(fade=False)
+        try:
+            self.list_x = {OPTIONS: self.getControl(OPTIONS).getX(),
+                           PICKER: self.getControl(PICKER).getX(),
+                           SUMMARY: self.getControl(SUMMARY).getX()}
+            self.show_step(fade=False)
+        except Exception:
+            # nothing can be shown: leave, rather than sit on an empty window
+            log(traceback.format_exc(), xbmc.LOGERROR)
+            self.state.failed = True
+            self.close()
 
     @close_on_error
     def onClick(self, control_id):
@@ -154,6 +159,9 @@ class SetupWindow(xbmcgui.WindowXMLDialog):
         action_id = action.getId()
 
         if self.state.step == 'remote':
+            if self.state.testing and action_id in BACK_ACTIONS:
+                self.close()  # "Test walk through" can be left
+                return
             # no key leaves setup or goes back here; any key counts as input
             if action_id not in NOT_INPUT and not self.input_detected:
                 self.remote_input()
@@ -630,6 +638,13 @@ class SetupWindow(xbmcgui.WindowXMLDialog):
     def finish(self):
         """ Applies the device name and SSH, sends the newsletter address, marks setup done """
         state = self.state
+        if state.testing:
+            # "Test walk through": the device stays as it is
+            state.finished = True
+            self.close()
+            return
+
+        password_set = True
         xbmc.executebuiltin('ActivateWindow(busydialognocancel)')
         try:
             if state.hostname != state.original_hostname:
@@ -637,12 +652,16 @@ class SetupWindow(xbmcgui.WindowXMLDialog):
             if state.ssh != system.is_ssh_enabled():
                 system.set_ssh(state.ssh)
             if state.ssh and state.ssh_password:
-                system.set_password(state.ssh_password)
+                password_set = system.set_password(state.ssh_password)
             if state.online and state.newsletter and state.email:
                 system.subscribe_newsletter(state.email)
             system.mark_done()
         finally:
             xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
+
+        if not password_set:
+            # 'SSH' 'The password could not be changed, so it stays as it was.'
+            _ = self.dialog.ok(self.lang(STEP_TITLES['ssh']), self.lang(32164))
 
         state.finished = True
         self.close()
