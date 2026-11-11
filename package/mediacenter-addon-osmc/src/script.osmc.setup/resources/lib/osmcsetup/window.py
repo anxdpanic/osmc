@@ -439,7 +439,6 @@ class SetupWindow(xbmcgui.WindowXMLDialog):
 
     def render_timezone(self):
         self.set_mode('options')
-        self.setProperty('Setup.Help', self.lang(32127))
 
         if not self.state.timezone_detected:
             self.state.timezone_detected = True
@@ -448,6 +447,10 @@ class SetupWindow(xbmcgui.WindowXMLDialog):
                 country, timezone = system.detect_timezone(countries)
                 if country:
                     system.set_timezone(country, timezone)
+                    self.state.timezone_found = True
+
+        # "were detected from the network connection" only when they were
+        self.setProperty('Setup.Help', self.lang(32127 if self.state.timezone_found else 32163))
 
         settings = system.regional_settings()
         country = settings.get('locale.timezonecountry', {'value': '', 'options': []})

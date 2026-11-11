@@ -12,6 +12,7 @@
 """
 
 import copy
+import ipaddress
 import os
 import traceback
 
@@ -39,6 +40,14 @@ def network():
     """ osmc_network, imported late as it needs dbus """
     from osmcnetworking import osmc_network
     return osmc_network
+
+
+def is_ip_address(value):
+    try:
+        ipaddress.ip_address(value)
+    except ValueError:
+        return False
+    return True
 
 
 def wired_value(settings, where):
@@ -213,7 +222,7 @@ class NetworkStep(object):
                                        type=xbmcgui.INPUT_IPADDRESS)
         if not value:
             return
-        if not network().is_valid_ip_address(value):
+        if not is_ip_address(value):
             xbmcgui.Dialog().notification(label, self.lang(32153))  # Not a valid IP address
             return
         section, field = where

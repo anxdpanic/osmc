@@ -287,3 +287,6 @@ msgctxt "#32162"
 msgid "Email address"
 msgstr ""
 
+msgctxt "#32163"
+msgid "Sets the clock. Choose the country and timezone for where this device is."
+msgstr ""

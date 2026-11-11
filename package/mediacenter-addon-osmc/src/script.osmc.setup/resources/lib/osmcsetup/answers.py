@@ -82,7 +82,8 @@ class Answers(object):
 
         self.timezone_country = ''
         self.timezone = ''
-        self.timezone_detected = False
+        self.timezone_detected = False  # the lookup was tried
+        self.timezone_found = False  # and it gave the country and timezone
 
         self.original_hostname = hostname
         self.hostname = hostname
@@ -110,8 +111,9 @@ class Answers(object):
         return steps
 
     def position(self, step=None):
-        """ The 0-based place of a step among those shown """
-        return self.steps().index(step or self.step)
+        """ The 0-based place of a step among those shown; one that left the order
+            (Newsletter going offline) counts as the step before it """
+        return self.steps().index(self._known(step or self.step))
 
     def _known(self, step):
         """ A step that left the order (Newsletter going offline) falls back to the one before """
