@@ -39,6 +39,8 @@
     <!-- 32003: Bluetooth -->
     <category label="32003">
         <!-- 32015: Enable Bluetooth -->
+        <!-- true while the device's values show; Defaults makes it false (see network_settings.py) -->
+        <setting id="bt_shown" type="bool" default="false" visible="false"/>
         <setting id="bt_enabled" type="bool" label="32015" default="false"/>
         <!-- 32147: Search for devices when the list opens -->
         <setting id="bt_search_on_open" type="bool" label="32147" default="true"/>
@@ -47,6 +49,7 @@
     <!-- 32001: Tethering -->
     <category label="32001">
         <!-- 32061: Hotspot SSID, 32062: Hotspot passphrase -->
+        <setting id="tethering_shown" type="bool" default="false" visible="false"/>
         <setting id="hotspot_ssid" type="text" label="32061" default="osmc_wifi"/>
         <setting id="hotspot_passphrase" type="text" label="32062" default="h0tsp0t0smc"/>
         <!-- 32148: Share, 32064: Ethernet to WiFi, 32065: WiFi to Ethernet -->
@@ -60,6 +63,7 @@
     <!-- 32077: MySQL -->
     <category label="32077">
         <!-- 32095: Enable MySQL Video Database -->
+        <setting id="mysql_shown" type="bool" default="false" visible="false"/>
         <setting id="mysql_video" type="bool" label="32095" default="false"/>
         <setting id="mysql_video_name" type="text" label="32096" default="MyVideos" subsetting="true" visible="eq(-1,true)"/>
         <setting id="mysql_video_host" type="ipaddress" label="32098" default="" subsetting="true" visible="eq(-2,true)"/>

@@ -14,6 +14,7 @@
 """
 
 import os
+import socket
 import subprocess
 import threading
 import traceback
@@ -42,6 +43,15 @@ DHCP = 0
 MANUAL = 1
 
 IP_KEYS = ['address', 'netmask', 'gateway', 'dns1', 'dns2']
+# manual addresses that must be filled in; the others may be left empty
+IP_REQUIRED = ['address', 'netmask']
+
+# Hidden settings that are true while the dialog shows this device's values. Defaults, which
+# resets one category at a time, is the only thing that makes one false.
+SHOWN_KEYS = ['bt_shown', 'tethering_shown', 'mysql_shown']
+
+# shown, never edited: these only change when the dialog's Defaults button is pressed
+READ_ONLY_KEYS = ['wired_status', 'wireless_status', 'wired_present', 'wireless_present'] + SHOWN_KEYS
 
 MYSQL_KEYS = ['mysql_video', 'mysql_video_name', 'mysql_video_host', 'mysql_video_port',
               'mysql_video_user', 'mysql_video_pass', 'mysql_import_watched',
@@ -52,7 +62,8 @@ TETHERING_KEYS = ['hotspot_ssid', 'hotspot_passphrase', 'tethering_share', 'teth
 
 BOOLS = {'wired_present', 'wired_enabled', 'wait_for_network', 'wireless_present',
          'bt_enabled', 'bt_search_on_open', 'tethering_enabled', 'mysql_video',
-         'mysql_import_watched', 'mysql_import_resume', 'mysql_music'}
+         'mysql_import_watched', 'mysql_import_resume', 'mysql_music',
+         'bt_shown', 'tethering_shown', 'mysql_shown'}
 INTS = {'wired_method', 'wireless_method', 'tethering_share'}
 
 log = StandardLogger(ADDON_ID, os.path.basename(__file__)).log
@@ -80,6 +91,14 @@ def read_settings(addon, keys):
         else:
             values[key] = addon.getSetting(key)
     return values
+
+
+def is_ipv4_address(value):
+    try:
+        socket.inet_aton(value)
+    except (OSError, TypeError):
+        return False
+    return value.count('.') == 3
 
 
 # ---- live values ---------------------------------------------------------------------------
@@ -156,6 +175,7 @@ def live_values(lang):
     values['tethering_enabled'] = bool(tethering_ethernet or osmc_network.is_tethering_wifi())
 
     values.update(mysql_values(advanced_settings_editor().parse_advanced_settings()))
+    values.update({key: True for key in SHOWN_KEYS})
     return values
 
 
@@ -259,6 +279,7 @@ class NetworkSettings(object):
         keys = list(live.keys()) + ['bt_search_on_open']
         # compare against what the settings hold (None reads back as ''), not the live values
         before = read_settings(self.addon, keys)
+        shown = before
 
         while True:
             if category is not None:
@@ -266,13 +287,26 @@ class NetworkSettings(object):
             self.addon.openSettings()
 
             after = read_settings(self.addon, keys)
-            if after == before:
-                return  # Cancel, or nothing changed
+            if after == shown:
+                # Cancel, or nothing changed. Values a check turned down are not kept.
+                if shown != before:
+                    write_settings(self.addon, before)
+                return
+
+            if any(after[key] != before[key] for key in READ_ONLY_KEYS):
+                # Defaults (of one category): the dialog's defaults are not this device's
+                # settings, and applying them would turn Bluetooth and the hotspot off and
+                # remove MySQL. Show what the device has again instead.
+                log('Network settings: Defaults pressed, showing the current values again')
+                write_settings(self.addon, before)
+                shown = before
+                continue
 
             category = self.apply(before, after)
             if category is None:
                 return
             # a check failed: reopen on that category with the user's values kept
+            shown = after
 
     # -- applying --
 
@@ -286,30 +320,43 @@ class NetworkSettings(object):
             if reopen is not None:
                 return reopen
 
+        # every check comes before anything is applied
+        for prefix, category in (('wired', WIRED), ('wireless', WIRELESS)):
+            if after[prefix + '_present'] and changed & {prefix + '_' + k for k in ['method'] + IP_KEYS}:
+                reopen = self.check_addresses(prefix, category, after)
+                if reopen is not None:
+                    return reopen
+
         if changed & set(MYSQL_KEYS):
             reopen = self.apply_mysql(after)
             if reopen is not None:
                 return reopen
 
+        # one setting failing does not stop the others being applied
+        self.failed = False
+
         if 'wired_enabled' in changed:
-            osmc_network.toggle_ethernet_state(after['wired_enabled'])
+            self.attempt(osmc_network.toggle_ethernet_state, after['wired_enabled'])
 
         nfs = False
         if after['wired_present'] and changed & {'wired_' + k for k in ['method'] + IP_KEYS}:
-            nfs = self.apply_addresses('wired', osmc_network.get_ethernet_settings(), after)
+            nfs = self.attempt(self.apply_addresses, 'wired', osmc_network.get_ethernet_settings, after)
 
         if after['wireless_present'] and changed & {'wireless_' + k for k in ['method'] + IP_KEYS}:
-            self.apply_addresses('wireless', osmc_network.get_connected_wifi(), after)
+            self.attempt(self.apply_addresses, 'wireless', osmc_network.get_connected_wifi, after)
 
         if 'wait_for_network' in changed:
-            osmc_network.toggle_wait_for_network(after['wait_for_network'])
+            self.attempt(osmc_network.toggle_wait_for_network, after['wait_for_network'])
 
         if 'bt_enabled' in changed:
-            from .bluetooth_folder import bluetooth
-            bluetooth().toggle_bluetooth_state(after['bt_enabled'])
+            self.attempt(self.apply_bluetooth, after['bt_enabled'])
 
         if changed & set(TETHERING_KEYS):
-            self.apply_tethering(before, after)
+            self.attempt(self.apply_tethering, before, after)
+
+        if self.failed:
+            # 'Some settings could not be applied. See the log for details.'
+            _ = self.dialog.ok(self.addon.getAddonInfo('name'), self.lang(32150))
 
         if nfs:
             with open(NFS_REBOOT_FILE, 'w', encoding='utf-8') as open_file:
@@ -320,9 +367,37 @@ class NetworkSettings(object):
 
         return None
 
+    def attempt(self, func, *args):
+        """ Runs one step of applying; a failure is logged and reported once at the end """
+        try:
+            return func(*args)
+        except Exception:
+            log(traceback.format_exc())
+            self.failed = True
+            return None
+
     @staticmethod
-    def apply_addresses(prefix, config, values):
+    def apply_bluetooth(enabled):
+        from .bluetooth_folder import bluetooth
+        bluetooth().toggle_bluetooth_state(enabled)
+
+    def check_addresses(self, prefix, category, values):
+        """ Manual addresses must be IP addresses before they reach connman """
+        if values[prefix + '_method'] != MANUAL:
+            return None
+        for key in IP_KEYS:
+            value = values['%s_%s' % (prefix, key)]
+            if (value or key in IP_REQUIRED) and not is_ipv4_address(value):
+                # 'Wired' / 'Wireless' 'The address provided is not a valid IP address.'
+                heading = self.lang(32060 if category == WIRED else 32041)
+                _ = self.dialog.ok(heading, self.lang(32005))
+                return category
+        return None
+
+    @staticmethod
+    def apply_addresses(prefix, get_config, values):
         """ Applies DHCP or manual addresses to a connman service; True for NFS """
+        config = get_config()
         if not config:
             return False
 

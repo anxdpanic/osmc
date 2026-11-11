@@ -607,3 +607,7 @@ msgstr ""
 msgctxt "#32149"
 msgid "Wi-Fi to Ethernet: do not connect this device to a wired network with a DHCP server."
 msgstr ""
+
+msgctxt "#32150"
+msgid "Some settings could not be applied. See the log for details."
+msgstr ""

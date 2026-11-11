@@ -485,6 +485,11 @@ def wifi_disconnect(path):
 
 
 def wifi_remove(path):
+    # the path comes from a plugin URL, and ends up in "sudo rm -rf"
+    if not re.match(r'^/net/connman/service/[A-Za-z0-9_]+$', path or ''):
+        print('Not a connman service path: %s' % path)
+        return
+
     service = connman.get_service_interface(path)
     try:
         service.Remove()
