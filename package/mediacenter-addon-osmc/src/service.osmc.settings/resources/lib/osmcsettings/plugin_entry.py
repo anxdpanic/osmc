@@ -146,6 +146,11 @@ class Plugin(object):
             plugin.run(self.handle, self.params)
             return
 
+        if self.handle >= 0:
+            # opened as a folder (a favourite, ActivateWindow): there is nothing to list, and
+            # Kodi waits on "Please wait" until the directory is ended
+            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+
         if not self.send(module_id):
             self.service_unavailable()
 
